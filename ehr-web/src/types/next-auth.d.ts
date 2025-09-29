@@ -7,6 +7,8 @@ declare module 'next-auth' {
     refreshToken?: string
     roles?: string[]
     fhirUser?: string
+    permissions?: string[]
+    userId?: string
   }
 
   interface Profile {
@@ -14,6 +16,14 @@ declare module 'next-auth' {
       roles: string[]
     }
     fhir_user?: string
+    permissions?: string[]
+  }
+
+  interface User {
+    id?: string
+    roles?: string[]
+    permissions?: string[]
+    fhirUser?: string
   }
 }
 
@@ -24,5 +34,7 @@ declare module 'next-auth/jwt' {
     expiresAt?: number
     roles?: string[]
     fhirUser?: string
+    permissions?: string[]
+    userId?: string
   }
 }
