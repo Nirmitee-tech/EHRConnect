@@ -1,0 +1,195 @@
+{
+  "id": "ehr-realm",
+  "realm": "ehr-realm",
+  "displayName": "EHR Realm",
+  "displayNameHtml": "<div class=\"kc-logo-text\"><span>EHR Realm</span></div>",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": false,
+  "rememberMe": true,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 30,
+  "defaultRoles": [ "default-roles-ehr-realm", "offline_access", "uma_authorization" ],
+  "requiredCredentials": [ "password" ],
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyInitialCounter": 0,
+  "otpPolicyDigits": 6,
+  "otpPolicyLookAheadWindow": 1,
+  "otpPolicyPeriod": 30,
+  "supportedLocales": [ "en" ],
+  "defaultLocale": "en",
+  "internationalizationEnabled": false,
+  "clients": [
+    {
+      "id": "medplum-client",
+      "clientId": "medplum-client",
+      "name": "Medplum FHIR Client",
+      "description": "Client for Medplum FHIR server integration",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "medplum-secret-key",
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:8103/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:8103"
+      ],
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "protocolMappers": [
+        {
+          "id": "username",
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "email",
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "fhir-user",
+          "name": "fhir-user",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "fhir_user",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "fhir_user",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "id": "nextjs-client",
+      "clientId": "nextjs-client",
+      "name": "Next.js EHR Web Client",
+      "description": "Client for Next.js web application",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "nextjs-secret-key",
+      "redirectUris": [
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "id": "admin",
+        "name": "admin",
+        "description": "Administrator role",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "ehr-realm"
+      },
+      {
+        "id": "practitioner",
+        "name": "practitioner",
+        "description": "Healthcare practitioner role",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "ehr-realm"
+      },
+      {
+        "id": "patient",
+        "name": "patient",
+        "description": "Patient role",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "ehr-realm"
+      }
+    ]
+  },
+  "users": [
+    {
+      "id": "admin-user",
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@ehr.local",
+      "firstName": "System",
+      "lastName": "Administrator",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [ "admin", "default-roles-ehr-realm" ],
+      "attributes": {
+        "fhir_user": [ "Practitioner/admin" ]
+      }
+    },
+    {
+      "id": "practitioner-user",
+      "username": "practitioner",
+      "enabled": true,
+      "email": "practitioner@ehr.local",
+      "firstName": "John",
+      "lastName": "Doctor",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "doctor123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [ "practitioner", "default-roles-ehr-realm" ],
+      "attributes": {
+        "fhir_user": [ "Practitioner/practitioner-1" ]
+      }
+    }
+  ]
+}
