@@ -3,7 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AuthSessionProvider from "@/providers/session-provider";
 import { FacilityProvider } from "@/contexts/facility-context";
-import { FacilitySwitcher } from "@/components/facility-switcher";
+import { HealthcareSidebar } from "@/components/layout/healthcare-sidebar";
+import { HealthcareHeader } from "@/components/layout/healthcare-header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EHR Connect - Patient Management System",
-  description: "FHIR-compliant Electronic Health Records system with multi-facility support",
+  title: "EHR Connect - Healthcare Management",
+  description: "FHIR-compliant Electronic Health Records system for healthcare practices",
 };
 
 export default function RootLayout({
@@ -28,33 +29,24 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
       >
         <AuthSessionProvider>
           <FacilityProvider>
-            <div className="min-h-screen bg-background">
-              {/* Header */}
-              <header className="border-b">
-                <div className="container mx-auto px-4 py-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <h1 className="text-xl font-semibold">EHR Connect</h1>
-                      <nav className="flex space-x-4">
-                        <a href="/dashboard" className="text-sm hover:text-primary">Dashboard</a>
-                        <a href="/patients" className="text-sm hover:text-primary">Patients</a>
-                        <a href="/admin/facilities" className="text-sm hover:text-primary">Facilities</a>
-                        <a href="/admin" className="text-sm hover:text-primary">Admin</a>
-                      </nav>
-                    </div>
-                    <FacilitySwitcher />
-                  </div>
-                </div>
-              </header>
+            <div className="flex h-screen bg-gray-50">
+              {/* Sidebar */}
+              <HealthcareSidebar />
               
-              {/* Main Content */}
-              <main className="flex-1">
-                {children}
-              </main>
+              {/* Main Content Area */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Header */}
+                <HealthcareHeader />
+                
+                {/* Main Content */}
+                <main className="flex-1 overflow-auto bg-gray-50 p-6">
+                  {children}
+                </main>
+              </div>
             </div>
           </FacilityProvider>
         </AuthSessionProvider>
