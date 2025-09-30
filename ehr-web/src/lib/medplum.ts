@@ -1,8 +1,9 @@
 import { MedplumClient } from '@medplum/core'
 
-// Initialize Medplum client
+// Initialize Medplum client to use Next.js API proxy
 export const medplum = new MedplumClient({
-  baseUrl: process.env.NEXT_PUBLIC_MEDPLUM_BASE_URL || 'http://localhost:8103',
+  baseUrl: process.env.NEXT_PUBLIC_MEDPLUM_BASE_URL || 'http://localhost:3000/api/fhir',
+  fhirUrlPath: '',
   clientId: process.env.MEDPLUM_CLIENT_ID || 'medplum-client',
   onUnauthenticated: () => {
     // Redirect to sign in page when unauthenticated

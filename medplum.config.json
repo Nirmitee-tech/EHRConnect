@@ -1,16 +1,15 @@
 {
   "port": 8103,
   "baseUrl": "http://localhost:8103",
-  "issuer": "http://localhost:8103",
-  "audience": "http://localhost:8103",
-  "jwksUrl": "http://localhost:8103/.well-known/jwks.json",
+  "issuer": "http://localhost:8080/realms/ehr-realm",
+  "audience": "medplum-client",
+  "jwksUrl": "http://localhost:8080/realms/ehr-realm/protocol/openid-connect/certs",
   "authorizeUrl": "http://localhost:8080/realms/ehr-realm/protocol/openid-connect/auth",
   "tokenUrl": "http://localhost:8080/realms/ehr-realm/protocol/openid-connect/token",
   "userInfoUrl": "http://localhost:8080/realms/ehr-realm/protocol/openid-connect/userinfo",
   "logoutUrl": "http://localhost:8080/realms/ehr-realm/protocol/openid-connect/logout",
   "clientId": "medplum-client",
   "clientSecret": "medplum-secret-key",
-  "externalAuthProvider": "keycloak",
   "database": {
     "host": "postgres",
     "port": 5432,
@@ -27,16 +26,10 @@
     "keyId": "medplum-signing-key",
     "privateKey": "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA0Z8QU7K8MH6qJJoSxD2Kq1Gf2sKZyvElQyLQQjmD8z8XKJQ7\n0Z8QU7K8MH6qJJoSxD2Kq1Gf2sKZyvElQyLQQjmD8z8XKJQ70Z8QU7K8MH6qJJoS\nxD2Kq1Gf2sKZyvElQyLQQjmD8z8XKJQ70Z8QU7K8MH6qJJoSxD2Kq1Gf2sKZyvEl\nQyLQQjmD8z8XKJQ70Z8QU7K8MH6qJJoSxD2Kq1Gf2sKZyvElQyLQQjmD8z8XKJQ7\n0Z8QU7K8MH6qJJoSxD2Kq1Gf2sKZyvElQyLQQjmD8z8XKJQ70Z8QU7K8MH6qJJoS\nxD2Kq1Gf2sKZyvElQyLQQjmD8z8XKJQ7wIDAQABAoIBAQC/bY5Q8w9Q8w9Q8w9Q\n8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q\n8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q\n8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q\n8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q\n8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q\n8w9Q8w9QAoGBAO5Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q\n8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q\n8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q8w9Q\n-----END RSA PRIVATE KEY-----"
   },
-  "allowedOrigins": [
-    "http://localhost:3000",
-    "http://localhost:8080"
-  ],
+  "allowedOrigins": "*",
   "cors": {
-    "origin": [
-      "http://localhost:3000",
-      "http://localhost:8080"
-    ],
-    "credentials": true
+    "origin": "*",
+    "credentials": false
   },
   "logging": {
     "level": "info",

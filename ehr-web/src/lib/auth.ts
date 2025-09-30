@@ -33,10 +33,7 @@ export const authOptions: NextAuthOptions = {
       return session
     },
   },
-  pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error',
-  },
+  // Removed custom pages to use NextAuth default signin
   session: {
     strategy: 'jwt',
   },
