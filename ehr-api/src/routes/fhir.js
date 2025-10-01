@@ -218,6 +218,100 @@ router.get('/:resourceType', async (req, res) => {
   }
 });
 
+// Generic POST for any resource type
+router.post('/:resourceType', async (req, res) => {
+  const { resourceType } = req.params;
+  const resource = req.body;
+  
+  try {
+    validateFHIRResource(resourceType, resource);
+    
+    // Generate ID if not provided
+    const id = resource.id || uuidv4();
+    const now = new Date().toISOString();
+    
+    // Build complete resource with metadata
+    const completeResource = {
+      ...resource,
+      id,
+      meta: {
+        versionId: '1',
+        lastUpdated: now
+      }
+    };
+    
+    // Store in database
+    const query = `
+      INSERT INTO fhir_resources (id, resource_type, resource_data, version_id, last_updated)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *
+    `;
+    
+    await req.db.query(query, [
+      id,
+      resourceType,
+      JSON.stringify(completeResource),
+      1,
+      now
+    ]);
+    
+    res.setHeader('Content-Type', 'application/fhir+json');
+    res.setHeader('Location', `${resourceType}/${id}`);
+    res.status(201).json(completeResource);
+    
+  } catch (error) {
+    console.error(`Error creating ${resourceType}:`, error);
+    res.status(400).json({
+      resourceType: 'OperationOutcome',
+      issue: [{
+        severity: 'error',
+        code: 'invalid',
+        details: { text: error.message }
+      }]
+    });
+  }
+});
+
+// Generic GET for specific resource by ID
+router.get('/:resourceType/:id', async (req, res) => {
+  const { resourceType, id } = req.params;
+  
+  try {
+    const query = `
+      SELECT resource_data 
+      FROM fhir_resources 
+      WHERE resource_type = $1 AND id = $2 AND deleted = FALSE
+    `;
+    
+    const { rows } = await req.db.query(query, [resourceType, id]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'not-found',
+          details: { text: `${resourceType} with id ${id} not found` }
+        }]
+      });
+    }
+    
+    res.setHeader('Content-Type', 'application/fhir+json');
+    res.json(rows[0].resource_data);
+    
+  } catch (error) {
+    console.error(`Error reading ${resourceType}:`, error);
+    res.status(500).json({
+      resourceType: 'OperationOutcome',
+      issue: [{
+        severity: 'error',
+        code: 'exception',
+        details: { text: error.message }
+      }]
+    });
+  }
+});
+
 // FHIR Batch/Transaction operations
 router.post('/', async (req, res) => {
   const bundle = req.body;
