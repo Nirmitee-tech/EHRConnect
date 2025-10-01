@@ -102,8 +102,8 @@ export default function StaffPage() {
       className={`
         w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-200
         ${isActive 
-          ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-sm' 
-          : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+          ? 'bg-[#5BA6FF] text-white' 
+          : 'bg-[#E5E7EB] text-[#9CA3AF]'
         }
       `}
     >
@@ -121,7 +121,7 @@ export default function StaffPage() {
             {currentFacility?.name ? `Managing staff for ${currentFacility.name}` : 'Manage healthcare staff and practitioners'}
           </p>
         </div>
-        <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200">
+        <Button className="bg-primary hover:bg-primary/90 text-white shadow-sm transition-all duration-200">
           <Plus className="h-4 w-4 mr-2" />
           Add Staff Member
         </Button>
@@ -284,7 +284,7 @@ export default function StaffPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Name & Specialty
@@ -310,14 +310,14 @@ export default function StaffPage() {
                   {staffData.map((staff, index) => (
                     <tr 
                       key={staff.id} 
-                      className="hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-indigo-50/30 transition-all duration-200"
+                      className="hover:bg-gray-50 transition-all duration-200"
                       style={{
                         animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both`
                       }}
                     >
                       <td className="px-6 py-6">
                         <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">
+                          <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
                             {staff.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                           </div>
                           <div>
@@ -364,21 +364,21 @@ export default function StaffPage() {
                       </td>
                       <td className="px-6 py-6">
                         <div className="flex flex-col space-y-2">
-                          <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                          <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-md ${
                             staff.active 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-gray-100 text-gray-800'
+                              ? 'bg-[#E8F5E8] text-[#047857]' 
+                              : 'bg-[#F3F4F6] text-[#4B5563]'
                           }`}>
                             {staff.active ? 'Active' : 'Inactive'}
                           </span>
-                          <span className="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                            Full-Time
+                          <span className="inline-flex px-3 py-1 text-xs font-medium rounded-md bg-[#FFF4E0] text-[#D97706]">
+                            PART-TIME
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-6">
                         <div className="flex items-center space-x-2">
-                          <Button variant="ghost" size="sm" className="hover:bg-blue-50 hover:text-blue-600">
+                          <Button variant="ghost" size="sm" className="hover:bg-gray-100">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </div>

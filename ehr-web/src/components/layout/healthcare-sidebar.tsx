@@ -1,243 +1,155 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { ChevronLeft, ChevronRight, Building2, TrendingUp, Users } from 'lucide-react';
 import { useFacility } from '@/contexts/facility-context';
-import { 
-  LayoutDashboard, 
-  Calendar, 
-  Users, 
-  Stethoscope, 
-  UserCheck,
-  CreditCard,
-  TrendingUp,
-  ShoppingCart,
-  Banknote,
-  Package,
-  Cpu,
-  FileText,
-  HelpCircle,
-  ChevronLeft,
-  ChevronRight,
-  Building2
-} from 'lucide-react';
+import { useResourceCounts } from '@/hooks/use-resource-counts';
+import { NAVIGATION_SECTIONS } from '@/config/navigation.config';
+import { NavItem } from './nav-item';
+import { cn } from '@/lib/utils';
 
-interface NavItem {
-  name: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  badge?: string;
-  count?: number;
-}
+const Logo = ({ isCollapsed }: { isCollapsed: boolean }) => (
+  <div className="flex items-center space-x-2">
+    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+      <div className="w-4 h-4 bg-white rounded" />
+    </div>
+    {!isCollapsed && (
+      <div>
+        <h2 className="text-base font-bold text-gray-900">
+          EHR Connect
+        </h2>
+        <p className="text-[9px] text-gray-500 font-medium tracking-wide">HEALTHCARE SYSTEM</p>
+      </div>
+    )}
+  </div>
+);
 
-interface NavSection {
-  title?: string;
-  items: NavItem[];
-}
+const FacilityInfo = ({ facilityName, patientCount, staffCount }: { 
+  facilityName: string; 
+  patientCount: number; 
+  staffCount: number; 
+}) => (
+  <div className="mx-3 mb-3 p-3 rounded-lg bg-gray-50 border border-gray-200">
+    <div className="flex items-center space-x-2 mb-2">
+      <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
+        <Building2 className="h-3.5 w-3.5 text-white" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-xs font-semibold text-gray-900 truncate">{facilityName}</h3>
+        <p className="text-[9px] text-gray-500">Active Facility</p>
+      </div>
+    </div>
+    <div className="grid grid-cols-2 gap-2">
+      <div className="bg-white rounded-lg p-2 border border-gray-200">
+        <div className="flex items-center gap-1 mb-0.5">
+          <Users className="h-3 w-3 text-primary" />
+          <span className="text-[9px] text-gray-600">Patients</span>
+        </div>
+        <p className="text-base font-bold text-primary">
+          {patientCount}
+        </p>
+      </div>
+      <div className="bg-white rounded-lg p-2 border border-gray-200">
+        <div className="flex items-center gap-1 mb-0.5">
+          <TrendingUp className="h-3 w-3 text-purple-600" />
+          <span className="text-[9px] text-gray-600">Staff</span>
+        </div>
+        <p className="text-base font-bold text-purple-600">
+          {staffCount}
+        </p>
+      </div>
+    </div>
+  </div>
+);
+
+const Footer = () => (
+  <div className="p-3 mx-3 mb-2 bg-gray-50 rounded-lg border border-gray-200">
+    <div className="flex items-center justify-center gap-2 mb-1">
+      <div className="w-1.5 h-1.5 bg-[#10B981] rounded-full animate-pulse" />
+      <p className="text-[9px] text-gray-600 font-semibold tracking-wide">SYSTEM ONLINE</p>
+    </div>
+    <p className="text-[9px] text-gray-500 text-center">
+      FHIR R4 • Version 1.0.0
+    </p>
+  </div>
+);
 
 export function HealthcareSidebar() {
   const pathname = usePathname();
   const { currentFacility } = useFacility();
+  const { patients, staff } = useResourceCounts(currentFacility?.id);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [patientCount, setPatientCount] = useState(0);
-  const [staffCount, setStaffCount] = useState(0);
 
-  // Load counts from API
-  useEffect(() => {
-    const loadCounts = async () => {
-      try {
-        // Load patient count
-        const patientResponse = await fetch('/api/fhir/Patient?_count=1');
-        if (patientResponse.ok) {
-          const patientBundle = await patientResponse.json();
-          setPatientCount(patientBundle.total || 0);
-        }
+  const isActive = (href: string): boolean => 
+    pathname === href || (href !== '/dashboard' && pathname?.startsWith(href));
 
-        // Load staff count (practitioners)
-        const staffResponse = await fetch('/api/fhir/Practitioner?_count=1');
-        if (staffResponse.ok) {
-          const staffBundle = await staffResponse.json();
-          setStaffCount(staffBundle.total || 0);
-        }
-      } catch (error) {
-        console.error('Failed to load counts:', error);
-      }
-    };
-
-    loadCounts();
-  }, [currentFacility]);
-
-  const navigationSections: NavSection[] = [
-    {
-      items: [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard }
-      ]
-    },
-    {
-      title: 'CLINIC',
-      items: [
-        { name: 'Reservations', href: '/reservations', icon: Calendar },
-        { name: 'Patients', href: '/patients', icon: Users, count: patientCount },
-        { name: 'Treatments', href: '/treatments', icon: Stethoscope },
-        { name: 'Staff List', href: '/staff', icon: UserCheck, count: staffCount }
-      ]
-    },
-    {
-      title: 'FINANCE',
-      items: [
-        { name: 'Accounts', href: '/accounts', icon: CreditCard },
-        { name: 'Sales', href: '/sales', icon: TrendingUp },
-        { name: 'Purchases', href: '/purchases', icon: ShoppingCart },
-        { name: 'Payment Method', href: '/payment-methods', icon: Banknote }
-      ]
-    },
-    {
-      title: 'PHYSICAL ASSET',
-      items: [
-        { name: 'Stocks', href: '/stocks', icon: Package },
-        { name: 'Peripherals', href: '/peripherals', icon: Cpu }
-      ]
-    },
-    {
-      items: [
-        { name: 'Report', href: '/reports', icon: FileText },
-        { name: 'Customer Support', href: '/support', icon: HelpCircle }
-      ]
-    }
-  ];
-
-  const isActive = (href: string) => {
-    return pathname === href || (href !== '/dashboard' && pathname?.startsWith(href));
+  const getItemCount = (href: string): number | undefined => {
+    if (href === '/patients') return patients;
+    if (href === '/staff') return staff;
+    return undefined;
   };
 
   return (
-    <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 flex flex-col h-full transition-all duration-300 shadow-sm`}>
-      {/* Logo and Brand */}
-      <div className={`p-4 border-b border-gray-100 ${isCollapsed ? 'px-3' : 'px-6'}`}>
+    <aside 
+      className={cn(
+        'bg-white border-r border-gray-200 flex flex-col h-full transition-all duration-300',
+        isCollapsed ? 'w-16' : 'w-64'
+      )}
+    >
+      <div className={cn('p-3 border-b border-gray-200', isCollapsed ? 'px-2' : 'px-3')}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-sm">
-              <div className="w-4 h-4 bg-white rounded-sm"></div>
-            </div>
-            {!isCollapsed && (
-              <div className="text-xl font-bold text-gray-900">EHR Connect</div>
-            )}
-          </div>
+          <Logo isCollapsed={isCollapsed} />
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors"
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isCollapsed ? (
-              <ChevronRight className="h-4 w-4 text-gray-500" />
+              <ChevronRight className="h-3.5 w-3.5 text-gray-600" />
             ) : (
-              <ChevronLeft className="h-4 w-4 text-gray-500" />
+              <ChevronLeft className="h-3.5 w-3.5 text-gray-600" />
             )}
           </button>
         </div>
       </div>
 
-      {/* Facility Info */}
       {!isCollapsed && (
-        <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
-          <div className="flex items-center space-x-2 mb-1">
-            <Building2 className="h-4 w-4 text-blue-600" />
-            <div className="text-sm font-semibold text-gray-900">
-              {currentFacility?.name || 'Healthcare Clinic'}
-            </div>
-          </div>
-          <div className="text-xs text-gray-600 flex items-center space-x-4">
-            <span>Patients: {patientCount}</span>
-            <span>Staff: {staffCount}</span>
-          </div>
+        <div className="pt-3">
+          <FacilityInfo
+            facilityName={currentFacility?.name || 'Healthcare Clinic'}
+            patientCount={patients}
+            staffCount={staff}
+          />
         </div>
       )}
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-2 py-4">
-        <div className="space-y-6">
-          {navigationSections.map((section, sectionIndex) => (
-            <div key={sectionIndex}>
+      <nav className="flex-1 overflow-y-auto px-2 py-2">
+        <div className="space-y-4">
+          {NAVIGATION_SECTIONS.map((section, index) => (
+            <div key={index}>
               {section.title && !isCollapsed && (
-                <div className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                <h3 className="px-2 mb-1.5 text-[9px] font-bold text-gray-400 uppercase tracking-wider">
                   {section.title}
-                </div>
+                </h3>
               )}
-              <div className="space-y-1">
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-                  const active = isActive(item.href);
-                  
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={`
-                        flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group relative
-                        ${active 
-                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25' 
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                        }
-                      `}
-                      title={isCollapsed ? item.name : undefined}
-                    >
-                      <Icon className={`
-                        ${isCollapsed ? 'h-5 w-5' : 'mr-3 h-5 w-5'} flex-shrink-0 transition-colors
-                        ${active ? 'text-white' : 'text-gray-400 group-hover:text-gray-600'}
-                      `} />
-                      {!isCollapsed && (
-                        <>
-                          <span className="flex-1">{item.name}</span>
-                          {item.count !== undefined && item.count > 0 && (
-                            <span className={`
-                              text-xs px-2 py-1 rounded-full font-semibold
-                              ${active 
-                                ? 'bg-white/20 text-white' 
-                                : 'bg-blue-100 text-blue-700'
-                              }
-                            `}>
-                              {item.count}
-                            </span>
-                          )}
-                          {item.badge && (
-                            <span className={`
-                              text-xs px-2 py-1 rounded-full font-semibold
-                              ${active 
-                                ? 'bg-white/20 text-white' 
-                                : 'bg-blue-100 text-blue-700'
-                              }
-                            `}>
-                              {item.badge}
-                            </span>
-                          )}
-                        </>
-                      )}
-                      
-                      {/* Tooltip for collapsed state */}
-                      {isCollapsed && (
-                        <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
-                          {item.name}
-                          {item.count !== undefined && ` (${item.count})`}
-                          <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-1 border-4 border-transparent border-r-gray-900"></div>
-                        </div>
-                      )}
-                    </Link>
-                  );
-                })}
+              <div className="space-y-0.5">
+                {section.items.map((item) => (
+                  <NavItem
+                    key={item.href}
+                    {...item}
+                    isActive={isActive(item.href)}
+                    isCollapsed={isCollapsed}
+                    count={getItemCount(item.href)}
+                  />
+                ))}
               </div>
             </div>
           ))}
         </div>
       </nav>
 
-      {/* Footer */}
-      {!isCollapsed && (
-        <div className="p-4 border-t border-gray-100 bg-gray-50">
-          <div className="text-xs text-gray-500 text-center">
-            FHIR R4 Compliant • v1.0.0
-          </div>
-        </div>
-      )}
-    </div>
+      {!isCollapsed && <Footer />}
+    </aside>
   );
 }

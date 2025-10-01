@@ -183,6 +183,9 @@ export interface PatientSummary {
   facilityId?: string;
   active: boolean;
   lastUpdated?: string;
+  age?: number;
+  phone?: string;
+  email?: string;
 }
 
 export interface FacilitySummary {
