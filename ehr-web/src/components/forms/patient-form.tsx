@@ -5,10 +5,7 @@ import { FHIRPatient, PatientSummary } from '@/types/fhir';
 import { CreatePatientRequest, UpdatePatientRequest } from '@/services/patient.service';
 import { useFacility } from '@/contexts/facility-context';
 import { usePatientForm } from '@/hooks/use-patient-form';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ehrconnect/design-system';
 import { useRef, useState, useEffect } from 'react';
 import { patientService } from '@/services/patient.service';
 

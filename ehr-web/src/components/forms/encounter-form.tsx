@@ -1,11 +1,7 @@
 'use client';
 
 import { Stethoscope, User, Loader2, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Button, Label, Input, Drawer, DrawerContent, DrawerHeader, DrawerTitle, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ehrconnect/design-system';
 import { useState, useEffect } from 'react';
 import { fhirService } from '@/lib/medplum';
 
@@ -331,11 +327,11 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
       </div>
 
       {/* Add Practitioner Drawer */}
-      <Sheet open={showPractitionerForm} onOpenChange={setShowPractitionerForm}>
-        <SheetContent side="right" className="w-full sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle className="text-base font-bold">Add New Practitioner</SheetTitle>
-          </SheetHeader>
+      <Drawer open={showPractitionerForm} onOpenChange={setShowPractitionerForm}>
+        <DrawerContent side="right" size="md">
+          <DrawerHeader>
+            <DrawerTitle className="text-base font-bold">Add New Practitioner</DrawerTitle>
+          </DrawerHeader>
           <div className="mt-4 space-y-3">
             <div className="space-y-1">
               <Label className="text-sm font-medium">Prefix</Label>
@@ -389,15 +385,15 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
               </Button>
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </DrawerContent>
+      </Drawer>
 
       {/* Add Location Drawer */}
-      <Sheet open={showLocationForm} onOpenChange={setShowLocationForm}>
-        <SheetContent side="right" className="w-full sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle className="text-base font-bold">Add New Location</SheetTitle>
-          </SheetHeader>
+      <Drawer open={showLocationForm} onOpenChange={setShowLocationForm}>
+        <DrawerContent side="right" size="md">
+          <DrawerHeader>
+            <DrawerTitle className="text-base font-bold">Add New Location</DrawerTitle>
+          </DrawerHeader>
           <div className="mt-4 space-y-3">
             <div className="space-y-1">
               <Label className="text-sm font-medium">Location Name <span className="text-red-500">*</span></Label>
@@ -428,8 +424,8 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
               </Button>
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

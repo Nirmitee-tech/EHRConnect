@@ -2,12 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, Edit, Calendar, Pill, AlertCircle, Activity, FileText, Loader2, Plus, TrendingUp, TrendingDown, AlertTriangle, Filter } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button, Badge, Drawer, DrawerContent, DrawerHeader, DrawerTitle, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ehrconnect/design-system';
 import { useParams } from 'next/navigation';
 import { fhirService } from '@/lib/medplum';
 import { PatientForm } from '@/components/forms/patient-form';
@@ -1585,11 +1580,11 @@ export default function PatientDetailPage() {
       </div>
 
       {/* Edit Patient Drawer */}
-      <Sheet open={showEditDrawer} onOpenChange={setShowEditDrawer}>
-        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Edit Patient</SheetTitle>
-          </SheetHeader>
+      <Drawer open={showEditDrawer} onOpenChange={setShowEditDrawer}>
+        <DrawerContent side="right" size="2xl" className="overflow-y-auto">
+          <DrawerHeader>
+            <DrawerTitle>Edit Patient</DrawerTitle>
+          </DrawerHeader>
           <div className="mt-6">
             {patient && (
               <PatientForm
@@ -1606,15 +1601,15 @@ export default function PatientDetailPage() {
               />
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+        </DrawerContent>
+      </Drawer>
 
       {/* New Encounter Drawer */}
-      <Sheet open={showEncounterDrawer} onOpenChange={setShowEncounterDrawer}>
-        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>New Encounter</SheetTitle>
-          </SheetHeader>
+      <Drawer open={showEncounterDrawer} onOpenChange={setShowEncounterDrawer}>
+        <DrawerContent side="right" size="2xl" className="overflow-y-auto">
+          <DrawerHeader>
+            <DrawerTitle>New Encounter</DrawerTitle>
+          </DrawerHeader>
           <div className="mt-6">
             {patient && (
               <EncounterForm
@@ -1632,15 +1627,15 @@ export default function PatientDetailPage() {
               />
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+        </DrawerContent>
+      </Drawer>
 
       {/* Add Problem Drawer */}
-      <Sheet open={showProblemDrawer} onOpenChange={setShowProblemDrawer}>
-        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Add Problem / Condition</SheetTitle>
-          </SheetHeader>
+      <Drawer open={showProblemDrawer} onOpenChange={setShowProblemDrawer}>
+        <DrawerContent side="right" size="md" className="overflow-y-auto">
+          <DrawerHeader>
+            <DrawerTitle>Add Problem / Condition</DrawerTitle>
+          </DrawerHeader>
           <div className="mt-6 space-y-4">
             <div>
               <Label>Condition / Problem <span className="text-red-500">*</span></Label>
@@ -1703,15 +1698,15 @@ export default function PatientDetailPage() {
               </Button>
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </DrawerContent>
+      </Drawer>
 
       {/* Add Medication Drawer */}
-      <Sheet open={showMedicationDrawer} onOpenChange={setShowMedicationDrawer}>
-        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Prescribe Medication</SheetTitle>
-          </SheetHeader>
+      <Drawer open={showMedicationDrawer} onOpenChange={setShowMedicationDrawer}>
+        <DrawerContent side="right" size="md" className="overflow-y-auto">
+          <DrawerHeader>
+            <DrawerTitle>Prescribe Medication</DrawerTitle>
+          </DrawerHeader>
           <div className="mt-6 space-y-4">
             <div>
               <Label>Medication Name <span className="text-red-500">*</span></Label>
@@ -1825,15 +1820,15 @@ export default function PatientDetailPage() {
               </Button>
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </DrawerContent>
+      </Drawer>
 
       {/* Add Allergy Drawer */}
-      <Sheet open={showAllergyDrawer} onOpenChange={setShowAllergyDrawer}>
-        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Add Allergy</SheetTitle>
-          </SheetHeader>
+      <Drawer open={showAllergyDrawer} onOpenChange={setShowAllergyDrawer}>
+        <DrawerContent side="right" size="md" className="overflow-y-auto">
+          <DrawerHeader>
+            <DrawerTitle>Add Allergy</DrawerTitle>
+          </DrawerHeader>
           <div className="mt-6">
             {patient && (
               <AllergyForm
@@ -1847,15 +1842,15 @@ export default function PatientDetailPage() {
               />
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+        </DrawerContent>
+      </Drawer>
 
       {/* Record Vitals Drawer */}
-      <Sheet open={showVitalsDrawer} onOpenChange={setShowVitalsDrawer}>
-        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Record Vitals</SheetTitle>
-          </SheetHeader>
+      <Drawer open={showVitalsDrawer} onOpenChange={setShowVitalsDrawer}>
+        <DrawerContent side="right" size="2xl" className="overflow-y-auto">
+          <DrawerHeader>
+            <DrawerTitle>Record Vitals</DrawerTitle>
+          </DrawerHeader>
           <div className="mt-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -1959,8 +1954,8 @@ export default function PatientDetailPage() {
               </Button>
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

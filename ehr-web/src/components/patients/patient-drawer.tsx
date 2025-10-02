@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Drawer, DrawerContent } from '@ehrconnect/design-system';
 import { PatientForm } from '@/components/forms/patient-form';
 import { EncounterForm } from '@/components/forms/encounter-form';
 import { FHIRPatient } from '@/types/fhir';
@@ -158,13 +158,13 @@ export function PatientDrawer({
   };
 
   return (
-    <Sheet open={open} onOpenChange={(open) => {
+    <Drawer open={open} onOpenChange={(open) => {
       if (!open) {
         handleCancel();
       }
       onOpenChange(open);
     }}>
-      <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto p-0">
+      <DrawerContent side="right" size="3xl" className="overflow-y-auto p-0">
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -194,7 +194,7 @@ export function PatientDrawer({
             />
           ) : null}
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 }
