@@ -1,0 +1,8 @@
+export { Sidebar } from './Sidebar'
+export type { SidebarProps } from './Sidebar'
+
+export { SidebarNavItem, SidebarNavSubItem } from './SidebarNavItem'
+export type { SidebarNavItemProps, SidebarNavSubItemProps } from './SidebarNavItem'
+
+export { SidebarFooter, SidebarFooterAction } from './SidebarFooter'
+export type { SidebarFooterProps, SidebarFooterActionProps } from './SidebarFooter'

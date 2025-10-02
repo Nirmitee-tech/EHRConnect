@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "dev": "next dev",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@ehrconnect/design-system": "1.0.0",
     "@medplum/core": "^4.4.1",
     "@medplum/react": "^4.4.1",
     "@radix-ui/react-dialog": "^1.1.15",

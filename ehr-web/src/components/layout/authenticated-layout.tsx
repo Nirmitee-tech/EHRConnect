@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
+import { LoadingState } from '@ehrconnect/design-system';
 import { HealthcareSidebar } from './healthcare-sidebar';
 import { HealthcareHeader } from './healthcare-header';
 import { UserProfile } from './user-profile';
@@ -10,14 +11,7 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
 
   // Show loading state
   if (status === 'loading') {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState message="Loading..." />;
   }
 
   // Show login screen if not authenticated

@@ -44,7 +44,7 @@
 }
 
 :root {
-  /* Professional color palette - no gradients */
+  /* EHR Connect Theme - Keycloak Purple/Green Palette */
   --radius: 0.625rem;
   
   /* Background colors */
@@ -59,8 +59,8 @@
   --popover: #FFFFFF;
   --popover-foreground: #1F2937;
   
-  /* Primary brand blue - solid color */
-  --primary: #4F7CFF;
+  /* Primary brand purple - Keycloak aligned */
+  --primary: #667eea;
   --primary-foreground: #FFFFFF;
   
   /* Secondary colors */
@@ -84,22 +84,22 @@
   --input: #F9FAFB;
   --ring: #4F7CFF;
   
-  /* Chart colors - professional palette */
-  --chart-1: #4F7CFF;
+  /* Chart colors - EHR theme */
+  --chart-1: #667eea;
   --chart-2: #10B981;
   --chart-3: #F59E0B;
-  --chart-4: #8B5CF6;
+  --chart-4: #764ba2;
   --chart-5: #EC4899;
   
-  /* Sidebar colors */
+  /* Sidebar colors - EHR purple theme */
   --sidebar: #FFFFFF;
   --sidebar-foreground: #374151;
-  --sidebar-primary: #4F7CFF;
+  --sidebar-primary: #667eea;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #F3F4F6;
-  --sidebar-accent-foreground: #4F7CFF;
+  --sidebar-accent-foreground: #667eea;
   --sidebar-border: #E5E7EB;
-  --sidebar-ring: #4F7CFF;
+  --sidebar-ring: #667eea;
   
   /* Professional badge colors */
   --badge-blue: #5BA6FF;
