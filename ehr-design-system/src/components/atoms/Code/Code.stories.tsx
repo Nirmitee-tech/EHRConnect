@@ -64,7 +64,7 @@ export const Copyable: Story = {
   render: () => (
     <div className="space-y-4">
       <p>Copy patient ID: <Code copyable>MRN-123456789</Code></p>
-      <p>Copy API key: <Code copyable variant="primary">sk_test_4eC39HqLyjWDarjtT1zdp7dc</Code></p>
+      <p>Copy TEST : <Code copyable variant="primary">test</Code></p>
       <p>Copy prescription: <Code copyable variant="success">RX-2024-001234</Code></p>
     </div>
   ),
