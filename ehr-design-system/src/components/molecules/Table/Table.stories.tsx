@@ -13,6 +13,7 @@ import {
 } from './Table';
 import { Badge } from '../../atoms/Badge/Badge';
 import { Button } from '../../atoms/Button/Button';
+import { Avatar } from '../../atoms/Avatar';
 
 const meta: Meta<typeof Table> = {
   title: 'Molecules/Table',
@@ -281,6 +282,171 @@ export const ResponsiveTable: Story = {
   ),
 };
 
+export const Variants: Story = {
+  render: () => (
+    <div className="space-y-8">
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Default Table</h3>
+        <Table variant="default">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Age</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {samplePatients.slice(0, 3).map((patient) => (
+              <TableRow key={patient.id}>
+                <TableCell className="font-medium">{patient.name}</TableCell>
+                <TableCell>{patient.age}</TableCell>
+                <TableCell>
+                  <Badge variant={patient.status === 'Active' ? 'success' : 'secondary'}>
+                    {patient.status}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Bordered Table</h3>
+        <Table variant="bordered">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Age</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {samplePatients.slice(0, 3).map((patient) => (
+              <TableRow key={patient.id}>
+                <TableCell className="font-medium">{patient.name}</TableCell>
+                <TableCell>{patient.age}</TableCell>
+                <TableCell>
+                  <Badge variant={patient.status === 'Active' ? 'success' : 'secondary'}>
+                    {patient.status}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Striped Table</h3>
+        <Table variant="striped">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Age</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {samplePatients.slice(0, 3).map((patient, index) => (
+              <TableRow
+                key={patient.id}
+                className={index % 2 === 0 ? 'bg-muted/20' : ''}
+              >
+                <TableCell className="font-medium">{patient.name}</TableCell>
+                <TableCell>{patient.age}</TableCell>
+                <TableCell>
+                  <Badge variant={patient.status === 'Active' ? 'success' : 'secondary'}>
+                    {patient.status}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  ),
+};
+
+export const Sizes: Story = {
+  render: () => (
+    <div className="space-y-8">
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Small Table</h3>
+        <TableContainer>
+          <Table size="sm">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Age</TableHead>
+                <TableHead>MRN</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {samplePatients.slice(0, 2).map((patient) => (
+                <TableRow key={patient.id}>
+                  <TableCell className="font-medium">{patient.name}</TableCell>
+                  <TableCell>{patient.age}</TableCell>
+                  <TableCell>{patient.mrn}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Medium Table (Default)</h3>
+        <TableContainer>
+          <Table size="md">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Age</TableHead>
+                <TableHead>MRN</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {samplePatients.slice(0, 2).map((patient) => (
+                <TableRow key={patient.id}>
+                  <TableCell className="font-medium">{patient.name}</TableCell>
+                  <TableCell>{patient.age}</TableCell>
+                  <TableCell>{patient.mrn}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Large Table</h3>
+        <TableContainer>
+          <Table size="lg">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Age</TableHead>
+                <TableHead>MRN</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {samplePatients.slice(0, 2).map((patient) => (
+                <TableRow key={patient.id}>
+                  <TableCell className="font-medium">{patient.name}</TableCell>
+                  <TableCell>{patient.age}</TableCell>
+                  <TableCell>{patient.mrn}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </div>
+    </div>
+  ),
+};
+
 export const StripedRows: Story = {
   render: () => (
     <TableContainer>
@@ -297,7 +463,7 @@ export const StripedRows: Story = {
           {samplePatients.map((patient, index) => (
             <TableRow
               key={patient.id}
-              className={index % 2 === 0 ? 'bg-gray-50/50' : ''}
+              className={index % 2 === 0 ? 'bg-muted/20' : ''}
             >
               <TableCell className="font-medium">{patient.name}</TableCell>
               <TableCell>{patient.age}</TableCell>

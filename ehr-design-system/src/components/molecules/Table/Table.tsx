@@ -1,18 +1,44 @@
 import * as React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../../../lib/utils';
 
-const Table = React.forwardRef<
-  HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
-    <table
-      ref={ref}
-      className={cn('w-full caption-bottom text-sm', className)}
-      {...props}
-    />
-  </div>
-));
+const tableVariants = cva(
+  'w-full caption-bottom text-sm',
+  {
+    variants: {
+      variant: {
+        default: 'border-collapse',
+        bordered: 'border border-border rounded-md',
+        striped: 'border-collapse',
+      },
+      size: {
+        sm: 'text-xs',
+        md: 'text-sm',
+        lg: 'text-base',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+      size: 'md',
+    },
+  }
+);
+
+export interface TableProps 
+  extends React.HTMLAttributes<HTMLTableElement>,
+    VariantProps<typeof tableVariants> {}
+
+const Table = React.forwardRef<HTMLTableElement, TableProps>(
+  ({ className, variant, size, ...props }, ref) => (
+    <div className="relative w-full overflow-auto">
+      <table
+        ref={ref}
+        className={cn(tableVariants({ variant, size }), className)}
+        {...props}
+      />
+    </div>
+  )
+);
 Table.displayName = 'Table';
 
 const TableHeader = React.forwardRef<
@@ -21,7 +47,7 @@ const TableHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <thead
     ref={ref}
-    className={cn('bg-gray-50 border-b border-gray-200', className)}
+    className={cn('bg-muted/50 border-b text-left font-medium text-muted-foreground [&>tr]:border-b', className)}
     {...props}
   />
 ));
@@ -46,7 +72,7 @@ const TableFooter = React.forwardRef<
   <tfoot
     ref={ref}
     className={cn(
-      'border-t bg-gray-50/50 font-medium [&>tr]:last:border-b-0',
+      'border-t bg-muted/50 font-medium [&>tr]:last:border-b-0',
       className
     )}
     {...props}
@@ -61,7 +87,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      'border-b transition-colors hover:bg-gray-50/50 data-[state=selected]:bg-gray-100',
+      'border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
       className
     )}
     {...props}
@@ -76,7 +102,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      'h-12 px-4 text-left align-middle font-medium text-gray-700 [&:has([role=checkbox])]:pr-0',
+      'h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0',
       className
     )}
     {...props}
@@ -102,7 +128,7 @@ const TableCaption = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <caption
     ref={ref}
-    className={cn('mt-4 text-sm text-gray-500', className)}
+    className={cn('mt-4 text-sm text-muted-foreground', className)}
     {...props}
   />
 ));
@@ -116,7 +142,7 @@ const TableContainer = React.forwardRef<HTMLDivElement, TableContainerProps>(
   ({ className, children, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('bg-white rounded-lg border border-gray-200', className)}
+      className={cn('bg-background rounded-lg border border-border', className)}
       {...props}
     >
       <div className="overflow-x-auto">{children}</div>
@@ -135,4 +161,5 @@ export {
   TableCell,
   TableCaption,
   TableContainer,
+  tableVariants,
 };
