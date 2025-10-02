@@ -9,4 +9,7 @@ export {
   SelectSeparator,
   SelectScrollUpButton,
   SelectScrollDownButton,
+  Dropdown,
+  selectTriggerVariants,
 } from './Select';
+export type { SelectOption, DropdownProps, SelectTriggerProps } from './Select';

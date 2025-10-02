@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { Container, Grid, GridItem, Flex } from './Grid';
 import { Card } from '../Card/Card';
@@ -102,7 +103,7 @@ export const GridWithSpanning: Story = {
       <GridItem colSpan={3}>
         <DemoCard>Spans 3 columns</DemoCard>
       </GridItem>
-      <GridItem colSpan={full}>
+      <GridItem colSpan="full">
         <DemoCard>Spans full width</DemoCard>
       </GridItem>
     </Grid>

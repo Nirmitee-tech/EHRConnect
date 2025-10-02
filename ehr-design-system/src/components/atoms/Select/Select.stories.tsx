@@ -9,6 +9,8 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
+  Dropdown,
+  type SelectOption,
 } from './Select';
 import { Label } from '../Label/Label';
 
@@ -373,6 +375,411 @@ export const ScrollableList: Story = {
             ))}
           </SelectContent>
         </Select>
+      </div>
+    );
+  },
+};
+
+// Dropdown Component Stories
+export const DropdownBasic: Story = {
+  render: () => {
+    const [value, setValue] = useState('');
+    
+    const basicOptions: SelectOption[] = [
+      { value: 'option1', label: 'Option 1' },
+      { value: 'option2', label: 'Option 2' },
+      { value: 'option3', label: 'Option 3' },
+    ];
+
+    return (
+      <div className="w-[400px]">
+        <Dropdown
+          options={basicOptions}
+          value={value}
+          onValueChange={setValue}
+          label="Basic Dropdown"
+          placeholder="Select an option"
+        />
+      </div>
+    );
+  },
+};
+
+export const DropdownVariants: Story = {
+  render: () => {
+    const [value1, setValue1] = useState('');
+    const [value2, setValue2] = useState('');
+    const [value3, setValue3] = useState('');
+    const [value4, setValue4] = useState('');
+    
+    const options: SelectOption[] = [
+      { value: 'option1', label: 'Option 1' },
+      { value: 'option2', label: 'Option 2' },
+      { value: 'option3', label: 'Option 3' },
+    ];
+
+    return (
+      <div className="w-[400px] space-y-6">
+        <Dropdown
+          options={options}
+          value={value1}
+          onValueChange={setValue1}
+          variant="default"
+          label="Default variant"
+          defaultValue="option1"
+        />
+        <Dropdown
+          options={options}
+          value={value2}
+          onValueChange={setValue2}
+          variant="success"
+          label="Success variant"
+          defaultValue="option2"
+        />
+        <Dropdown
+          options={options}
+          value={value3}
+          onValueChange={setValue3}
+          variant="warning"
+          label="Warning variant"
+          defaultValue="option3"
+        />
+        <Dropdown
+          options={options}
+          value={value4}
+          onValueChange={setValue4}
+          variant="danger"
+          label="Danger variant"
+          error="This field has an error"
+        />
+      </div>
+    );
+  },
+};
+
+export const DropdownSizes: Story = {
+  render: () => {
+    const [value1, setValue1] = useState('sm-value');
+    const [value2, setValue2] = useState('md-value');
+    const [value3, setValue3] = useState('lg-value');
+    
+    const options: SelectOption[] = [
+      { value: 'sm-value', label: 'Small value' },
+      { value: 'md-value', label: 'Medium value' },
+      { value: 'lg-value', label: 'Large value' },
+    ];
+
+    return (
+      <div className="w-[400px] space-y-6">
+        <Dropdown
+          options={options}
+          value={value1}
+          onValueChange={setValue1}
+          size="sm"
+          label="Small dropdown"
+        />
+        <Dropdown
+          options={options}
+          value={value2}
+          onValueChange={setValue2}
+          size="md"
+          label="Medium dropdown (default)"
+        />
+        <Dropdown
+          options={options}
+          value={value3}
+          onValueChange={setValue3}
+          size="lg"
+          label="Large dropdown"
+        />
+      </div>
+    );
+  },
+};
+
+export const DropdownSearchable: Story = {
+  render: () => {
+    const [value, setValue] = useState('');
+    
+    const medications: SelectOption[] = [
+      { value: 'acetaminophen', label: 'Acetaminophen', description: 'Pain reliever and fever reducer' },
+      { value: 'ibuprofen', label: 'Ibuprofen', description: 'Anti-inflammatory pain reliever' },
+      { value: 'aspirin', label: 'Aspirin', description: 'Blood thinner and pain reliever' },
+      { value: 'lisinopril', label: 'Lisinopril', description: 'ACE inhibitor for blood pressure' },
+      { value: 'metformin', label: 'Metformin', description: 'Diabetes medication' },
+      { value: 'atorvastatin', label: 'Atorvastatin', description: 'Cholesterol-lowering statin' },
+      { value: 'omeprazole', label: 'Omeprazole', description: 'Proton pump inhibitor for acid reflux' },
+      { value: 'amlodipine', label: 'Amlodipine', description: 'Calcium channel blocker' },
+    ];
+
+    return (
+      <div className="w-[400px]">
+        <Dropdown
+          options={medications}
+          value={value}
+          onValueChange={setValue}
+          label="Search medications"
+          description="Start typing to search through medications"
+          placeholder="Search for a medication..."
+          searchable
+          clearable
+        />
+      </div>
+    );
+  },
+};
+
+export const DropdownWithVariantOptions: Story = {
+  render: () => {
+    const [severity, setSeverity] = useState('');
+    
+    const severityOptions: SelectOption[] = [
+      { 
+        value: 'mild', 
+        label: 'Mild', 
+        description: 'Low severity symptoms',
+        variant: 'success' 
+      },
+      { 
+        value: 'moderate', 
+        label: 'Moderate', 
+        description: 'Moderate severity symptoms',
+        variant: 'warning' 
+      },
+      { 
+        value: 'severe', 
+        label: 'Severe', 
+        description: 'High severity symptoms',
+        variant: 'danger' 
+      },
+      { 
+        value: 'critical', 
+        label: 'Critical', 
+        description: 'Life-threatening symptoms',
+        variant: 'danger',
+        disabled: true
+      },
+    ];
+
+    return (
+      <div className="w-[400px]">
+        <Dropdown
+          options={severityOptions}
+          value={severity}
+          onValueChange={setSeverity}
+          label="Symptom severity"
+          description="Select the severity level of symptoms"
+          placeholder="Choose severity level"
+          required
+        />
+      </div>
+    );
+  },
+};
+
+export const DropdownHealthcareExamples: Story = {
+  render: () => {
+    const [bloodType, setBloodType] = useState('');
+    const [specialty, setSpecialty] = useState('');
+    const [priority, setPriority] = useState('');
+    const [status, setStatus] = useState('');
+    
+    const bloodTypeOptions: SelectOption[] = [
+      { value: 'o-positive', label: 'O+', description: 'O Positive (Universal donor for Rh+)' },
+      { value: 'o-negative', label: 'O-', description: 'O Negative (Universal donor)', variant: 'success' },
+      { value: 'a-positive', label: 'A+', description: 'A Positive' },
+      { value: 'a-negative', label: 'A-', description: 'A Negative' },
+      { value: 'b-positive', label: 'B+', description: 'B Positive' },
+      { value: 'b-negative', label: 'B-', description: 'B Negative' },
+      { value: 'ab-positive', label: 'AB+', description: 'AB Positive (Universal plasma donor)' },
+      { value: 'ab-negative', label: 'AB-', description: 'AB Negative' },
+    ];
+
+    const specialtyOptions: SelectOption[] = [
+      { value: 'cardiology', label: 'Cardiology', description: 'Heart and cardiovascular system' },
+      { value: 'neurology', label: 'Neurology', description: 'Brain and nervous system' },
+      { value: 'orthopedics', label: 'Orthopedics', description: 'Bones, joints, and muscles' },
+      { value: 'oncology', label: 'Oncology', description: 'Cancer treatment and care', variant: 'warning' },
+      { value: 'emergency', label: 'Emergency Medicine', description: 'Emergency and critical care', variant: 'danger' },
+      { value: 'pediatrics', label: 'Pediatrics', description: 'Children healthcare' },
+      { value: 'psychiatry', label: 'Psychiatry', description: 'Mental health care' },
+    ];
+
+    const priorityOptions: SelectOption[] = [
+      { value: 'routine', label: 'Routine', description: 'Standard priority', variant: 'default' },
+      { value: 'urgent', label: 'Urgent', description: 'Needs attention soon', variant: 'warning' },
+      { value: 'stat', label: 'STAT', description: 'Immediate attention required', variant: 'danger' },
+      { value: 'emergent', label: 'Emergent', description: 'Life-threatening emergency', variant: 'danger' },
+    ];
+
+    const statusOptions: SelectOption[] = [
+      { value: 'active', label: 'Active', variant: 'success' },
+      { value: 'inactive', label: 'Inactive', variant: 'default' },
+      { value: 'pending', label: 'Pending', variant: 'warning' },
+      { value: 'cancelled', label: 'Cancelled', variant: 'danger' },
+      { value: 'completed', label: 'Completed', variant: 'success' },
+    ];
+
+    return (
+      <div className="space-y-8">
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Patient Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Dropdown
+              options={bloodTypeOptions}
+              value={bloodType}
+              onValueChange={setBloodType}
+              label="Blood Type"
+              description="Patient's blood type for transfusion compatibility"
+              placeholder="Select blood type"
+              searchable
+              clearable
+              required
+            />
+            <Dropdown
+              options={specialtyOptions}
+              value={specialty}
+              onValueChange={setSpecialty}
+              label="Medical Specialty"
+              description="Primary medical specialty for referral"
+              placeholder="Select specialty"
+              searchable
+            />
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Case Management</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Dropdown
+              options={priorityOptions}
+              value={priority}
+              onValueChange={setPriority}
+              label="Case Priority"
+              description="Urgency level for case handling"
+              placeholder="Select priority level"
+              required
+            />
+            <Dropdown
+              options={statusOptions}
+              value={status}
+              onValueChange={setStatus}
+              label="Case Status"
+              description="Current status of the case"
+              placeholder="Select status"
+              clearable
+            />
+          </div>
+        </div>
+      </div>
+    );
+  },
+};
+
+export const DropdownInteractive: Story = {
+  render: () => {
+    const [diagnosis, setDiagnosis] = useState('');
+    const [medication, setMedication] = useState('');
+    const [dosage, setDosage] = useState('');
+    
+    const diagnosisOptions: SelectOption[] = [
+      { value: 'hypertension', label: 'Essential Hypertension', description: 'I10 - High blood pressure' },
+      { value: 'diabetes', label: 'Type 2 Diabetes', description: 'E11 - Non-insulin dependent diabetes', variant: 'warning' },
+      { value: 'asthma', label: 'Bronchial Asthma', description: 'J45 - Chronic respiratory condition' },
+      { value: 'depression', label: 'Major Depressive Disorder', description: 'F32 - Clinical depression' },
+      { value: 'arthritis', label: 'Osteoarthritis', description: 'M19 - Joint degenerative disease' },
+    ];
+
+    const medicationOptions: SelectOption[] = diagnosis === 'hypertension' 
+      ? [
+          { value: 'lisinopril', label: 'Lisinopril', description: 'ACE inhibitor - 10mg daily' },
+          { value: 'amlodipine', label: 'Amlodipine', description: 'Calcium channel blocker - 5mg daily' },
+          { value: 'hydrochlorothiazide', label: 'Hydrochlorothiazide', description: 'Diuretic - 25mg daily' },
+        ]
+      : diagnosis === 'diabetes'
+      ? [
+          { value: 'metformin', label: 'Metformin', description: 'Biguanide - 500mg twice daily' },
+          { value: 'glipizide', label: 'Glipizide', description: 'Sulfonylurea - 5mg daily' },
+          { value: 'insulin', label: 'Insulin Glargine', description: 'Long-acting insulin - 10 units daily' },
+        ]
+      : [
+          { value: 'generic1', label: 'Generic Medication 1', description: 'Standard treatment option' },
+          { value: 'generic2', label: 'Generic Medication 2', description: 'Alternative treatment option' },
+        ];
+
+    const dosageOptions: SelectOption[] = [
+      { value: 'low', label: 'Low Dose', description: 'Starting or maintenance dose', variant: 'success' },
+      { value: 'standard', label: 'Standard Dose', description: 'Recommended therapeutic dose' },
+      { value: 'high', label: 'High Dose', description: 'Maximum therapeutic dose', variant: 'warning' },
+    ];
+
+    // Reset dependent fields when diagnosis changes
+    React.useEffect(() => {
+      if (diagnosis) {
+        setMedication('');
+        setDosage('');
+      }
+    }, [diagnosis]);
+
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Dropdown
+            options={diagnosisOptions}
+            value={diagnosis}
+            onValueChange={setDiagnosis}
+            label="Primary Diagnosis"
+            description="Select primary diagnosis code"
+            placeholder="Search diagnoses..."
+            searchable
+            clearable
+            required
+          />
+          
+          <Dropdown
+            options={medicationOptions}
+            value={medication}
+            onValueChange={setMedication}
+            label="Prescribed Medication"
+            description="Select appropriate medication"
+            placeholder={diagnosis ? "Choose medication..." : "Select diagnosis first"}
+            disabled={!diagnosis}
+            searchable
+          />
+          
+          <Dropdown
+            options={dosageOptions}
+            value={dosage}
+            onValueChange={setDosage}
+            label="Dosage Level"
+            description="Select dosage strength"
+            placeholder={medication ? "Choose dosage..." : "Select medication first"}
+            disabled={!medication}
+          />
+        </div>
+        
+        <div className="p-4 bg-muted rounded-lg">
+          <h4 className="font-semibold mb-2">Treatment Plan Summary:</h4>
+          <div className="text-sm space-y-1">
+            <div>
+              <span className="font-medium">Diagnosis:</span>{' '}
+              {diagnosis ? diagnosisOptions.find(d => d.value === diagnosis)?.label : 'Not selected'}
+            </div>
+            <div>
+              <span className="font-medium">Medication:</span>{' '}
+              {medication ? medicationOptions.find(m => m.value === medication)?.label : 'Not selected'}
+            </div>
+            <div>
+              <span className="font-medium">Dosage:</span>{' '}
+              {dosage ? dosageOptions.find(d => d.value === dosage)?.label : 'Not selected'}
+            </div>
+            {diagnosis && medication && dosage && (
+              <div className="mt-2 p-2 bg-success/10 rounded border border-success/20 text-success text-sm">
+                ✓ Treatment plan is complete and ready for review
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     );
   },
