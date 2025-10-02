@@ -12,6 +12,7 @@ import { useParams } from 'next/navigation';
 import { fhirService } from '@/lib/medplum';
 import { PatientForm } from '@/components/forms/patient-form';
 import { EncounterForm } from '@/components/forms/encounter-form';
+import { AllergyForm } from '@/components/forms/allergy-form';
 import { patientService } from '@/services/patient.service';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
 
@@ -43,6 +44,7 @@ export default function PatientDetailPage() {
   const [showEncounterDrawer, setShowEncounterDrawer] = useState(false);
   const [showProblemDrawer, setShowProblemDrawer] = useState(false);
   const [showMedicationDrawer, setShowMedicationDrawer] = useState(false);
+  const [showAllergyDrawer, setShowAllergyDrawer] = useState(false);
   const [savingVitals, setSavingVitals] = useState(false);
   const [savingProblem, setSavingProblem] = useState(false);
   const [savingMedication, setSavingMedication] = useState(false);
@@ -1512,7 +1514,7 @@ export default function PatientDetailPage() {
             <div className="bg-white rounded-lg border border-gray-200">
               <div className="p-4 border-b flex justify-between items-center">
                 <h3 className="text-sm font-semibold">Allergies & Intolerances</h3>
-                <Button size="sm" className="bg-primary">
+                <Button size="sm" className="bg-primary" onClick={() => setShowAllergyDrawer(true)}>
                   <Plus className="h-4 w-4 mr-1" />
                   Add Allergy
                 </Button>
@@ -1822,6 +1824,28 @@ export default function PatientDetailPage() {
                 )}
               </Button>
             </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Add Allergy Drawer */}
+      <Sheet open={showAllergyDrawer} onOpenChange={setShowAllergyDrawer}>
+        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Add Allergy</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6">
+            {patient && (
+              <AllergyForm
+                patientId={patient.id}
+                patientName={patient.name}
+                onSuccess={() => {
+                  setShowAllergyDrawer(false);
+                  refreshData();
+                }}
+                onCancel={() => setShowAllergyDrawer(false)}
+              />
+            )}
           </div>
         </SheetContent>
       </Sheet>
