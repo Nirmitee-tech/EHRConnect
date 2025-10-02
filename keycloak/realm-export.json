@@ -32,6 +32,10 @@
   "supportedLocales": [ "en" ],
   "defaultLocale": "en",
   "internationalizationEnabled": false,
+  "loginTheme": "ehrconnect",
+  "accountTheme": "keycloak.v2",
+  "adminTheme": "keycloak.v2",
+  "emailTheme": "keycloak",
   "clients": [
     {
       "id": "medplum-client",

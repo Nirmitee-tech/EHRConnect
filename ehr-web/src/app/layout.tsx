@@ -3,8 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AuthSessionProvider from "@/providers/session-provider";
 import { FacilityProvider } from "@/contexts/facility-context";
-import { HealthcareSidebar } from "@/components/layout/healthcare-sidebar";
-import { HealthcareHeader } from "@/components/layout/healthcare-header";
+import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,21 +32,9 @@ export default function RootLayout({
       >
         <AuthSessionProvider>
           <FacilityProvider>
-            <div className="flex h-screen bg-gray-50">
-              {/* Sidebar */}
-              <HealthcareSidebar />
-              
-              {/* Main Content Area */}
-              <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Header */}
-                <HealthcareHeader />
-                
-                {/* Main Content */}
-                <main className="flex-1 overflow-auto bg-gray-50 p-6">
-                  {children}
-                </main>
-              </div>
-            </div>
+            <AuthenticatedLayout>
+              {children}
+            </AuthenticatedLayout>
           </FacilityProvider>
         </AuthSessionProvider>
       </body>

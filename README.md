@@ -215,16 +215,103 @@ docker-compose up -d
 
 ## 🚀 Production Deployment
 
-For production deployment, update the following:
+### Quick Production Setup (New Machine)
 
-1. **Security**: Change all default passwords and secrets
-2. **SSL/TLS**: Enable HTTPS for all services
-3. **Domain**: Update URLs to use production domains
-4. **Database**: Use managed PostgreSQL service
-5. **Storage**: Configure proper file storage (S3, etc.)
-6. **Monitoring**: Add logging and monitoring solutions
+**One-command deployment:**
+```bash
+./production-deploy.sh
+```
 
-docker-compose up --detach --build
+This automated script will:
+1. ✅ Check prerequisites (Node.js, Docker)
+2. ✅ Install theme dependencies
+3. ✅ Build custom Keycloak theme
+4. ✅ Start all Docker services
+5. ✅ Deploy theme to Keycloak
+6. ✅ Configure and restart services
+7. ✅ Verify deployment
+
+**Time:** ~3-4 minutes for complete setup
+
+### Manual Production Steps
+
+If you prefer step-by-step control:
+
+```bash
+# 1. Clone repository
+git clone https://github.com/Nirmitee-tech/EHRConnect.git
+cd EHRConnect
+
+# 2. Build custom Keycloak theme
+cd keycloak-theme
+npm install
+npm run build-keycloak-theme
+cp dist_keycloak/*.jar ../keycloak/themes/
+cd ..
+
+# 3. Start services
+docker-compose up -d
+
+# 4. Wait for initialization (60 seconds)
+sleep 60
+
+# 5. Deploy theme to Keycloak
+docker cp keycloak/themes/keycloak-theme-for-kc-22-to-25.jar ehrconnect-keycloak-1:/opt/keycloak/providers/
+docker cp keycloak/themes/keycloak-theme-for-kc-all-other-versions.jar ehrconnect-keycloak-1:/opt/keycloak/providers/
+docker exec ehrconnect-keycloak-1 /opt/keycloak/bin/kc.sh build
+docker-compose restart keycloak
+```
+
+### 📖 Complete Production Guide
+
+For comprehensive production deployment including:
+- Cloud deployment (AWS, Azure, GCP)
+- Kubernetes setup
+- SSL/TLS configuration
+- Security hardening
+- Monitoring & scaling
+- Backup & restore
+
+**See:** `keycloak-theme/PRODUCTION_DEPLOYMENT.md`
+
+### Production Checklist
+
+Before deploying to production:
+
+- [ ] Change all default passwords and secrets
+- [ ] Enable HTTPS/SSL for all services
+- [ ] Configure production domains
+- [ ] Set up managed database (RDS, Cloud SQL, etc.)
+- [ ] Configure proper CORS origins
+- [ ] Set up email SMTP for Keycloak
+- [ ] Enable security features (2FA, brute force protection)
+- [ ] Configure backup strategy
+- [ ] Set up monitoring and alerting
+- [ ] Review security best practices
+- [ ] Test complete authentication flow
+- [ ] Load test critical endpoints
+
+### Custom Keycloak Theme
+
+The project includes an enterprise-grade custom Keycloak theme:
+- **Split-screen design** with medical illustrations
+- **EHR Connect branding** with gradient logo
+- **Professional SVG icons** (no emojis)
+- **Animated elements** and transitions
+- **HIPAA/FHIR feature badges**
+- **Fully responsive** design
+
+**Development:**
+```bash
+cd keycloak-theme
+npm run dev:keycloak  # Hot reload at http://localhost:5173
+```
+
+**Deploy updates:**
+```bash
+cd keycloak-theme
+npm run deploy  # Automated deployment to Docker
+```
 
 ## 📚 Documentation
 
