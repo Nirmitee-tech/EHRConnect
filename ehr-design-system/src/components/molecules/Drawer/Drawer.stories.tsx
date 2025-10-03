@@ -1,5 +1,5 @@
+import * as React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import React, { useState } from 'react';
 import {
   Drawer,
   DrawerClose,
@@ -15,15 +15,14 @@ import { Input } from '../../atoms/Input/Input';
 import { Label } from '../../atoms/Label/Label';
 
 const meta: Meta<typeof Drawer> = {
-  title: 'Molecules/Drawer',
+  title: 'Design System/Molecules/Drawer',
   component: Drawer,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
     docs: {
       description: {
-        component:
-          'A drawer component (also known as sheet or side panel) that slides in from the edge of the screen. Built on top of Radix UI Dialog primitive.',
+        component: 'A drawer component (also known as sheet or side panel) that slides in from the edge of the screen. Built on top of Radix UI Dialog primitive.',
       },
     },
   },
@@ -34,7 +33,7 @@ type Story = StoryObj<typeof Drawer>;
 
 export const Default: Story = {
   render: () => {
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = React.useState(false);
 
     return (
       <Drawer open={open} onOpenChange={setOpen}>
@@ -49,9 +48,8 @@ export const Default: Story = {
             </DrawerDescription>
           </DrawerHeader>
           <div className="p-4">
-            <p className="text-sm text-gray-600">
-              This is the main content area of the drawer. You can place any
-              content here.
+            <p className="text-sm text-muted-foreground">
+              This is the main content area of the drawer. You can place any content here.
             </p>
           </div>
           <DrawerFooter>
@@ -68,7 +66,7 @@ export const Default: Story = {
 
 export const RightSide: Story = {
   render: () => {
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = React.useState(false);
 
     return (
       <Drawer open={open} onOpenChange={setOpen}>
@@ -83,7 +81,7 @@ export const RightSide: Story = {
             </DrawerDescription>
           </DrawerHeader>
           <div className="p-4 space-y-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Right drawers are commonly used for forms and detailed views.
             </p>
           </div>
@@ -95,7 +93,7 @@ export const RightSide: Story = {
 
 export const LeftSide: Story = {
   render: () => {
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = React.useState(false);
 
     return (
       <Drawer open={open} onOpenChange={setOpen}>
@@ -110,7 +108,7 @@ export const LeftSide: Story = {
             </DrawerDescription>
           </DrawerHeader>
           <div className="p-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Left drawers are often used for navigation menus.
             </p>
           </div>
@@ -122,7 +120,7 @@ export const LeftSide: Story = {
 
 export const TopSide: Story = {
   render: () => {
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = React.useState(false);
 
     return (
       <Drawer open={open} onOpenChange={setOpen}>
@@ -137,7 +135,7 @@ export const TopSide: Story = {
             </DrawerDescription>
           </DrawerHeader>
           <div className="p-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Top drawers can be useful for notifications or alerts.
             </p>
           </div>
@@ -149,7 +147,7 @@ export const TopSide: Story = {
 
 export const BottomSide: Story = {
   render: () => {
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = React.useState(false);
 
     return (
       <Drawer open={open} onOpenChange={setOpen}>
@@ -164,7 +162,7 @@ export const BottomSide: Story = {
             </DrawerDescription>
           </DrawerHeader>
           <div className="p-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Bottom drawers are commonly used on mobile devices.
             </p>
           </div>
@@ -176,7 +174,7 @@ export const BottomSide: Story = {
 
 export const WithForm: Story = {
   render: () => {
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = React.useState(false);
 
     return (
       <Drawer open={open} onOpenChange={setOpen}>
@@ -222,7 +220,7 @@ export const WithForm: Story = {
 
 export const LargeSize: Story = {
   render: () => {
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = React.useState(false);
 
     return (
       <Drawer open={open} onOpenChange={setOpen}>
@@ -237,7 +235,7 @@ export const LargeSize: Story = {
             </DrawerDescription>
           </DrawerHeader>
           <div className="p-4">
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               Large drawers are useful when you need to display more complex content
               or wider forms.
             </p>
@@ -260,7 +258,7 @@ export const LargeSize: Story = {
 
 export const WithoutCloseButton: Story = {
   render: () => {
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = React.useState(false);
 
     return (
       <Drawer open={open} onOpenChange={setOpen}>
@@ -275,7 +273,7 @@ export const WithoutCloseButton: Story = {
             </DrawerDescription>
           </DrawerHeader>
           <div className="p-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Users must use the buttons in the footer to close this drawer.
             </p>
           </div>
@@ -292,7 +290,7 @@ export const WithoutCloseButton: Story = {
 
 export const ScrollableContent: Story = {
   render: () => {
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = React.useState(false);
 
     return (
       <Drawer open={open} onOpenChange={setOpen}>
