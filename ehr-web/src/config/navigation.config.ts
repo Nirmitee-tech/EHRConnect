@@ -22,7 +22,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
   {
     title: 'CLINIC',
     items: [
-      { name: 'Reservations', href: '/reservations', icon: Calendar },
+      { name: 'Appointments', href: '/appointments', icon: Calendar },
       { name: 'Patients', href: '/patients', icon: Users },
       { name: 'Treatments', href: '/treatments', icon: Stethoscope },
       { name: 'Staff List', href: '/staff', icon: UserCheck }
@@ -63,7 +63,10 @@ const PAGE_CONFIG: Record<string, PageInfo> = {
     actionButton: { label: 'Add Doctor' }
   },
   treatments: { title: 'Treatments' },
-  reservations: { title: 'Reservations' },
+  appointments: { 
+    title: 'Appointments', 
+    actionButton: { label: 'New Appointment', href: '/appointments/new' }
+  },
   accounts: { title: 'Accounts' },
   sales: { title: 'Sales' },
   purchases: { title: 'Purchases' },
