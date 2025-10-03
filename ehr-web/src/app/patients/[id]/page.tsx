@@ -10,6 +10,8 @@ import { EncounterForm } from '@/components/forms/encounter-form';
 import { AllergyForm } from '@/components/forms/allergy-form';
 import { patientService } from '@/services/patient.service';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { TabPageWrapper } from '@/components/layout/tab-page-wrapper';
+import { useTabNavigation } from '@/hooks/use-tab-navigation';
 
 interface PatientDetails {
   id: string;
@@ -25,7 +27,8 @@ interface PatientDetails {
 export default function PatientDetailPage() {
   const params = useParams();
   const patientId = params?.id as string;
-  
+  const { openPatientEditTab } = useTabNavigation();
+
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [patient, setPatient] = useState<PatientDetails | null>(null);
@@ -710,7 +713,8 @@ export default function PatientDetailPage() {
   ];
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <TabPageWrapper title={patient.name} icon={<User className="h-4 w-4" />}>
+      <div className="h-screen flex flex-col bg-gray-50">
       <div className="bg-white border-b border-gray-200 px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -735,7 +739,7 @@ export default function PatientDetailPage() {
           </div>
           
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowEditDrawer(true)}>
+            <Button variant="outline" size="sm" onClick={() => openPatientEditTab(patientId, patient.name)}>
               <Edit className="h-4 w-4 mr-1" />
               Edit
             </Button>
@@ -1956,6 +1960,7 @@ export default function PatientDetailPage() {
           </div>
         </DrawerContent>
       </Drawer>
-    </div>
+      </div>
+    </TabPageWrapper>
   );
 }

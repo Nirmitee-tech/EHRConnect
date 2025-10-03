@@ -4,7 +4,7 @@ import { cn } from '../../../lib/utils';
 import { Card } from '../../atoms/Card/Card';
 import { Badge } from '../../atoms/Badge/Badge';
 import { Typography } from '../../atoms/Typography/Typography';
-import { Flex } from '../../atoms/Grid/Grid';
+import { Flex } from '../../atoms/Flex/Flex';
 
 const patientCardVariants = cva(
   'transition-all duration-200 hover:shadow-md',

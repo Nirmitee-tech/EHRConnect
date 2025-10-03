@@ -130,4 +130,4 @@ const colors = {
 export type ColorToken = keyof typeof colors;
 export type ColorShade = keyof typeof colors.neutral;
 
-module.exports = { colors };
+export { colors };

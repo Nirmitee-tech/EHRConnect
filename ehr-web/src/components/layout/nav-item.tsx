@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTabs } from '@/contexts/tab-context';
 
 interface NavItemProps {
   name: string;
@@ -14,18 +14,29 @@ interface NavItemProps {
   badge?: string;
 }
 
-export function NavItem({ 
-  name, 
-  href, 
-  icon: Icon, 
-  isActive, 
-  isCollapsed, 
-  count, 
-  badge 
+export function NavItem({
+  name,
+  href,
+  icon: Icon,
+  isActive,
+  isCollapsed,
+  count,
+  badge
 }: NavItemProps) {
+  const { addTab } = useTabs();
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    addTab({
+      title: name,
+      path: href,
+      icon: <Icon className="h-4 w-4" />,
+    });
+  };
+
   return (
-    <Link
-      href={href}
+    <button
+      onClick={handleClick}
       className={cn(
         'flex items-center px-2.5 py-2 text-sm font-medium rounded-lg transition-all duration-200 group relative',
         isActive
@@ -33,6 +44,7 @@ export function NavItem({
           : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
       )}
       title={isCollapsed ? name : undefined}
+      type="button"
     >
       
       <div className={cn(
@@ -96,6 +108,6 @@ export function NavItem({
           <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1.5 border-[6px] border-transparent border-r-gray-900" />
         </div>
       )}
-    </Link>
+    </button>
   );
 }

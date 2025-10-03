@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { User, Users, Filter, Grid, List, MoreVertical, Plus, Search, Phone, Mail, Calendar, MapPin, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import Link from 'next/link';
 import { useFacility } from '@/contexts/facility-context';
 import { PatientDrawer } from '@/components/patients/patient-drawer';
+import { useTabNavigation } from '@/hooks/use-tab-navigation';
 
 interface PatientData {
   id: string;
@@ -24,6 +24,7 @@ interface PatientData {
 
 export default function PatientsPage() {
   const { currentFacility } = useFacility();
+  const { openPatientTab } = useTabNavigation();
   const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [patients, setPatients] = useState<PatientData[]>([]);
@@ -138,7 +139,7 @@ export default function PatientsPage() {
             {currentFacility?.name ? `Managing patients for ${currentFacility.name}` : 'Manage patient records and information'}
           </p>
         </div>
-        <Button 
+        <Button
           onClick={() => setIsDrawerOpen(true)}
           className="bg-primary hover:bg-primary/90 text-white"
         >
@@ -353,7 +354,8 @@ export default function PatientsPage() {
                   {patients.map((patient, index) => (
                     <tr 
                       key={patient.id} 
-                      className="hover:bg-gray-50 transition-colors"
+                      onClick={() => openPatientTab(patient.id, patient.name)}
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
                       style={{
                         animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both`
                       }}
@@ -364,12 +366,9 @@ export default function PatientsPage() {
                             {patient.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <Link 
-                              href={`/patients/${patient.id}`}
-                              className="text-sm font-semibold text-gray-900 hover:text-blue-600 transition-colors"
-                            >
+                            <div className="text-sm font-semibold text-gray-900">
                               {patient.name}
-                            </Link>
+                            </div>
                             <div className="text-[10px] text-gray-500">ID: {patient.id.substring(0, 8)}...</div>
                           </div>
                         </div>
@@ -436,11 +435,17 @@ export default function PatientsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <Link href={`/patients/${patient.id}`}>
-                          <Button variant="ghost" size="sm" className="hover:bg-gray-100 h-7 w-7 p-0">
-                            <MoreVertical className="h-3.5 w-3.5" />
-                          </Button>
-                        </Link>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openPatientTab(patient.id, patient.name);
+                          }}
+                          variant="ghost"
+                          size="sm"
+                          className="hover:bg-gray-100 h-7 w-7 p-0"
+                        >
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </Button>
                       </td>
                     </tr>
                   ))}

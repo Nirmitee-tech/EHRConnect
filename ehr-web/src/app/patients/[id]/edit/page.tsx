@@ -6,7 +6,8 @@ import { PatientForm } from '@/components/forms/patient-form';
 import { patientService, UpdatePatientRequest, CreatePatientRequest } from '@/services/patient.service';
 import { FHIRPatient } from '@/types/fhir';
 import { Card } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Edit } from 'lucide-react';
+import { TabPageWrapper } from '@/components/layout/tab-page-wrapper';
 
 export default function EditPatientPage() {
   const router = useRouter();
@@ -88,12 +89,18 @@ export default function EditPatientPage() {
     );
   }
 
+  const patientName = patient.name?.[0]
+    ? `${(patient.name[0].given || []).join(' ')} ${patient.name[0].family || ''}`.trim()
+    : 'Unknown Patient';
+
   return (
-    <PatientForm
-      patient={patient}
-      isEditing={true}
-      onSubmit={handleSubmit}
-      onCancel={handleCancel}
-    />
+    <TabPageWrapper title={`Edit ${patientName}`} icon={<Edit className="h-4 w-4" />}>
+      <PatientForm
+        patient={patient}
+        isEditing={true}
+        onSubmit={handleSubmit}
+        onCancel={handleCancel}
+      />
+    </TabPageWrapper>
   );
 }

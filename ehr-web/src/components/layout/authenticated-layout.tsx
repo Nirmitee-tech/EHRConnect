@@ -5,6 +5,8 @@ import { LoadingState } from '@ehrconnect/design-system';
 import { HealthcareSidebar } from './healthcare-sidebar';
 import { HealthcareHeader } from './healthcare-header';
 import { UserProfile } from './user-profile';
+import { TabProvider } from '@/contexts/tab-context';
+import { TabBar } from './tab-bar';
 
 export function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -46,20 +48,25 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
 
   // Show full layout with sidebar when authenticated
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <HealthcareSidebar />
-      
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <HealthcareHeader />
-        
-        {/* Main Content */}
-        <main className="flex-1 overflow-auto bg-gray-50 p-6">
-          {children}
-        </main>
+    <TabProvider>
+      <div className="flex h-screen bg-gray-50">
+        {/* Sidebar */}
+        <HealthcareSidebar />
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
+          <HealthcareHeader />
+
+          {/* Tab Bar */}
+          <TabBar />
+
+          {/* Main Content */}
+          <main className="flex-1 overflow-auto bg-gray-50 p-6">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </TabProvider>
   );
 }
