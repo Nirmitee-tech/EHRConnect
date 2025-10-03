@@ -6,6 +6,8 @@ export interface SidebarProps {
   logo?: ReactNode
   /** Brand name */
   brandName: string
+  /** Search bar element (optional) */
+  search?: ReactNode
   /** Navigation content */
   navigation: ReactNode
   /** Footer content (user profile, etc.) */
@@ -21,6 +23,7 @@ export interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   logo,
   brandName,
+  search,
   navigation,
   footer,
   children,
@@ -40,7 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+      <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
         {/* Logo */}
         <div className="flex h-16 items-center px-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-2">
@@ -51,8 +54,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
+        {/* Search */}
+        {search && (
+          <div className="px-3 pt-4">
+            {search}
+          </div>
+        )}
+
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-4 py-4 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 overflow-y-auto">
           {navigation}
         </nav>
 
@@ -66,7 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Mobile sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-300 ease-in-out lg:hidden",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-300 ease-in-out lg:hidden",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">
@@ -87,7 +97,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
         <div className="flex-1 flex flex-col overflow-y-auto">
-          <nav className="flex-1 space-y-1 px-4 py-4">
+          {search && (
+            <div className="px-3 pt-4">
+              {search}
+            </div>
+          )}
+          <nav className="flex-1 px-3 py-4">
             {navigation}
           </nav>
           {footer && (

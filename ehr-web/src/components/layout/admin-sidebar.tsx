@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
@@ -9,7 +10,9 @@ import {
   SidebarNavItem,
   SidebarNavSubItem,
   SidebarFooter,
-  SidebarFooterAction
+  SidebarFooterAction,
+  SidebarSearch,
+  SidebarSectionHeader
 } from '@ehrconnect/design-system'
 import {
   Users,
@@ -109,6 +112,7 @@ interface AdminSidebarProps {
 export function AdminSidebar({ children }: AdminSidebarProps) {
   const { data: session } = useSession()
   const pathname = usePathname()
+  const [searchQuery, setSearchQuery] = useState('')
 
   const userPermissions = session?.permissions || []
 
@@ -116,40 +120,156 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
     !item.permission || hasPermission(userPermissions, item.permission)
   )
 
+  // Filter navigation based on search query
+  const searchFilteredNavigation = searchQuery
+    ? filteredNavigation.filter(item =>
+        item.title.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : filteredNavigation
+
+  // Group navigation items by category
+  const clinicItems = searchFilteredNavigation.slice(0, 3)
+  const managementItems = searchFilteredNavigation.slice(3, 5)
+  const systemItems = searchFilteredNavigation.slice(5)
+
+  // Search component
+  const searchComponent = (
+    <SidebarSearch
+      value={searchQuery}
+      onChange={setSearchQuery}
+      placeholder="Search menu..."
+    />
+  )
+
   // Render navigation items
   const navigationContent = (
-    <>
-      {filteredNavigation.map((item) => {
+    <div className="space-y-6">
+      {/* Clinic Section */}
+      {clinicItems.length > 0 && (
+        <div>
+          <SidebarSectionHeader title="Clinic" />
+          <div className="space-y-1">
+            {clinicItems.map((item) => {
         const hasChildren = item.children && item.children.length > 0
         const filteredChildren = hasChildren
           ? item.children!.filter(child => !child.permission || hasPermission(userPermissions, child.permission))
           : []
 
-        return (
-          <Link key={item.href} href={item.href} passHref legacyBehavior>
-            <a style={{ textDecoration: 'none', color: 'inherit' }}>
-              <SidebarNavItem
-                title={item.title}
-                icon={<item.icon className="h-5 w-5" />}
-                isActive={pathname === item.href}
-              >
-                {filteredChildren.length > 0 && filteredChildren.map((child) => (
-                  <Link key={child.href} href={child.href} passHref legacyBehavior>
-                    <a style={{ textDecoration: 'none', color: 'inherit' }}>
+        const navItem = (
+          <SidebarNavItem
+            key={item.href}
+            title={item.title}
+            icon={<item.icon className="h-5 w-5" />}
+            isActive={pathname === item.href}
+          >
+            {filteredChildren.length > 0 && filteredChildren.map((child) => (
+              <Link key={child.href} href={child.href}>
+                <SidebarNavSubItem
+                  title={child.title}
+                  icon={<child.icon className="h-4 w-4" />}
+                  isActive={pathname === child.href}
+                />
+              </Link>
+            ))}
+          </SidebarNavItem>
+        )
+
+              return hasChildren ? (
+                navItem
+              ) : (
+                <Link key={item.href} href={item.href}>
+                  {navItem}
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Management Section */}
+      {managementItems.length > 0 && (
+        <div>
+          <SidebarSectionHeader title="Management" />
+          <div className="space-y-1">
+            {managementItems.map((item) => {
+              const hasChildren = item.children && item.children.length > 0
+              const filteredChildren = hasChildren
+                ? item.children!.filter(child => !child.permission || hasPermission(userPermissions, child.permission))
+                : []
+
+              const navItem = (
+                <SidebarNavItem
+                  key={item.href}
+                  title={item.title}
+                  icon={<item.icon className="h-5 w-5" />}
+                  isActive={pathname === item.href}
+                >
+                  {filteredChildren.length > 0 && filteredChildren.map((child) => (
+                    <Link key={child.href} href={child.href}>
                       <SidebarNavSubItem
                         title={child.title}
                         icon={<child.icon className="h-4 w-4" />}
                         isActive={pathname === child.href}
                       />
-                    </a>
-                  </Link>
-                ))}
-              </SidebarNavItem>
-            </a>
-          </Link>
-        )
-      })}
-    </>
+                    </Link>
+                  ))}
+                </SidebarNavItem>
+              )
+
+              return hasChildren ? (
+                navItem
+              ) : (
+                <Link key={item.href} href={item.href}>
+                  {navItem}
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* System Section */}
+      {systemItems.length > 0 && (
+        <div>
+          <SidebarSectionHeader title="System" />
+          <div className="space-y-1">
+            {systemItems.map((item) => {
+              const hasChildren = item.children && item.children.length > 0
+              const filteredChildren = hasChildren
+                ? item.children!.filter(child => !child.permission || hasPermission(userPermissions, child.permission))
+                : []
+
+              const navItem = (
+                <SidebarNavItem
+                  key={item.href}
+                  title={item.title}
+                  icon={<item.icon className="h-5 w-5" />}
+                  isActive={pathname === item.href}
+                >
+                  {filteredChildren.length > 0 && filteredChildren.map((child) => (
+                    <Link key={child.href} href={child.href}>
+                      <SidebarNavSubItem
+                        title={child.title}
+                        icon={<child.icon className="h-4 w-4" />}
+                        isActive={pathname === child.href}
+                      />
+                    </Link>
+                  ))}
+                </SidebarNavItem>
+              )
+
+              return hasChildren ? (
+                navItem
+              ) : (
+                <Link key={item.href} href={item.href}>
+                  {navItem}
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   )
 
   // User avatar
@@ -197,14 +317,16 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
   )
 
   return (
-    <Sidebar
-      logo={<Activity className="h-8 w-8 text-blue-600" />}
-      brandName="EHR Connect"
-      navigation={navigationContent}
-      footer={footerContent}
-      topBar={topBarContent}
-    >
-      {children}
-    </Sidebar>
+    <></>
+    // <Sidebar
+    //   logo={<Activity className="h-8 w-8 text-blue-600" />}
+    //   brandName="EHR Connect"
+    //   search={searchComponent}
+    //   navigation={navigationContent}
+    //   footer={footerContent}
+    //   topBar={topBarContent}
+    // >
+    //   {children}
+    // </Sidebar>
   )
 }
