@@ -24,6 +24,13 @@ export const authOptions: NextAuthOptions = {
         token.email = profile.email
         token.roles = profile.realm_access?.roles || []
         token.fhirUser = profile.fhir_user
+        
+        // Map multi-tenant claims from Keycloak (custom claims via client mappers)
+        const profileWithClaims = profile as Record<string, unknown>
+        token.org_id = profileWithClaims.org_id as string
+        token.org_slug = profileWithClaims.org_slug as string
+        token.location_ids = profileWithClaims.location_ids as string[]
+        token.permissions = profileWithClaims.permissions as string[]
       }
 
       return token
@@ -40,8 +47,43 @@ export const authOptions: NextAuthOptions = {
       session.idToken = token.idToken as string
       session.roles = token.roles as string[]
       session.fhirUser = token.fhirUser as string
+      
+      // Map multi-tenant claims to session
+      session.org_id = token.org_id as string
+      session.org_slug = token.org_slug as string
+      session.location_ids = token.location_ids as string[]
+      session.permissions = token.permissions as string[]
 
       return session
+    },
+    async redirect({ url, baseUrl }) {
+      // Parse the URL to check the pathname
+      let targetUrl = url;
+      
+      // Handle relative URLs
+      if (url.startsWith('/')) {
+        targetUrl = `${baseUrl}${url}`;
+      }
+      
+      // If URL is on the same origin, check if it's valid
+      if (targetUrl.startsWith(baseUrl)) {
+        const urlObj = new URL(targetUrl);
+        const pathname = urlObj.pathname;
+        
+        // NEVER redirect to API routes - these should not be navigation destinations
+        if (pathname.startsWith('/api/')) {
+          console.warn(`Blocked redirect to API route: ${pathname}. Redirecting to default page.`);
+          // Let the default logic below handle this
+          targetUrl = baseUrl;
+        } else {
+          // For valid page routes, return them
+          return targetUrl;
+        }
+      }
+      
+      // For default redirects (no specific URL or API route blocked),
+      // the dashboard will check onboarding status and redirect if needed
+      return `${baseUrl}/dashboard`;
     },
   },
   events: {
@@ -68,7 +110,6 @@ export const authOptions: NextAuthOptions = {
       }
     },
   },
-  // Removed custom pages to use NextAuth default signin
   session: {
     strategy: 'jwt',
   },

@@ -12,6 +12,7 @@ export default function Home() {
   // Redirect to dashboard if already logged in
   useEffect(() => {
     if (status === 'authenticated' && session) {
+      // Redirect to existing dashboard
       router.push('/dashboard');
     }
   }, [status, session, router]);
@@ -57,11 +58,19 @@ export default function Home() {
           </p>
 
           <div className="flex gap-4 justify-center">
+            <a
+              href="/register"
+              className="inline-flex items-center px-8 py-4 bg-green-600 text-white text-lg font-semibold rounded-lg hover:bg-green-700 transition-all shadow-lg hover:shadow-xl"
+            >
+              Register Your Organization
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </a>
+            
             <button
               onClick={handleSignIn}
               className="inline-flex items-center px-8 py-4 bg-primary text-white text-lg font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl"
             >
-              Get Started
+              Sign In
               <ArrowRight className="ml-2 h-5 w-5" />
             </button>
           </div>

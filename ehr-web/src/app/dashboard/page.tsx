@@ -12,12 +12,70 @@ export default function Dashboard() {
   const [practitioners, setPractitioners] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true)
 
   useEffect(() => {
     if (session?.accessToken) {
-      loadFHIRData()
+      // If no org_id in session, user needs onboarding
+      if (!session?.org_id) {
+        console.log('No org_id in session, redirecting to onboarding')
+        window.location.href = '/onboarding'
+        return
+      }
+      
+      // Check onboarding status from backend
+      checkOnboardingStatus()
     }
   }, [session])
+
+  const checkOnboardingStatus = async () => {
+    if (!session?.org_id || !session?.accessToken) {
+      console.log('Missing session data for onboarding check')
+      setCheckingOnboarding(false)
+      return
+    }
+
+    try {
+      console.log('Checking onboarding status for org:', session.org_id)
+      
+      // Check if organization has completed onboarding
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/orgs/${session.org_id}/onboarding-status`,
+        {
+          headers: {
+            'Authorization': `Bearer ${session.accessToken}`,
+          },
+        }
+      )
+
+      console.log('Onboarding status response:', response.status)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Onboarding data:', data)
+        
+        // If onboarding not completed, redirect to onboarding page
+        if (!data.onboarding_completed) {
+          console.log('Onboarding not completed, redirecting...')
+          window.location.href = '/onboarding'
+          return
+        }
+        
+        console.log('Onboarding completed, loading dashboard')
+      } else {
+        console.error('Failed to check onboarding status:', response.status)
+      }
+      
+      // Onboarding is completed or check failed, load FHIR data
+      setCheckingOnboarding(false)
+      loadFHIRData()
+    } catch (err) {
+      console.error('Error checking onboarding status:', err)
+      // On error, still allow access but show error
+      setCheckingOnboarding(false)
+      setError('Could not verify onboarding status')
+    }
+  }
 
   const loadFHIRData = async () => {
     setLoading(true)

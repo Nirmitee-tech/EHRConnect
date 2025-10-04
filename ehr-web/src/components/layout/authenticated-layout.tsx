@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 import { LoadingState } from '@ehrconnect/design-system';
 import { HealthcareSidebar } from './healthcare-sidebar';
 import { HealthcareHeader } from './healthcare-header';
@@ -10,6 +11,11 @@ import { TabBar } from './tab-bar';
 
 export function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
+  const pathname = usePathname();
+
+  // Routes that should not show the sidebar
+  const noSidebarRoutes = ['/onboarding', '/register', '/accept-invitation'];
+  const shouldShowSidebar = !noSidebarRoutes.some(route => pathname?.startsWith(route));
 
   // Show loading state
   if (status === 'loading') {
@@ -46,7 +52,12 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // Show full layout with sidebar when authenticated
+  // Show full layout WITHOUT sidebar for onboarding and similar pages
+  if (!shouldShowSidebar) {
+    return <>{children}</>;
+  }
+
+  // Show full layout WITH sidebar when authenticated
   return (
     <TabProvider>
       <div className="flex h-screen bg-gray-50">
