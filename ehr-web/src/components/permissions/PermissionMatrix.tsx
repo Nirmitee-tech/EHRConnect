@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Permission, PermissionAction, PermissionResource } from '@/types/permissions'
-import { Search, CheckCircle2, XCircle, Filter, ChevronDown, ChevronRight } from 'lucide-react'
+import { Search, CheckCircle2, XCircle, Filter, ChevronDown, ChevronRight, Info, HelpCircle } from 'lucide-react'
 
 interface PermissionMatrixProps {
   /** Selected permissions */
@@ -61,6 +61,77 @@ export function PermissionMatrix({
     setSelectedPermissions(new Set(value))
   }, [value])
 
+  // Resource descriptions
+  const RESOURCE_DESCRIPTIONS: Record<string, string> = {
+    'patients': 'Patient demographic information, contact details, and medical records',
+    'appointments': 'Scheduling and managing patient appointments',
+    'encounters': 'Clinical visits and interactions with patients',
+    'observations': 'Vital signs, measurements, and clinical observations',
+    'diagnoses': 'Medical diagnoses and conditions',
+    'procedures': 'Medical procedures, surgeries, and treatments',
+    'clinical_notes': 'Doctor notes, progress notes, and clinical documentation',
+    'medications': 'Medication lists and administration records',
+    'prescriptions': 'Prescribing and managing prescriptions',
+    'allergies': 'Patient allergies and adverse reactions',
+    'immunizations': 'Vaccination records and immunization history',
+    'lab_orders': 'Laboratory test orders and requisitions',
+    'lab_results': 'Laboratory test results and reports',
+    'imaging_orders': 'Radiology and imaging test orders',
+    'imaging_results': 'Radiology reports and imaging results',
+    'billing': 'Patient billing, charges, and financial records',
+    'invoices': 'Invoice generation and management',
+    'payments': 'Payment processing and receipts',
+    'insurance': 'Insurance information and coverage details',
+    'claims': 'Insurance claims submission and tracking',
+    'org': 'Organization settings and configuration',
+    'locations': 'Facility locations and departments',
+    'departments': 'Department management and organization',
+    'staff': 'Staff members, practitioners, and users',
+    'roles': 'User roles and role management',
+    'permissions': 'Permission configuration and access control',
+    'settings': 'System settings and preferences',
+    'reports': 'Report generation and analytics',
+    'audit': 'Audit logs and compliance tracking',
+    'integrations': 'External system integrations and APIs',
+    'notifications': 'System notifications and alerts',
+    'patient_demographics': 'Basic patient information like name, DOB, gender',
+    'patient_history': 'Patient medical history and past records',
+    'forms': 'Clinical forms and questionnaires',
+  }
+
+  // Get resource display label
+  const getResourceLabel = useCallback((resource: string): string => {
+    if (resourceLabels[resource]) {
+      return resourceLabels[resource]
+    }
+    return resource.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  }, [resourceLabels])
+
+  // Get action display label
+  function getActionLabel(action: PermissionAction): string {
+    return action.charAt(0).toUpperCase() + action.slice(1)
+  }
+
+  // Get resource description
+  const getResourceDescription = (resource: string): string => {
+    return RESOURCE_DESCRIPTIONS[resource] || 'Manage this resource'
+  }
+
+  // Check if permission is selected (including wildcard matching)
+  const isPermissionSelected = useCallback((resource: string, action: PermissionAction): boolean => {
+    const specificPerm = `${resource}:${action}` as Permission
+    const resourceWildcard = `${resource}:*` as Permission
+    const actionWildcard = `*:${action}` as Permission
+    const allWildcard = `*:*` as Permission
+
+    return (
+      selectedPermissions.has(specificPerm) ||
+      selectedPermissions.has(resourceWildcard) ||
+      selectedPermissions.has(actionWildcard) ||
+      selectedPermissions.has(allWildcard)
+    )
+  }, [selectedPermissions])
+
   // Filter resources based on search and filter mode
   const filteredResources = useMemo(() => {
     let filtered = resources
@@ -85,35 +156,7 @@ export function PermissionMatrix({
     }
 
     return filtered
-  }, [resources, searchTerm, filterMode, selectedPermissions, resourceLabels])
-
-  // Get resource display label
-  function getResourceLabel(resource: string): string {
-    if (resourceLabels[resource]) {
-      return resourceLabels[resource]
-    }
-    return resource.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-  }
-
-  // Get action display label
-  function getActionLabel(action: PermissionAction): string {
-    return action.charAt(0).toUpperCase() + action.slice(1)
-  }
-
-  // Check if permission is selected (including wildcard matching)
-  function isPermissionSelected(resource: string, action: PermissionAction): boolean {
-    const specificPerm = `${resource}:${action}` as Permission
-    const resourceWildcard = `${resource}:*` as Permission
-    const actionWildcard = `*:${action}` as Permission
-    const allWildcard = `*:*` as Permission
-
-    return (
-      selectedPermissions.has(specificPerm) ||
-      selectedPermissions.has(resourceWildcard) ||
-      selectedPermissions.has(actionWildcard) ||
-      selectedPermissions.has(allWildcard)
-    )
-  }
+  }, [resources, searchTerm, filterMode, actions, getResourceLabel, isPermissionSelected])
 
   // Toggle a specific permission
   function togglePermission(resource: string, action: PermissionAction) {
@@ -433,17 +476,26 @@ export function PermissionMatrix({
                 <tbody className="bg-white divide-y divide-gray-200">
                   {categoryResources.map(resource => {
                     const hasAnyPermission = actions.some(action => isPermissionSelected(resource, action))
+                    const description = getResourceDescription(resource)
                     return (
                       <tr
                         key={resource}
                         className={`hover:bg-blue-50 transition-colors ${hasAnyPermission ? 'bg-green-50/30' : ''}`}
                       >
-                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-inherit">
-                          <div className="flex items-center gap-2">
+                        <td className="px-6 py-3 text-sm font-medium text-gray-900 sticky left-0 bg-inherit">
+                          <div className="flex items-center gap-2 group">
                             {hasAnyPermission && (
-                              <CheckCircle2 className="h-4 w-4 text-green-600" />
+                              <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
                             )}
-                            {getResourceLabel(resource)}
+                            <span className="flex-shrink-0">{getResourceLabel(resource)}</span>
+                            <div className="relative flex-shrink-0">
+                              <HelpCircle className="h-3.5 w-3.5 text-gray-400 hover:text-blue-600 cursor-help transition-colors" />
+                              <div className="absolute left-0 top-6 w-72 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none">
+                                <div className="font-semibold mb-1">{getResourceLabel(resource)}</div>
+                                <div className="text-gray-300">{description}</div>
+                                <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-900 transform rotate-45"></div>
+                              </div>
+                            </div>
                           </div>
                         </td>
                         <td className="px-2 py-3 text-center">
