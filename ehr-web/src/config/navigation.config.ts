@@ -50,7 +50,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
     title: 'ADMINISTRATION',
     items: [
       { name: 'User Management', href: '/users', icon: Users },
-      { name: 'Roles & Permissions', href: '/roles', icon: Shield },
+      { name: 'Roles & Permissions', href: '/settings/roles', icon: Shield },
       { name: 'Audit Logs', href: '/audit-logs', icon: ScrollText }
     ]
   },

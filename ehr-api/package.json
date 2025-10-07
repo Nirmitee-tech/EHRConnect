@@ -8,6 +8,8 @@
     "dev": "nodemon src/index.js",
     "migrate": "node src/migrations/run-migrations.js",
     "seed": "node src/seeds/seed-data.js",
+    "seed:roles": "node src/scripts/seed-default-roles.js",
+    "sync:permissions": "node src/scripts/sync-permissions-to-keycloak.js",
     "test": "jest"
   },
   "dependencies": {
@@ -22,6 +24,7 @@
     "jsonwebtoken": "^9.0.2",
     "moment": "^2.29.4",
     "pg": "^8.11.3",
+    "socket.io": "^4.8.1",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const http = require('http');
 require('dotenv').config();
 
 const { Pool } = require('pg');
@@ -8,12 +9,15 @@ const fhirRoutes = require('./routes/fhir');
 const organizationRoutes = require('./routes/organizations');
 const invitationRoutes = require('./routes/invitations');
 const rbacRoutes = require('./routes/rbac');
+const rbacEnhancedRoutes = require('./routes/rbac.enhanced');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const onboardingRoutes = require('./routes/onboarding');
 const { initializeDatabase } = require('./database/init');
+const socketService = require('./services/socket.service');
 
 const app = express();
+const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 8000;
 
 // Database connection (using the connection pool from connection.js)
@@ -136,6 +140,7 @@ app.use('/api/orgs', userRoutes);
 app.use('/api/orgs', onboardingRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/rbac', rbacRoutes);
+app.use('/api/rbac/v2', rbacEnhancedRoutes); // Enhanced RBAC with permission matrix
 app.use('/api/auth', authRoutes);
 
 // Health check
@@ -183,10 +188,15 @@ async function startServer() {
   try {
     await initializeDatabase(dbPool);
     console.log('✅ Database initialized successfully');
-    
-    app.listen(PORT, () => {
+
+    // Initialize Socket.IO for real-time permission updates
+    socketService.initialize(httpServer);
+    console.log('✅ Socket.IO initialized for real-time updates');
+
+    httpServer.listen(PORT, () => {
       console.log(`🚀 FHIR R4 Server running on http://localhost:${PORT}`);
       console.log(`📋 Capability Statement: http://localhost:${PORT}/fhir/R4/metadata`);
+      console.log(`🔌 Socket.IO ready for real-time permission updates`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
