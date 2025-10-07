@@ -150,10 +150,10 @@ export default function RoleEditorPage() {
   const canEdit = !isSystemRole || isEditing
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="h-screen flex flex-col">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
+      <div className="px-8 py-4 border-b border-gray-200 bg-white">
+        <div className="flex justify-between items-center">
           <div>
             <button
               onClick={() => router.back()}
@@ -161,16 +161,16 @@ export default function RoleEditorPage() {
             >
               ← Back to Roles
             </button>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-900">
               {roleId === 'new' ? 'Create New Role' : role?.name}
             </h1>
             {role?.is_system && !role?.org_id && (
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 System Role - Create a copy to customize for your organization
               </p>
             )}
             {role?.parent_role_id && (
-              <p className="text-sm text-blue-600 mt-1">
+              <p className="text-xs text-blue-600 mt-1">
                 Custom copy of {role.parent_role_name || 'system role'}
               </p>
             )}
@@ -198,72 +198,95 @@ export default function RoleEditorPage() {
         </div>
       </div>
 
-      {/* Role Details Form */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Role Details</h2>
+      {/* Main Content - Split Layout */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Side - Role Details (1/5) */}
+        <div className="w-1/5 border-r border-gray-200 bg-white p-6 overflow-y-auto">
+          <h2 className="text-lg font-semibold mb-4 text-gray-900">Role Details</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Role Name *
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              disabled={!canEdit}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-              placeholder="e.g., Senior Physician"
-            />
-          </div>
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Role Name *
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                disabled={!canEdit}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 text-sm"
+                placeholder="e.g., Senior Physician"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Scope Level *
-            </label>
-            <select
-              value={formData.scope_level}
-              onChange={(e) => setFormData({ ...formData, scope_level: e.target.value as RoleScopeLevel })}
-              disabled={!canEdit}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-            >
-              <option value={RoleScopeLevel.PLATFORM}>Platform</option>
-              <option value={RoleScopeLevel.ORG}>Organization</option>
-              <option value={RoleScopeLevel.LOCATION}>Location</option>
-              <option value={RoleScopeLevel.DEPARTMENT}>Department</option>
-            </select>
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Scope Level *
+              </label>
+              <select
+                value={formData.scope_level}
+                onChange={(e) => setFormData({ ...formData, scope_level: e.target.value as RoleScopeLevel })}
+                disabled={!canEdit}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 text-sm"
+              >
+                <option value={RoleScopeLevel.PLATFORM}>Platform</option>
+                <option value={RoleScopeLevel.ORG}>Organization</option>
+                <option value={RoleScopeLevel.LOCATION}>Location</option>
+                <option value={RoleScopeLevel.DEPARTMENT}>Department</option>
+              </select>
+            </div>
 
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              disabled={!canEdit}
-              rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-              placeholder="Describe this role and its responsibilities..."
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                disabled={!canEdit}
+                rows={6}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 text-sm"
+                placeholder="Describe this role and its responsibilities..."
+              />
+            </div>
+
+            <div className="pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600 mb-2">
+                <strong>{formData.permissions.length}</strong> permissions selected
+              </p>
+              {role?.is_system && (
+                <div className="mt-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs text-blue-800">System Role</p>
+                </div>
+              )}
+              {role?.org_id && (
+                <div className="mt-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-xs text-green-800">Custom Role</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Permission Matrix */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold mb-4">Permissions</h2>
-        <p className="text-sm text-gray-600 mb-6">
-          Select the permissions this role should have. Use the checkboxes to grant specific actions,
-          or use the "All" column to grant all permissions for a resource.
-        </p>
+        {/* Right Side - Permission Matrix (4/5) */}
+        <div className="flex-1 bg-gray-50 overflow-y-auto">
+          <div className="p-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold mb-2 text-gray-900">Permissions</h2>
+              <p className="text-sm text-gray-600 mb-6">
+                Select the permissions this role should have. Use the checkboxes to grant specific actions,
+                or use the "All" column to grant all permissions for a resource.
+              </p>
 
-        <PermissionMatrix
-          value={formData.permissions}
-          onChange={(permissions) => setFormData({ ...formData, permissions })}
-          readOnly={!canEdit}
-          showSearch
-        />
+              <PermissionMatrix
+                value={formData.permissions}
+                onChange={(permissions) => setFormData({ ...formData, permissions })}
+                readOnly={!canEdit}
+                showSearch
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
