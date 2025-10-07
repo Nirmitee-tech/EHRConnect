@@ -70,11 +70,25 @@ export default function OnboardingPage() {
     }
   }, [status, router]);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < ONBOARDING_STEPS.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Complete onboarding
+      // Complete onboarding - mark as complete in backend
+      try {
+        await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/orgs/${session?.org_id}/onboarding-complete`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session?.accessToken}`,
+            },
+          }
+        );
+      } catch (error) {
+        console.error('Error marking onboarding complete:', error);
+      }
+      
       router.push('/dashboard');
     }
   };
@@ -318,8 +332,7 @@ function LocationsStep({ formData, setFormData, session }: any) {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'x-org-id': session.org_id,
-            'x-user-id': session.user.id || 'temp',
+            'Authorization': `Bearer ${session.accessToken}`,
           },
           body: JSON.stringify({
             ...locationForm,
@@ -335,9 +348,14 @@ function LocationsStep({ formData, setFormData, session }: any) {
           locations: [...formData.locations, result.location],
         });
         setLocationForm({ name: '', code: '', location_type: 'clinic' });
+      } else {
+        const error = await response.json();
+        console.error('Error adding location:', error);
+        alert(`Failed to add location: ${error.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error adding location:', error);
+      alert('Failed to add location. Please try again.');
     }
   };
 

@@ -29,8 +29,8 @@ export default function Dashboard() {
   }, [session])
 
   const checkOnboardingStatus = async () => {
-    if (!session?.org_id || !session?.accessToken) {
-      console.log('Missing session data for onboarding check')
+    if (!session?.org_id) {
+      console.log('Missing org_id in session')
       setCheckingOnboarding(false)
       return
     }
@@ -39,13 +39,9 @@ export default function Dashboard() {
       console.log('Checking onboarding status for org:', session.org_id)
       
       // Check if organization has completed onboarding
+      // Don't send auth header as this is a public endpoint
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/orgs/${session.org_id}/onboarding-status`,
-        {
-          headers: {
-            'Authorization': `Bearer ${session.accessToken}`,
-          },
-        }
+        `${process.env.NEXT_PUBLIC_API_URL}/api/orgs/${session.org_id}/onboarding-status`
       )
 
       console.log('Onboarding status response:', response.status)

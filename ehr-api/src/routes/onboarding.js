@@ -5,10 +5,13 @@ const db = require('../database/connection');
 /**
  * GET /api/orgs/:orgId/onboarding-status
  * Check if organization has completed onboarding
+ * This endpoint is public as it's called during the login/onboarding flow
  */
 router.get('/:orgId/onboarding-status', async (req, res) => {
   try {
     const { orgId } = req.params;
+
+    console.log('Checking onboarding status for org:', orgId);
 
     // Query organization onboarding status
     const result = await db.query(
@@ -17,16 +20,22 @@ router.get('/:orgId/onboarding-status', async (req, res) => {
     );
 
     if (result.rows.length === 0) {
+      console.log('Organization not found:', orgId);
       return res.status(404).json({
         error: 'Organization not found'
       });
     }
 
     const org = result.rows[0];
+    
+    console.log('Onboarding status:', {
+      org_id: org.id,
+      onboarding_completed: org.onboarding_completed
+    });
 
     res.json({
       org_id: org.id,
-      onboarding_completed: org.onboarding_completed,
+      onboarding_completed: org.onboarding_completed || false,
       onboarding_step: org.onboarding_step
     });
   } catch (error) {
