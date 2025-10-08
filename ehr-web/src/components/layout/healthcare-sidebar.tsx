@@ -168,6 +168,7 @@ export function HealthcareSidebar() {
                     isActive={isActive(item.href)}
                     isCollapsed={isCollapsed}
                     count={getItemCount(item.href)}
+                    children={item.children}
                   />
                 ))}
               </div>

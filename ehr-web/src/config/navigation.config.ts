@@ -13,7 +13,15 @@ import {
   FileText,
   HelpCircle,
   Shield,
-  ScrollText
+  ScrollText,
+  DollarSign,
+  Receipt,
+  Send,
+  CheckCircle,
+  BarChart3,
+  Database,
+  Building2,
+  Code
 } from 'lucide-react';
 import { NavSection, PageInfo } from '@/types/navigation';
 
@@ -37,6 +45,59 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
       { name: 'Sales', href: '/sales', icon: TrendingUp },
       { name: 'Purchases', href: '/purchases', icon: ShoppingCart },
       { name: 'Payment Method', href: '/payment-methods', icon: Banknote }
+    ]
+  },
+  {
+    title: 'BILLING & INSURANCE',
+    items: [
+      {
+        name: 'Billing Dashboard',
+        href: '/billing',
+        icon: DollarSign
+      },
+      {
+        name: 'Claims',
+        href: '/billing/claims',
+        icon: Send,
+        children: [
+          { name: 'All Claims', href: '/billing/claims', icon: FileText },
+          { name: 'Create Claim', href: '/billing/claims/new', icon: Send }
+        ]
+      },
+      {
+        name: 'Eligibility',
+        href: '/billing/eligibility',
+        icon: CheckCircle
+      },
+      {
+        name: 'Prior Authorization',
+        href: '/billing/prior-auth',
+        icon: FileText,
+        children: [
+          { name: 'All Authorizations', href: '/billing/prior-auth', icon: FileText },
+          { name: 'Submit Authorization', href: '/billing/prior-auth/new', icon: Send }
+        ]
+      },
+      {
+        name: 'Remittance (ERA)',
+        href: '/billing/remittance',
+        icon: Receipt
+      },
+      {
+        name: 'Reports & Analytics',
+        href: '/billing/reports',
+        icon: BarChart3
+      },
+      {
+        name: 'Masters',
+        href: '/billing/masters',
+        icon: Database,
+        children: [
+          { name: 'Providers', href: '/billing/masters/providers', icon: UserCheck },
+          { name: 'Payers', href: '/billing/masters/payers', icon: Building2 },
+          { name: 'Medical Codes', href: '/billing/masters/codes', icon: Code }
+        ]
+      }
     ]
   },
   {

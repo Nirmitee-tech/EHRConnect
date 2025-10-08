@@ -17,6 +17,7 @@ export interface NavItem {
   icon: LucideIcon;
   badge?: string;
   count?: number;
+  children?: NavItem[];
 }
 
 export interface NavSection {

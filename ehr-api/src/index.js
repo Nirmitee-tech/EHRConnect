@@ -13,8 +13,10 @@ const rbacEnhancedRoutes = require('./routes/rbac.enhanced');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const onboardingRoutes = require('./routes/onboarding');
+const billingRoutes = require('./routes/billing');
 const { initializeDatabase } = require('./database/init');
 const socketService = require('./services/socket.service');
+const billingJobs = require('./services/billing.jobs');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -142,6 +144,7 @@ app.use('/api/invitations', invitationRoutes);
 app.use('/api/rbac', rbacRoutes);
 app.use('/api/rbac/v2', rbacEnhancedRoutes); // Enhanced RBAC with permission matrix
 app.use('/api/auth', authRoutes);
+app.use('/api/billing', billingRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -193,10 +196,14 @@ async function startServer() {
     socketService.initialize(httpServer);
     console.log('✅ Socket.IO initialized for real-time updates');
 
+    // Initialize billing background jobs
+    billingJobs.initialize();
+
     httpServer.listen(PORT, () => {
       console.log(`🚀 FHIR R4 Server running on http://localhost:${PORT}`);
       console.log(`📋 Capability Statement: http://localhost:${PORT}/fhir/R4/metadata`);
       console.log(`🔌 Socket.IO ready for real-time permission updates`);
+      console.log(`💰 Billing jobs running for claim sync and ERA processing`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
