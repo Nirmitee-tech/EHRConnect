@@ -21,7 +21,8 @@ import {
   BarChart3,
   Database,
   Building2,
-  Code
+  Code,
+  FileCode
 } from 'lucide-react';
 import { NavSection, PageInfo } from '@/types/navigation';
 
@@ -116,6 +117,12 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
     ]
   },
   {
+    title: 'RCM',
+    items: [
+      { name: 'Code Sets', href: '/rcm/codes', icon: FileCode }
+    ]
+  },
+  {
     items: [
       { name: 'Report', href: '/reports', icon: FileText },
       { name: 'Customer Support', href: '/support', icon: HelpCircle }
@@ -146,7 +153,8 @@ const PAGE_CONFIG: Record<string, PageInfo> = {
   peripherals: { title: 'Peripherals' },
   reports: { title: 'Reports' },
   support: { title: 'Customer Support' },
-  admin: { title: 'Administration' }
+  admin: { title: 'Administration' },
+  rcm: { title: 'Revenue Cycle Management' }
 };
 
 const ADMIN_PAGES: Record<string, string> = {
@@ -172,6 +180,14 @@ export const getPageInfo = (pathname: string): PageInfo => {
 
   if (firstSegment === 'admin' && secondSegment) {
     return { title: ADMIN_PAGES[secondSegment] || 'Administration' };
+  }
+
+  if (firstSegment === 'rcm') {
+    if (secondSegment === 'codes') {
+      return { title: 'Code Set Management', actionButton: { label: 'New Code' } };
+    }
+
+    return PAGE_CONFIG[firstSegment];
   }
 
   return PAGE_CONFIG[firstSegment] || { title: 'Dashboard' };
