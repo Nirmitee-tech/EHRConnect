@@ -1,4 +1,4 @@
-# @ehrconnect/design-system
+# @nirmitee.io/design-system
 
 A comprehensive, healthcare-focused design system for EHR Connect applications. Built with React, TypeScript, Tailwind CSS, shadcn/ui components, and Ant Design integration.
 
@@ -18,13 +18,13 @@ A comprehensive, healthcare-focused design system for EHR Connect applications. 
 ## 📦 Installation
 
 ```bash
-npm install @ehrconnect/design-system
+npm install @nirmitee.io/design-system
 
 # or with yarn
-yarn add @ehrconnect/design-system
+yarn add @nirmitee.io/design-system
 
 # or with pnpm
-pnpm add @ehrconnect/design-system
+pnpm add @nirmitee.io/design-system
 ```
 
 ### Peer Dependencies
@@ -42,7 +42,7 @@ npm install react react-dom
 Add the styles to your application entry point:
 
 ```tsx
-import "@ehrconnect/design-system/dist/index.css";
+import "@nirmitee.io/design-system/dist/index.css";
 ```
 
 ### 2. Configure Tailwind (Optional but Recommended)
@@ -53,7 +53,7 @@ If you're using Tailwind CSS in your project, extend your `tailwind.config.js`:
 module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
-    "./node_modules/@ehrconnect/design-system/dist/**/*.js",
+    "./node_modules/@nirmitee.io/design-system/dist/**/*.js",
   ],
   // ... rest of your config
 };
@@ -62,7 +62,7 @@ module.exports = {
 ### 3. Use Components
 
 ```tsx
-import { Button, Card, Input, Badge } from "@ehrconnect/design-system";
+import { Button, Card, Input, Badge } from "@nirmitee.io/design-system";
 
 function App() {
   return (
@@ -95,7 +95,7 @@ function App() {
 Versatile button component with multiple variants optimized for healthcare workflows.
 
 ```tsx
-import { Button } from "@ehrconnect/design-system";
+import { Button } from "@nirmitee.io/design-system";
 
 // Variants
 <Button variant="default">Default</Button>
@@ -127,7 +127,7 @@ import { Button } from "@ehrconnect/design-system";
 Form input component with label, error handling, and icon support.
 
 ```tsx
-import { Input } from "@ehrconnect/design-system";
+import { Input } from "@nirmitee.io/design-system";
 import { User } from "lucide-react";
 
 <Input 
@@ -143,7 +143,7 @@ import { User } from "lucide-react";
 Container component for grouping related content.
 
 ```tsx
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@ehrconnect/design-system";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@nirmitee.io/design-system";
 
 <Card>
   <CardHeader>
@@ -164,7 +164,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 Small status indicators and labels.
 
 ```tsx
-import { Badge } from "@ehrconnect/design-system";
+import { Badge } from "@nirmitee.io/design-system";
 
 <Badge variant="medical">Critical</Badge>
 <Badge variant="success">Stable</Badge>
@@ -283,7 +283,7 @@ We follow clean code principles and SOLID design patterns. When contributing:
 
 ```tsx
 // app/layout.tsx
-import "@ehrconnect/design-system/dist/index.css";
+import "@nirmitee.io/design-system/dist/index.css";
 
 export default function RootLayout({ children }) {
   return (
@@ -299,7 +299,7 @@ export default function RootLayout({ children }) {
 The design system works alongside Ant Design:
 
 ```tsx
-import { Button } from "@ehrconnect/design-system";
+import { Button } from "@nirmitee.io/design-system";
 import { Table } from "antd";
 
 function PatientList() {

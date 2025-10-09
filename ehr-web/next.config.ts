@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['@ehrconnect/design-system'],
+  transpilePackages: ['@nirmitee.io/design-system'],
 };
 
 export default nextConfig;

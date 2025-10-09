@@ -1,5 +1,5 @@
 {
-  "name": "@ehrconnect/design-system",
+  "name": "@nirmitee.io/design-system",
   "version": "1.0.0",
   "description": "EHR Connect Design System - Reusable healthcare UI components",
   "main": "dist/index.js",
