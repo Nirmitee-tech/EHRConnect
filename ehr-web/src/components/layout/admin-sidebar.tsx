@@ -13,7 +13,7 @@ import {
   SidebarFooterAction,
   SidebarSearch,
   SidebarSectionHeader
-} from '@ehrconnect/design-system'
+} from '@nirmitee.io/design-system'
 import {
   Users,
   UserCog,

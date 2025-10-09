@@ -34,7 +34,7 @@ Then in your project:
 
 ```bash
 cd your-project
-npm link @ehrconnect/design-system
+npm link @nirmitee.io/design-system
 ```
 
 ## 📝 Usage in Projects
@@ -44,14 +44,14 @@ npm link @ehrconnect/design-system
 1. **Install or link the package:**
 
 ```bash
-npm link @ehrconnect/design-system
+npm link @nirmitee.io/design-system
 ```
 
 2. **Import styles in your layout:**
 
 ```tsx
 // app/layout.tsx
-import "@ehrconnect/design-system/dist/index.css";
+import "@nirmitee.io/design-system/dist/index.css";
 
 export default function RootLayout({ children }) {
   return (
@@ -66,7 +66,7 @@ export default function RootLayout({ children }) {
 
 ```tsx
 // app/patients/page.tsx
-import { Button, Card, CardHeader, CardTitle, CardContent } from "@ehrconnect/design-system";
+import { Button, Card, CardHeader, CardTitle, CardContent } from "@nirmitee.io/design-system";
 
 export default function PatientsPage() {
   return (
@@ -90,14 +90,14 @@ export default function PatientsPage() {
 1. **Install the package:**
 
 ```bash
-npm install @ehrconnect/design-system
+npm install @nirmitee.io/design-system
 ```
 
 2. **Import styles in your entry point:**
 
 ```tsx
 // index.tsx or App.tsx
-import "@ehrconnect/design-system/dist/index.css";
+import "@nirmitee.io/design-system/dist/index.css";
 ```
 
 3. **Use components as needed**
@@ -110,11 +110,11 @@ import "@ehrconnect/design-system/dist/index.css";
 // tailwind.config.js
 module.exports = {
   presets: [
-    require('@ehrconnect/design-system/tailwind.config.js')
+    require('@nirmitee.io/design-system/tailwind.config.js')
   ],
   content: [
     './src/**/*.{js,ts,jsx,tsx}',
-    './node_modules/@ehrconnect/design-system/dist/**/*.js',
+    './node_modules/@nirmitee.io/design-system/dist/**/*.js',
   ],
   // Your custom configuration
 }
@@ -180,7 +180,7 @@ If you see TypeScript errors after installation, ensure you have these in your `
 Make sure you've imported the CSS file:
 
 ```tsx
-import "@ehrconnect/design-system/dist/index.css";
+import "@nirmitee.io/design-system/dist/index.css";
 ```
 
 ### Components Not Found
@@ -188,7 +188,7 @@ import "@ehrconnect/design-system/dist/index.css";
 Verify the package is properly installed:
 
 ```bash
-npm list @ehrconnect/design-system
+npm list @nirmitee.io/design-system
 ```
 
 ## 📦 Publishing
@@ -213,7 +213,7 @@ npm publish
 ### With Existing Shadcn Components
 
 ```tsx
-import { Button } from "@ehrconnect/design-system";
+import { Button } from "@nirmitee.io/design-system";
 import { Dialog } from "@/components/ui/dialog"; // Your existing shadcn
 
 function MyComponent() {
@@ -228,7 +228,7 @@ function MyComponent() {
 ### With Ant Design
 
 ```tsx
-import { Button, Card } from "@ehrconnect/design-system";
+import { Button, Card } from "@nirmitee.io/design-system";
 import { Table } from "antd";
 
 function PatientList() {

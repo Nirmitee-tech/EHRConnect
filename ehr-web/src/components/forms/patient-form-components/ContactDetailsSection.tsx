@@ -1,6 +1,6 @@
 import React from 'react';
 import { Mail } from 'lucide-react';
-import { Input, Label } from '@ehrconnect/design-system';
+import { Input, Label } from '@nirmitee.io/design-system';
 import { FormSection } from './FormSection';
 import { ErrorMessage } from './ErrorMessage';
 

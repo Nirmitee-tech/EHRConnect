@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ehrconnect/design-system';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@nirmitee.io/design-system';
 import { ClinicalService } from '@/services/clinical.service';
 import { ALLERGY_CATEGORIES, ALLERGY_CRITICALITY, REACTION_SEVERITY } from '@/constants/clinical.constants';
 

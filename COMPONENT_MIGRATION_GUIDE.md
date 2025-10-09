@@ -2,23 +2,23 @@
 
 ## Overview
 
-This guide documents the strategy for migrating from local `@/components/ui/*` components to centralized `@ehrconnect/design-system` components.
+This guide documents the strategy for migrating from local `@/components/ui/*` components to centralized `@nirmitee.io/design-system` components.
 
 ## Components Already in Design System
 
 ### Atoms
-- ✅ **Button** - `@ehrconnect/design-system`
-- ✅ **Input** - `@ehrconnect/design-system`
-- ✅ **Label** - `@ehrconnect/design-system`
-- ✅ **Card** - `@ehrconnect/design-system`
-- ✅ **Badge** - `@ehrconnect/design-system`
-- ✅ **LoadingState** - `@ehrconnect/design-system`
+- ✅ **Button** - `@nirmitee.io/design-system`
+- ✅ **Input** - `@nirmitee.io/design-system`
+- ✅ **Label** - `@nirmitee.io/design-system`
+- ✅ **Card** - `@nirmitee.io/design-system`
+- ✅ **Badge** - `@nirmitee.io/design-system`
+- ✅ **LoadingState** - `@nirmitee.io/design-system`
 
 ### Molecules
-- ✅ **Drawer** (replaces Sheet) - `@ehrconnect/design-system`
-- ✅ **Table** - `@ehrconnect/design-system`
-- ✅ **Sidebar** - `@ehrconnect/design-system`
-- ✅ **Header** - `@ehrconnect/design-system`
+- ✅ **Drawer** (replaces Sheet) - `@nirmitee.io/design-system`
+- ✅ **Table** - `@nirmitee.io/design-system`
+- ✅ **Sidebar** - `@nirmitee.io/design-system`
+- ✅ **Header** - `@nirmitee.io/design-system`
 
 ### Components Still Using Local UI
 - ⏳ **Select** - `@/components/ui/select` (Radix UI wrapper, consider migrating)
@@ -37,7 +37,7 @@ This guide documents the strategy for migrating from local `@/components/ui/*` c
    import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
    
    // AFTER
-   import { Button, Label, Input, Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@ehrconnect/design-system';
+   import { Button, Label, Input, Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@nirmitee.io/design-system';
    ```
 
 2. **ehr-web/src/components/patients/patient-drawer.tsx**
@@ -46,7 +46,7 @@ This guide documents the strategy for migrating from local `@/components/ui/*` c
    import { Sheet, SheetContent } from '@/components/ui/sheet';
    
    // AFTER
-   import { Drawer, DrawerContent } from '@ehrconnect/design-system';
+   import { Drawer, DrawerContent } from '@nirmitee.io/design-system';
    ```
 
 ### ⏳ Files Pending Migration
@@ -126,7 +126,7 @@ function MyForm() {
 
 **After:**
 ```tsx
-import { Button, Label, Input } from '@ehrconnect/design-system';
+import { Button, Label, Input } from '@nirmitee.io/design-system';
 
 function MyForm() {
   return (
@@ -161,7 +161,7 @@ function MyDrawer() {
 
 **After:**
 ```tsx
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@ehrconnect/design-system';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@nirmitee.io/design-system';
 
 function MyDrawer() {
   return (
@@ -215,7 +215,7 @@ import {
   TableHead,
   TableCell,
   TableContainer
-} from '@ehrconnect/design-system';
+} from '@nirmitee.io/design-system';
 
 function PatientList() {
   return (

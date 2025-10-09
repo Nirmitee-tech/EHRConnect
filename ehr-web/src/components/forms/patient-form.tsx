@@ -5,7 +5,7 @@ import { FHIRPatient, PatientSummary } from '@/types/fhir';
 import { CreatePatientRequest, UpdatePatientRequest } from '@/services/patient.service';
 import { useFacility } from '@/contexts/facility-context';
 import { usePatientForm } from '@/hooks/use-patient-form';
-import { Button } from '@ehrconnect/design-system';
+import { Button } from '@nirmitee.io/design-system';
 import { useState } from 'react';
 import { NoFacilityNotice } from './patient-form-components/NoFacilityNotice';
 import { PatientSearch } from './patient-form-components/PatientSearch';

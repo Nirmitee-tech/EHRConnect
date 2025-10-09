@@ -160,9 +160,9 @@ The theme is automatically included when you import the design system's global C
 
 ```tsx
 // In your app layout
-import '@ehrconnect/design-system/style.css';
+import '@nirmitee.io/design-system/style.css';
 ```
 
 Or when published to npm:
 ```tsx
-import '@ehrconnect/design-system/style.css';
+import '@nirmitee.io/design-system/style.css';

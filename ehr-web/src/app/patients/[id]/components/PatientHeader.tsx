@@ -1,6 +1,6 @@
 import React from 'react';
 import { User, Edit, Calendar } from 'lucide-react';
-import { Button, Badge } from '@ehrconnect/design-system';
+import { Button, Badge } from '@nirmitee.io/design-system';
 import { PatientDetails } from './types';
 
 interface PatientHeaderProps {

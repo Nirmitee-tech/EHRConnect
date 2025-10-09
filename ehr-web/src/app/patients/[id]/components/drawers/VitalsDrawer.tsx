@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, Button, Input, Label } from '@ehrconnect/design-system';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, Button, Input, Label } from '@nirmitee.io/design-system';
 import { VitalsFormData } from '../types';
 
 interface VitalsDrawerProps {

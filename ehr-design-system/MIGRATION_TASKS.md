@@ -1,6 +1,6 @@
 # EHR-Web to Design System Migration Tasks
 
-Track progress of migrating ehr-web to use @ehrconnect/design-system
+Track progress of migrating ehr-web to use @nirmitee.io/design-system
 
 ## 📋 Migration Status
 
@@ -13,7 +13,7 @@ Track progress of migrating ehr-web to use @ehrconnect/design-system
 ## Phase 1: Setup & Configuration
 
 - [x] Build design system package
-- [x] Link design system to ehr-web (`npm link @ehrconnect/design-system`)
+- [x] Link design system to ehr-web (`npm link @nirmitee.io/design-system`)
 - [ ] Update ehr-web layout.tsx to import design system CSS
 - [ ] Verify Tailwind config includes design system paths
 
@@ -222,7 +222,7 @@ npm link
 
 # Link in ehr-web
 cd ../ehr-web
-npm link @ehrconnect/design-system
+npm link @nirmitee.io/design-system
 
 # Test ehr-web
 npm run dev

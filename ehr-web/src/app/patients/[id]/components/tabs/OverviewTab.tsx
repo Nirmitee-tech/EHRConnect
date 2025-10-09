@@ -1,6 +1,6 @@
 import React from 'react';
 import { Calendar, AlertCircle, Pill, AlertTriangle } from 'lucide-react';
-import { Badge } from '@ehrconnect/design-system';
+import { Badge } from '@nirmitee.io/design-system';
 
 interface OverviewTabProps {
   encounters: any[];

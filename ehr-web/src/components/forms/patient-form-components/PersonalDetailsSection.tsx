@@ -1,6 +1,6 @@
 import React from 'react';
 import { User } from 'lucide-react';
-import { Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ehrconnect/design-system';
+import { Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@nirmitee.io/design-system';
 import { FormSection } from './FormSection';
 import { ErrorMessage } from './ErrorMessage';
 import { PhotoUpload } from './PhotoUpload';

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import billingService from '@/services/billing.service';
-import { Card } from '@ehrconnect/design-system';
+import { Card } from '@nirmitee.io/design-system';
 
 interface KPIs {
   totalBilled: number;

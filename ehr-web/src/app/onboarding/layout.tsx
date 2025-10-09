@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useSession } from 'next-auth/react';
-import { LoadingState } from '@ehrconnect/design-system';
+import { LoadingState } from '@nirmitee.io/design-system';
 
 export default function OnboardingLayout({
   children,

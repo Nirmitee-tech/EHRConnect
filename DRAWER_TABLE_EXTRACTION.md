@@ -85,7 +85,7 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from '@ehrconnect/design-system';
+} from '@nirmitee.io/design-system';
 
 function PatientForm() {
   const [open, setOpen] = useState(false);
@@ -128,7 +128,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@ehrconnect/design-system';
+} from '@nirmitee.io/design-system';
 
 function PatientList({ patients }) {
   return (

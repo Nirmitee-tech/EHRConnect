@@ -1,6 +1,6 @@
 import React from 'react';
 import { Calendar, Activity, Plus } from 'lucide-react';
-import { Button, Badge } from '@ehrconnect/design-system';
+import { Button, Badge } from '@nirmitee.io/design-system';
 
 interface EncountersTabProps {
   encounters: any[];

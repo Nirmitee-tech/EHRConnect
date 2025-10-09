@@ -1,6 +1,6 @@
 # Migration Guide: EHR-Web to Design System
 
-This guide explains how to migrate ehr-web to use the @ehrconnect/design-system package, making the codebase cleaner and more maintainable.
+This guide explains how to migrate ehr-web to use the @nirmitee.io/design-system package, making the codebase cleaner and more maintainable.
 
 ## 📋 Overview
 
@@ -55,7 +55,7 @@ npm link
 
 # In ehr-web directory
 cd ../ehr-web
-npm link @ehrconnect/design-system
+npm link @nirmitee.io/design-system
 ```
 
 ### Step 3: Update ehr-web/src/app/layout.tsx
@@ -67,7 +67,7 @@ Replace the local styles import with design system styles:
 import "./globals.css";
 
 // AFTER
-import "@ehrconnect/design-system/dist/index.css";
+import "@nirmitee.io/design-system/dist/index.css";
 import "./globals.css"; // Keep for app-specific styles
 ```
 
@@ -90,7 +90,7 @@ import {
   Badge,
   Input,
   Label 
-} from "@ehrconnect/design-system";
+} from "@nirmitee.io/design-system";
 ```
 
 ### Step 5: Update Utils Import
@@ -100,7 +100,7 @@ import {
 import { cn } from "@/lib/utils";
 
 // AFTER  
-import { cn, formatDate, getInitials } from "@ehrconnect/design-system";
+import { cn, formatDate, getInitials } from "@nirmitee.io/design-system";
 ```
 
 ### Step 6: Delete Migrated UI Components
@@ -127,7 +127,7 @@ If needed, extend the design system's Tailwind config:
 module.exports = {
   content: [
     "./src/**/*.{js,ts,jsx,tsx}",
-    "./node_modules/@ehrconnect/design-system/dist/**/*.js",
+    "./node_modules/@nirmitee.io/design-system/dist/**/*.js",
   ],
   // Your customizations
 }
@@ -137,12 +137,12 @@ module.exports = {
 
 | Old Path | New Import |
 |----------|-----------|
-| `@/components/ui/button` | `@ehrconnect/design-system` |
-| `@/components/ui/card` | `@ehrconnect/design-system` |
-| `@/components/ui/badge` | `@ehrconnect/design-system` |
-| `@/components/ui/input` | `@ehrconnect/design-system` |
-| `@/components/ui/label` | `@ehrconnect/design-system` |
-| `@/lib/utils` (cn, formatDate, etc.) | `@ehrconnect/design-system` |
+| `@/components/ui/button` | `@nirmitee.io/design-system` |
+| `@/components/ui/card` | `@nirmitee.io/design-system` |
+| `@/components/ui/badge` | `@nirmitee.io/design-system` |
+| `@/components/ui/input` | `@nirmitee.io/design-system` |
+| `@/components/ui/label` | `@nirmitee.io/design-system` |
+| `@/lib/utils` (cn, formatDate, etc.) | `@nirmitee.io/design-system` |
 
 ## 🎯 Example Migration
 
@@ -177,7 +177,7 @@ import {
   Card, CardHeader, CardTitle,
   Badge,
   cn 
-} from "@ehrconnect/design-system";
+} from "@nirmitee.io/design-system";
 
 export default function PatientsPage() {
   return (
@@ -220,11 +220,11 @@ grep -r "from \"@/components/ui" src/
 ## 🆘 Troubleshooting
 
 ### Styles Not Applied
-- Ensure `@ehrconnect/design-system/dist/index.css` is imported in layout.tsx
+- Ensure `@nirmitee.io/design-system/dist/index.css` is imported in layout.tsx
 - Check that Tailwind content includes the design system path
 
 ### Type Errors
-- Run `npm link @ehrconnect/design-system` again
+- Run `npm link @nirmitee.io/design-system` again
 - Restart TypeScript server in VS Code (Cmd+Shift+P > TypeScript: Restart TS Server)
 
 ### Build Errors

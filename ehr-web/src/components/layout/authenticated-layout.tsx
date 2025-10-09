@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
-import { LoadingState } from '@ehrconnect/design-system';
+import { LoadingState } from '@nirmitee.io/design-system';
 import { HealthcareSidebar } from './healthcare-sidebar';
 import { HealthcareHeader } from './healthcare-header';
 import { UserProfile } from './user-profile';

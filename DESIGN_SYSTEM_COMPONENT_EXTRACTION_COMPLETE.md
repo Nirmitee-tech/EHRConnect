@@ -105,7 +105,7 @@ Successfully extracted Drawer (Sheet), Table, and Select components from ehr-web
 1. **ehr-web/src/components/patients/patient-drawer.tsx**
    ```tsx
    // Changed: Sheet → Drawer
-   import { Drawer, DrawerContent } from '@ehrconnect/design-system';
+   import { Drawer, DrawerContent } from '@nirmitee.io/design-system';
    ```
 
 2. **ehr-web/src/components/forms/encounter-form.tsx**
@@ -115,7 +115,7 @@ Successfully extracted Drawer (Sheet), Table, and Select components from ehr-web
      Button, Label, Input, 
      Drawer, DrawerContent, DrawerHeader, DrawerTitle,
      Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
-   } from '@ehrconnect/design-system';
+   } from '@nirmitee.io/design-system';
    ```
 
 3. **ehr-web/src/components/forms/patient-form.tsx**
@@ -124,7 +124,7 @@ Successfully extracted Drawer (Sheet), Table, and Select components from ehr-web
    import { 
      Button, Input, Label, 
      Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
-   } from '@ehrconnect/design-system';
+   } from '@nirmitee.io/design-system';
    ```
 
 4. **ehr-web/src/components/forms/allergy-form.tsx**
@@ -133,7 +133,7 @@ Successfully extracted Drawer (Sheet), Table, and Select components from ehr-web
    import { 
      Button, Input, Label, 
      Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
-   } from '@ehrconnect/design-system';
+   } from '@nirmitee.io/design-system';
    ```
 
 ## Design System Updates
@@ -261,7 +261,7 @@ import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle,
   Table, TableHeader, TableBody, TableRow, TableCell,
   Sidebar, Header
-} from '@ehrconnect/design-system';
+} from '@nirmitee.io/design-system';
 ```
 
 ### 3. Use in Components
@@ -315,7 +315,7 @@ function AddPatient() {
 - No visual component library
 
 ### After
-- Centralized in `@ehrconnect/design-system`
+- Centralized in `@nirmitee.io/design-system`
 - 31 documented Storybook examples
 - Easy to maintain and update
 - Visual component playground for development

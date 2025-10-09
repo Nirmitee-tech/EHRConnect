@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Edit, Calendar, Pill, AlertCircle, Activity, FileText, Loader2 } from 'lucide-react';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@ehrconnect/design-system';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@nirmitee.io/design-system';
 import { useParams } from 'next/navigation';
 import { fhirService } from '@/lib/medplum';
 import { PatientForm } from '@/components/forms/patient-form';

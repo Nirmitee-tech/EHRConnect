@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@ehrconnect/design-system": "1.0.0",
+    "@nirmitee.io/design-system": "1.0.0",
     "@medplum/core": "^4.4.1",
     "@medplum/react": "^4.4.1",
     "@radix-ui/react-dialog": "^1.1.15",

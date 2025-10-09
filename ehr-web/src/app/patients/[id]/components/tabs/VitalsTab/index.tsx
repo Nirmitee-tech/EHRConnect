@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Filter } from 'lucide-react';
-import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ehrconnect/design-system';
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@nirmitee.io/design-system';
 import { VitalsAlerts } from './VitalsAlerts';
 import { VitalsCards } from './VitalsCards';
 import { VitalsCharts } from './VitalsCharts';

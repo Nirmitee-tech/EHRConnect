@@ -1,7 +1,7 @@
 'use client';
 
 import { Stethoscope, User, Loader2, X } from 'lucide-react';
-import { Button, Label, Input, Drawer, DrawerContent, DrawerHeader, DrawerTitle, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ehrconnect/design-system';
+import { Button, Label, Input, Drawer, DrawerContent, DrawerHeader, DrawerTitle, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@nirmitee.io/design-system';
 import { useState, useEffect } from 'react';
 import { fhirService } from '@/lib/medplum';
 

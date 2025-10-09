@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Drawer, DrawerContent } from '@ehrconnect/design-system';
+import { Drawer, DrawerContent } from '@nirmitee.io/design-system';
 import { PatientForm } from '@/components/forms/patient-form';
 import { EncounterForm } from '@/components/forms/encounter-form';
 import { FHIRPatient } from '@/types/fhir';

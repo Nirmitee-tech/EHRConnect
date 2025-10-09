@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
-import { Button } from '@ehrconnect/design-system';
+import { Button } from '@nirmitee.io/design-system';
 
 export function NoFacilityNotice() {
   return (
