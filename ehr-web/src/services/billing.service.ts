@@ -258,6 +258,161 @@ export class BillingService {
   }
 
   // =====================================================
+  // MEDICAL CODES - COMPREHENSIVE MANAGEMENT
+  // =====================================================
+
+  async getMedicalCodes(filters?: {
+    search?: string;
+    codeType?: 'icd10' | 'cpt' | 'hcpcs' | 'loinc';
+    category?: string;
+    version?: string;
+    isActive?: boolean;
+    isFavorite?: boolean;
+    sortBy?: 'code' | 'usage' | 'recent' | 'alpha';
+    limit?: number;
+    offset?: number;
+  }) {
+    const response = await this.api.get('/masters/medical-codes', {
+      params: filters,
+    });
+    return response.data;
+  }
+
+  async getMedicalCodeById(id: string) {
+    const response = await this.api.get(`/masters/medical-codes/${id}`);
+    return response.data;
+  }
+
+  async getMedicalCodeByCode(code: string, codeType?: string) {
+    const response = await this.api.get(`/masters/medical-codes/lookup/${code}`, {
+      params: { codeType },
+    });
+    return response.data;
+  }
+
+  async createMedicalCode(data: {
+    code: string;
+    description: string;
+    codeType: 'icd10' | 'cpt' | 'hcpcs' | 'loinc';
+    category: string;
+    subcategory?: string;
+    version: string;
+    effectiveDate: string;
+    terminationDate?: string;
+    isActive?: boolean;
+    billable?: boolean;
+    requiresAuth?: boolean;
+    ageRange?: string;
+    gender?: 'male' | 'female' | 'both';
+    notes?: string;
+  }) {
+    const response = await this.api.post('/masters/medical-codes', data);
+    return response.data;
+  }
+
+  async updateMedicalCode(id: string, data: any) {
+    const response = await this.api.put(`/masters/medical-codes/${id}`, data);
+    return response.data;
+  }
+
+  async deleteMedicalCode(id: string) {
+    const response = await this.api.delete(`/masters/medical-codes/${id}`);
+    return response.data;
+  }
+
+  async toggleFavoriteCode(id: string) {
+    const response = await this.api.post(`/masters/medical-codes/${id}/favorite`);
+    return response.data;
+  }
+
+  async bulkImportCodes(file: File, codeType: string) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('codeType', codeType);
+
+    const response = await this.api.post('/masters/medical-codes/bulk-import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  async exportMedicalCodes(filters?: {
+    codeType?: string;
+    category?: string;
+    isActive?: boolean;
+    format?: 'csv' | 'xlsx' | 'json';
+  }) {
+    const response = await this.api.get('/masters/medical-codes/export', {
+      params: filters,
+      responseType: 'blob',
+    });
+    return response.data;
+  }
+
+  async getMedicalCodeCategories(codeType?: string) {
+    const response = await this.api.get('/masters/medical-codes/categories', {
+      params: { codeType },
+    });
+    return response.data;
+  }
+
+  async getMedicalCodeVersions(codeType?: string) {
+    const response = await this.api.get('/masters/medical-codes/versions', {
+      params: { codeType },
+    });
+    return response.data;
+  }
+
+  async searchMedicalCodes(query: string, options?: {
+    codeType?: string;
+    limit?: number;
+    includeInactive?: boolean;
+  }) {
+    const response = await this.api.get('/masters/medical-codes/search', {
+      params: { query, ...options },
+    });
+    return response.data;
+  }
+
+  async getMedicalCodeUsageStats(codeId: string, startDate?: string, endDate?: string) {
+    const response = await this.api.get(`/masters/medical-codes/${codeId}/usage-stats`, {
+      params: { startDate, endDate },
+    });
+    return response.data;
+  }
+
+  async getRecentlyUsedCodes(limit = 10) {
+    const response = await this.api.get('/masters/medical-codes/recently-used', {
+      params: { limit },
+    });
+    return response.data;
+  }
+
+  async getFavoriteCodes(codeType?: string) {
+    const response = await this.api.get('/masters/medical-codes/favorites', {
+      params: { codeType },
+    });
+    return response.data;
+  }
+
+  async validateCode(code: string, codeType: string) {
+    const response = await this.api.post('/masters/medical-codes/validate', {
+      code,
+      codeType,
+    });
+    return response.data;
+  }
+
+  async getCrosswalks(code: string, fromType: string, toType: string) {
+    const response = await this.api.get('/masters/medical-codes/crosswalks', {
+      params: { code, fromType, toType },
+    });
+    return response.data;
+  }
+
+  // =====================================================
   // PROVIDERS
   // =====================================================
 

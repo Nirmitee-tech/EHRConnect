@@ -1,0 +1,126 @@
+code,description,code_type,category,subcategory,version,effective_date,is_active,billable,requires_auth,gender
+E11.9,Type 2 diabetes mellitus without complications,icd10,Endocrine Nutritional and Metabolic Diseases,Diabetes Mellitus,2024,2024-10-01,true,true,false,both
+E11.65,Type 2 diabetes mellitus with hyperglycemia,icd10,Endocrine Nutritional and Metabolic Diseases,Diabetes Mellitus,2024,2024-10-01,true,true,false,both
+E11.22,Type 2 diabetes mellitus with diabetic chronic kidney disease,icd10,Endocrine Nutritional and Metabolic Diseases,Diabetes Mellitus,2024,2024-10-01,true,true,false,both
+E11.40,Type 2 diabetes mellitus with diabetic neuropathy unspecified,icd10,Endocrine Nutritional and Metabolic Diseases,Diabetes Mellitus,2024,2024-10-01,true,true,false,both
+E11.3 59,Type 2 diabetes mellitus with other circulatory complications,icd10,Endocrine Nutritional and Metabolic Diseases,Diabetes Mellitus,2024,2024-10-01,true,true,false,both
+I10,Essential (primary) hypertension,icd10,Diseases of the Circulatory System,Hypertensive Diseases,2024,2024-10-01,true,true,false,both
+I11.0,Hypertensive heart disease with heart failure,icd10,Diseases of the Circulatory System,Hypertensive Diseases,2024,2024-10-01,true,true,false,both
+I12.9,Hypertensive chronic kidney disease with stage 1 through stage 4 chronic kidney disease,icd10,Diseases of the Circulatory System,Hypertensive Diseases,2024,2024-10-01,true,true,false,both
+I50.9,Heart failure unspecified,icd10,Diseases of the Circulatory System,Heart Disease,2024,2024-10-01,true,true,false,both
+I50.23,Acute on chronic systolic (congestive) heart failure,icd10,Diseases of the Circulatory System,Heart Disease,2024,2024-10-01,true,true,false,both
+I50.33,Acute on chronic diastolic (congestive) heart failure,icd10,Diseases of the Circulatory System,Heart Disease,2024,2024-10-01,true,true,false,both
+I21.09,ST elevation (STEMI) myocardial infarction involving other coronary artery,icd10,Diseases of the Circulatory System,Ischemic Heart Disease,2024,2024-10-01,true,true,false,both
+I21.4,Non-ST elevation (NSTEMI) myocardial infarction,icd10,Diseases of the Circulatory System,Ischemic Heart Disease,2024,2024-10-01,true,true,false,both
+I25.10,Atherosclerotic heart disease of native coronary artery without angina pectoris,icd10,Diseases of the Circulatory System,Ischemic Heart Disease,2024,2024-10-01,true,true,false,both
+I48.91,Unspecified atrial fibrillation,icd10,Diseases of the Circulatory System,Cardiac Arrhythmias,2024,2024-10-01,true,true,false,both
+I63.9,Cerebral infarction unspecified,icd10,Diseases of the Circulatory System,Cerebrovascular Diseases,2024,2024-10-01,true,true,false,both
+I64,Stroke not specified as hemorrhage or infarction,icd10,Diseases of the Circulatory System,Cerebrovascular Diseases,2024,2024-10-01,true,true,false,both
+J44.0,Chronic obstructive pulmonary disease with acute lower respiratory infection,icd10,Diseases of the Respiratory System,COPD,2024,2024-10-01,true,true,false,both
+J44.1,Chronic obstructive pulmonary disease with (acute) exacerbation,icd10,Diseases of the Respiratory System,COPD,2024,2024-10-01,true,true,false,both
+J45.20,Mild intermittent asthma uncomplicated,icd10,Diseases of the Respiratory System,Asthma,2024,2024-10-01,true,true,false,both
+J45.40,Moderate persistent asthma uncomplicated,icd10,Diseases of the Respiratory System,Asthma,2024,2024-10-01,true,true,false,both
+J18.9,Pneumonia unspecified organism,icd10,Diseases of the Respiratory System,Pneumonia,2024,2024-10-01,true,true,false,both
+J96.01,Acute respiratory failure with hypoxia,icd10,Diseases of the Respiratory System,Respiratory Failure,2024,2024-10-01,true,true,false,both
+N18.3,Chronic kidney disease stage 3 (moderate),icd10,Diseases of the Genitourinary System,Kidney Disease,2024,2024-10-01,true,true,false,both
+N18.4,Chronic kidney disease stage 4 (severe),icd10,Diseases of the Genitourinary System,Kidney Disease,2024,2024-10-01,true,true,false,both
+N18.5,Chronic kidney disease stage 5,icd10,Diseases of the Genitourinary System,Kidney Disease,2024,2024-10-01,true,true,false,both
+N18.6,End stage renal disease,icd10,Diseases of the Genitourinary System,Kidney Disease,2024,2024-10-01,true,true,false,both
+N39.0,Urinary tract infection site not specified,icd10,Diseases of the Genitourinary System,Urinary Tract,2024,2024-10-01,true,true,false,both
+K21.9,Gastro-esophageal reflux disease without esophagitis,icd10,Diseases of the Digestive System,Esophageal Disorders,2024,2024-10-01,true,true,false,both
+K25.9,Gastric ulcer unspecified as acute or chronic without hemorrhage or perforation,icd10,Diseases of the Digestive System,Stomach Disorders,2024,2024-10-01,true,true,false,both
+K57.32,Diverticulitis of large intestine without perforation or abscess without bleeding,icd10,Diseases of the Digestive System,Intestinal Disorders,2024,2024-10-01,true,true,false,both
+K80.20,Calculus of gallbladder without cholecystitis without obstruction,icd10,Diseases of the Digestive System,Gallbladder Disorders,2024,2024-10-01,true,true,false,both
+M79.3,Panniculitis unspecified,icd10,Diseases of the Musculoskeletal System,Soft Tissue Disorders,2024,2024-10-01,true,true,false,both
+M79.604,Pain in right leg,icd10,Diseases of the Musculoskeletal System,Pain Disorders,2024,2024-10-01,true,true,false,both
+M17.11,Unilateral primary osteoarthritis right knee,icd10,Diseases of the Musculoskeletal System,Joint Disorders,2024,2024-10-01,true,true,false,both
+M54.5,Low back pain,icd10,Diseases of the Musculoskeletal System,Back Disorders,2024,2024-10-01,true,true,false,both
+M25.561,Pain in right knee,icd10,Diseases of the Musculoskeletal System,Joint Disorders,2024,2024-10-01,true,true,false,both
+Z23,Encounter for immunization,icd10,Factors Influencing Health Status,Preventive Services,2024,2024-10-01,true,false,false,both
+Z00.00,Encounter for general adult medical examination without abnormal findings,icd10,Factors Influencing Health Status,Preventive Services,2024,2024-10-01,true,false,false,both
+Z12.11,Encounter for screening for malignant neoplasm of colon,icd10,Factors Influencing Health Status,Screening,2024,2024-10-01,true,true,false,both
+Z79.4,Long term (current) use of insulin,icd10,Factors Influencing Health Status,Drug Therapy,2024,2024-10-01,true,false,false,both
+Z79.899,Other long term (current) drug therapy,icd10,Factors Influencing Health Status,Drug Therapy,2024,2024-10-01,true,false,false,both
+F17.210,Nicotine dependence cigarettes uncomplicated,icd10,Mental Behavioral and Neurodevelopmental Disorders,Substance Use,2024,2024-10-01,true,true,false,both
+F32.9,Major depressive disorder single episode unspecified,icd10,Mental Behavioral and Neurodevelopmental Disorders,Mood Disorders,2024,2024-10-01,true,true,false,both
+F41.1,Generalized anxiety disorder,icd10,Mental Behavioral and Neurodevelopmental Disorders,Anxiety Disorders,2024,2024-10-01,true,true,false,both
+G43.909,Migraine unspecified not intractable without status migrainosus,icd10,Diseases of the Nervous System,Headache Disorders,2024,2024-10-01,true,true,false,both
+G47.33,Obstructive sleep apnea (adult) (pediatric),icd10,Diseases of the Nervous System,Sleep Disorders,2024,2024-10-01,true,true,false,both
+99213,Office or other outpatient visit for the evaluation and management of an established patient which requires a medically appropriate history and/or examination and low level of medical decision making (20-29 minutes),cpt,Evaluation and Management,Office Visits,2024,2024-01-01,true,true,false,both
+99214,Office or other outpatient visit for the evaluation and management of an established patient which requires a medically appropriate history and/or examination and moderate level of medical decision making (30-39 minutes),cpt,Evaluation and Management,Office Visits,2024,2024-01-01,true,true,false,both
+99215,Office or other outpatient visit for the evaluation and management of an established patient which requires a medically appropriate history and/or examination and high level of medical decision making (40-54 minutes),cpt,Evaluation and Management,Office Visits,2024,2024-01-01,true,true,false,both
+99203,Office or other outpatient visit for the evaluation and management of a new patient which requires a medically appropriate history and/or examination and low level of medical decision making (30-44 minutes),cpt,Evaluation and Management,Office Visits,2024,2024-01-01,true,true,false,both
+99204,Office or other outpatient visit for the evaluation and management of a new patient which requires a medically appropriate history and/or examination and moderate level of medical decision making (45-59 minutes),cpt,Evaluation and Management,Office Visits,2024,2024-01-01,true,true,false,both
+99205,Office or other outpatient visit for the evaluation and management of a new patient which requires a medically appropriate history and/or examination and high level of medical decision making (60-74 minutes),cpt,Evaluation and Management,Office Visits,2024,2024-01-01,true,true,false,both
+99211,Office or other outpatient visit for the evaluation and management of an established patient that may not require the presence of a physician (5-10 minutes),cpt,Evaluation and Management,Office Visits,2024,2024-01-01,true,true,false,both
+99212,Office or other outpatient visit for the evaluation and management of an established patient which requires a medically appropriate history and/or examination and straightforward medical decision making (10-19 minutes),cpt,Evaluation and Management,Office Visits,2024,2024-01-01,true,true,false,both
+99231,Subsequent hospital inpatient or observation care per day for the evaluation and management of a patient (15-24 minutes),cpt,Evaluation and Management,Hospital Care,2024,2024-01-01,true,true,false,both
+99232,Subsequent hospital inpatient or observation care per day for the evaluation and management of a patient (25-34 minutes),cpt,Evaluation and Management,Hospital Care,2024,2024-01-01,true,true,false,both
+99233,Subsequent hospital inpatient or observation care per day for the evaluation and management of a patient (35+ minutes),cpt,Evaluation and Management,Hospital Care,2024,2024-01-01,true,true,false,both
+99221,Initial hospital inpatient or observation care per day for the evaluation and management of a patient (40-54 minutes),cpt,Evaluation and Management,Hospital Care,2024,2024-01-01,true,true,false,both
+99222,Initial hospital inpatient or observation care per day for the evaluation and management of a patient (55-69 minutes),cpt,Evaluation and Management,Hospital Care,2024,2024-01-01,true,true,false,both
+99223,Initial hospital inpatient or observation care per day for the evaluation and management of a patient (70+ minutes),cpt,Evaluation and Management,Hospital Care,2024,2024-01-01,true,true,false,both
+99238,Hospital inpatient or observation discharge day management (30 minutes or less),cpt,Evaluation and Management,Hospital Care,2024,2024-01-01,true,true,false,both
+99239,Hospital inpatient or observation discharge day management (more than 30 minutes),cpt,Evaluation and Management,Hospital Care,2024,2024-01-01,true,true,false,both
+99281,Emergency department visit for the evaluation and management of a patient (straightforward),cpt,Evaluation and Management,Emergency Department,2024,2024-01-01,true,true,false,both
+99282,Emergency department visit for the evaluation and management of a patient (low complexity),cpt,Evaluation and Management,Emergency Department,2024,2024-01-01,true,true,false,both
+99283,Emergency department visit for the evaluation and management of a patient (moderate complexity),cpt,Evaluation and Management,Emergency Department,2024,2024-01-01,true,true,false,both
+99284,Emergency department visit for the evaluation and management of a patient (high complexity),cpt,Evaluation and Management,Emergency Department,2024,2024-01-01,true,true,false,both
+99285,Emergency department visit for the evaluation and management of a patient (high severity),cpt,Evaluation and Management,Emergency Department,2024,2024-01-01,true,true,false,both
+99396,Periodic comprehensive preventive medicine reevaluation and management individual established patient 40-64 years,cpt,Evaluation and Management,Preventive Medicine,2024,2024-01-01,true,true,false,both
+99397,Periodic comprehensive preventive medicine reevaluation and management individual established patient 65 years and older,cpt,Evaluation and Management,Preventive Medicine,2024,2024-01-01,true,true,false,both
+99401,Preventive medicine counseling and/or risk factor reduction intervention(s) provided to an individual (15 minutes),cpt,Evaluation and Management,Preventive Medicine,2024,2024-01-01,true,true,false,both
+93000,Electrocardiogram routine ECG with at least 12 leads; with interpretation and report,cpt,Medicine,Cardiovascular,2024,2024-01-01,true,true,true,both
+93005,Electrocardiogram routine ECG with at least 12 leads; tracing only without interpretation and report,cpt,Medicine,Cardiovascular,2024,2024-01-01,true,true,false,both
+93015,Cardiovascular stress test using maximal or submaximal treadmill or bicycle exercise; with supervision interpretation and report,cpt,Medicine,Cardiovascular,2024,2024-01-01,true,true,true,both
+93306,Echocardiography transthoracic real-time with image documentation complete without spectral or color Doppler,cpt,Medicine,Cardiovascular,2024,2024-01-01,true,true,true,both
+93350,Echocardiography transthoracic real-time with image documentation during rest and cardiovascular stress test,cpt,Medicine,Cardiovascular,2024,2024-01-01,true,true,true,both
+94010,Spirometry including graphic record total and timed vital capacity expiratory flow rate measurement,cpt,Medicine,Pulmonary,2024,2024-01-01,true,true,false,both
+94060,Bronchodilation responsiveness spirometry pre and post bronchodilator administration,cpt,Medicine,Pulmonary,2024,2024-01-01,true,true,false,both
+94640,Pressurized or nonpressurized inhalation treatment for acute airway obstruction,cpt,Medicine,Pulmonary,2024,2024-01-01,true,true,false,both
+94726,Plethysmography for determination of lung volumes,cpt,Medicine,Pulmonary,2024,2024-01-01,true,true,true,both
+80053,Comprehensive metabolic panel,cpt,Pathology and Laboratory,Chemistry,2024,2024-01-01,true,true,false,both
+80048,Basic metabolic panel (Calcium ionized),cpt,Pathology and Laboratory,Chemistry,2024,2024-01-01,true,true,false,both
+80061,Lipid panel,cpt,Pathology and Laboratory,Chemistry,2024,2024-01-01,true,true,false,both
+82947,Glucose; quantitative blood (except reagent strip),cpt,Pathology and Laboratory,Chemistry,2024,2024-01-01,true,true,false,both
+83036,Hemoglobin; glycosylated (A1C),cpt,Pathology and Laboratory,Chemistry,2024,2024-01-01,true,true,false,both
+84443,Thyroid stimulating hormone (TSH),cpt,Pathology and Laboratory,Chemistry,2024,2024-01-01,true,true,false,both
+85025,Complete blood count (CBC) with automated differential WBC count,cpt,Pathology and Laboratory,Hematology,2024,2024-01-01,true,true,false,both
+85027,Complete blood count (CBC),cpt,Pathology and Laboratory,Hematology,2024,2024-01-01,true,true,false,both
+85610,Prothrombin time,cpt,Pathology and Laboratory,Coagulation,2024,2024-01-01,true,true,false,both
+86900,Blood typing; ABO,cpt,Pathology and Laboratory,Immunology,2024,2024-01-01,true,true,false,both
+87070,Culture bacterial any other source except urine blood or stool aerobic,cpt,Pathology and Laboratory,Microbiology,2024,2024-01-01,true,true,false,both
+87086,Culture bacterial; quantitative colony count urine,cpt,Pathology and Laboratory,Microbiology,2024,2024-01-01,true,true,false,both
+87880,Infectious agent antigen detection by immunoassay with direct optical observation; Streptococcus group A,cpt,Pathology and Laboratory,Microbiology,2024,2024-01-01,true,true,false,both
+70450,Computed tomography head or brain; without contrast material,cpt,Radiology,Diagnostic Radiology,2024,2024-01-01,true,true,true,both
+70553,Magnetic resonance imaging brain; without contrast material followed by contrast material,cpt,Radiology,Diagnostic Radiology,2024,2024-01-01,true,true,true,both
+71045,Radiologic examination chest; single view,cpt,Radiology,Diagnostic Radiology,2024,2024-01-01,true,true,false,both
+71046,Radiologic examination chest; 2 views,cpt,Radiology,Diagnostic Radiology,2024,2024-01-01,true,true,false,both
+71250,Computed tomography thorax; without contrast material,cpt,Radiology,Diagnostic Radiology,2024,2024-01-01,true,true,true,both
+74177,Computed tomography abdomen and pelvis; with contrast material,cpt,Radiology,Diagnostic Radiology,2024,2024-01-01,true,true,true,both
+76705,Ultrasound abdominal real time with image documentation; limited,cpt,Radiology,Ultrasound,2024,2024-01-01,true,true,false,both
+76856,Ultrasound pelvic real time with image documentation; complete,cpt,Radiology,Ultrasound,2024,2024-01-01,true,true,false,both
+76830,Ultrasound transvaginal,cpt,Radiology,Ultrasound,2024,2024-01-01,true,true,false,female
+77065,Diagnostic mammography including computer-aided detection; unilateral,cpt,Radiology,Mammography,2024,2024-01-01,true,true,false,female
+77067,Screening mammography bilateral,cpt,Radiology,Mammography,2024,2024-01-01,true,true,false,female
+90471,Immunization administration (includes percutaneous intranasal mucosal administration); 1 vaccine,cpt,Medicine,Immunizations,2024,2024-01-01,true,true,false,both
+90472,Immunization administration; each additional vaccine,cpt,Medicine,Immunizations,2024,2024-01-01,true,true,false,both
+90658,Influenza virus vaccine trivalent split virus when administered to individuals 3 years of age and older,cpt,Medicine,Immunizations,2024,2024-01-01,true,true,false,both
+90670,Pneumococcal conjugate vaccine 13 valent for intramuscular use,cpt,Medicine,Immunizations,2024,2024-01-01,true,true,false,both
+90732,Pneumococcal polysaccharide vaccine 23-valent adult or immunosuppressed patient dosage when administered to individuals 2 years or older,cpt,Medicine,Immunizations,2024,2024-01-01,true,true,false,both
+96372,Therapeutic prophylactic or diagnostic injection; subcutaneous or intramuscular,cpt,Medicine,Administration,2024,2024-01-01,true,true,false,both
+96374,Therapeutic prophylactic or diagnostic injection; intravenous push single or initial substance/drug,cpt,Medicine,Administration,2024,2024-01-01,true,true,false,both
+96365,Intravenous infusion for therapy prophylaxis or diagnosis; initial up to 1 hour,cpt,Medicine,Administration,2024,2024-01-01,true,true,false,both
+96366,Intravenous infusion for therapy prophylaxis or diagnosis; each additional hour,cpt,Medicine,Administration,2024,2024-01-01,true,true,false,both
+J0696,Injection ceftriaxone sodium per 250 mg,hcpcs,Drugs Administered Other Than Oral Method,Antibiotics,2024,2024-01-01,true,true,false,both
+J1885,Injection ketorolac tromethamine per 15 mg,hcpcs,Drugs Administered Other Than Oral Method,Pain Management,2024,2024-01-01,true,true,false,both
+J2405,Injection ondansetron hydrochloride per 1 mg,hcpcs,Drugs Administered Other Than Oral Method,Antiemetics,2024,2024-01-01,true,true,false,both
+J3010,Injection fentanyl citrate per 0.1 mg,hcpcs,Drugs Administered Other Than Oral Method,Analgesics,2024,2024-01-01,true,true,false,both
+J3420,Injection vitamin B-12 cyanocobalamin up to 1000 mcg,hcpcs,Drugs Administered Other Than Oral Method,Vitamins,2024,2024-01-01,true,true,false,both
+J7030,Infusion normal saline solution 1000 cc,hcpcs,Drugs Administered Other Than Oral Method,Fluids,2024,2024-01-01,true,true,false,both
+A0428,Ambulance service basic life support non-emergency transport (BLS),hcpcs,Ambulance Services,Ground Transport,2024,2024-01-01,true,true,true,both
+A0429,Ambulance service basic life support emergency transport (BLS-emergency),hcpcs,Ambulance Services,Ground Transport,2024,2024-01-01,true,true,true,both
+A0432,Paramedic intercept (PI) rural area transport furnished by a volunteer ambulance company,hcpcs,Ambulance Services,Ground Transport,2024,2024-01-01,true,true,true,both
+G0438,Annual wellness visit; includes a personalized prevention plan of service (PPS) initial visit,hcpcs,Preventive Services,Wellness Visits,2024,2024-01-01,true,true,false,both
+G0439,Annual wellness visit; includes a personalized prevention plan of service (PPS) subsequent visit,hcpcs,Preventive Services,Wellness Visits,2024,2024-01-01,true,true,false,both
+G0463,Hospital outpatient clinic visit for assessment and management of a patient,hcpcs,Outpatient Services,Clinic Visits,2024,2024-01-01,true,true,false,both
