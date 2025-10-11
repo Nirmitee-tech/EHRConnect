@@ -47,6 +47,13 @@ export default function AppointmentsPage() {
   const [isDetailsDrawerOpen, setIsDetailsDrawerOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [practitionerFilter, setPractitionerFilter] = useState<string | null>(null);
+  const [practitionerSearchQuery, setPractitionerSearchQuery] = useState('');
+  const [locationFilter, setLocationFilter] = useState<string | null>(null);
+  const [locationSearchQuery, setLocationSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'admin' | 'doctor'>('admin');
+  const [currentDoctorId, setCurrentDoctorId] = useState<string | null>(null); // For doctor view
+  const [showLocations, setShowLocations] = useState(false);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -77,11 +84,110 @@ export default function AppointmentsPage() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
+  // Get unique practitioners with appointment counts
+  const practitioners = useMemo(() => {
+    const practitionerMap = new Map<string, number>();
+    allAppointments.forEach(apt => {
+      const name = apt.practitionerName;
+      practitionerMap.set(name, (practitionerMap.get(name) || 0) + 1);
+    });
+    return Array.from(practitionerMap.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [allAppointments]);
+
+  // Get unique locations with appointment counts
+  const locations = useMemo(() => {
+    const locationMap = new Map<string, number>();
+    allAppointments.forEach(apt => {
+      const location = apt.location || 'Unassigned';
+      locationMap.set(location, (locationMap.get(location) || 0) + 1);
+    });
+    return Array.from(locationMap.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [allAppointments]);
+
+  // Filter practitioners by search query
+  const filteredPractitioners = useMemo(() => {
+    if (!practitionerSearchQuery) return practitioners;
+    const query = practitionerSearchQuery.toLowerCase();
+    return practitioners.filter(p => p.name.toLowerCase().includes(query));
+  }, [practitioners, practitionerSearchQuery]);
+
+  // Filter locations by search query
+  const filteredLocations = useMemo(() => {
+    if (!locationSearchQuery) return locations;
+    const query = locationSearchQuery.toLowerCase();
+    return locations.filter(l => l.name.toLowerCase().includes(query));
+  }, [locations, locationSearchQuery]);
+
+  // Calculate tab counts
+  const tabCounts = useMemo(() => {
+    const inPersonCount = allAppointments.filter(apt => {
+      const aptType = (apt.appointmentType || apt.type || '').toLowerCase();
+      return !aptType.includes('online') && !aptType.includes('virtual') && !aptType.includes('telemedicine') && !aptType.includes('telehealth');
+    }).length;
+
+    const onlineCount = allAppointments.filter(apt => {
+      const aptType = (apt.appointmentType || apt.type || '').toLowerCase();
+      return aptType.includes('online') || aptType.includes('virtual') || aptType.includes('telemedicine') || aptType.includes('telehealth');
+    }).length;
+
+    const followupCount = allAppointments.filter(apt => {
+      const aptType = (apt.appointmentType || apt.type || apt.category || '').toLowerCase();
+      return aptType.includes('follow-up') || aptType.includes('followup') || aptType.includes('follow up');
+    }).length;
+
+    return { inPersonCount, onlineCount, followupCount };
+  }, [allAppointments]);
+
   // Filter appointments based on selected categories, search query, and status
   const filteredAppointments = useMemo(() => {
     return allAppointments.filter(apt => {
+      // View mode filter - Doctor view only shows their appointments
+      if (viewMode === 'doctor' && currentDoctorId) {
+        if (apt.practitionerId !== currentDoctorId && apt.practitionerName !== currentDoctorId) {
+          return false;
+        }
+      }
+
+      // Tab filter
+      if (activeTab === 'online') {
+        // Show only online/virtual appointments
+        const aptType = (apt.appointmentType || apt.type || '').toLowerCase();
+        if (!aptType.includes('online') && !aptType.includes('virtual') && !aptType.includes('telemedicine') && !aptType.includes('telehealth')) {
+          return false;
+        }
+      } else if (activeTab === 'followups') {
+        // Show only follow-up appointments
+        const aptType = (apt.appointmentType || apt.type || apt.category || '').toLowerCase();
+        if (!aptType.includes('follow-up') && !aptType.includes('followup') && !aptType.includes('follow up')) {
+          return false;
+        }
+      } else if (activeTab === 'appointments') {
+        // Show in-person appointments (exclude online appointments)
+        const aptType = (apt.appointmentType || apt.type || '').toLowerCase();
+        if (aptType.includes('online') || aptType.includes('virtual') || aptType.includes('telemedicine') || aptType.includes('telehealth')) {
+          return false;
+        }
+      }
+
+      // Location filter
+      if (locationFilter) {
+        const aptLocation = apt.location || 'Unassigned';
+        if (aptLocation !== locationFilter) {
+          return false;
+        }
+      }
+
       // Status filter
       if (statusFilter && apt.status !== statusFilter) {
+        return false;
+      }
+
+      // Practitioner filter
+      if (practitionerFilter && apt.practitionerName !== practitionerFilter) {
         return false;
       }
 
@@ -92,18 +198,15 @@ export default function AppointmentsPage() {
         if (!categoryEnabled) return false;
       }
 
-      // Search filter
+      // Search filter (for patient names in the appointments list)
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        return (
-          apt.patientName.toLowerCase().includes(query) ||
-          apt.practitionerName.toLowerCase().includes(query)
-        );
+        return apt.patientName.toLowerCase().includes(query);
       }
 
       return true;
     });
-  }, [allAppointments, categories, searchQuery, statusFilter]);
+  }, [allAppointments, categories, searchQuery, statusFilter, practitionerFilter, activeTab, viewMode, currentDoctorId, locationFilter]);
 
   // Track the last loaded range to avoid unnecessary reloads
   const [lastLoadedRange, setLastLoadedRange] = React.useState<{ start: string; end: string } | null>(null);
@@ -119,6 +222,11 @@ export default function AppointmentsPage() {
       setLastLoadedRange({ start: startDate.toISOString(), end: endDate.toISOString() });
     }
   }, [currentDate, view]);
+
+  // Recalculate stats when active tab changes
+  useEffect(() => {
+    calculateStats(allAppointments);
+  }, [activeTab]);
 
   const loadAppointments = async () => {
     setLoading(true);
@@ -136,12 +244,31 @@ export default function AppointmentsPage() {
   };
 
   const calculateStats = (appointments: Appointment[]) => {
+    // Filter appointments based on active tab
+    let tabFilteredAppointments = appointments;
+    if (activeTab === 'online') {
+      tabFilteredAppointments = appointments.filter(apt => {
+        const aptType = (apt.appointmentType || apt.type || '').toLowerCase();
+        return aptType.includes('online') || aptType.includes('virtual') || aptType.includes('telemedicine') || aptType.includes('telehealth');
+      });
+    } else if (activeTab === 'followups') {
+      tabFilteredAppointments = appointments.filter(apt => {
+        const aptType = (apt.appointmentType || apt.type || apt.category || '').toLowerCase();
+        return aptType.includes('follow-up') || aptType.includes('followup') || aptType.includes('follow up');
+      });
+    } else if (activeTab === 'appointments') {
+      tabFilteredAppointments = appointments.filter(apt => {
+        const aptType = (apt.appointmentType || apt.type || '').toLowerCase();
+        return !aptType.includes('online') && !aptType.includes('virtual') && !aptType.includes('telemedicine') && !aptType.includes('telehealth');
+      });
+    }
+
     const stats = {
-      total: appointments.length,
-      scheduled: appointments.filter(a => a.status === 'scheduled').length,
-      inProgress: appointments.filter(a => a.status === 'in-progress').length,
-      completed: appointments.filter(a => a.status === 'completed').length,
-      cancelled: appointments.filter(a => a.status === 'cancelled').length
+      total: tabFilteredAppointments.length,
+      scheduled: tabFilteredAppointments.filter(a => a.status === 'scheduled').length,
+      inProgress: tabFilteredAppointments.filter(a => a.status === 'in-progress').length,
+      completed: tabFilteredAppointments.filter(a => a.status === 'completed').length,
+      cancelled: tabFilteredAppointments.filter(a => a.status === 'cancelled').length
     };
     setStats(stats);
   };
@@ -239,7 +366,7 @@ export default function AppointmentsPage() {
 
   const handleCopyAppointment = (appointment: Appointment) => {
     // Copy appointment details to clipboard
-    const text = `Appointment: ${appointment.patientName}\nDoctor: ${appointment.practitionerName}\nTime: ${new Date(appointment.startTime).toLocaleString()}\nDuration: ${appointment.duration} mins`;
+    const text = `Appointment: ${appointment.patientName}\nPractitioner: ${appointment.practitionerName}\nTime: ${new Date(appointment.startTime).toLocaleString()}\nDuration: ${appointment.duration} mins`;
     navigator.clipboard.writeText(text);
     alert('Appointment details copied to clipboard');
   };
@@ -393,6 +520,14 @@ export default function AppointmentsPage() {
         onViewChange={handleViewChange}
         onDateChange={handleDateChange}
         onToday={handleToday}
+        viewMode={viewMode}
+        onViewModeChange={(mode) => {
+          setViewMode(mode);
+          // If switching to doctor view, set a default doctor (first in list)
+          if (mode === 'doctor' && practitioners.length > 0) {
+            setCurrentDoctorId(practitioners[0].name);
+          }
+        }}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -442,7 +577,16 @@ export default function AppointmentsPage() {
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              Appointments
+              <div className="flex items-center justify-center gap-1.5">
+                <span>Appointments</span>
+                {tabCounts.inPersonCount > 0 && (
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                    activeTab === 'appointments' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                  }`}>
+                    {tabCounts.inPersonCount}
+                  </span>
+                )}
+              </div>
             </button>
             <button
               onClick={() => setActiveTab('online')}
@@ -452,7 +596,16 @@ export default function AppointmentsPage() {
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              Online
+              <div className="flex items-center justify-center gap-1.5">
+                <span>Online</span>
+                {tabCounts.onlineCount > 0 && (
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                    activeTab === 'online' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                  }`}>
+                    {tabCounts.onlineCount}
+                  </span>
+                )}
+              </div>
             </button>
             <button
               onClick={() => setActiveTab('followups')}
@@ -462,7 +615,16 @@ export default function AppointmentsPage() {
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              Follow ups
+              <div className="flex items-center justify-center gap-1.5">
+                <span>Follow ups</span>
+                {tabCounts.followupCount > 0 && (
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                    activeTab === 'followups' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                  }`}>
+                    {tabCounts.followupCount}
+                  </span>
+                )}
+              </div>
             </button>
           </div>
 
@@ -471,7 +633,7 @@ export default function AppointmentsPage() {
             <div className="flex items-center gap-1.5 overflow-x-auto">
               <button
                 onClick={() => setStatusFilter(null)}
-                className={`flex items-center justify-center min-w-[50px] h-12 rounded transition-all ${
+                className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
                   statusFilter === null
                     ? 'bg-blue-900 text-white ring-2 ring-blue-900 ring-offset-1'
                     : 'bg-blue-100 text-blue-900 hover:bg-blue-200'
@@ -479,59 +641,59 @@ export default function AppointmentsPage() {
               >
                 <div className="text-center">
                   <div className="text-lg font-bold">{stats.total}</div>
-                  <div className="text-[9px] font-medium">All</div>
+                  <div className="text-[10px] font-medium uppercase tracking-wide">All</div>
                 </div>
               </button>
               <button
                 onClick={() => setStatusFilter(statusFilter === 'scheduled' ? null : 'scheduled')}
-                className={`flex items-center justify-center min-w-[50px] h-12 rounded transition-all ${
+                className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
                   statusFilter === 'scheduled'
                     ? 'bg-gray-700 text-white ring-2 ring-gray-700 ring-offset-1'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 <div className="text-center">
-                  <div className="text-sm font-bold">{stats.scheduled}</div>
-                  <div className="text-[9px] font-medium">Sch</div>
+                  <div className="text-base font-bold">{stats.scheduled}</div>
+                  <div className="text-[10px] font-medium uppercase tracking-wide">Sched</div>
                 </div>
               </button>
               <button
                 onClick={() => setStatusFilter(statusFilter === 'in-progress' ? null : 'in-progress')}
-                className={`flex items-center justify-center min-w-[50px] h-12 rounded transition-all ${
+                className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
                   statusFilter === 'in-progress'
                     ? 'bg-red-600 text-white ring-2 ring-red-600 ring-offset-1'
                     : 'bg-red-100 text-red-700 hover:bg-red-200'
                 }`}
               >
                 <div className="text-center">
-                  <div className="text-sm font-bold">{stats.inProgress}</div>
-                  <div className="text-[9px] font-medium">In</div>
+                  <div className="text-base font-bold">{stats.inProgress}</div>
+                  <div className="text-[10px] font-medium uppercase tracking-wide">In Out</div>
                 </div>
               </button>
               <button
                 onClick={() => setStatusFilter(statusFilter === 'completed' ? null : 'completed')}
-                className={`flex items-center justify-center min-w-[50px] h-12 rounded transition-all ${
+                className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
                   statusFilter === 'completed'
                     ? 'bg-green-600 text-white ring-2 ring-green-600 ring-offset-1'
                     : 'bg-green-100 text-green-700 hover:bg-green-200'
                 }`}
               >
                 <div className="text-center">
-                  <div className="text-sm font-bold">{stats.completed}</div>
-                  <div className="text-[9px] font-medium">Out</div>
+                  <div className="text-base font-bold">{stats.completed}</div>
+                  <div className="text-[10px] font-medium uppercase tracking-wide">Done</div>
                 </div>
               </button>
               <button
                 onClick={() => setStatusFilter(statusFilter === 'cancelled' ? null : 'cancelled')}
-                className={`flex items-center justify-center min-w-[50px] h-12 rounded transition-all ${
+                className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
                   statusFilter === 'cancelled'
                     ? 'bg-gray-700 text-white ring-2 ring-gray-700 ring-offset-1'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 <div className="text-center">
-                  <div className="text-sm font-bold">{stats.cancelled}</div>
-                  <div className="text-[9px] font-medium">Canc</div>
+                  <div className="text-base font-bold">{stats.cancelled}</div>
+                  <div className="text-[10px] font-medium uppercase tracking-wide">Cancel</div>
                 </div>
               </button>
               <button
@@ -539,7 +701,7 @@ export default function AppointmentsPage() {
                   loadAppointments();
                   loadStats();
                 }}
-                className="flex items-center justify-center min-w-[40px] h-12 text-gray-400 hover:text-gray-600 transition-colors"
+                className="flex items-center justify-center min-w-[44px] h-14 text-gray-400 hover:text-gray-600 transition-colors"
                 title="Refresh"
               >
                 <RefreshCw className="h-4 w-4" />
@@ -574,26 +736,136 @@ export default function AppointmentsPage() {
               )}
             </div>
 
-            {/* Doctors */}
+            {/* Practitioners */}
+            {viewMode === 'admin' && (
+              <div className="bg-white border-b border-gray-200">
+                <button
+                  onClick={() => setShowDoctors(!showDoctors)}
+                  className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <h3 className="text-xs font-medium text-gray-900">Practitioners</h3>
+                  <ChevronDown
+                    className={`h-3 w-3 text-gray-500 transition-transform ${showDoctors ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {showDoctors && (
+                  <div className="px-4 pb-3 space-y-2">
+                    <input
+                      type="text"
+                      placeholder="Search practitioners..."
+                      value={practitionerSearchQuery}
+                      onChange={(e) => setPractitionerSearchQuery(e.target.value)}
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      <button
+                        onClick={() => setPractitionerFilter(null)}
+                        className={`w-full px-2 py-1.5 text-left text-xs rounded transition-colors flex items-center justify-between ${
+                          practitionerFilter === null
+                            ? 'bg-blue-100 text-blue-700 font-medium'
+                            : 'hover:bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        <span>All Practitioners</span>
+                        <span className="text-xs font-semibold">{practitioners.reduce((sum, p) => sum + p.count, 0)}</span>
+                      </button>
+                      {filteredPractitioners.map((practitioner) => (
+                        <button
+                          key={practitioner.name}
+                          onClick={() => setPractitionerFilter(practitioner.name)}
+                          className={`w-full px-2 py-1.5 text-left text-xs rounded transition-colors flex items-center justify-between ${
+                            practitionerFilter === practitioner.name
+                              ? 'bg-blue-100 text-blue-700 font-medium'
+                              : 'hover:bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          <span className="truncate">{practitioner.name}</span>
+                          <span className="text-xs font-semibold ml-2">{practitioner.count}</span>
+                        </button>
+                      ))}
+                      {filteredPractitioners.length === 0 && practitionerSearchQuery && (
+                        <div className="px-2 py-2 text-xs text-gray-500 text-center">
+                          No practitioners found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Doctor Selector for Doctor View */}
+            {viewMode === 'doctor' && (
+              <div className="bg-white border-b border-gray-200">
+                <div className="px-4 py-2.5">
+                  <h3 className="text-xs font-medium text-gray-900 mb-2">Select Practitioner</h3>
+                  <select
+                    value={currentDoctorId || ''}
+                    onChange={(e) => setCurrentDoctorId(e.target.value)}
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    {practitioners.map((practitioner) => (
+                      <option key={practitioner.name} value={practitioner.name}>
+                        {practitioner.name} ({practitioner.count})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Locations */}
             <div className="bg-white border-b border-gray-200">
               <button
-                onClick={() => setShowDoctors(!showDoctors)}
+                onClick={() => setShowLocations(!showLocations)}
                 className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
               >
-                <h3 className="text-xs font-medium text-gray-900">Doctors</h3>
+                <h3 className="text-xs font-medium text-gray-900">Locations</h3>
                 <ChevronDown
-                  className={`h-3 w-3 text-gray-500 transition-transform ${showDoctors ? 'rotate-180' : ''}`}
+                  className={`h-3 w-3 text-gray-500 transition-transform ${showLocations ? 'rotate-180' : ''}`}
                 />
               </button>
-              {showDoctors && (
-                <div className="px-4 pb-3">
+              {showLocations && (
+                <div className="px-4 pb-3 space-y-2">
                   <input
                     type="text"
-                    placeholder="Search doctors..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search locations..."
+                    value={locationSearchQuery}
+                    onChange={(e) => setLocationSearchQuery(e.target.value)}
                     className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    <button
+                      onClick={() => setLocationFilter(null)}
+                      className={`w-full px-2 py-1.5 text-left text-xs rounded transition-colors flex items-center justify-between ${
+                        locationFilter === null
+                          ? 'bg-blue-100 text-blue-700 font-medium'
+                          : 'hover:bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      <span>All Locations</span>
+                      <span className="text-xs font-semibold">{locations.reduce((sum, l) => sum + l.count, 0)}</span>
+                    </button>
+                    {filteredLocations.map((location) => (
+                      <button
+                        key={location.name}
+                        onClick={() => setLocationFilter(location.name)}
+                        className={`w-full px-2 py-1.5 text-left text-xs rounded transition-colors flex items-center justify-between ${
+                          locationFilter === location.name
+                            ? 'bg-blue-100 text-blue-700 font-medium'
+                            : 'hover:bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        <span className="truncate">{location.name}</span>
+                        <span className="text-xs font-semibold ml-2">{location.count}</span>
+                      </button>
+                    ))}
+                    {filteredLocations.length === 0 && locationSearchQuery && (
+                      <div className="px-2 py-2 text-xs text-gray-500 text-center">
+                        No locations found
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -638,7 +910,7 @@ export default function AppointmentsPage() {
                         </div>
                         <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                           <span
-                            className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                            className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide ${
                               appointment.status === 'scheduled'
                                 ? 'bg-gray-200 text-gray-700'
                                 : appointment.status === 'in-progress'
@@ -648,9 +920,9 @@ export default function AppointmentsPage() {
                                 : 'bg-gray-100 text-gray-600'
                             }`}
                           >
-                            {appointment.status === 'scheduled' ? 'Sch' :
-                             appointment.status === 'in-progress' ? 'In' :
-                             appointment.status === 'completed' ? 'Out' : 'Canc'}
+                            {appointment.status === 'scheduled' ? 'Sched' :
+                             appointment.status === 'in-progress' ? 'In Out' :
+                             appointment.status === 'completed' ? 'Done' : 'Cancel'}
                           </span>
                           <ArrowRight className="h-3 w-3 text-gray-400" />
                         </div>

@@ -12,6 +12,8 @@ interface CalendarToolbarProps {
   onViewChange: (view: CalendarView) => void;
   onDateChange: (date: Date) => void;
   onToday: () => void;
+  viewMode?: 'admin' | 'doctor';
+  onViewModeChange?: (mode: 'admin' | 'doctor') => void;
 }
 
 export function CalendarToolbar({
@@ -19,7 +21,9 @@ export function CalendarToolbar({
   view,
   onViewChange,
   onDateChange,
-  onToday
+  onToday,
+  viewMode = 'admin',
+  onViewModeChange
 }: CalendarToolbarProps) {
   const formatDisplayDate = () => {
     const options: Intl.DateTimeFormatOptions = { 
@@ -83,6 +87,34 @@ export function CalendarToolbar({
       </div>
 
       <div className="flex items-center gap-2">
+        {/* View Mode Selector */}
+        {onViewModeChange && (
+          <div className="flex rounded-lg border border-gray-300 bg-white mr-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onViewModeChange('admin')}
+              className={cn(
+                'h-9 rounded-r-none border-r text-xs px-3',
+                viewMode === 'admin' && 'bg-blue-100 text-blue-700 font-medium'
+              )}
+            >
+              Admin View
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onViewModeChange('doctor')}
+              className={cn(
+                'h-9 rounded-l-none text-xs px-3',
+                viewMode === 'doctor' && 'bg-blue-100 text-blue-700 font-medium'
+              )}
+            >
+              Doctor View
+            </Button>
+          </div>
+        )}
+
         <Button
           variant="outline"
           size="sm"

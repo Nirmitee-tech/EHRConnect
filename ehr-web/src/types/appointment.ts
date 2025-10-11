@@ -19,6 +19,7 @@ export interface Appointment {
   category?: string;
   color?: string;
   isAllDay?: boolean;
+  location?: string; // Location/room where appointment takes place
 }
 
 export interface AppointmentStats {
