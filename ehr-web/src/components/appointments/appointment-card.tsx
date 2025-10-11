@@ -21,15 +21,24 @@ const statusColors: Record<AppointmentStatus, { bg: string; border: string; text
   'rescheduled': { bg: 'bg-purple-50', border: 'border-purple-400', text: 'text-purple-700' }
 };
 
-export function AppointmentCard({ 
-  appointment, 
-  onClick, 
+// Map appointment types to colors
+const typeColors: Record<string, string> = {
+  'consultation': 'bg-blue-500',
+  'follow-up': 'bg-green-500',
+  'emergency': 'bg-red-500',
+  'routine': 'bg-purple-500',
+  'surgery': 'bg-orange-500'
+};
+
+export function AppointmentCard({
+  appointment,
+  onClick,
   className,
-  compact = false 
+  compact = false
 }: AppointmentCardProps) {
   const colors = statusColors[appointment.status];
-  
-  const formatTime = (date: Date) => {
+
+  const formatTime = (date: Date | string) => {
     return new Date(date).toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
@@ -37,23 +46,32 @@ export function AppointmentCard({
     });
   };
 
+  // Determine color: custom color > type color > status color
+  const appointmentType = appointment.category || appointment.appointmentType || appointment.type;
+  const typeColor = appointmentType ? typeColors[appointmentType] : null;
+  const bgColor = appointment.color || typeColor || colors.bg;
+  const useColorBg = !!(appointment.color || typeColor);
+  const textColor = useColorBg ? 'text-white' : colors.text;
+  const borderColor = useColorBg ? '' : colors.border;
+
   if (compact) {
     return (
       <div
         onClick={onClick}
         className={cn(
-          'cursor-pointer rounded border-l-4 p-2 text-xs transition-all hover:shadow-md',
-          colors.bg,
-          colors.border,
+          'cursor-pointer rounded px-2 py-1.5 text-xs transition-all hover:shadow-md',
+          useColorBg ? `${bgColor} text-white` : `${colors.bg} border-l-4 ${colors.border}`,
           className
         )}
       >
-        <div className={cn('font-semibold truncate', colors.text)}>
+        <div className={cn('font-medium truncate', useColorBg ? 'text-white' : colors.text)}>
           {appointment.patientName}
         </div>
-        <div className="mt-1 text-gray-600">
-          {formatTime(appointment.startTime)}
-        </div>
+        {!appointment.isAllDay && (
+          <div className={cn('mt-0.5 text-xs', useColorBg ? 'text-white/90' : 'text-gray-600')}>
+            {formatTime(appointment.startTime)}
+          </div>
+        )}
       </div>
     );
   }

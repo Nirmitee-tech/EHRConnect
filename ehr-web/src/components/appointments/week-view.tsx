@@ -29,7 +29,8 @@ export function WeekView({ currentDate, appointments, onAppointmentClick }: Week
 
   const getTimeSlots = () => {
     const slots: string[] = [];
-    for (let hour = 5; hour < 24; hour++) {
+    // Show full 24 hours to accommodate all appointment times
+    for (let hour = 0; hour < 24; hour++) {
       slots.push(`${hour}:00`);
     }
     return slots;

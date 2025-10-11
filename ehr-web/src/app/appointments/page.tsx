@@ -1,20 +1,34 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CalendarView, Appointment, AppointmentStats } from '@/types/appointment';
 import { CalendarToolbar } from '@/components/appointments/calendar-toolbar';
 import { WeekViewDraggable } from '@/components/appointments/week-view-draggable';
 import { MonthView } from '@/components/appointments/month-view';
 import { AppointmentStatsPanel } from '@/components/appointments/appointment-stats';
 import { AppointmentFormDrawer } from '@/components/appointments/appointment-form-drawer';
+import { AppointmentDetailsDrawer } from '@/components/appointments/appointment-details-drawer';
+import { MiniCalendar } from '@/components/appointments/mini-calendar';
+import { EventFilters, EventCategory } from '@/components/appointments/event-filters';
 import { AppointmentService } from '@/services/appointment.service';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, ChevronDown, RefreshCw, Info, ArrowRight, Keyboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+// Medical appointment categories
+const medicalCategories: EventCategory[] = [
+  { id: 'consultation', label: 'Consultation', color: 'bg-blue-500', checked: true },
+  { id: 'follow-up', label: 'Follow-up', color: 'bg-green-500', checked: true },
+  { id: 'emergency', label: 'Emergency', color: 'bg-red-500', checked: true },
+  { id: 'routine', label: 'Routine Check-up', color: 'bg-purple-500', checked: true },
+  { id: 'surgery', label: 'Surgery', color: 'bg-orange-500', checked: true }
+];
 
 export default function AppointmentsPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>('week');
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
+  const [categories, setCategories] = useState<EventCategory[]>(medicalCategories);
+  const [searchQuery, setSearchQuery] = useState('');
   const [stats, setStats] = useState<AppointmentStats>({
     total: 0,
     scheduled: 0,
@@ -26,10 +40,84 @@ export default function AppointmentsPage() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [clickedDate, setClickedDate] = useState<Date | undefined>();
+  const [showFilters, setShowFilters] = useState(false);
+  const [activeTab, setActiveTab] = useState<'appointments' | 'online' | 'followups'>('appointments');
+  const [showTreatmentCategories, setShowTreatmentCategories] = useState(false);
+  const [showDoctors, setShowDoctors] = useState(false);
+  const [isDetailsDrawerOpen, setIsDetailsDrawerOpen] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + N: New appointment
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        handleNewAppointment();
+      }
+      // Ctrl/Cmd + R: Refresh
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        loadAppointments();
+        loadStats();
+      }
+      // T: Go to today
+      if (e.key === 't' && !e.ctrlKey && !e.metaKey) {
+        handleToday();
+      }
+      // Escape: Close any open drawer
+      if (e.key === 'Escape') {
+        setIsDrawerOpen(false);
+        setIsDetailsDrawerOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
+
+  // Filter appointments based on selected categories, search query, and status
+  const filteredAppointments = useMemo(() => {
+    return allAppointments.filter(apt => {
+      // Status filter
+      if (statusFilter && apt.status !== statusFilter) {
+        return false;
+      }
+
+      // Category filter - check both category and appointmentType/type fields
+      const aptCategory = apt.category || apt.appointmentType || apt.type;
+      if (aptCategory) {
+        const categoryEnabled = categories.find(c => c.id === aptCategory)?.checked ?? true;
+        if (!categoryEnabled) return false;
+      }
+
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          apt.patientName.toLowerCase().includes(query) ||
+          apt.practitionerName.toLowerCase().includes(query)
+        );
+      }
+
+      return true;
+    });
+  }, [allAppointments, categories, searchQuery, statusFilter]);
+
+  // Track the last loaded range to avoid unnecessary reloads
+  const [lastLoadedRange, setLastLoadedRange] = React.useState<{ start: string; end: string } | null>(null);
 
   useEffect(() => {
-    loadAppointments();
-    loadStats();
+    const { startDate, endDate } = getDateRange();
+    const rangeKey = `${startDate.toISOString()}-${endDate.toISOString()}`;
+
+    // Only reload if we're viewing a different date range
+    if (lastLoadedRange?.start !== startDate.toISOString() || lastLoadedRange?.end !== endDate.toISOString()) {
+      loadAppointments();
+      loadStats();
+      setLastLoadedRange({ start: startDate.toISOString(), end: endDate.toISOString() });
+    }
   }, [currentDate, view]);
 
   const loadAppointments = async () => {
@@ -37,12 +125,25 @@ export default function AppointmentsPage() {
     try {
       const { startDate, endDate } = getDateRange();
       const data = await AppointmentService.getAppointments(startDate, endDate);
-      setAppointments(data);
+      setAllAppointments(data);
+      calculateStats(data);
     } catch (error) {
       console.error('Error loading appointments:', error);
+      setAllAppointments([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const calculateStats = (appointments: Appointment[]) => {
+    const stats = {
+      total: appointments.length,
+      scheduled: appointments.filter(a => a.status === 'scheduled').length,
+      inProgress: appointments.filter(a => a.status === 'in-progress').length,
+      completed: appointments.filter(a => a.status === 'completed').length,
+      cancelled: appointments.filter(a => a.status === 'cancelled').length
+    };
+    setStats(stats);
   };
 
   const loadStats = async () => {
@@ -50,7 +151,7 @@ export default function AppointmentsPage() {
       const today = new Date();
       const startOfDay = new Date(today);
       startOfDay.setHours(0, 0, 0, 0);
-      
+
       const endOfDay = new Date(today);
       endOfDay.setHours(23, 59, 59, 999);
 
@@ -58,24 +159,33 @@ export default function AppointmentsPage() {
       setStats(data);
     } catch (error) {
       console.error('Error loading stats:', error);
+      calculateStats(allAppointments);
     }
   };
 
   const getDateRange = () => {
-    const startDate = new Date(currentDate);
-    const endDate = new Date(currentDate);
+    const current = new Date(currentDate);
+    current.setHours(0, 0, 0, 0);
+
+    const startDate = new Date(current);
+    const endDate = new Date(current);
 
     if (view === 'day') {
       startDate.setHours(0, 0, 0, 0);
       endDate.setHours(23, 59, 59, 999);
     } else if (view === 'week') {
-      const day = startDate.getDay();
-      const diff = startDate.getDate() - day + (day === 0 ? -6 : 1);
-      startDate.setDate(diff);
+      // Get day of week (0 = Sunday, 6 = Saturday)
+      const dayOfWeek = current.getDay();
+
+      // Start of week (Sunday)
+      startDate.setDate(current.getDate() - dayOfWeek);
       startDate.setHours(0, 0, 0, 0);
+
+      // End of week (Saturday)
       endDate.setDate(startDate.getDate() + 6);
       endDate.setHours(23, 59, 59, 999);
     } else {
+      // Month view
       startDate.setDate(1);
       startDate.setHours(0, 0, 0, 0);
       endDate.setMonth(endDate.getMonth() + 1);
@@ -100,8 +210,38 @@ export default function AppointmentsPage() {
 
   const handleAppointmentClick = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
-    // You can add a modal or drawer here to show appointment details
-    console.log('Selected appointment:', appointment);
+    setIsDetailsDrawerOpen(true);
+  };
+
+  const handleMissed = (appointment: Appointment) => {
+    // Update appointment status to no-show
+    setAllAppointments(prev => prev.map(apt =>
+      apt.id === appointment.id ? { ...apt, status: 'no-show' } : apt
+    ));
+    AppointmentService.updateAppointment(appointment.id, { status: 'no-show' });
+  };
+
+  const handleCheckIn = (appointment: Appointment) => {
+    // Update appointment status to in-progress
+    setAllAppointments(prev => prev.map(apt =>
+      apt.id === appointment.id ? { ...apt, status: 'in-progress' } : apt
+    ));
+    AppointmentService.updateAppointment(appointment.id, { status: 'in-progress' });
+  };
+
+  const handleCancelAppointment = (appointment: Appointment) => {
+    // Update appointment status to cancelled
+    setAllAppointments(prev => prev.map(apt =>
+      apt.id === appointment.id ? { ...apt, status: 'cancelled' } : apt
+    ));
+    AppointmentService.updateAppointment(appointment.id, { status: 'cancelled' });
+  };
+
+  const handleCopyAppointment = (appointment: Appointment) => {
+    // Copy appointment details to clipboard
+    const text = `Appointment: ${appointment.patientName}\nDoctor: ${appointment.practitionerName}\nTime: ${new Date(appointment.startTime).toLocaleString()}\nDuration: ${appointment.duration} mins`;
+    navigator.clipboard.writeText(text);
+    alert('Appointment details copied to clipboard');
   };
 
   const handleDateClick = (date: Date) => {
@@ -121,8 +261,30 @@ export default function AppointmentsPage() {
   };
 
   const handleSaveAppointment = (appointment: Appointment) => {
-    loadAppointments();
-    loadStats();
+    // Check if it's an update or a new appointment
+    const existingIndex = allAppointments.findIndex(apt => apt.id === appointment.id);
+
+    if (existingIndex >= 0) {
+      // Update existing appointment
+      setAllAppointments(prev => prev.map(apt =>
+        apt.id === appointment.id ? appointment : apt
+      ));
+    } else {
+      // Add new appointment
+      setAllAppointments(prev => [...prev, appointment]);
+    }
+
+    // Recalculate stats with updated data
+    const updatedAppointments = existingIndex >= 0
+      ? allAppointments.map(apt => apt.id === appointment.id ? appointment : apt)
+      : [...allAppointments, appointment];
+    calculateStats(updatedAppointments);
+  };
+
+  const handleCategoryToggle = (categoryId: string) => {
+    setCategories(categories.map(c =>
+      c.id === categoryId ? { ...c, checked: !c.checked } : c
+    ));
   };
 
   const handleAppointmentDrop = async (appointment: Appointment, newDate: Date, newHour: number) => {
@@ -130,22 +292,30 @@ export default function AppointmentsPage() {
       // Calculate new start and end times
       const newStartTime = new Date(newDate);
       newStartTime.setHours(newHour, 0, 0, 0);
-      
+
       const duration = appointment.duration;
       const newEndTime = new Date(newStartTime.getTime() + duration * 60000);
 
-      // Update the appointment
-      await AppointmentService.updateAppointment(appointment.id, {
+      // Optimistically update the UI first
+      setAllAppointments(prev => prev.map(apt =>
+        apt.id === appointment.id
+          ? { ...apt, startTime: newStartTime, endTime: newEndTime }
+          : apt
+      ));
+
+      // Update the appointment in the backend
+      const updates: Partial<Appointment> = {
         startTime: newStartTime,
         endTime: newEndTime
-      });
+      };
 
-      // Reload appointments
-      loadAppointments();
-      loadStats();
+      await AppointmentService.updateAppointment(appointment.id, updates);
+
     } catch (error) {
       console.error('Error updating appointment:', error);
       alert('Failed to reschedule appointment. Please try again.');
+      // Reload to revert visual changes on error
+      loadAppointments();
     }
   };
 
@@ -170,9 +340,52 @@ export default function AppointmentsPage() {
       <Button
         onClick={handleNewAppointment}
         className="fixed bottom-8 right-8 z-30 h-14 w-14 rounded-full bg-blue-600 p-0 shadow-lg hover:bg-blue-700"
+        title="New Appointment (Ctrl+N)"
       >
         <Plus className="h-6 w-6" />
       </Button>
+
+      {/* Keyboard Shortcuts Helper */}
+      <button
+        onClick={() => setShowShortcuts(!showShortcuts)}
+        className="fixed bottom-8 right-28 z-30 h-10 w-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center shadow-md transition-colors"
+        title="Keyboard Shortcuts"
+      >
+        <Keyboard className="h-4 w-4 text-gray-700" />
+      </button>
+
+      {/* Shortcuts Popup */}
+      {showShortcuts && (
+        <div className="fixed bottom-24 right-28 z-30 bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-64">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-900">Keyboard Shortcuts</h3>
+            <button
+              onClick={() => setShowShortcuts(false)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              ×
+            </button>
+          </div>
+          <div className="space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">New Appointment</span>
+              <kbd className="px-2 py-1 bg-gray-100 rounded text-gray-700 font-mono">Ctrl+N</kbd>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Refresh</span>
+              <kbd className="px-2 py-1 bg-gray-100 rounded text-gray-700 font-mono">Ctrl+R</kbd>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Go to Today</span>
+              <kbd className="px-2 py-1 bg-gray-100 rounded text-gray-700 font-mono">T</kbd>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Close Drawer</span>
+              <kbd className="px-2 py-1 bg-gray-100 rounded text-gray-700 font-mono">Esc</kbd>
+            </div>
+          </div>
+        </div>
+      )}
 
       <CalendarToolbar
         currentDate={currentDate}
@@ -194,7 +407,7 @@ export default function AppointmentsPage() {
               {view === 'week' && (
                 <WeekViewDraggable
                   currentDate={currentDate}
-                  appointments={appointments}
+                  appointments={filteredAppointments}
                   onAppointmentClick={handleAppointmentClick}
                   onAppointmentDrop={handleAppointmentDrop}
                   onCreateAppointment={handleCreateFromDrag}
@@ -203,7 +416,7 @@ export default function AppointmentsPage() {
               {view === 'month' && (
                 <MonthView
                   currentDate={currentDate}
-                  appointments={appointments}
+                  appointments={filteredAppointments}
                   onAppointmentClick={handleAppointmentClick}
                   onDateClick={handleDateClick}
                 />
@@ -212,45 +425,241 @@ export default function AppointmentsPage() {
           )}
         </div>
 
-        {/* Sidebar with statistics */}
-        <div className="w-80 border-l border-gray-200 bg-white p-6">
-          <AppointmentStatsPanel stats={stats} loading={loading} />
-          
-          {/* Additional filters or options can go here */}
-          <div className="mt-8">
-            <h3 className="mb-3 text-sm font-semibold text-gray-900">Filters</h3>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" className="rounded" defaultChecked />
-                <span>All Doctors</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" className="rounded" defaultChecked />
-                <span>All Treatment Categories</span>
-              </label>
+        {/* Right Sidebar - Compact Style */}
+        <div className="w-80 border-l border-gray-200 bg-gray-50 flex flex-col">
+          {/* Header with Today */}
+          <div className="bg-white px-4 py-2.5 border-b border-gray-200">
+            <h2 className="text-sm font-semibold text-gray-900">Today</h2>
+          </div>
+
+          {/* Tabs */}
+          <div className="bg-white border-b border-gray-200 flex">
+            <button
+              onClick={() => setActiveTab('appointments')}
+              className={`flex-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+                activeTab === 'appointments'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Appointments
+            </button>
+            <button
+              onClick={() => setActiveTab('online')}
+              className={`flex-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+                activeTab === 'online'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Online
+            </button>
+            <button
+              onClick={() => setActiveTab('followups')}
+              className={`flex-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+                activeTab === 'followups'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Follow ups
+            </button>
+          </div>
+
+          {/* Status Filters - Compact */}
+          <div className="bg-white px-3 py-2 border-b border-gray-200">
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              <button
+                onClick={() => setStatusFilter(null)}
+                className={`flex items-center justify-center min-w-[50px] h-12 rounded transition-all ${
+                  statusFilter === null
+                    ? 'bg-blue-900 text-white ring-2 ring-blue-900 ring-offset-1'
+                    : 'bg-blue-100 text-blue-900 hover:bg-blue-200'
+                }`}
+              >
+                <div className="text-center">
+                  <div className="text-lg font-bold">{stats.total}</div>
+                  <div className="text-[9px] font-medium">All</div>
+                </div>
+              </button>
+              <button
+                onClick={() => setStatusFilter(statusFilter === 'scheduled' ? null : 'scheduled')}
+                className={`flex items-center justify-center min-w-[50px] h-12 rounded transition-all ${
+                  statusFilter === 'scheduled'
+                    ? 'bg-gray-700 text-white ring-2 ring-gray-700 ring-offset-1'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <div className="text-center">
+                  <div className="text-sm font-bold">{stats.scheduled}</div>
+                  <div className="text-[9px] font-medium">Sch</div>
+                </div>
+              </button>
+              <button
+                onClick={() => setStatusFilter(statusFilter === 'in-progress' ? null : 'in-progress')}
+                className={`flex items-center justify-center min-w-[50px] h-12 rounded transition-all ${
+                  statusFilter === 'in-progress'
+                    ? 'bg-red-600 text-white ring-2 ring-red-600 ring-offset-1'
+                    : 'bg-red-100 text-red-700 hover:bg-red-200'
+                }`}
+              >
+                <div className="text-center">
+                  <div className="text-sm font-bold">{stats.inProgress}</div>
+                  <div className="text-[9px] font-medium">In</div>
+                </div>
+              </button>
+              <button
+                onClick={() => setStatusFilter(statusFilter === 'completed' ? null : 'completed')}
+                className={`flex items-center justify-center min-w-[50px] h-12 rounded transition-all ${
+                  statusFilter === 'completed'
+                    ? 'bg-green-600 text-white ring-2 ring-green-600 ring-offset-1'
+                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                }`}
+              >
+                <div className="text-center">
+                  <div className="text-sm font-bold">{stats.completed}</div>
+                  <div className="text-[9px] font-medium">Out</div>
+                </div>
+              </button>
+              <button
+                onClick={() => setStatusFilter(statusFilter === 'cancelled' ? null : 'cancelled')}
+                className={`flex items-center justify-center min-w-[50px] h-12 rounded transition-all ${
+                  statusFilter === 'cancelled'
+                    ? 'bg-gray-700 text-white ring-2 ring-gray-700 ring-offset-1'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <div className="text-center">
+                  <div className="text-sm font-bold">{stats.cancelled}</div>
+                  <div className="text-[9px] font-medium">Canc</div>
+                </div>
+              </button>
+              <button
+                onClick={() => {
+                  loadAppointments();
+                  loadStats();
+                }}
+                className="flex items-center justify-center min-w-[40px] h-12 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Refresh"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
             </div>
           </div>
 
-              {selectedAppointment && (
-            <div className="mt-8">
-              <h3 className="mb-3 text-sm font-semibold text-gray-900">Selected Appointment</h3>
-              <div className="rounded-lg border border-gray-200 p-4">
-                <p className="font-semibold text-gray-900">{selectedAppointment.patientName}</p>
-                <p className="mt-1 text-sm text-gray-600">{selectedAppointment.practitionerName}</p>
-                <p className="mt-2 text-xs text-gray-500">
-                  {new Date(selectedAppointment.startTime).toLocaleString()}
-                </p>
-                <Button
-                  onClick={() => handleEditAppointment(selectedAppointment)}
-                  variant="outline"
-                  size="sm"
-                  className="mt-3 w-full"
-                >
-                  Edit Appointment
-                </Button>
-              </div>
+          {/* Collapsible Filters */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Treatment Categories */}
+            <div className="bg-white border-b border-gray-200">
+              <button
+                onClick={() => setShowTreatmentCategories(!showTreatmentCategories)}
+                className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
+              >
+                <h3 className="text-xs font-medium text-gray-900">Treatment Categories</h3>
+                <ChevronDown
+                  className={`h-3 w-3 text-gray-500 transition-transform ${
+                    showTreatmentCategories ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+              {showTreatmentCategories && (
+                <div className="px-4 pb-3">
+                  <EventFilters
+                    categories={categories}
+                    searchQuery=""
+                    onCategoryToggle={handleCategoryToggle}
+                    onSearchChange={() => {}}
+                  />
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Doctors */}
+            <div className="bg-white border-b border-gray-200">
+              <button
+                onClick={() => setShowDoctors(!showDoctors)}
+                className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
+              >
+                <h3 className="text-xs font-medium text-gray-900">Doctors</h3>
+                <ChevronDown
+                  className={`h-3 w-3 text-gray-500 transition-transform ${showDoctors ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {showDoctors && (
+                <div className="px-4 pb-3">
+                  <input
+                    type="text"
+                    placeholder="Search doctors..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Appointments List */}
+            <div className="divide-y divide-gray-100">
+              {filteredAppointments.length === 0 ? (
+                <div className="p-4 text-center">
+                  <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center mx-auto mb-1.5">
+                    <Info className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <p className="text-xs text-gray-500">No appointments</p>
+                </div>
+              ) : (
+                filteredAppointments
+                  .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+                  .map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      onClick={() => handleAppointmentClick(appointment)}
+                      className="px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Info className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-semibold text-gray-900 truncate">
+                              {appointment.patientName}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[10px] text-gray-600 mt-0.5">
+                              <span>
+                                {new Date(appointment.startTime).toLocaleTimeString('en-US', {
+                                  hour: 'numeric',
+                                  minute: '2-digit',
+                                  hour12: true
+                                })}
+                              </span>
+                              <span className="text-gray-400">•</span>
+                              <span>{appointment.duration}m</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                              appointment.status === 'scheduled'
+                                ? 'bg-gray-200 text-gray-700'
+                                : appointment.status === 'in-progress'
+                                ? 'bg-red-100 text-red-700'
+                                : appointment.status === 'completed'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {appointment.status === 'scheduled' ? 'Sch' :
+                             appointment.status === 'in-progress' ? 'In' :
+                             appointment.status === 'completed' ? 'Out' : 'Canc'}
+                          </span>
+                          <ArrowRight className="h-3 w-3 text-gray-400" />
+                        </div>
+                      </div>
+                    </div>
+                  ))
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -265,6 +674,24 @@ export default function AppointmentsPage() {
         onSave={handleSaveAppointment}
         initialDate={clickedDate}
         editingAppointment={selectedAppointment}
+      />
+
+      {/* Appointment Details Drawer */}
+      <AppointmentDetailsDrawer
+        isOpen={isDetailsDrawerOpen}
+        onClose={() => {
+          setIsDetailsDrawerOpen(false);
+          setSelectedAppointment(null);
+        }}
+        appointment={selectedAppointment}
+        onEdit={(apt) => {
+          setSelectedAppointment(apt);
+          setIsDrawerOpen(true);
+        }}
+        onMissed={handleMissed}
+        onCheckIn={handleCheckIn}
+        onCancel={handleCancelAppointment}
+        onCopy={handleCopyAppointment}
       />
     </div>
   );

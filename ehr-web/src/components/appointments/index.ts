@@ -6,3 +6,6 @@ export { AppointmentCard } from './appointment-card';
 export { DraggableAppointmentCard } from './draggable-appointment-card';
 export { AppointmentStatsPanel } from './appointment-stats';
 export { AppointmentFormDrawer } from './appointment-form-drawer';
+export { MiniCalendar } from './mini-calendar';
+export { EventFilters } from './event-filters';
+export { UnassignedTasksPanel } from './unassigned-tasks-panel';

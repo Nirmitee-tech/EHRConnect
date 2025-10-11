@@ -50,8 +50,8 @@ export class AppointmentService {
       }
 
       const bundle = await medplum.searchResources('Appointment', searchParams);
-      
-      return bundle.map(this.transformFHIRAppointment);
+
+      return bundle.map((fhir) => AppointmentService.transformFHIRAppointment(fhir));
     } catch (error) {
       console.error('Error fetching appointments:', error);
       return [];
@@ -93,7 +93,7 @@ export class AppointmentService {
     try {
       const fhirAppointment: Partial<FHIRAppointment> = {
         resourceType: 'Appointment',
-        status: this.mapStatusToFHIR(appointmentData.status || 'scheduled'),
+        status: AppointmentService.mapStatusToFHIR(appointmentData.status || 'scheduled'),
         start: appointmentData.startTime?.toISOString(),
         end: appointmentData.endTime?.toISOString(),
         minutesDuration: appointmentData.duration,
@@ -117,7 +117,7 @@ export class AppointmentService {
       };
 
       const created = await medplum.createResource(fhirAppointment as FHIRAppointment);
-      return this.transformFHIRAppointment(created);
+      return AppointmentService.transformFHIRAppointment(created);
     } catch (error) {
       console.error('Error creating appointment:', error);
       throw error;
@@ -129,19 +129,47 @@ export class AppointmentService {
    */
   static async updateAppointment(id: string, updates: Partial<Appointment>): Promise<Appointment> {
     try {
-      const existing = await medplum.readResource('Appointment', id);
-      
-      const updated: FHIRAppointment = {
-        ...existing,
-        status: updates.status ? this.mapStatusToFHIR(updates.status) : existing.status,
-        start: updates.startTime?.toISOString() || existing.start,
-        end: updates.endTime?.toISOString() || existing.end,
-        minutesDuration: updates.duration || existing.minutesDuration,
-        comment: updates.reason || existing.comment
+      // Build FHIR update payload with only the fields we're updating
+      const updatePayload: Partial<FHIRAppointment> = {
+        resourceType: 'Appointment',
+        id: id
       };
 
-      const result = await medplum.updateResource(updated);
-      return this.transformFHIRAppointment(result);
+      if (updates.status) {
+        updatePayload.status = AppointmentService.mapStatusToFHIR(updates.status);
+      }
+      if (updates.startTime) {
+        updatePayload.start = updates.startTime instanceof Date
+          ? updates.startTime.toISOString()
+          : new Date(updates.startTime).toISOString();
+      }
+      if (updates.endTime) {
+        updatePayload.end = updates.endTime instanceof Date
+          ? updates.endTime.toISOString()
+          : new Date(updates.endTime).toISOString();
+      }
+      if (updates.duration) {
+        updatePayload.minutesDuration = updates.duration;
+      }
+      if (updates.reason) {
+        updatePayload.comment = updates.reason;
+      }
+
+      // Use PATCH instead of full update
+      const result = await medplum.patchResource('Appointment', id, [
+        {
+          op: 'replace',
+          path: '/start',
+          value: updatePayload.start
+        },
+        {
+          op: 'replace',
+          path: '/end',
+          value: updatePayload.end
+        }
+      ]);
+
+      return AppointmentService.transformFHIRAppointment(result);
     } catch (error) {
       console.error('Error updating appointment:', error);
       throw error;
@@ -172,7 +200,7 @@ export class AppointmentService {
       practitionerId: practitioner?.actor?.reference?.split('/')[1] || '',
       practitionerName: practitioner?.actor?.display || 'Unknown Practitioner',
       appointmentType: fhir.appointmentType?.coding?.[0]?.display || 'General',
-      status: this.mapStatusFromFHIR(fhir.status),
+      status: AppointmentService.mapStatusFromFHIR(fhir.status),
       startTime: new Date(fhir.start || ''),
       endTime: new Date(fhir.end || ''),
       duration: fhir.minutesDuration || 30,

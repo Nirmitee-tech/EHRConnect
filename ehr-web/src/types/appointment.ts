@@ -2,19 +2,23 @@ export type AppointmentStatus = 'scheduled' | 'in-progress' | 'completed' | 'can
 
 export interface Appointment {
   id: string;
-  patientId: string;
+  patientId?: string;
   patientName: string;
-  practitionerId: string;
+  practitionerId?: string;
   practitionerName: string;
-  appointmentType: string;
+  appointmentType?: string;
+  type?: string;
   status: AppointmentStatus;
-  startTime: Date;
-  endTime: Date;
+  startTime: Date | string;
+  endTime: Date | string;
   duration: number; // in minutes
   reason?: string;
   notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+  category?: string;
+  color?: string;
+  isAllDay?: boolean;
 }
 
 export interface AppointmentStats {

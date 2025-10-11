@@ -275,16 +275,16 @@ router.post('/:resourceType', async (req, res) => {
 // Generic GET for specific resource by ID
 router.get('/:resourceType/:id', async (req, res) => {
   const { resourceType, id } = req.params;
-  
+
   try {
     const query = `
-      SELECT resource_data 
-      FROM fhir_resources 
+      SELECT resource_data
+      FROM fhir_resources
       WHERE resource_type = $1 AND id = $2 AND deleted = FALSE
     `;
-    
+
     const { rows } = await req.db.query(query, [resourceType, id]);
-    
+
     if (rows.length === 0) {
       return res.status(404).json({
         resourceType: 'OperationOutcome',
@@ -295,12 +295,143 @@ router.get('/:resourceType/:id', async (req, res) => {
         }]
       });
     }
-    
+
     res.setHeader('Content-Type', 'application/fhir+json');
     res.json(rows[0].resource_data);
-    
+
   } catch (error) {
     console.error(`Error reading ${resourceType}:`, error);
+    res.status(500).json({
+      resourceType: 'OperationOutcome',
+      issue: [{
+        severity: 'error',
+        code: 'exception',
+        details: { text: error.message }
+      }]
+    });
+  }
+});
+
+// Generic PATCH for updating specific resource fields (JSON Patch)
+router.patch('/:resourceType/:id', async (req, res) => {
+  const { resourceType, id } = req.params;
+  const patchOperations = req.body;
+
+  try {
+    // First, get the current resource
+    const getQuery = `
+      SELECT resource_data, version_id
+      FROM fhir_resources
+      WHERE resource_type = $1 AND id = $2 AND deleted = FALSE
+    `;
+
+    const { rows } = await req.db.query(getQuery, [resourceType, id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'not-found',
+          details: { text: `Endpoint not found: /fhir/R4/${resourceType}/${id}` }
+        }]
+      });
+    }
+
+    let resource = rows[0].resource_data;
+    const currentVersion = rows[0].version_id;
+
+    // Apply JSON Patch operations
+    if (!Array.isArray(patchOperations)) {
+      return res.status(400).json({
+        resourceType: 'OperationOutcome',
+        issue: [{
+          severity: 'error',
+          code: 'invalid',
+          details: { text: 'PATCH body must be an array of JSON Patch operations' }
+        }]
+      });
+    }
+
+    // Simple JSON Patch implementation supporting 'replace' operations
+    for (const operation of patchOperations) {
+      if (operation.op === 'replace') {
+        const pathParts = operation.path.split('/').filter(p => p);
+
+        // Navigate to the target property
+        let target = resource;
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          if (!target[pathParts[i]]) {
+            target[pathParts[i]] = {};
+          }
+          target = target[pathParts[i]];
+        }
+
+        // Set the value
+        const finalKey = pathParts[pathParts.length - 1];
+        target[finalKey] = operation.value;
+      } else if (operation.op === 'add') {
+        const pathParts = operation.path.split('/').filter(p => p);
+        let target = resource;
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          if (!target[pathParts[i]]) {
+            target[pathParts[i]] = {};
+          }
+          target = target[pathParts[i]];
+        }
+        const finalKey = pathParts[pathParts.length - 1];
+        target[finalKey] = operation.value;
+      } else if (operation.op === 'remove') {
+        const pathParts = operation.path.split('/').filter(p => p);
+        let target = resource;
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          if (!target[pathParts[i]]) {
+            return res.status(400).json({
+              resourceType: 'OperationOutcome',
+              issue: [{
+                severity: 'error',
+                code: 'invalid',
+                details: { text: `Path ${operation.path} not found in resource` }
+              }]
+            });
+          }
+          target = target[pathParts[i]];
+        }
+        const finalKey = pathParts[pathParts.length - 1];
+        delete target[finalKey];
+      }
+    }
+
+    // Update metadata
+    const newVersion = currentVersion + 1;
+    const now = new Date().toISOString();
+    resource.meta = {
+      ...resource.meta,
+      versionId: String(newVersion),
+      lastUpdated: now
+    };
+
+    // Update in database
+    const updateQuery = `
+      UPDATE fhir_resources
+      SET resource_data = $1, version_id = $2, last_updated = $3
+      WHERE resource_type = $4 AND id = $5
+      RETURNING *
+    `;
+
+    await req.db.query(updateQuery, [
+      JSON.stringify(resource),
+      newVersion,
+      now,
+      resourceType,
+      id
+    ]);
+
+    res.setHeader('Content-Type', 'application/fhir+json');
+    res.json(resource);
+
+  } catch (error) {
+    console.error(`Error patching ${resourceType}:`, error);
     res.status(500).json({
       resourceType: 'OperationOutcome',
       issue: [{

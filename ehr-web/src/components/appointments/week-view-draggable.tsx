@@ -25,16 +25,27 @@ export function WeekViewDraggable({
   const [createStart, setCreateStart] = useState<{date: Date; hour: number} | null>(null);
   const [createEnd, setCreateEnd] = useState<{date: Date; hour: number} | null>(null);
 
+  // Optional: Debug logging (commented out for production)
+  // React.useEffect(() => {
+  //   console.log('WeekView - Appointments:', appointments.length);
+  // }, [appointments]);
+
   const getWeekDates = () => {
     const dates: Date[] = [];
-    const start = new Date(currentDate);
-    const day = start.getDay();
-    const diff = start.getDate() - day + (day === 0 ? -6 : 1);
-    start.setDate(diff);
+    const current = new Date(currentDate);
+    current.setHours(0, 0, 0, 0);
 
+    // Get day of week (0 = Sunday, 6 = Saturday)
+    const dayOfWeek = current.getDay();
+
+    // Calculate the start of the week (Sunday)
+    const startOfWeek = new Date(current);
+    startOfWeek.setDate(current.getDate() - dayOfWeek);
+
+    // Generate all 7 days of the week
     for (let i = 0; i < 7; i++) {
-      const date = new Date(start);
-      date.setDate(start.getDate() + i);
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
       dates.push(date);
     }
 
@@ -43,7 +54,8 @@ export function WeekViewDraggable({
 
   const getTimeSlots = () => {
     const slots: string[] = [];
-    for (let hour = 5; hour < 24; hour++) {
+    // Show full 24 hours to accommodate all appointment times
+    for (let hour = 0; hour < 24; hour++) {
       slots.push(`${hour}:00`);
     }
     return slots;
@@ -51,15 +63,14 @@ export function WeekViewDraggable({
 
   const getAppointmentsForDateAndTime = (date: Date, timeSlot: string) => {
     const [hour] = timeSlot.split(':').map(Number);
-    
+
     return appointments.filter(apt => {
       const aptDate = new Date(apt.startTime);
       const aptHour = aptDate.getHours();
-      
-      return (
-        aptDate.toDateString() === date.toDateString() &&
-        aptHour === hour
-      );
+
+      const dateMatches = aptDate.toDateString() === date.toDateString();
+      const hourMatches = aptHour === hour;
+      return dateMatches && hourMatches;
     });
   };
 
@@ -142,8 +153,21 @@ export function WeekViewDraggable({
   const timeSlots = getTimeSlots();
   const today = new Date();
 
+  // Filter all-day events
+  const allDayEvents = appointments.filter(apt => {
+    const aptDate = new Date(apt.startTime);
+    return apt.isAllDay && weekDates.some(date => date.toDateString() === aptDate.toDateString());
+  });
+
+  const getAllDayEventsForDate = (date: Date) => {
+    return allDayEvents.filter(apt => {
+      const aptDate = new Date(apt.startTime);
+      return aptDate.toDateString() === date.toDateString();
+    });
+  };
+
   return (
-    <div 
+    <div
       className="flex h-full flex-col overflow-hidden select-none"
       onMouseUp={handleMouseUp}
       onMouseLeave={() => {
@@ -153,7 +177,7 @@ export function WeekViewDraggable({
       }}
     >
       {/* Week header */}
-      <div className="grid grid-cols-[80px_repeat(7,1fr)] border-b border-gray-200 bg-gray-50">
+      <div className="grid grid-cols-[80px_repeat(7,minmax(120px,1fr))] border-b border-gray-200 bg-gray-50">
         <div className="border-r border-gray-200 p-2"></div>
         {weekDates.map((date, idx) => {
           const isToday = date.toDateString() === today.toDateString();
@@ -179,9 +203,42 @@ export function WeekViewDraggable({
         })}
       </div>
 
+      {/* All-day events row */}
+      {allDayEvents.length > 0 && (
+        <div className="grid grid-cols-[80px_repeat(7,minmax(120px,1fr))] border-b-2 border-gray-300 bg-gray-50">
+          <div className="border-r border-gray-200 p-2 text-right text-xs font-medium text-gray-600">
+            All Day
+          </div>
+          {weekDates.map((date, idx) => {
+            const dayAllDayEvents = getAllDayEventsForDate(date);
+            const isToday = date.toDateString() === today.toDateString();
+            return (
+              <div
+                key={idx}
+                className={`min-h-[60px] border-r border-gray-200 p-1 last:border-r-0 ${
+                  isToday ? 'bg-blue-50/30' : 'bg-white'
+                }`}
+              >
+                {dayAllDayEvents.map((apt) => (
+                  <DraggableAppointmentCard
+                    key={apt.id}
+                    appointment={apt}
+                    onClick={() => onAppointmentClick?.(apt)}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    className="mb-1"
+                    compact
+                  />
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Time grid */}
       <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-[80px_repeat(7,1fr)]">
+        <div className="grid grid-cols-[80px_repeat(7,minmax(120px,1fr))]">
           {timeSlots.map((time, timeIdx) => {
             const [hour] = time.split(':').map(Number);
             
