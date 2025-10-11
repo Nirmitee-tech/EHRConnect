@@ -36,26 +36,6 @@ export function WeekViewDraggable({
     return () => clearInterval(timer);
   }, []);
 
-  // Auto-scroll to current time on mount and when week changes
-  useEffect(() => {
-    if (scrollContainerRef.current && isCurrentTimeVisible()) {
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinutes = now.getMinutes();
-
-      // Calculate the position: each hour slot is 60px tall
-      // Offset to show 1-2 hours before current time for context
-      const scrollPosition = (currentHour * 60) + (currentMinutes / 60 * 60) - 100;
-
-      // Small delay to ensure DOM is ready
-      setTimeout(() => {
-        if (scrollContainerRef.current) {
-          scrollContainerRef.current.scrollTop = Math.max(0, scrollPosition);
-        }
-      }, 100);
-    }
-  }, [currentDate]); // Re-scroll when date changes to different week
-
   // Optional: Debug logging (commented out for production)
   // React.useEffect(() => {
   //   console.log('WeekView - Appointments:', appointments.length);
@@ -171,18 +151,60 @@ export function WeekViewDraggable({
 
   const isInCreateRange = (date: Date, hour: number) => {
     if (!isCreating || !createStart || !createEnd) return false;
-    
+
     if (date.toDateString() !== createStart.date.toDateString()) return false;
-    
+
     const minHour = Math.min(createStart.hour, createEnd.hour);
     const maxHour = Math.max(createStart.hour, createEnd.hour);
-    
+
     return hour >= minHour && hour <= maxHour;
   };
 
   const weekDates = getWeekDates();
   const timeSlots = getTimeSlots();
   const today = new Date();
+
+  // Auto-scroll to current time on mount and when week changes
+  useEffect(() => {
+    const scrollToCurrentTime = () => {
+      if (scrollContainerRef.current) {
+        // Check if today is in current week view
+        const todayInView = weekDates.some(date => date.toDateString() === today.toDateString());
+
+        if (todayInView) {
+          const now = new Date();
+          const currentHour = now.getHours();
+          const currentMinutes = now.getMinutes();
+
+          // Calculate the position: each hour slot is 60px tall (min-h-[60px])
+          const totalMinutesFromMidnight = currentHour * 60 + currentMinutes;
+          const pixelPosition = (totalMinutesFromMidnight / 60) * 60; // Convert to pixels
+
+          // Get container height to calculate offset
+          const containerHeight = scrollContainerRef.current.clientHeight;
+
+          // Center the current time in the view, or show 2 hours above if not enough space
+          const offset = Math.min(200, containerHeight / 3);
+          const scrollPosition = Math.max(0, pixelPosition - offset);
+
+          // Use requestAnimationFrame for smooth scrolling after render
+          requestAnimationFrame(() => {
+            if (scrollContainerRef.current) {
+              scrollContainerRef.current.scrollTo({
+                top: scrollPosition,
+                behavior: 'smooth'
+              });
+            }
+          });
+        }
+      }
+    };
+
+    // Delay to ensure DOM is fully rendered
+    const timer = setTimeout(scrollToCurrentTime, 150);
+
+    return () => clearTimeout(timer);
+  }, [currentDate]); // Re-scroll when date changes to different week
 
   // Filter all-day events
   const allDayEvents = appointments.filter(apt => {
@@ -213,6 +235,26 @@ export function WeekViewDraggable({
   const getTodayColumnIndex = () => {
     const today = new Date();
     return weekDates.findIndex(date => date.toDateString() === today.toDateString());
+  };
+
+  const scrollToNow = () => {
+    if (scrollContainerRef.current && isCurrentTimeVisible()) {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinutes = now.getMinutes();
+
+      const totalMinutesFromMidnight = currentHour * 60 + currentMinutes;
+      const pixelPosition = (totalMinutesFromMidnight / 60) * 60;
+
+      const containerHeight = scrollContainerRef.current.clientHeight;
+      const offset = Math.min(200, containerHeight / 3);
+      const scrollPosition = Math.max(0, pixelPosition - offset);
+
+      scrollContainerRef.current.scrollTo({
+        top: scrollPosition,
+        behavior: 'smooth'
+      });
+    }
   };
 
   return (
@@ -380,6 +422,20 @@ export function WeekViewDraggable({
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium z-50">
           Drag to set appointment duration • Release to create
         </div>
+      )}
+
+      {/* Scroll to Now button - only show when viewing today */}
+      {isCurrentTimeVisible() && (
+        <button
+          onClick={scrollToNow}
+          className="absolute bottom-4 right-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium z-30 flex items-center gap-2 transition-colors"
+          title="Scroll to current time"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Now
+        </button>
       )}
     </div>
   );
