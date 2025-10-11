@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Appointment } from '@/types/appointment';
 import { DraggableAppointmentCard } from './draggable-appointment-card';
 
@@ -24,6 +24,37 @@ export function WeekViewDraggable({
   const [isCreating, setIsCreating] = useState(false);
   const [createStart, setCreateStart] = useState<{date: Date; hour: number} | null>(null);
   const [createEnd, setCreateEnd] = useState<{date: Date; hour: number} | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Update current time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Auto-scroll to current time on mount and when week changes
+  useEffect(() => {
+    if (scrollContainerRef.current && isCurrentTimeVisible()) {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinutes = now.getMinutes();
+
+      // Calculate the position: each hour slot is 60px tall
+      // Offset to show 1-2 hours before current time for context
+      const scrollPosition = (currentHour * 60) + (currentMinutes / 60 * 60) - 100;
+
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = Math.max(0, scrollPosition);
+        }
+      }, 100);
+    }
+  }, [currentDate]); // Re-scroll when date changes to different week
 
   // Optional: Debug logging (commented out for production)
   // React.useEffect(() => {
@@ -166,6 +197,24 @@ export function WeekViewDraggable({
     });
   };
 
+  // Calculate position of current time indicator
+  const getCurrentTimePosition = () => {
+    const hours = currentTime.getHours();
+    const minutes = currentTime.getMinutes();
+    // Each hour slot is 60px tall
+    return hours * 60 + (minutes / 60) * 60;
+  };
+
+  const isCurrentTimeVisible = () => {
+    const today = new Date();
+    return weekDates.some(date => date.toDateString() === today.toDateString());
+  };
+
+  const getTodayColumnIndex = () => {
+    const today = new Date();
+    return weekDates.findIndex(date => date.toDateString() === today.toDateString());
+  };
+
   return (
     <div
       className="flex h-full flex-col overflow-hidden select-none"
@@ -237,11 +286,11 @@ export function WeekViewDraggable({
       )}
 
       {/* Time grid */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-[80px_repeat(7,minmax(120px,1fr))]">
+      <div className="flex-1 overflow-y-auto relative" ref={scrollContainerRef}>
+        <div className="grid grid-cols-[80px_repeat(7,minmax(120px,1fr))] relative">
           {timeSlots.map((time, timeIdx) => {
             const [hour] = time.split(':').map(Number);
-            
+
             return (
               <React.Fragment key={timeIdx}>
                 {/* Time label */}
@@ -281,7 +330,7 @@ export function WeekViewDraggable({
                           compact
                         />
                       ))}
-                      
+
                       {/* Visual hint for empty slots */}
                       {dayAppointments.length === 0 && !isCreating && (
                         <div className="flex h-full items-center justify-center text-xs text-gray-300 opacity-0 hover:opacity-100 transition-opacity">
@@ -294,6 +343,35 @@ export function WeekViewDraggable({
               </React.Fragment>
             );
           })}
+
+          {/* Current Time Indicator - Red Line */}
+          {isCurrentTimeVisible() && (
+            <div
+              className="absolute left-0 right-0 z-20 pointer-events-none"
+              style={{ top: `${getCurrentTimePosition()}px` }}
+            >
+              {/* Time label */}
+              <div className="absolute left-0 w-[80px] flex items-center justify-end pr-2">
+                <span className="bg-red-600 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded shadow-sm">
+                  {currentTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                </span>
+              </div>
+              {/* Red line across all columns */}
+              <div className="absolute left-[80px] right-0 flex">
+                <div className="h-0.5 bg-red-600 shadow-sm" style={{ width: '100%' }}>
+                  {/* Circle indicator at the start of today's column */}
+                  {getTodayColumnIndex() !== -1 && (
+                    <div
+                      className="absolute -top-1 w-2.5 h-2.5 bg-red-600 rounded-full shadow-sm"
+                      style={{
+                        left: `calc(${(getTodayColumnIndex() / 7) * 100}% + 4px)`
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
