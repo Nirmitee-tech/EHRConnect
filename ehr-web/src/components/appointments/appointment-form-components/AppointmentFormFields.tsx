@@ -1,16 +1,18 @@
-import React from 'react';
-import { CalendarIcon, Clock, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { CalendarIcon, Clock, User, Plus } from 'lucide-react';
 
 interface AppointmentFormFieldsProps {
   formData: any;
   practitioners: Array<{ id: string; name: string }>;
   patients: Array<{ id: string; name: string }>;
   treatmentCategories: string[];
+  locations: string[];
   isNewPatient: boolean;
   onFormDataChange: (field: string, value: any) => void;
   onDoctorChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onPatientChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onToggleNewPatient: () => void;
+  onAddLocation: (location: string) => void;
 }
 
 export function AppointmentFormFields({
@@ -18,12 +20,26 @@ export function AppointmentFormFields({
   practitioners,
   patients,
   treatmentCategories,
+  locations,
   isNewPatient,
   onFormDataChange,
   onDoctorChange,
   onPatientChange,
-  onToggleNewPatient
+  onToggleNewPatient,
+  onAddLocation
 }: AppointmentFormFieldsProps) {
+  const [showAddLocation, setShowAddLocation] = useState(false);
+  const [newLocation, setNewLocation] = useState('');
+
+  const handleAddLocation = () => {
+    if (newLocation.trim()) {
+      onAddLocation(newLocation.trim());
+      onFormDataChange('location', newLocation.trim());
+      setNewLocation('');
+      setShowAddLocation(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Center/Facility */}
@@ -112,19 +128,74 @@ export function AppointmentFormFields({
         )}
       </div>
 
-      {/* Operatory */}
+      {/* Location/Room */}
       <div>
-        <label className="block text-sm font-medium text-gray-700">Operatory</label>
-        <select
-          value={formData.operatory}
-          onChange={(e) => onFormDataChange('operatory', e.target.value)}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-        >
-          <option value="">Select Operatory</option>
-          <option value="op1">Room 1</option>
-          <option value="op2">Room 2</option>
-          <option value="op3">Room 3</option>
-        </select>
+        <label className="block text-sm font-medium text-gray-700">
+          Location<span className="text-red-500">*</span>
+        </label>
+        {!showAddLocation ? (
+          <div className="mt-1 flex gap-2">
+            <select
+              required
+              value={formData.location || ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '__add_new__') {
+                  setShowAddLocation(true);
+                } else {
+                  onFormDataChange('location', value);
+                }
+              }}
+              className="block flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">Select Location</option>
+              {locations.map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
+              <option value="__add_new__" className="font-medium text-blue-600">
+                + Add New Location
+              </option>
+            </select>
+          </div>
+        ) : (
+          <div className="mt-1 space-y-2">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newLocation}
+                onChange={(e) => setNewLocation(e.target.value)}
+                placeholder="Enter new location name"
+                className="block flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                autoFocus
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddLocation();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleAddLocation}
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Add
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setShowAddLocation(false);
+                setNewLocation('');
+              }}
+              className="text-sm text-gray-600 hover:text-gray-800"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Treatment Category */}

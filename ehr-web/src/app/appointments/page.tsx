@@ -946,6 +946,7 @@ export default function AppointmentsPage() {
         onSave={handleSaveAppointment}
         initialDate={clickedDate}
         editingAppointment={selectedAppointment}
+        existingAppointments={allAppointments}
       />
 
       {/* Appointment Details Drawer */}
