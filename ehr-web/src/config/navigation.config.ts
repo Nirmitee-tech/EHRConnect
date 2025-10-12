@@ -105,7 +105,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
   {
     title: 'PHYSICAL ASSET',
     items: [
-      { name: 'Stocks', href: '/stocks', icon: Package },
+      { name: 'Inventory', href: '/inventory', icon: Package },
       { name: 'Peripherals', href: '/peripherals', icon: Cpu }
     ]
   },
@@ -151,7 +151,10 @@ const PAGE_CONFIG: Record<string, PageInfo> = {
   sales: { title: 'Sales' },
   purchases: { title: 'Purchases' },
   'payment-methods': { title: 'Payment Methods' },
-  stocks: { title: 'Stocks' },
+  inventory: {
+    title: 'Inventory',
+    actionButton: { label: 'New Item', href: '/inventory' }
+  },
   peripherals: { title: 'Peripherals' },
   reports: { title: 'Reports' },
   support: { title: 'Customer Support' },
