@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X, Phone, MapPin, MessageCircle, CreditCard, Clock, Edit3, UserX, UserCheck, XCircle, Copy } from 'lucide-react';
+import { X, Phone, MapPin, MessageCircle, CreditCard, Clock, Edit3, UserX, UserCheck, XCircle, Copy, FileText } from 'lucide-react';
 import { Appointment } from '@/types/appointment';
 
 interface AppointmentDetailsDrawerProps {
@@ -13,6 +13,7 @@ interface AppointmentDetailsDrawerProps {
   onCheckIn: (appointment: Appointment) => void;
   onCancel: (appointment: Appointment) => void;
   onCopy: (appointment: Appointment) => void;
+  onStartEncounter?: (appointment: Appointment) => void;
 }
 
 export function AppointmentDetailsDrawer({
@@ -23,7 +24,8 @@ export function AppointmentDetailsDrawer({
   onMissed,
   onCheckIn,
   onCancel,
-  onCopy
+  onCopy,
+  onStartEncounter
 }: AppointmentDetailsDrawerProps) {
   if (!isOpen || !appointment) return null;
 
@@ -111,6 +113,25 @@ export function AppointmentDetailsDrawer({
             </button>
           </div>
         </div>
+
+        {/* Start Encounter Button */}
+        {onStartEncounter && appointment.status === 'scheduled' && (
+          <div className="border-b border-gray-200 px-4 py-3 bg-gradient-to-r from-blue-50 to-blue-100">
+            <button
+              onClick={() => {
+                onStartEncounter(appointment);
+                onClose();
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm"
+            >
+              <FileText className="h-4 w-4" />
+              Start Encounter
+            </button>
+            <p className="text-xs text-blue-700 mt-2 text-center">
+              Begin documenting this patient visit
+            </p>
+          </div>
+        )}
 
         {/* Content */}
         <div className="p-4 space-y-3">

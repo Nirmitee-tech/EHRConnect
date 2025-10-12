@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { CalendarView, Appointment, AppointmentStats } from '@/types/appointment';
 import { CalendarToolbar } from '@/components/appointments/calendar-toolbar';
 import { DayView } from '@/components/appointments/day-view';
@@ -12,6 +13,7 @@ import { AppointmentDetailsDrawer } from '@/components/appointments/appointment-
 import { MiniCalendar } from '@/components/appointments/mini-calendar';
 import { EventFilters, EventCategory } from '@/components/appointments/event-filters';
 import { AppointmentService } from '@/services/appointment.service';
+import { EncounterService } from '@/services/encounter.service';
 import { Loader2, Plus, ChevronDown, RefreshCw, Info, ArrowRight, Keyboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PrintAppointments } from '@/components/appointments/print-appointments';
@@ -27,6 +29,7 @@ const medicalCategories: EventCategory[] = [
 ];
 
 export default function AppointmentsPage() {
+  const router = useRouter();
   const { currentFacility } = useFacility();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>('week');
@@ -381,6 +384,25 @@ export default function AppointmentsPage() {
     const text = `Appointment: ${appointment.patientName}\nPractitioner: ${appointment.practitionerName}\nTime: ${new Date(appointment.startTime).toLocaleString()}\nDuration: ${appointment.duration} mins`;
     navigator.clipboard.writeText(text);
     alert('Appointment details copied to clipboard');
+  };
+
+  const handleStartEncounter = async (appointment: Appointment) => {
+    try {
+      // Create encounter from appointment
+      const encounter = await EncounterService.createFromAppointment(appointment);
+
+      // Update appointment status to in-progress
+      await AppointmentService.updateAppointment(appointment.id, { status: 'in-progress' });
+      setAllAppointments(prev => prev.map(apt =>
+        apt.id === appointment.id ? { ...apt, status: 'in-progress' } : apt
+      ));
+
+      // Navigate to encounter page
+      router.push(`/encounters/${encounter.id}`);
+    } catch (error) {
+      console.error('Error starting encounter:', error);
+      alert('Failed to start encounter. Please try again.');
+    }
   };
 
   const handleDateClick = (date: Date) => {
@@ -1038,6 +1060,7 @@ export default function AppointmentsPage() {
         onCheckIn={handleCheckIn}
         onCancel={handleCancelAppointment}
         onCopy={handleCopyAppointment}
+        onStartEncounter={handleStartEncounter}
       />
     </div>
   );
