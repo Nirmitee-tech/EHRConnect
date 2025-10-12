@@ -2,9 +2,75 @@ export type EncounterStatus = 'planned' | 'in-progress' | 'on-hold' | 'completed
 
 export type EncounterClass = 'ambulatory' | 'emergency' | 'inpatient' | 'outpatient' | 'virtual';
 
+// Clinical Note Finding
+export interface ClinicalFinding {
+  id: string;
+  toothNumber?: string;
+  surface?: string;
+  pop?: string;
+  top?: string;
+  pulpSensibility?: string;
+  conclusion?: string;
+}
+
+// Investigation
+export interface Investigation {
+  id: string;
+  name: string;
+  result?: string;
+  notes?: string;
+}
+
+// Diagnosis
+export interface Diagnosis {
+  id: string;
+  code?: string;
+  display: string;
+  type: 'primary' | 'secondary' | 'differential';
+  notes?: string;
+}
+
+// Treatment Plan Item
+export interface TreatmentPlanItem {
+  id: string;
+  treatment: string;
+  charges: number;
+  grossAmount: number;
+  discount: number;
+  netAmount: number;
+  gst: number;
+  total: number;
+  note?: string;
+}
+
+// Prescription
+export interface Prescription {
+  id: string;
+  medication: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  instructions?: string;
+}
+
+// Instruction
+export interface Instruction {
+  id: string;
+  text: string;
+}
+
+// Package
+export interface Package {
+  id: string;
+  name: string;
+  description?: string;
+  items: string[];
+  price: number;
+}
+
 export interface Encounter {
   id: string;
-  appointmentId?: string; // Link to the originating appointment
+  appointmentId?: string;
   patientId: string;
   patientName: string;
   practitionerId: string;
@@ -13,7 +79,7 @@ export interface Encounter {
   class: EncounterClass;
   startTime: Date | string;
   endTime?: Date | string;
-  duration?: number; // in minutes
+  duration?: number;
   reasonCode?: string;
   reasonDisplay?: string;
   type?: string;
@@ -22,12 +88,16 @@ export interface Encounter {
 
   // Clinical information
   chiefComplaint?: string;
-  presentingProblem?: string;
-  diagnosis?: Array<{
-    code: string;
-    display: string;
-    type: 'primary' | 'secondary' | 'differential';
-  }>;
+  findings?: ClinicalFinding[];
+  investigations?: Investigation[];
+  diagnoses?: Diagnosis[];
+  clinicalNotes?: string;
+
+  // Treatment
+  treatmentPlan?: TreatmentPlanItem[];
+  prescriptions?: Prescription[];
+  instructions?: Instruction[];
+  packages?: Package[];
 
   // Vitals
   vitals?: {
@@ -42,9 +112,14 @@ export interface Encounter {
     bmi?: number;
   };
 
-  // Documentation
+  // Patient Medical History (for reference)
+  patientHistory?: string;
+  patientAllergies?: string;
+  patientHabits?: string;
+
+  // Legacy fields
+  presentingProblem?: string;
   notes?: string;
-  clinicalNotes?: string;
 
   // Billing
   billingCodes?: Array<{

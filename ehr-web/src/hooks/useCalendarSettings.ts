@@ -8,6 +8,7 @@ import { SettingsService } from '@/services/settings.service';
 export function useCalendarSettings() {
   const { currentFacility } = useFacility();
   const [slotDuration, setSlotDuration] = useState(60); // Default 60 minutes
+  const [autoNavigateToEncounter, setAutoNavigateToEncounter] = useState(true); // Default true
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,9 +24,10 @@ export function useCalendarSettings() {
     try {
       const settings = await SettingsService.getOrganizationSettings(currentFacility.id);
       setSlotDuration(settings.appointmentSettings.slotDuration);
+      setAutoNavigateToEncounter(settings.appointmentSettings.autoNavigateToEncounter ?? true);
     } catch (error) {
       console.error('Error loading calendar settings:', error);
-      // Keep default 60 minutes on error
+      // Keep defaults on error
     } finally {
       setLoading(false);
     }
@@ -65,6 +67,7 @@ export function useCalendarSettings() {
 
   return {
     slotDuration,
+    autoNavigateToEncounter,
     loading,
     getTimeSlots,
     getPixelsPerMinute,

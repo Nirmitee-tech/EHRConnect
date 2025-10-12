@@ -301,6 +301,35 @@ export default function FacilitySettingsPage() {
               </div>
             </div>
           </div>
+
+          {/* Auto Navigate to Encounter Setting */}
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={calendarSettings.autoNavigateToEncounter ?? true}
+                onChange={(e) => updateCalendarSetting('autoNavigateToEncounter', e.target.checked)}
+                className="mt-0.5 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-900">
+                  Auto-Navigate to Encounter on Start
+                </div>
+                <p className="text-xs text-gray-600 mt-1">
+                  When enabled, clicking "Start" on an appointment will create an encounter and open it immediately (for doctors).
+                  <br />
+                  When disabled, clicking "Start" will only mark the appointment as in-progress without opening the encounter page (for receptionists).
+                </p>
+                <div className="mt-2 text-xs">
+                  <span className="font-medium text-purple-700">Use Case:</span>
+                  <ul className="list-disc list-inside text-gray-600 mt-1 space-y-0.5">
+                    <li><strong>Enabled:</strong> Doctors can start and immediately document the encounter</li>
+                    <li><strong>Disabled:</strong> Receptionists can check-in patients without opening encounter details</li>
+                  </ul>
+                </div>
+              </div>
+            </label>
+          </div>
         </div>
       </div>
 

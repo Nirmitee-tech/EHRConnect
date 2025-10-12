@@ -15,6 +15,7 @@ export interface AppointmentSettings {
     end: string; // "17:00"
   };
   allowedDurations: number[]; // Available duration options [15, 30, 45, 60]
+  autoNavigateToEncounter: boolean; // If true, "Start" navigates to encounter; if false, only updates status
 }
 
 export const DEFAULT_APPOINTMENT_SETTINGS: AppointmentSettings = {
@@ -24,5 +25,6 @@ export const DEFAULT_APPOINTMENT_SETTINGS: AppointmentSettings = {
     start: '09:00',
     end: '17:00'
   },
-  allowedDurations: [15, 30, 45, 60, 90, 120]
+  allowedDurations: [15, 30, 45, 60, 90, 120],
+  autoNavigateToEncounter: true // Default: navigate to encounter (for doctors)
 };

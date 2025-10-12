@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Appointment } from '@/types/appointment';
 import { Clock, Play, CheckCircle, XCircle, FileText, MoreVertical } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useCalendarSettings } from '@/hooks/useCalendarSettings';
 
 interface CompactAppointmentCardProps {
   appointment: Appointment;
@@ -26,6 +27,7 @@ export function CompactAppointmentCard({
 }: CompactAppointmentCardProps) {
   const router = useRouter();
   const [showActions, setShowActions] = useState(false);
+  const { autoNavigateToEncounter } = useCalendarSettings();
   const startTime = new Date(appointment.startTime);
   const endTime = new Date(appointment.endTime);
 
@@ -49,7 +51,13 @@ export function CompactAppointmentCard({
 
     switch (action) {
       case 'start':
-        onStartEncounter?.(appointment.id);
+        // If autoNavigateToEncounter is enabled, use the full encounter flow
+        // Otherwise, just update the status to in-progress
+        if (autoNavigateToEncounter) {
+          onStartEncounter?.(appointment.id);
+        } else {
+          onStatusChange?.(appointment.id, 'in-progress');
+        }
         break;
       case 'complete':
         onStatusChange?.(appointment.id, 'completed');
