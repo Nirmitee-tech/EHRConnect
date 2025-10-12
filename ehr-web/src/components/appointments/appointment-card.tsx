@@ -68,6 +68,37 @@ export function AppointmentCard({
   if (spanning) {
     const isHexColor = typeof bgColor === 'string' && bgColor.startsWith('#');
 
+    // Status badge color
+    const getStatusBadgeColor = (status: string) => {
+      switch (status) {
+        case 'scheduled':
+          return useColorBg ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700';
+        case 'in-progress':
+          return 'bg-red-500 text-white';
+        case 'completed':
+          return 'bg-green-500 text-white';
+        case 'cancelled':
+          return 'bg-gray-400 text-white';
+        default:
+          return useColorBg ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-700';
+      }
+    };
+
+    const getStatusLabel = (status: string) => {
+      switch (status) {
+        case 'in-progress':
+          return 'In Out';
+        case 'completed':
+          return 'Done';
+        case 'cancelled':
+          return 'Cancel';
+        case 'scheduled':
+          return 'Sched';
+        default:
+          return status;
+      }
+    };
+
     return (
       <div
         onClick={onClick}
@@ -81,8 +112,13 @@ export function AppointmentCard({
         <div className={cn('font-semibold text-[11px] leading-tight truncate', useColorBg ? 'text-white' : colors.text)}>
           {appointment.patientName}
         </div>
-        <div className={cn('text-[10px] mt-0.5 truncate', useColorBg ? 'text-white/90' : 'text-gray-600')}>
-          {formatTime(appointment.startTime)}
+        <div className="flex items-center justify-between gap-1 mt-0.5">
+          <div className={cn('text-[10px] truncate', useColorBg ? 'text-white/90' : 'text-gray-600')}>
+            {formatTime(appointment.startTime)}
+          </div>
+          <span className={`px-1 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide whitespace-nowrap flex-shrink-0 ${getStatusBadgeColor(appointment.status)}`}>
+            {getStatusLabel(appointment.status)}
+          </span>
         </div>
         {appointment.reason && (
           <div className={cn('text-[10px] mt-0.5 line-clamp-1', useColorBg ? 'text-white/80' : 'text-gray-500')}>
@@ -96,6 +132,37 @@ export function AppointmentCard({
   if (compact) {
     // Check if bgColor is a hex color (starts with #) vs a Tailwind class
     const isHexColor = typeof bgColor === 'string' && bgColor.startsWith('#');
+
+    // Status badge color
+    const getStatusBadgeColor = (status: string) => {
+      switch (status) {
+        case 'scheduled':
+          return useColorBg ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700';
+        case 'in-progress':
+          return 'bg-red-500 text-white';
+        case 'completed':
+          return 'bg-green-500 text-white';
+        case 'cancelled':
+          return 'bg-gray-400 text-white';
+        default:
+          return useColorBg ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-700';
+      }
+    };
+
+    const getStatusLabel = (status: string) => {
+      switch (status) {
+        case 'in-progress':
+          return 'In Out';
+        case 'completed':
+          return 'Done';
+        case 'cancelled':
+          return 'Cancel';
+        case 'scheduled':
+          return 'Sched';
+        default:
+          return status;
+      }
+    };
 
     return (
       <div
@@ -111,8 +178,13 @@ export function AppointmentCard({
           {appointment.patientName}
         </div>
         {!appointment.isAllDay && (
-          <div className={cn('mt-0.5 text-xs truncate', useColorBg ? 'text-white/90' : 'text-gray-600')}>
-            {formatTime(appointment.startTime)}
+          <div className="flex items-center justify-between gap-1 mt-0.5">
+            <div className={cn('text-xs truncate', useColorBg ? 'text-white/90' : 'text-gray-600')}>
+              {formatTime(appointment.startTime)}
+            </div>
+            <span className={`px-1 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide whitespace-nowrap flex-shrink-0 ${getStatusBadgeColor(appointment.status)}`}>
+              {getStatusLabel(appointment.status)}
+            </span>
           </div>
         )}
       </div>

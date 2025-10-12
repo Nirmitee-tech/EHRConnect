@@ -1061,6 +1061,10 @@ export default function AppointmentsPage() {
         onCancel={handleCancelAppointment}
         onCopy={handleCopyAppointment}
         onStartEncounter={handleStartEncounter}
+        onAppointmentUpdated={() => {
+          loadAppointments();
+          loadStats();
+        }}
       />
     </div>
   );

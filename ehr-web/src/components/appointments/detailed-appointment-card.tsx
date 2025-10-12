@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { Appointment } from '@/types/appointment';
-import { Clock, User, MapPin, Stethoscope, Calendar } from 'lucide-react';
+import { Clock, User, MapPin, Stethoscope, Calendar, FileText, Play, CheckCircle, XCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface DetailedAppointmentCardProps {
   appointment: Appointment;
@@ -19,6 +20,7 @@ export function DetailedAppointmentCard({
   onDragEnd,
   className = ''
 }: DetailedAppointmentCardProps) {
+  const router = useRouter();
   const startTime = new Date(appointment.startTime);
   const endTime = new Date(appointment.endTime);
 
@@ -28,6 +30,28 @@ export function DetailedAppointmentCard({
       minute: '2-digit',
       hour12: true
     });
+  };
+
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) {
+      return `${minutes}m`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+  };
+
+  const handlePatientClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (appointment.patientId) {
+      router.push(`/patients/${appointment.patientId}`);
+    }
+  };
+
+  const handleQuickAction = (e: React.MouseEvent, action: string) => {
+    e.stopPropagation();
+    // These actions will be handled by the parent component through onClick
+    onClick?.();
   };
 
   const getStatusColor = (status: string) => {
@@ -97,74 +121,132 @@ export function DetailedAppointmentCard({
       onDragEnd={onDragEnd}
     >
       <div
-        className={`h-full rounded-lg border-l-4 cursor-pointer overflow-hidden shadow-sm hover:shadow-md transition-all ${getStatusColor(appointment.status)}`}
+        className={`h-full rounded-lg border-l-4 overflow-hidden shadow-sm hover:shadow-md transition-all ${getStatusColor(appointment.status)}`}
         style={{ borderLeftColor: borderColor }}
-        onClick={onClick}
       >
-        <div className="p-3 h-full flex flex-col">
-          {/* Header: Patient name and status */}
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-sm truncate text-gray-900">
-                {appointment.patientName}
-              </h3>
-              <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-0.5">
-                <Clock className="h-3 w-3 flex-shrink-0" />
-                <span className="font-semibold">{formatTime(startTime)}</span>
-                <span>-</span>
-                <span className="font-semibold">{formatTime(endTime)}</span>
-                <span className="text-gray-400">•</span>
-                <span>{appointment.duration} min</span>
-              </div>
-            </div>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide whitespace-nowrap ml-2 ${getStatusBadgeColor(appointment.status)}`}>
+        <div className="p-3 h-full flex flex-col gap-2">
+          {/* Status Badge - First */}
+          <div className="flex items-center justify-between">
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide whitespace-nowrap ${getStatusBadgeColor(appointment.status)}`}>
               {getStatusLabel(appointment.status)}
             </span>
-          </div>
-
-          {/* Details grid */}
-          <div className="space-y-1.5 text-xs">
-            {/* Provider */}
-            <div className="flex items-center gap-1.5 text-gray-700">
-              <Stethoscope className="h-3 w-3 flex-shrink-0 text-gray-500" />
-              <span className="font-medium truncate">{appointment.practitionerName}</span>
-            </div>
-
-            {/* Treatment type */}
-            {appointment.appointmentType && (
-              <div className="flex items-center gap-1.5 text-gray-700">
-                <Calendar className="h-3 w-3 flex-shrink-0 text-gray-500" />
-                <span className="truncate">{appointment.appointmentType}</span>
-              </div>
-            )}
-
-            {/* Location */}
-            {appointment.location && (
-              <div className="flex items-center gap-1.5 text-gray-700">
-                <MapPin className="h-3 w-3 flex-shrink-0 text-gray-500" />
-                <span className="truncate">{appointment.location}</span>
-              </div>
-            )}
-
-            {/* Reason/Notes */}
-            {appointment.reason && (
-              <div className="mt-2 pt-2 border-t border-gray-200">
-                <p className="text-xs text-gray-600 line-clamp-2 italic">
-                  {appointment.reason}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Patient ID badge (if short enough) */}
-          {appointment.patientId && (
-            <div className="mt-auto pt-2">
+            {appointment.patientId && (
               <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/60 rounded text-[10px] text-gray-600 font-mono">
                 <User className="h-2.5 w-2.5" />
                 {appointment.patientId.substring(0, 8)}
               </div>
+            )}
+          </div>
+
+          {/* Patient Name - Clickable */}
+          <div
+            onClick={handlePatientClick}
+            className="cursor-pointer hover:text-blue-600 transition-colors"
+          >
+            <h3 className="font-bold text-sm text-gray-900 hover:text-blue-600">
+              {appointment.patientName}
+            </h3>
+          </div>
+
+          {/* Time Information */}
+          <div className="space-y-1 text-xs">
+            <div className="flex items-center gap-1.5 text-gray-700">
+              <Clock className="h-3 w-3 flex-shrink-0 text-gray-500" />
+              <span className="font-semibold">{formatTime(startTime)}</span>
+              <span className="text-gray-400">→</span>
+              <span className="font-semibold">{formatTime(endTime)}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-gray-600 pl-5">
+              <span className="text-[11px]">Duration: {formatDuration(appointment.duration)}</span>
+            </div>
+          </div>
+
+          {/* Doctor */}
+          <div className="flex items-center gap-1.5 text-xs text-gray-700">
+            <Stethoscope className="h-3 w-3 flex-shrink-0 text-gray-500" />
+            <span className="font-medium truncate">{appointment.practitionerName}</span>
+          </div>
+
+          {/* Appointment Type */}
+          {appointment.appointmentType && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-700">
+              <Calendar className="h-3 w-3 flex-shrink-0 text-gray-500" />
+              <span className="truncate">{appointment.appointmentType}</span>
             </div>
           )}
+
+          {/* Location */}
+          {appointment.location && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-700">
+              <MapPin className="h-3 w-3 flex-shrink-0 text-gray-500" />
+              <span className="truncate">{appointment.location}</span>
+            </div>
+          )}
+
+          {/* Notes/Reason */}
+          {appointment.reason && (
+            <div className="pt-2 border-t border-gray-200">
+              <p className="text-xs text-gray-600 line-clamp-2 italic">
+                {appointment.reason}
+              </p>
+            </div>
+          )}
+
+          {/* Quick Action Shortcuts based on status */}
+          <div className="mt-auto pt-2 border-t border-gray-200">
+            <div className="flex gap-1.5">
+              {appointment.status === 'scheduled' && (
+                <>
+                  <button
+                    onClick={(e) => handleQuickAction(e, 'start')}
+                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-[10px] font-medium"
+                    title="Start Encounter"
+                  >
+                    <Play className="h-3 w-3" />
+                    <span>Start</span>
+                  </button>
+                  <button
+                    onClick={(e) => handleQuickAction(e, 'details')}
+                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-[10px] font-medium"
+                    title="View Details"
+                  >
+                    <FileText className="h-3 w-3" />
+                    <span>Details</span>
+                  </button>
+                </>
+              )}
+              {appointment.status === 'in-progress' && (
+                <>
+                  <button
+                    onClick={(e) => handleQuickAction(e, 'complete')}
+                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-[10px] font-medium"
+                    title="Complete"
+                  >
+                    <CheckCircle className="h-3 w-3" />
+                    <span>Complete</span>
+                  </button>
+                  <button
+                    onClick={(e) => handleQuickAction(e, 'details')}
+                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-[10px] font-medium"
+                    title="View Details"
+                  >
+                    <FileText className="h-3 w-3" />
+                    <span>Details</span>
+                  </button>
+                </>
+              )}
+              {(appointment.status === 'completed' || appointment.status === 'cancelled' || appointment.status === 'no-show') && (
+                <button
+                  onClick={(e) => handleQuickAction(e, 'details')}
+                  className="w-full flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-[10px] font-medium"
+                  title="View Details"
+                >
+                  <FileText className="h-3 w-3" />
+                  <span>View Details</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

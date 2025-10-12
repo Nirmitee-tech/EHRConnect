@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
-import { X, Phone, MapPin, MessageCircle, CreditCard, Clock, Edit3, UserX, UserCheck, XCircle, Copy, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Phone, MapPin, MessageCircle, CreditCard, Clock, Edit3, UserX, UserCheck, XCircle, Copy, FileText, CheckCircle } from 'lucide-react';
 import { Appointment } from '@/types/appointment';
+import { EncounterService } from '@/services/encounter.service';
+import { useRouter } from 'next/navigation';
 
 interface AppointmentDetailsDrawerProps {
   isOpen: boolean;
@@ -14,6 +16,7 @@ interface AppointmentDetailsDrawerProps {
   onCancel: (appointment: Appointment) => void;
   onCopy: (appointment: Appointment) => void;
   onStartEncounter?: (appointment: Appointment) => void;
+  onAppointmentUpdated?: () => void;
 }
 
 export function AppointmentDetailsDrawer({
@@ -25,8 +28,14 @@ export function AppointmentDetailsDrawer({
   onCheckIn,
   onCancel,
   onCopy,
-  onStartEncounter
+  onStartEncounter,
+  onAppointmentUpdated
 }: AppointmentDetailsDrawerProps) {
+  const router = useRouter();
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [encounterId, setEncounterId] = useState<string | null>(null);
+
   if (!isOpen || !appointment) return null;
 
   const formatTime = (date: Date | string) => {
@@ -48,6 +57,59 @@ export function AppointmentDetailsDrawer({
       return 'today';
     } else {
       return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+  };
+
+  const handleCompleteAppointment = async () => {
+    setIsCompleting(true);
+    try {
+      // Check if an encounter exists for this appointment
+      const { medplum } = await import('@/lib/medplum');
+      const encounters = await medplum.searchResources('Encounter', {
+        appointment: `Appointment/${appointment.id}`
+      });
+
+      if (encounters.length > 0) {
+        // Encounter exists, show confirmation dialog
+        setEncounterId(encounters[0].id!);
+        setShowConfirmDialog(true);
+      } else {
+        // No encounter exists, create a minimal one
+        const newEncounter = await EncounterService.createFromAppointment(appointment);
+        setEncounterId(newEncounter.id);
+        setShowConfirmDialog(true);
+      }
+    } catch (error) {
+      console.error('Error checking/creating encounter:', error);
+      alert('Failed to process appointment completion. Please try again.');
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
+  const handleDocumentVisit = () => {
+    if (encounterId) {
+      router.push(`/encounters/${encounterId}`);
+      onClose();
+    }
+  };
+
+  const handleCompleteDirectly = async () => {
+    if (!encounterId) return;
+
+    try {
+      setIsCompleting(true);
+      await EncounterService.complete(encounterId);
+      alert('Appointment completed successfully!');
+      setShowConfirmDialog(false);
+      onClose();
+      // Trigger parent refresh to update appointment list
+      onAppointmentUpdated?.();
+    } catch (error) {
+      console.error('Error completing encounter:', error);
+      alert('Failed to complete appointment. Please try again.');
+    } finally {
+      setIsCompleting(false);
     }
   };
 
@@ -129,6 +191,23 @@ export function AppointmentDetailsDrawer({
             </button>
             <p className="text-xs text-blue-700 mt-2 text-center">
               Begin documenting this patient visit
+            </p>
+          </div>
+        )}
+
+        {/* Complete Appointment Button */}
+        {(appointment.status === 'scheduled' || appointment.status === 'in-progress') && (
+          <div className="border-b border-gray-200 px-4 py-3 bg-gradient-to-r from-green-50 to-green-100">
+            <button
+              onClick={handleCompleteAppointment}
+              disabled={isCompleting}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <CheckCircle className="h-4 w-4" />
+              {isCompleting ? 'Processing...' : 'Complete Appointment'}
+            </button>
+            <p className="text-xs text-green-700 mt-2 text-center">
+              Mark this appointment as completed
             </p>
           </div>
         )}
@@ -254,6 +333,56 @@ export function AppointmentDetailsDrawer({
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-[60]"
+            onClick={() => setShowConfirmDialog(false)}
+          />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-lg shadow-xl z-[70] p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  Complete Appointment
+                </h3>
+                <p className="text-sm text-gray-600">
+                  An encounter has been created for this appointment. Would you like to document this visit now or complete the appointment directly?
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleDocumentVisit}
+                disabled={isCompleting}
+                className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+              >
+                Document Visit
+              </button>
+              <button
+                onClick={handleCompleteDirectly}
+                disabled={isCompleting}
+                className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
+              >
+                {isCompleting ? 'Completing...' : 'Complete Now'}
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowConfirmDialog(false)}
+              disabled={isCompleting}
+              className="w-full mt-3 px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </>
+      )}
     </>
   );
 }
