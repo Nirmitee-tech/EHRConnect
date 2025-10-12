@@ -81,9 +81,9 @@ export function ClinicalNoteForm({
 
   // Clinical data state
   const [chiefComplaint, setChiefComplaint] = useState(encounter.chiefComplaint || '');
-  const [findings, setFindings] = useState('');
-  const [investigation, setInvestigation] = useState('');
-  const [diagnosis, setDiagnosis] = useState('');
+  const [findings, setFindings] = useState(encounter.findingsText || '');
+  const [investigation, setInvestigation] = useState(encounter.investigationsText || '');
+  const [diagnosis, setDiagnosis] = useState(encounter.diagnosesText || '');
   const [notes, setNotes] = useState(encounter.clinicalNotes || '');
 
   // Initialize vitals from encounter
@@ -375,14 +375,28 @@ export function ClinicalNoteForm({
             currentValue={findings}
           />
         </div>
-        <div className="p-3 bg-white">
+        <div className="p-3 bg-white space-y-2">
           <textarea
             value={findings}
             onChange={(e) => setFindings(e.target.value)}
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none shadow-sm"
-            rows={2}
+            rows={3}
             placeholder="Enter findings or use a template..."
           />
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                onUpdate({ findingsText: findings });
+                alert('Findings saved!');
+              }}
+              disabled={!findings.trim()}
+              className="px-4 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              <Save className="inline h-3 w-3 mr-1" />
+              Save Findings
+            </button>
+          </div>
         </div>
       </div>
 
@@ -396,14 +410,28 @@ export function ClinicalNoteForm({
             currentValue={investigation}
           />
         </div>
-        <div className="p-3 bg-white">
+        <div className="p-3 bg-white space-y-2">
           <textarea
             value={investigation}
             onChange={(e) => setInvestigation(e.target.value)}
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none shadow-sm"
-            rows={2}
+            rows={3}
             placeholder="Enter investigation or use a template..."
           />
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                onUpdate({ investigationsText: investigation });
+                alert('Investigation saved!');
+              }}
+              disabled={!investigation.trim()}
+              className="px-4 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              <Save className="inline h-3 w-3 mr-1" />
+              Save Investigation
+            </button>
+          </div>
         </div>
       </div>
 
@@ -417,14 +445,28 @@ export function ClinicalNoteForm({
             currentValue={diagnosis}
           />
         </div>
-        <div className="p-3 bg-white">
+        <div className="p-3 bg-white space-y-2">
           <textarea
             value={diagnosis}
             onChange={(e) => setDiagnosis(e.target.value)}
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none shadow-sm"
-            rows={2}
+            rows={3}
             placeholder="Enter diagnosis or use a template..."
           />
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                onUpdate({ diagnosesText: diagnosis });
+                alert('Diagnosis saved!');
+              }}
+              disabled={!diagnosis.trim()}
+              className="px-4 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              <Save className="inline h-3 w-3 mr-1" />
+              Save Diagnosis
+            </button>
+          </div>
         </div>
       </div>
 

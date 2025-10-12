@@ -14,7 +14,7 @@ import {
   ChevronDown,
   ChevronRight
 } from 'lucide-react';
-import { Encounter, AddressData, NoteData } from '@/types/encounter';
+import { Encounter, AddressData, NoteData, InsuranceData } from '@/types/encounter';
 import { EncounterService } from '@/services/encounter.service';
 import { AddressService } from '@/services/address.service';
 import { PatientSidebar } from '@/components/encounters/patient-sidebar';
@@ -72,6 +72,7 @@ export default function EncounterPage() {
           data.addresses = patientData.addresses;
           data.socialNotes = patientData.socialNotes;
           data.internalNotes = patientData.internalNotes;
+          data.insuranceCards = patientData.insuranceCards;
           data.patientHistory = patientData.patientHistory;
           data.patientHabitsStructured = patientData.habitsStructured;
           data.patientAllergiesStructured = patientData.allergiesStructured;
@@ -208,6 +209,7 @@ export default function EncounterPage() {
         addresses={encounter.addresses || []}
         socialNotes={encounter.socialNotes || []}
         internalNotes={encounter.internalNotes || []}
+        insuranceCards={encounter.insuranceCards || []}
         currentUserId={session?.fhirUser || session?.user?.email || 'unknown'}
         currentUserName={session?.user?.name || 'Unknown User'}
         onBack={() => router.push('/appointments')}
@@ -271,6 +273,20 @@ export default function EncounterPage() {
             });
           } catch (error) {
             console.error('Failed to update internal notes:', error);
+            throw error;
+          }
+        }}
+        onUpdateInsuranceCards={async (cards: InsuranceData[]) => {
+          try {
+            // Update insurance cards
+            await AddressService.updateInsuranceCards(encounter.patientId, cards);
+            setEncounter({
+              ...encounter,
+              insuranceCards: cards
+            });
+            console.log('✅ Insurance cards updated successfully');
+          } catch (error) {
+            console.error('❌ Failed to update insurance cards:', error);
             throw error;
           }
         }}
@@ -372,7 +388,7 @@ export default function EncounterPage() {
               </div>
             </div>
 
-            {/* Right Section - Contact Information */}
+            {/* Right Section - Emergency Contact */}
             <div className="border-l border-gray-200 pl-8">
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="text-sm font-semibold text-gray-900">Emergency Contact</h3>

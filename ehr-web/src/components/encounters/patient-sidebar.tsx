@@ -23,7 +23,8 @@ import {
 } from 'lucide-react';
 import { AddressDrawer } from './address-drawer';
 import { StickyNotesSection } from './sticky-notes-section';
-import { AddressData, NoteData } from '@/types/encounter';
+import { InsuranceSection } from './insurance-section';
+import { AddressData, NoteData, InsuranceData } from '@/types/encounter';
 
 interface PatientSidebarProps {
   patientName: string;
@@ -43,6 +44,7 @@ interface PatientSidebarProps {
   addresses?: AddressData[];
   socialNotes?: NoteData[];
   internalNotes?: NoteData[];
+  insuranceCards?: InsuranceData[];
   currentUserId?: string;
   currentUserName?: string;
   onBack: () => void;
@@ -54,6 +56,7 @@ interface PatientSidebarProps {
   onUpdateAddresses: (addresses: AddressData[]) => Promise<void>;
   onUpdateSocialNotes: (notes: NoteData[]) => Promise<void>;
   onUpdateInternalNotes: (notes: NoteData[]) => Promise<void>;
+  onUpdateInsuranceCards?: (cards: InsuranceData[]) => Promise<void>;
   onUpdatePatientStatus?: (active: boolean) => Promise<void>;
 }
 
@@ -75,6 +78,7 @@ export function PatientSidebar({
   addresses = [],
   socialNotes = [],
   internalNotes = [],
+  insuranceCards = [],
   currentUserId = 'current-user-id',
   currentUserName = 'Current User',
   onBack,
@@ -82,6 +86,7 @@ export function PatientSidebar({
   onUpdateAddresses,
   onUpdateSocialNotes,
   onUpdateInternalNotes,
+  onUpdateInsuranceCards,
   onUpdatePatientStatus
 }: PatientSidebarProps) {
   const [addressExpanded, setAddressExpanded] = useState(false);
@@ -322,6 +327,12 @@ export function PatientSidebar({
             </div>
           )}
         </div>
+
+        {/* Insurance Section */}
+        <InsuranceSection
+          insuranceCards={insuranceCards}
+          onUpdate={onUpdateInsuranceCards}
+        />
 
         {/* Status - Compact */}
         <div className="px-3 py-2 border-b border-gray-200">

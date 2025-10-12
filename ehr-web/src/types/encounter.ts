@@ -80,6 +80,64 @@ export interface NoteData {
   remarks?: string;
 }
 
+// Insurance Data
+export type InsuranceType = 'primary' | 'secondary' | 'tertiary';
+export type CoverageType = 'medical' | 'dental' | 'vision' | 'pharmacy';
+export type InsurancePlan = 'PPO' | 'HMO' | 'EPO' | 'POS' | 'HDHP' | 'Medicare' | 'Medicaid' | 'Other';
+
+export interface InsuranceData {
+  id: string;
+  type: InsuranceType; // Primary, Secondary, Tertiary
+  insuranceName: string; // Insurance company name (e.g., Blue Cross, Aetna)
+  planType: string; // Plan type/name
+  memberId: string; // Member/Policy ID
+  groupId?: string; // Group ID number
+  groupName?: string; // Group Name
+  planName?: string; // Specific plan name
+
+  // Patient relationship
+  relationship: 'self' | 'spouse' | 'child' | 'other';
+
+  // Dates
+  effectiveStartDate?: Date | string;
+  effectiveEndDate?: Date | string;
+
+  // Insurance card images
+  cardFrontImage?: string; // Base64 or URL to front of insurance card
+  cardBackImage?: string; // Base64 or URL to back of insurance card
+
+  // Additional US Healthcare specific fields
+  coverageType?: CoverageType; // Medical, Dental, Vision, Pharmacy
+  plan?: InsurancePlan; // PPO, HMO, EPO, etc.
+  subscriberName?: string; // Primary policyholder name
+  subscriberId?: string; // Subscriber ID (if different from member)
+  rxBin?: string; // Pharmacy Benefit Manager BIN
+  rxPcn?: string; // Pharmacy Benefit Manager PCN
+  rxGroup?: string; // Pharmacy group number
+  copay?: {
+    primaryCare?: number;
+    specialist?: number;
+    emergency?: number;
+    urgentCare?: number;
+  };
+  deductible?: {
+    individual?: number;
+    family?: number;
+    remaining?: number;
+  };
+  outOfPocketMax?: {
+    individual?: number;
+    family?: number;
+  };
+
+  isPrimary: boolean;
+  isActive: boolean;
+  verificationDate?: Date | string;
+  verificationStatus?: 'verified' | 'pending' | 'failed' | 'not-verified';
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+
 // Address Data
 export interface AddressData {
   id: string;
@@ -170,8 +228,11 @@ export interface Encounter {
   // Clinical information
   chiefComplaint?: string;
   findings?: ClinicalFinding[];
+  findingsText?: string; // Free text notes for findings
   investigations?: Investigation[];
+  investigationsText?: string; // Free text notes for investigations
   diagnoses?: Diagnosis[];
+  diagnosesText?: string; // Free text notes for diagnoses
   clinicalNotes?: string;
 
   // Treatment
@@ -209,6 +270,9 @@ export interface Encounter {
   // Patient Notes
   socialNotes?: NoteData[];
   internalNotes?: NoteData[];
+
+  // Insurance Information
+  insuranceCards?: InsuranceData[];
 
   // Legacy fields
   presentingProblem?: string;

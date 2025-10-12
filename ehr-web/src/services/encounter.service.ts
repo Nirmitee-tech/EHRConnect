@@ -256,8 +256,8 @@ export class EncounterService {
         });
       }
 
-      // Handle vitals and clinical notes in extensions
-      if (data.vitals || data.clinicalNotes !== undefined) {
+      // Handle vitals, clinical notes, findings, investigation, diagnosis in extensions
+      if (data.vitals || data.clinicalNotes !== undefined || data.findingsText !== undefined || data.investigationsText !== undefined || data.diagnosesText !== undefined) {
         const extensions = (encounter as any).extension || [];
 
         // Update or add vitals extension
@@ -281,6 +281,7 @@ export class EncounterService {
 
         // Update or add clinical notes extension
         if (data.clinicalNotes !== undefined) {
+          console.log('📝 EncounterService.update - Saving clinical notes:', data.clinicalNotes);
           const notesExtIndex = extensions.findIndex((ext: any) => ext.url === 'clinicalNotes');
           const notesExt = {
             url: 'clinicalNotes',
@@ -291,6 +292,54 @@ export class EncounterService {
             extensions[notesExtIndex] = notesExt;
           } else {
             extensions.push(notesExt);
+          }
+        }
+
+        // Update or add findings extension
+        if (data.findingsText !== undefined) {
+          console.log('🔍 EncounterService.update - Saving findings:', data.findingsText);
+          const findingsExtIndex = extensions.findIndex((ext: any) => ext.url === 'findings');
+          const findingsExt = {
+            url: 'findings',
+            valueString: data.findingsText
+          };
+
+          if (findingsExtIndex >= 0) {
+            extensions[findingsExtIndex] = findingsExt;
+          } else {
+            extensions.push(findingsExt);
+          }
+        }
+
+        // Update or add investigation extension
+        if (data.investigationsText !== undefined) {
+          console.log('🔬 EncounterService.update - Saving investigations:', data.investigationsText);
+          const investigationExtIndex = extensions.findIndex((ext: any) => ext.url === 'investigations');
+          const investigationExt = {
+            url: 'investigations',
+            valueString: data.investigationsText
+          };
+
+          if (investigationExtIndex >= 0) {
+            extensions[investigationExtIndex] = investigationExt;
+          } else {
+            extensions.push(investigationExt);
+          }
+        }
+
+        // Update or add diagnosis extension
+        if (data.diagnosesText !== undefined) {
+          console.log('🩺 EncounterService.update - Saving diagnoses:', data.diagnosesText);
+          const diagnosisExtIndex = extensions.findIndex((ext: any) => ext.url === 'diagnoses');
+          const diagnosisExt = {
+            url: 'diagnoses',
+            valueString: data.diagnosesText
+          };
+
+          if (diagnosisExtIndex >= 0) {
+            extensions[diagnosisExtIndex] = diagnosisExt;
+          } else {
+            extensions.push(diagnosisExt);
           }
         }
 
@@ -480,6 +529,18 @@ export class EncounterService {
     const notesExt = (fhir as any).extension?.find((ext: any) => ext.url === 'clinicalNotes');
     const clinicalNotes = notesExt?.valueString;
 
+    // Extract findings from extensions
+    const findingsExt = (fhir as any).extension?.find((ext: any) => ext.url === 'findings');
+    const findingsText = findingsExt?.valueString;
+
+    // Extract investigations from extensions
+    const investigationsExt = (fhir as any).extension?.find((ext: any) => ext.url === 'investigations');
+    const investigationsText = investigationsExt?.valueString;
+
+    // Extract diagnoses from extensions
+    const diagnosesExt = (fhir as any).extension?.find((ext: any) => ext.url === 'diagnoses');
+    const diagnosesText = diagnosesExt?.valueString;
+
     return {
       id: fhir.id!,
       appointmentId: appointmentRef?.split('/')[1],
@@ -499,6 +560,9 @@ export class EncounterService {
       location: fhir.location?.[0]?.location?.display,
       vitals,
       clinicalNotes,
+      findingsText,
+      investigationsText,
+      diagnosesText,
       createdAt: new Date(fhir.meta?.lastUpdated || new Date()),
       updatedAt: new Date(fhir.meta?.lastUpdated || new Date())
     };

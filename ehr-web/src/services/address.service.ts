@@ -1,4 +1,4 @@
-import { AddressData, NoteData, HabitsData, AllergiesData } from '@/types/encounter';
+import { AddressData, NoteData, HabitsData, AllergiesData, InsuranceData } from '@/types/encounter';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const FHIR_BASE_URL = `${API_BASE_URL}/fhir/R4`;
@@ -11,6 +11,7 @@ export class AddressService {
     addresses: AddressData[],
     socialNotes: NoteData[],
     internalNotes: NoteData[],
+    insuranceCards: InsuranceData[],
     patientHistory?: string,
     habitsStructured?: HabitsData,
     allergiesStructured?: AllergiesData
@@ -58,11 +59,15 @@ export class AddressService {
       const allergiesExt = patient.extension?.find((ext: any) => ext.url === 'allergiesStructured');
       const allergiesStructured: AllergiesData | undefined = allergiesExt?.valueString ? JSON.parse(allergiesExt.valueString) : undefined;
 
-      console.log('🔷 AddressService.getPatientData - Returning:', { addresses, socialNotes, internalNotes, patientHistory, habitsStructured, allergiesStructured });
-      return { addresses, socialNotes, internalNotes, patientHistory, habitsStructured, allergiesStructured };
+      // Extract insurance cards from extension
+      const insuranceExt = patient.extension?.find((ext: any) => ext.url === 'insuranceCards');
+      const insuranceCards: InsuranceData[] = insuranceExt?.valueString ? JSON.parse(insuranceExt.valueString) : [];
+
+      console.log('🔷 AddressService.getPatientData - Returning:', { addresses, socialNotes, internalNotes, insuranceCards, patientHistory, habitsStructured, allergiesStructured });
+      return { addresses, socialNotes, internalNotes, insuranceCards, patientHistory, habitsStructured, allergiesStructured };
     } catch (error) {
       console.error('Error fetching patient data:', error);
-      return { addresses: [], socialNotes: [], internalNotes: [] };
+      return { addresses: [], socialNotes: [], internalNotes: [], insuranceCards: [] };
     }
   }
 
@@ -235,6 +240,10 @@ export class AddressService {
         {
           url: 'internalNotes',
           valueString: JSON.stringify(internalNotes)
+        },
+        {
+          url: 'insuranceCards',
+          valueString: JSON.stringify(currentData.insuranceCards)
         }
       ];
 
@@ -326,6 +335,10 @@ export class AddressService {
         {
           url: 'internalNotes',
           valueString: JSON.stringify(currentData.internalNotes)
+        },
+        {
+          url: 'insuranceCards',
+          valueString: JSON.stringify(currentData.insuranceCards)
         }
       ];
 
@@ -384,6 +397,94 @@ export class AddressService {
       console.log('✅ AddressService.updatePatientMedicalInfo - Success! Updated patient:', result);
     } catch (error) {
       console.error('❌ AddressService.updatePatientMedicalInfo - Error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update patient insurance cards
+   */
+  static async updateInsuranceCards(patientId: string, insuranceCards: InsuranceData[]): Promise<void> {
+    try {
+      console.log('🔷 AddressService.updateInsuranceCards - Called with:');
+      console.log('  - Patient ID:', patientId);
+      console.log('  - Insurance Cards:', insuranceCards);
+
+      // Get current patient data to preserve other extensions
+      const currentData = await this.getPatientData(patientId);
+
+      const extensions = [
+        {
+          url: 'addresses',
+          valueString: JSON.stringify(currentData.addresses)
+        },
+        {
+          url: 'socialNotes',
+          valueString: JSON.stringify(currentData.socialNotes)
+        },
+        {
+          url: 'internalNotes',
+          valueString: JSON.stringify(currentData.internalNotes)
+        },
+        {
+          url: 'insuranceCards',
+          valueString: JSON.stringify(insuranceCards)
+        }
+      ];
+
+      // Preserve patient history if exists
+      if (currentData.patientHistory !== undefined) {
+        extensions.push({
+          url: 'patientHistory',
+          valueString: currentData.patientHistory
+        });
+      }
+
+      // Preserve structured medical data if exists
+      if (currentData.habitsStructured) {
+        extensions.push({
+          url: 'habitsStructured',
+          valueString: JSON.stringify(currentData.habitsStructured)
+        });
+      }
+      if (currentData.allergiesStructured) {
+        extensions.push({
+          url: 'allergiesStructured',
+          valueString: JSON.stringify(currentData.allergiesStructured)
+        });
+      }
+
+      const patchOps = [
+        {
+          op: 'replace',
+          path: '/extension',
+          value: extensions
+        }
+      ];
+
+      console.log('🔷 AddressService.updateInsuranceCards - Patch operations:', JSON.stringify(patchOps, null, 2));
+
+      const response = await fetch(`${FHIR_BASE_URL}/Patient/${patientId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(patchOps),
+      });
+
+      console.log('🔷 AddressService.updateInsuranceCards - Response status:', response.status);
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('🔷 AddressService.updateInsuranceCards - Error response:', error);
+        throw new Error(error.issue?.[0]?.details?.text || 'Failed to update insurance cards');
+      }
+
+      const result = await response.json();
+      console.log('✅ AddressService.updateInsuranceCards - Success! Updated patient:', result);
+    } catch (error) {
+      console.error('❌ AddressService.updateInsuranceCards - Error:', error);
       throw error;
     }
   }
