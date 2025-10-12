@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { CalendarView, Appointment, AppointmentStats } from '@/types/appointment';
 import { CalendarToolbar } from '@/components/appointments/calendar-toolbar';
+import { DayView } from '@/components/appointments/day-view';
 import { WeekViewDraggable } from '@/components/appointments/week-view-draggable';
 import { MonthView } from '@/components/appointments/month-view';
 import { AppointmentStatsPanel } from '@/components/appointments/appointment-stats';
@@ -600,6 +601,16 @@ export default function AppointmentsPage() {
             </div>
           ) : (
             <>
+              {view === 'day' && (
+                <DayView
+                  currentDate={currentDate}
+                  appointments={filteredAppointments}
+                  onAppointmentClick={handleAppointmentClick}
+                  onAppointmentDrop={handleAppointmentDrop}
+                  onCreateAppointment={handleCreateFromDrag}
+                  onAppointmentResize={handleAppointmentResize}
+                />
+              )}
               {view === 'week' && (
                 <WeekViewDraggable
                   currentDate={currentDate}
