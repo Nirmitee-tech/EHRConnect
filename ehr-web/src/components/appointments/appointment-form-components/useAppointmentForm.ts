@@ -17,6 +17,10 @@ interface FormData {
   notes: string;
   sendEmail: boolean;
   sendSMS: boolean;
+  isAllDay?: boolean;
+  allDayEventType?: string;
+  isEmergency?: boolean;
+  location?: string;
 }
 
 export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appointment | null) {
@@ -37,7 +41,7 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
     sendSMS: false
   });
 
-  const [practitioners, setPractitioners] = useState<Array<{ id: string; name: string }>>([]);
+  const [practitioners, setPractitioners] = useState<Array<{ id: string; name: string; color?: string; vacations?: any[]; officeHours?: any[] }>>([]);
   const [patients, setPatients] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
@@ -59,10 +63,30 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
       const bundle = await medplum.searchResources('Practitioner', {
         _count: 100
       });
-      const practitionerList = bundle.map(p => ({
-        id: p.id!,
-        name: p.name?.[0] ? `${p.name[0].given?.join(' ')} ${p.name[0].family}` : 'Unknown'
-      }));
+      const practitionerList = bundle.map(p => {
+        // Extract color from extension
+        const colorExtension = p.extension?.find(
+          (ext: any) => ext.url === 'http://ehrconnect.io/fhir/StructureDefinition/practitioner-color'
+        );
+
+        // Extract vacation data
+        const vacationExtension = p.extension?.find(
+          (ext: any) => ext.url === 'http://ehrconnect.io/fhir/StructureDefinition/practitioner-vacation'
+        );
+
+        // Extract office hours
+        const officeHoursExtension = p.extension?.find(
+          (ext: any) => ext.url === 'http://ehrconnect.io/fhir/StructureDefinition/practitioner-office-hours'
+        );
+
+        return {
+          id: p.id!,
+          name: p.name?.[0] ? `${p.name[0].given?.join(' ')} ${p.name[0].family}` : 'Unknown',
+          color: colorExtension?.valueString,
+          vacations: vacationExtension?.valueString ? JSON.parse(vacationExtension.valueString) : [],
+          officeHours: officeHoursExtension?.valueString ? JSON.parse(officeHoursExtension.valueString) : []
+        };
+      });
       setPractitioners(practitionerList);
     } catch (error) {
       console.error('Error loading practitioners:', error);

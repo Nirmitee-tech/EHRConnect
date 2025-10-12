@@ -70,9 +70,89 @@ export function AppointmentFormDrawer({
     resetForm
   } = useAppointmentForm(initialDate, editingAppointment);
 
-  // Check for conflicting appointments
+  // Check for conflicting appointments, leaves, and working hours
   const checkConflicts = (startTime: Date, endTime: Date): Appointment[] => {
-    return existingAppointments.filter(apt => {
+    const conflicts: Appointment[] = [];
+
+    // Find selected practitioner
+    const selectedPractitioner = practitioners.find(p => p.id === formData.doctorId);
+
+    if (selectedPractitioner) {
+      // Check for vacations/leaves
+      if (selectedPractitioner.vacations && selectedPractitioner.vacations.length > 0) {
+        selectedPractitioner.vacations.forEach((vacation: any) => {
+          const vacStart = new Date(vacation.startDate);
+          const vacEnd = new Date(vacation.endDate);
+          vacEnd.setHours(23, 59, 59, 999); // End of day
+
+          if (startTime <= vacEnd && endTime >= vacStart) {
+            conflicts.push({
+              id: `vacation-${vacation.id}`,
+              patientName: `${selectedPractitioner.name} - ${vacation.type || 'Vacation'}`,
+              practitionerId: selectedPractitioner.id,
+              practitionerName: selectedPractitioner.name,
+              appointmentType: vacation.type || 'vacation',
+              status: 'scheduled',
+              startTime: vacStart,
+              endTime: vacEnd,
+              duration: 0,
+              isAllDay: true,
+              allDayEventType: vacation.type || 'vacation',
+              reason: `Practitioner is on ${vacation.type || 'vacation'} during this time`
+            } as Appointment);
+          }
+        });
+      }
+
+      // Check working hours
+      if (selectedPractitioner.officeHours && selectedPractitioner.officeHours.length > 0) {
+        const dayOfWeek = startTime.getDay();
+        const daySchedule = selectedPractitioner.officeHours.find((h: any) => h.dayOfWeek === dayOfWeek);
+
+        if (daySchedule && !daySchedule.isWorking) {
+          conflicts.push({
+            id: `non-working-day-${dayOfWeek}`,
+            patientName: `${selectedPractitioner.name} - Not Working`,
+            practitionerId: selectedPractitioner.id,
+            practitionerName: selectedPractitioner.name,
+            appointmentType: 'unavailable',
+            status: 'cancelled',
+            startTime: startTime,
+            endTime: endTime,
+            duration: 0,
+            reason: `Practitioner is not working on ${startTime.toLocaleDateString('en-US', { weekday: 'long' })}`
+          } as Appointment);
+        } else if (daySchedule && daySchedule.isWorking) {
+          // Check if within working hours
+          const [startHour, startMin] = daySchedule.startTime.split(':').map(Number);
+          const [endHour, endMin] = daySchedule.endTime.split(':').map(Number);
+
+          const workStart = new Date(startTime);
+          workStart.setHours(startHour, startMin, 0, 0);
+
+          const workEnd = new Date(startTime);
+          workEnd.setHours(endHour, endMin, 0, 0);
+
+          if (startTime < workStart || endTime > workEnd) {
+            conflicts.push({
+              id: `outside-hours-${dayOfWeek}`,
+              patientName: `${selectedPractitioner.name} - Outside Working Hours`,
+              practitionerId: selectedPractitioner.id,
+              practitionerName: selectedPractitioner.name,
+              appointmentType: 'unavailable',
+              status: 'cancelled',
+              startTime: workStart,
+              endTime: workEnd,
+              duration: 0,
+              reason: `Practitioner's working hours are ${daySchedule.startTime} - ${daySchedule.endTime}`
+            } as Appointment);
+          }
+        }
+      }
+    }
+
+    // Check for overlapping appointments
+    const appointmentConflicts = existingAppointments.filter(apt => {
       if (editingAppointment && apt.id === editingAppointment.id) return false;
 
       const aptStart = new Date(apt.startTime);
@@ -87,6 +167,8 @@ export function AppointmentFormDrawer({
       // Check time overlap
       return (startTime < aptEnd && endTime > aptStart);
     });
+
+    return [...conflicts, ...appointmentConflicts];
   };
 
   const handleAddLocation = (location: string) => {
@@ -98,12 +180,26 @@ export function AppointmentFormDrawer({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const startDateTime = new Date(`${formData.date}T${formData.time}`);
-    const duration = (formData.durationHours * 60) + formData.durationMinutes;
-    const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
+    const startDateTime = formData.isAllDay
+      ? new Date(formData.date)
+      : new Date(`${formData.date}T${formData.time}`);
 
-    // Check for conflicts
-    const conflicts = checkConflicts(startDateTime, endDateTime);
+    const duration = formData.isAllDay ? 0 : (formData.durationHours * 60) + formData.durationMinutes;
+    const endDateTime = formData.isAllDay
+      ? new Date(formData.date)
+      : new Date(startDateTime.getTime() + duration * 60000);
+
+    // Check for conflicts (skip if emergency)
+    let conflicts = checkConflicts(startDateTime, endDateTime);
+
+    // If emergency, filter out leave/vacation/working hour conflicts
+    if (formData.isEmergency) {
+      conflicts = conflicts.filter(c =>
+        !c.id?.startsWith('vacation-') &&
+        !c.id?.startsWith('non-working-day-') &&
+        !c.id?.startsWith('outside-hours-')
+      );
+    }
 
     if (conflicts.length > 0 && bookingStatus === 'form') {
       setConflictingAppointments(conflicts);
@@ -118,18 +214,24 @@ export function AppointmentFormDrawer({
     setLoading(true);
 
     try {
+      // Fetch practitioner details to get color
+      const practitioner = practitioners.find(p => p.id === formData.doctorId);
+
       const appointmentData = {
         patientId: formData.patientId,
         patientName: formData.patientName,
         practitionerId: formData.doctorId,
         practitionerName: formData.doctorName,
+        practitionerColor: practitioner?.color, // Add color immediately
         appointmentType: formData.treatmentCategory,
         status: (bookingStatus === 'waitlist' ? 'waitlist' : 'scheduled') as any,
         startTime: startDateTime,
         endTime: endDateTime,
         duration,
         reason: formData.notes,
-        location: formData.location
+        location: formData.location,
+        isAllDay: formData.isAllDay,
+        allDayEventType: formData.allDayEventType
       };
 
       let savedAppointment: Appointment;

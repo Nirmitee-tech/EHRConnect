@@ -3,7 +3,7 @@ import { CalendarIcon, Clock, User, Plus } from 'lucide-react';
 
 interface AppointmentFormFieldsProps {
   formData: any;
-  practitioners: Array<{ id: string; name: string }>;
+  practitioners: Array<{ id: string; name: string; color?: string; vacations?: any[]; officeHours?: any[] }>;
   patients: Array<{ id: string; name: string }>;
   treatmentCategories: string[];
   locations: string[];
@@ -42,6 +42,97 @@ export function AppointmentFormFields({
 
   const [showAddDoctor, setShowAddDoctor] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
+
+  // Get selected practitioner
+  const selectedPractitioner = practitioners.find(p => p.id === formData.doctorId);
+
+  // Check if a date is a working day
+  const isWorkingDay = (date: Date): boolean => {
+    if (!selectedPractitioner?.officeHours || formData.isEmergency) return true;
+
+    const dayOfWeek = date.getDay();
+    const daySchedule = selectedPractitioner.officeHours.find((h: any) => h.dayOfWeek === dayOfWeek);
+
+    return daySchedule ? daySchedule.isWorking : false;
+  };
+
+  // Check if date is during vacation
+  const isOnVacation = (date: Date): boolean => {
+    if (!selectedPractitioner?.vacations || formData.isEmergency) return false;
+
+    const dateOnly = new Date(date);
+    dateOnly.setHours(0, 0, 0, 0);
+
+    return selectedPractitioner.vacations.some((vacation: any) => {
+      const vacStart = new Date(vacation.startDate);
+      vacStart.setHours(0, 0, 0, 0);
+      const vacEnd = new Date(vacation.endDate);
+      vacEnd.setHours(23, 59, 59, 999);
+
+      return dateOnly >= vacStart && dateOnly <= vacEnd;
+    });
+  };
+
+  // Get working hours for selected date
+  const getWorkingHours = (date: Date): { start: string; end: string } | null => {
+    if (!selectedPractitioner?.officeHours || formData.isEmergency) return null;
+
+    const dayOfWeek = date.getDay();
+    const daySchedule = selectedPractitioner.officeHours.find((h: any) => h.dayOfWeek === dayOfWeek);
+
+    if (!daySchedule || !daySchedule.isWorking) return null;
+
+    return {
+      start: daySchedule.startTime,
+      end: daySchedule.endTime
+    };
+  };
+
+  // Get available time slots (15-minute intervals)
+  const getAvailableTimeSlots = (): string[] => {
+    if (!formData.date || !selectedPractitioner?.officeHours || formData.isEmergency) {
+      // Generate all time slots for emergency or no restrictions
+      const slots: string[] = [];
+      for (let hour = 0; hour < 24; hour++) {
+        for (let min = 0; min < 60; min += 15) {
+          slots.push(`${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`);
+        }
+      }
+      return slots;
+    }
+
+    const selectedDate = new Date(formData.date);
+    const workingHours = getWorkingHours(selectedDate);
+
+    if (!workingHours) return [];
+
+    const slots: string[] = [];
+    const [startHour, startMin] = workingHours.start.split(':').map(Number);
+    const [endHour, endMin] = workingHours.end.split(':').map(Number);
+
+    let currentHour = startHour;
+    let currentMin = startMin;
+
+    while (currentHour < endHour || (currentHour === endHour && currentMin < endMin)) {
+      slots.push(`${currentHour.toString().padStart(2, '0')}:${currentMin.toString().padStart(2, '0')}`);
+
+      currentMin += 15;
+      if (currentMin >= 60) {
+        currentMin = 0;
+        currentHour++;
+      }
+    }
+
+    return slots;
+  };
+
+  // Check if date should be disabled
+  const isDateDisabled = (dateStr: string): boolean => {
+    if (formData.isEmergency) return false;
+
+    const date = new Date(dateStr);
+    return !isWorkingDay(date) || isOnVacation(date);
+  };
 
   return (
     <div className="space-y-4">
@@ -210,6 +301,42 @@ export function AppointmentFormFields({
         )}
       </div>
 
+      {/* Practitioner Availability Info */}
+      {selectedPractitioner && !formData.isEmergency && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+          <h4 className="text-xs font-semibold text-blue-900 mb-2">📅 {selectedPractitioner.name}'s Schedule</h4>
+          <div className="space-y-1 text-xs text-blue-800">
+            {/* Working Days */}
+            {selectedPractitioner.officeHours && selectedPractitioner.officeHours.length > 0 && (
+              <div>
+                <span className="font-medium">Working Days: </span>
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                  .map((day, idx) => {
+                    const schedule = selectedPractitioner.officeHours.find((h: any) => h.dayOfWeek === idx);
+                    return schedule?.isWorking ? day : null;
+                  })
+                  .filter(Boolean)
+                  .join(', ')}
+              </div>
+            )}
+            {/* Vacations */}
+            {selectedPractitioner.vacations && selectedPractitioner.vacations.length > 0 && (
+              <div>
+                <span className="font-medium">Upcoming Leaves: </span>
+                {selectedPractitioner.vacations.slice(0, 2).map((vac: any, idx: number) => (
+                  <span key={idx}>
+                    {new Date(vac.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {' - '}
+                    {new Date(vac.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {idx < Math.min(selectedPractitioner.vacations.length, 2) - 1 && ', '}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Treatment Category */}
       <div>
         <label className="block text-sm font-medium text-gray-700">
@@ -337,11 +464,38 @@ export function AppointmentFormFields({
               type="date"
               required
               value={formData.date}
-              onChange={(e) => onFormDataChange('date', e.target.value)}
+              onChange={(e) => {
+                const newDate = e.target.value;
+                // Clear time if new date is not available
+                if (!formData.isEmergency && isDateDisabled(newDate)) {
+                  onFormDataChange('time', '');
+                }
+                onFormDataChange('date', newDate);
+              }}
+              min={new Date().toISOString().split('T')[0]}
               className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
             <CalendarIcon className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           </div>
+          {formData.date && !formData.isEmergency && selectedPractitioner && (
+            <div className="mt-1.5">
+              {isOnVacation(new Date(formData.date)) && (
+                <p className="text-xs text-orange-600 flex items-center gap-1">
+                  ✈️ Practitioner is on vacation this day
+                </p>
+              )}
+              {!isWorkingDay(new Date(formData.date)) && !isOnVacation(new Date(formData.date)) && (
+                <p className="text-xs text-red-600 flex items-center gap-1">
+                  🚫 Practitioner is not working on this day
+                </p>
+              )}
+              {isWorkingDay(new Date(formData.date)) && !isOnVacation(new Date(formData.date)) && (
+                <p className="text-xs text-green-600 flex items-center gap-1">
+                  ✓ Available - {getWorkingHours(new Date(formData.date))?.start} to {getWorkingHours(new Date(formData.date))?.end}
+                </p>
+              )}
+            </div>
+          )}
         </div>
         {!formData.isAllDay && (
           <div>
@@ -349,15 +503,27 @@ export function AppointmentFormFields({
               Time<span className="text-red-500">*</span>
             </label>
             <div className="relative mt-1">
-              <input
-                type="time"
+              <select
                 required={!formData.isAllDay}
                 value={formData.time}
                 onChange={(e) => onFormDataChange('time', e.target.value)}
-                className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-              <Clock className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                disabled={!formData.date || (!formData.isEmergency && isDateDisabled(formData.date))}
+                className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+              >
+                <option value="">Select time</option>
+                {getAvailableTimeSlots().map((slot) => (
+                  <option key={slot} value={slot}>
+                    {slot}
+                  </option>
+                ))}
+              </select>
+              <Clock className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
+            {formData.date && !formData.isEmergency && getAvailableTimeSlots().length === 0 && (
+              <p className="mt-1.5 text-xs text-red-600">
+                No available time slots for this date
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -404,6 +570,24 @@ export function AppointmentFormFields({
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           placeholder="Add any additional notes..."
         />
+      </div>
+
+      {/* Emergency Appointment */}
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={formData.isEmergency}
+            onChange={(e) => onFormDataChange('isEmergency', e.target.checked)}
+            className="rounded border-red-300 text-red-600 focus:ring-red-500 h-5 w-5"
+          />
+          <div>
+            <span className="text-sm font-medium text-red-900">Emergency Appointment</span>
+            <p className="text-xs text-red-700 mt-0.5">
+              Override availability restrictions (leaves, working hours)
+            </p>
+          </div>
+        </label>
       </div>
 
       {/* Email & SMS */}
