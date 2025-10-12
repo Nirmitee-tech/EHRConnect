@@ -141,6 +141,92 @@ export function DayView({
     };
   };
 
+  // Detect overlapping appointments and calculate horizontal layout
+  const calculateAppointmentLayout = (appointments: Appointment[]) => {
+    if (appointments.length === 0) {
+      return new Map<string, { column: number; totalColumns: number; overlappingWith: Set<string> }>();
+    }
+
+    // Sort by start time, then by duration (longer first)
+    const sorted = [...appointments].sort((a, b) => {
+      const aStart = new Date(a.startTime).getTime();
+      const bStart = new Date(b.startTime).getTime();
+      if (aStart !== bStart) return aStart - bStart;
+
+      const aDuration = new Date(a.endTime).getTime() - aStart;
+      const bDuration = new Date(b.endTime).getTime() - bStart;
+      return bDuration - aDuration;
+    });
+
+    // Build overlap groups
+    const overlaps = new Map<string, Set<string>>();
+
+    sorted.forEach((apt, i) => {
+      const aptStart = new Date(apt.startTime);
+      const aptEnd = new Date(apt.endTime);
+      const aptOverlaps = new Set<string>();
+
+      sorted.forEach((other, j) => {
+        if (i === j) return;
+
+        const otherStart = new Date(other.startTime);
+        const otherEnd = new Date(other.endTime);
+
+        // Check if appointments overlap
+        if (aptStart < otherEnd && aptEnd > otherStart) {
+          aptOverlaps.add(other.id);
+        }
+      });
+
+      overlaps.set(apt.id, aptOverlaps);
+    });
+
+    // Assign columns using graph coloring
+    const layoutMap = new Map<string, { column: number; totalColumns: number; overlappingWith: Set<string> }>();
+    const columnAssignments = new Map<string, number>();
+
+    sorted.forEach(apt => {
+      const aptOverlaps = overlaps.get(apt.id) || new Set();
+
+      // Find columns already used by overlapping appointments
+      const usedColumns = new Set<number>();
+      aptOverlaps.forEach(overlapId => {
+        const col = columnAssignments.get(overlapId);
+        if (col !== undefined) {
+          usedColumns.add(col);
+        }
+      });
+
+      // Find first available column
+      let column = 0;
+      while (usedColumns.has(column)) {
+        column++;
+      }
+
+      columnAssignments.set(apt.id, column);
+    });
+
+    // Calculate max columns needed for each appointment's overlap group
+    sorted.forEach(apt => {
+      const aptOverlaps = overlaps.get(apt.id) || new Set();
+      const column = columnAssignments.get(apt.id) || 0;
+
+      // Find max column in this overlap group
+      let maxColumn = column;
+      aptOverlaps.forEach(overlapId => {
+        const col = columnAssignments.get(overlapId);
+        if (col !== undefined && col > maxColumn) {
+          maxColumn = col;
+        }
+      });
+
+      const totalColumns = maxColumn + 1;
+      layoutMap.set(apt.id, { column, totalColumns, overlappingWith: aptOverlaps });
+    });
+
+    return layoutMap;
+  };
+
   const handleDragStart = (appointment: Appointment) => {
     setDraggedAppointment(appointment);
   };
@@ -227,6 +313,7 @@ export function DayView({
 
   const timeSlots = getTimeSlots();
   const dayAppointments = getDayAppointments();
+  const appointmentLayout = React.useMemo(() => calculateAppointmentLayout(dayAppointments), [dayAppointments]);
   const today = new Date();
   const isToday = currentDate.toDateString() === today.toDateString();
 
@@ -418,7 +505,7 @@ export function DayView({
             })}
 
             {/* Appointments overlay */}
-            <div className="absolute inset-0 pointer-events-none px-2">
+            <div className="absolute inset-0 pointer-events-none">
               {dayAppointments.map((apt) => {
                 const isBeingResized = resizingAppointment?.appointment.id === apt.id;
                 const baseStyle = calculateAppointmentStyle(apt);
@@ -445,6 +532,23 @@ export function DayView({
                 }
 
                 const isDragging = draggedAppointment?.id === apt.id;
+                const layoutInfo = appointmentLayout.get(apt.id);
+
+                // Calculate horizontal positioning based on overlap
+                let leftStyle: string;
+                let widthStyle: string;
+
+                if (!layoutInfo || layoutInfo.totalColumns === 1) {
+                  // Single appointment, no overlap
+                  leftStyle = '8px';
+                  widthStyle = 'calc(100% - 16px)';
+                } else {
+                  // Multiple overlapping appointments - side by side
+                  const columnWidth = 100 / layoutInfo.totalColumns;
+                  const leftPercent = (layoutInfo.column * 100) / layoutInfo.totalColumns;
+                  leftStyle = `calc(${leftPercent}% + 4px)`;
+                  widthStyle = `calc(${columnWidth}% - 8px)`;
+                }
 
                 return (
                   <div
@@ -453,9 +557,9 @@ export function DayView({
                     style={{
                       top: `${style.top}px`,
                       height: `${style.height}px`,
-                      left: '8px',
-                      right: '8px',
-                      zIndex: isDragging || isBeingResized ? 1000 : 10
+                      left: leftStyle,
+                      width: widthStyle,
+                      zIndex: isDragging || isBeingResized ? 1000 : 10 + (layoutInfo?.column || 0)
                     }}
                   >
                     <div className="relative h-full group">

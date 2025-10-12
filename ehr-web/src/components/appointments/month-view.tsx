@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Appointment } from '@/types/appointment';
-import { AppointmentCard } from './appointment-card';
+import { DetailedAppointmentCard } from './detailed-appointment-card';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -80,7 +80,7 @@ export function MonthView({
               <div
                 key={idx}
                 onClick={() => onDateClick?.(date)}
-                className={`relative min-h-[120px] cursor-pointer border-b border-r border-gray-200 p-2 transition-colors hover:bg-gray-50 last:border-r-0 ${
+                className={`relative min-h-[160px] cursor-pointer border-b border-r border-gray-200 p-2 transition-colors hover:bg-gray-50 last:border-r-0 ${
                   !isCurrentMonth ? 'bg-gray-50/50' : 'bg-white'
                 } ${isToday ? 'ring-2 ring-inset ring-blue-500' : ''}`}
               >
@@ -105,21 +105,22 @@ export function MonthView({
                 </div>
 
                 {/* Appointments */}
-                <div className="space-y-1">
-                  {dayAppointments.slice(0, 3).map((apt) => (
-                    <AppointmentCard
-                      key={apt.id}
-                      appointment={apt}
-                      onClick={(e) => {
-                        e?.stopPropagation();
-                        onAppointmentClick?.(apt);
-                      }}
-                      compact
-                    />
+                <div className="space-y-1.5">
+                  {dayAppointments.slice(0, 2).map((apt) => (
+                    <div key={apt.id} className="min-h-[60px]">
+                      <DetailedAppointmentCard
+                        appointment={apt}
+                        onClick={(e) => {
+                          e?.stopPropagation();
+                          onAppointmentClick?.(apt);
+                        }}
+                        className="text-[10px]"
+                      />
+                    </div>
                   ))}
-                  {dayAppointments.length > 3 && (
-                    <div className="rounded bg-gray-100 px-2 py-1 text-center text-xs text-gray-600">
-                      +{dayAppointments.length - 3} more
+                  {dayAppointments.length > 2 && (
+                    <div className="rounded bg-gray-100 px-2 py-1 text-center text-xs text-gray-600 font-medium">
+                      +{dayAppointments.length - 2} more
                     </div>
                   )}
                 </div>

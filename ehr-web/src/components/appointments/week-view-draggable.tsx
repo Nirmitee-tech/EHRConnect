@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Appointment } from '@/types/appointment';
-import { DraggableAppointmentCard } from './draggable-appointment-card';
+import { DetailedAppointmentCard } from './detailed-appointment-card';
 
 interface WeekViewDraggableProps {
   currentDate: Date;
@@ -176,7 +176,7 @@ export function WeekViewDraggable({
 
     return {
       top: startPosition,
-      height: Math.max(height, 30) // Minimum height of 30px
+      height: Math.max(height, 60) // Minimum height of 60px for DetailedAppointmentCard
     };
   };
 
@@ -759,7 +759,7 @@ export function WeekViewDraggable({
 
                     const durationMs = previewEnd.getTime() - previewStart.getTime();
                     const durationMinutes = durationMs / (1000 * 60);
-                    const height = Math.max((durationMinutes / 60) * 60, 30);
+                    const height = Math.max((durationMinutes / 60) * 60, 60); // Minimum 60px for DetailedAppointmentCard
 
                     style = { top, height };
                   }
@@ -781,24 +781,23 @@ export function WeekViewDraggable({
                           }
                         }}
                       >
-                        <DraggableAppointmentCard
+                        <DetailedAppointmentCard
                           appointment={apt}
                           onClick={undefined}
                           onDragStart={handleDragStart}
                           onDragEnd={handleDragEnd}
-                          className="h-full shadow-sm hover:shadow-md transition-shadow rounded-md"
-                          spanning
+                          className="h-full"
                         />
                       </div>
 
                       {/* Top resize handle - only show if appointment is tall enough */}
-                      {style.height >= 45 && (
+                      {style.height >= 60 && (
                         <div
                           className="absolute top-0 left-0 right-0 h-3 cursor-ns-resize opacity-0 group-hover:opacity-100 z-50 flex items-start justify-center"
                           onMouseDown={(e) => handleResizeStart(apt, 'top', e)}
                           title="Drag to change start time"
                         >
-                          <div className="w-10 h-1 bg-blue-500 rounded-full mt-1 shadow-sm" />
+                          <div className="w-12 h-1.5 bg-blue-500 rounded-full mt-1 shadow-sm" />
                         </div>
                       )}
 
@@ -808,7 +807,7 @@ export function WeekViewDraggable({
                         onMouseDown={(e) => handleResizeStart(apt, 'bottom', e)}
                         title="Drag to change end time"
                       >
-                        <div className="w-10 h-1 bg-blue-500 rounded-full mb-1 shadow-sm" />
+                        <div className="w-12 h-1.5 bg-blue-500 rounded-full mb-1 shadow-sm" />
                       </div>
                     </div>
                   );
