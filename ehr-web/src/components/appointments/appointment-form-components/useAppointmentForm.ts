@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { medplum } from '@/lib/medplum';
 import { Appointment } from '@/types/appointment';
+import { SettingsService } from '@/services/settings.service';
+import { useFacility } from '@/contexts/facility-context';
 
 interface FormData {
   centerId: string;
@@ -24,6 +26,9 @@ interface FormData {
 }
 
 export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appointment | null) {
+  const { currentFacility } = useFacility();
+  const [defaultDuration, setDefaultDuration] = useState(30); // Default 30 minutes
+
   const [formData, setFormData] = useState<FormData>({
     centerId: '',
     doctorId: '',
@@ -35,7 +40,7 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
     date: initialDate ? initialDate.toISOString().split('T')[0] : '',
     time: '09:00',
     durationHours: 0,
-    durationMinutes: 30,
+    durationMinutes: defaultDuration,
     notes: '',
     sendEmail: false,
     sendSMS: false
@@ -43,6 +48,34 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
 
   const [practitioners, setPractitioners] = useState<Array<{ id: string; name: string; color?: string; vacations?: any[]; officeHours?: any[] }>>([]);
   const [patients, setPatients] = useState<Array<{ id: string; name: string }>>([]);
+
+  // Load organization settings
+  useEffect(() => {
+    if (currentFacility?.id) {
+      loadOrganizationSettings();
+    }
+  }, [currentFacility]);
+
+  const loadOrganizationSettings = async () => {
+    try {
+      if (!currentFacility?.id) return;
+
+      const settings = await SettingsService.getOrganizationSettings(currentFacility.id);
+      const duration = settings.appointmentSettings.defaultDuration;
+      setDefaultDuration(duration);
+
+      // Update form data with default duration (only if not editing)
+      if (!editingAppointment) {
+        setFormData(prev => ({
+          ...prev,
+          durationHours: Math.floor(duration / 60),
+          durationMinutes: duration % 60
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading organization settings:', error);
+    }
+  };
 
   useEffect(() => {
     loadPractitioners();
@@ -164,8 +197,8 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
       treatmentCategory: '',
       date: '',
       time: '09:00',
-      durationHours: 0,
-      durationMinutes: 30,
+      durationHours: Math.floor(defaultDuration / 60),
+      durationMinutes: defaultDuration % 60,
       notes: '',
       sendEmail: false,
       sendSMS: false

@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Appointment } from '@/types/appointment';
 import { DetailedAppointmentCard } from './detailed-appointment-card';
+import { useCalendarSettings } from '@/hooks/useCalendarSettings';
 
 interface WeekViewDraggableProps {
   currentDate: Date;
@@ -31,6 +32,9 @@ export function WeekViewDraggable({
   const [resizePreview, setResizePreview] = useState<{newStart?: Date; newEnd?: Date} | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
+
+  // Get calendar settings for dynamic slot duration
+  const { getTimeSlots: getTimeSlotsFromSettings, slotDuration } = useCalendarSettings();
 
   // Update current time every minute
   useEffect(() => {
@@ -124,14 +128,10 @@ export function WeekViewDraggable({
     return dates;
   };
 
-  const getTimeSlots = () => {
-    const slots: string[] = [];
-    // Show full 24 hours to accommodate all appointment times
-    for (let hour = 0; hour < 24; hour++) {
-      slots.push(`${hour}:00`);
-    }
-    return slots;
-  };
+  // Generate time slots dynamically based on organization settings
+  const timeSlots = React.useMemo(() => {
+    return getTimeSlotsFromSettings(0, 24);
+  }, [slotDuration]);
 
   // Get all appointments for a specific date (not just a time slot)
   const getAppointmentsForDate = (date: Date) => {
@@ -275,12 +275,12 @@ export function WeekViewDraggable({
     setDragOver(null);
   };
 
-  const handleDragOver = (e: React.DragEvent, date: Date, hour: number) => {
+  const handleDragOver = (e: React.DragEvent, date: Date, hour: number, minutes: number = 0) => {
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
 
-    // Update drag over state
+    // Update drag over state - we still track by hour for simplicity
     if (!dragOver || dragOver.date.toDateString() !== date.toDateString() || dragOver.hour !== hour) {
       setDragOver({ date, hour });
     }
@@ -297,11 +297,13 @@ export function WeekViewDraggable({
     }
   };
 
-  const handleDrop = (e: React.DragEvent, date: Date, hour: number) => {
+  const handleDrop = (e: React.DragEvent, date: Date, hour: number, minutes: number = 0) => {
     e.preventDefault();
 
     if (draggedAppointment) {
-      onAppointmentDrop?.(draggedAppointment, date, hour);
+      // Pass the hour with decimal for minutes (e.g., 9.5 for 9:30)
+      const hourWithMinutes = hour + (minutes / 60);
+      onAppointmentDrop?.(draggedAppointment, date, hourWithMinutes);
     }
 
     setDraggedAppointment(null);
@@ -316,22 +318,23 @@ export function WeekViewDraggable({
     setResizePreview({});
   };
 
-  const handleResizeMove = (e: React.MouseEvent, date: Date, hour: number) => {
+  const handleResizeMove = (e: React.MouseEvent, date: Date, hour: number, minutes: number = 0) => {
     if (!resizingAppointment) return;
 
     const { appointment, edge } = resizingAppointment;
     const aptStart = new Date(appointment.startTime);
     const aptEnd = new Date(appointment.endTime);
 
-    // Calculate new time based on mouse position within the hour slot
+    // Calculate new time based on mouse position within the slot
     const target = e.currentTarget as HTMLElement;
     const rect = target.getBoundingClientRect();
     const relativeY = e.clientY - rect.top;
     const percentInCell = relativeY / rect.height;
-    const minutesInHour = Math.floor(percentInCell * 60);
+    const minutesInSlot = Math.floor(percentInCell * slotDuration);
 
     // Snap to 15-minute intervals
-    const snappedMinutes = Math.round(minutesInHour / 15) * 15;
+    const totalMinutes = minutes + minutesInSlot;
+    const snappedMinutes = Math.round(totalMinutes / 15) * 15;
 
     const newTime = new Date(date);
     newTime.setHours(hour, snappedMinutes, 0, 0);
@@ -381,18 +384,19 @@ export function WeekViewDraggable({
   };
 
   // Click and drag to create appointments
-  const handleMouseDown = (e: React.MouseEvent, date: Date, hour: number) => {
+  const handleMouseDown = (e: React.MouseEvent, date: Date, hour: number, minutes: number = 0) => {
     // Only start if clicking in empty space (not on an appointment)
     if ((e.target as HTMLElement).closest('[draggable="true"]')) {
       return;
     }
-    
+
     setIsCreating(true);
+    // For now, we still track by hour for simplicity
     setCreateStart({ date, hour });
     setCreateEnd({ date, hour });
   };
 
-  const handleMouseEnter = (date: Date, hour: number) => {
+  const handleMouseEnter = (date: Date, hour: number, minutes: number = 0) => {
     if (isCreating && createStart) {
       // Only allow creating on same date
       if (date.toDateString() === createStart.date.toDateString()) {
@@ -426,7 +430,6 @@ export function WeekViewDraggable({
   };
 
   const weekDates = React.useMemo(() => getWeekDates(), [currentDate]);
-  const timeSlots = getTimeSlots();
   const today = new Date();
 
   // Pre-calculate appointments for each date
@@ -679,16 +682,41 @@ export function WeekViewDraggable({
 
       {/* Time grid - Optimized */}
       <div className="flex-1 overflow-y-auto relative bg-white" ref={scrollContainerRef}>
-        <div ref={gridContainerRef} className="grid grid-cols-[64px_repeat(7,minmax(100px,1fr))] relative" style={{ minHeight: '1440px' }}>
+        <div
+          ref={gridContainerRef}
+          className="grid grid-cols-[64px_repeat(7,minmax(100px,1fr))] relative"
+          style={{
+            minHeight: `${timeSlots.length * 60}px` // Total height = number of slots × 60px
+          }}
+        >
           {/* Time labels and grid cells */}
           {timeSlots.map((time, timeIdx) => {
-            const [hour] = time.split(':').map(Number);
-            const formattedTime = hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`;
+            const [hourStr, minStr] = time.split(':');
+            const hour = parseInt(hourStr);
+            const minutes = parseInt(minStr);
+
+            // Format time with AM/PM
+            let formattedTime: string;
+            if (hour === 0) {
+              formattedTime = minutes === 0 ? '12 AM' : `12:${minStr} AM`;
+            } else if (hour < 12) {
+              formattedTime = minutes === 0 ? `${hour} AM` : `${hour}:${minStr} AM`;
+            } else if (hour === 12) {
+              formattedTime = minutes === 0 ? '12 PM' : `12:${minStr} PM`;
+            } else {
+              formattedTime = minutes === 0 ? `${hour - 12} PM` : `${hour - 12}:${minStr} PM`;
+            }
+
+            // Keep consistent 60px per slot height for visual consistency
+            // The slot duration only affects which time labels are shown, not the grid size
+            const slotHeight = 60;
 
             return (
               <React.Fragment key={timeIdx}>
                 {/* Time label - Compact */}
-                <div className="border-b border-r border-gray-200 bg-gray-50/80 py-1 px-2 text-right h-[60px] flex items-start justify-end">
+                <div
+                  className="border-b border-r border-gray-200 bg-gray-50/80 py-1 px-2 text-right h-[60px] flex items-start justify-end"
+                >
                   <span className="text-[10px] font-semibold text-gray-500">{formattedTime}</span>
                 </div>
 
@@ -706,21 +734,18 @@ export function WeekViewDraggable({
                       } ${isDraggedOver ? 'bg-blue-100/70 ring-1 ring-inset ring-blue-400' : ''} ${
                         inCreateRange ? 'bg-green-50 ring-2 ring-inset ring-green-400' : ''
                       } hover:bg-gray-50/50`}
-                      onDragOver={(e) => handleDragOver(e, date, hour)}
+                      onDragOver={(e) => handleDragOver(e, date, hour, minutes)}
                       onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, date, hour)}
-                      onMouseDown={(e) => handleMouseDown(e, date, hour)}
+                      onDrop={(e) => handleDrop(e, date, hour, minutes)}
+                      onMouseDown={(e) => handleMouseDown(e, date, hour, minutes)}
                       onMouseEnter={(e) => {
-                        handleMouseEnter(date, hour);
+                        handleMouseEnter(date, hour, minutes);
                         if (resizingAppointment) {
-                          handleResizeMove(e, date, hour);
+                          handleResizeMove(e, date, hour, minutes);
                         }
                       }}
                       onMouseUp={resizingAppointment ? handleResizeEnd : undefined}
                     >
-                      {/* 30-minute divider line */}
-                      <div className="absolute left-0 right-0 top-1/2 border-t border-gray-100 pointer-events-none" />
-
                       {/* Visual indicator for drag over */}
                       {isDraggedOver && (
                         <div className="absolute inset-0 border-2 border-blue-400 bg-blue-100/30 pointer-events-none rounded" />

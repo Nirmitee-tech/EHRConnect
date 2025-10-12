@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Appointment } from '@/types/appointment';
 import { DetailedAppointmentCard } from './detailed-appointment-card';
+import { useCalendarSettings } from '@/hooks/useCalendarSettings';
 
 interface DayViewProps {
   currentDate: Date;
@@ -31,6 +32,9 @@ export function DayView({
   const [resizePreview, setResizePreview] = useState<{newStart?: Date; newEnd?: Date} | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
+
+  // Get calendar settings (slot duration)
+  const { getTimeSlots: getTimeSlotsFromSettings, slotDuration } = useCalendarSettings();
 
   // Update current time every minute
   useEffect(() => {
@@ -96,13 +100,8 @@ export function DayView({
     };
   }, [resizingAppointment, resizePreview, currentDate]);
 
-  const getTimeSlots = () => {
-    const slots: string[] = [];
-    for (let hour = 0; hour < 24; hour++) {
-      slots.push(`${hour}:00`);
-    }
-    return slots;
-  };
+  // Use dynamic time slots from settings
+  const timeSlots = getTimeSlotsFromSettings(0, 24);
 
   // Get appointments for the current date
   const getDayAppointments = () => {
@@ -311,7 +310,6 @@ export function DayView({
     return hour >= minHour && hour <= maxHour;
   };
 
-  const timeSlots = getTimeSlots();
   const dayAppointments = getDayAppointments();
   const appointmentLayout = React.useMemo(() => calculateAppointmentLayout(dayAppointments), [dayAppointments]);
   const today = new Date();
@@ -463,12 +461,17 @@ export function DayView({
           {/* Time labels */}
           <div className="w-24 border-r-2 border-gray-300 bg-white">
             {timeSlots.map((time, idx) => {
-              const hour = parseInt(time.split(':')[0]);
-              const formattedTime = hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`;
+              const [hourStr, minStr] = time.split(':');
+              const hour = parseInt(hourStr);
+              const min = parseInt(minStr);
+              const formattedTime = hour === 0 ? `12:${minStr} AM` : hour < 12 ? `${hour}:${minStr} AM` : hour === 12 ? `12:${minStr} PM` : `${hour - 12}:${minStr} PM`;
+
+              // Dynamic height based on slot duration
+              const slotHeightPx = 60; // Base height for visual consistency
 
               return (
-                <div key={idx} className="h-[80px] border-b border-gray-200 py-2 px-3 text-right flex items-start justify-end bg-gradient-to-r from-gray-50 to-white">
-                  <span className="text-sm font-bold text-gray-700">{formattedTime}</span>
+                <div key={idx} className="border-b border-gray-200 py-2 px-3 text-right flex items-start justify-end bg-gradient-to-r from-gray-50 to-white" style={{ height: `${slotHeightPx}px` }}>
+                  <span className="text-xs font-bold text-gray-700">{formattedTime}</span>
                 </div>
               );
             })}
@@ -477,26 +480,27 @@ export function DayView({
           {/* Appointments column */}
           <div className="flex-1 relative">
             {timeSlots.map((time, idx) => {
-              const hour = parseInt(time.split(':')[0]);
+              const [hourStr] = time.split(':');
+              const hour = parseInt(hourStr);
               const isDraggedOver = dragOver === hour;
               const inCreateRange = isInCreateRange(hour);
+
+              const slotHeightPx = 60; // Match time labels height
 
               return (
                 <div
                   key={idx}
-                  className={`relative h-[80px] border-b border-gray-200 transition-colors ${
+                  className={`relative border-b border-gray-200 transition-colors ${
                     isToday ? 'bg-blue-50/10' : 'bg-white'
                   } ${isDraggedOver ? 'bg-blue-100 ring-2 ring-inset ring-blue-400' : ''} ${
                     inCreateRange ? 'bg-green-50 ring-2 ring-inset ring-green-400' : ''
                   } hover:bg-gray-50/50`}
+                  style={{ height: `${slotHeightPx}px` }}
                   onDragOver={(e) => handleDragOver(e, hour)}
                   onDrop={(e) => handleDrop(e, hour)}
                   onMouseDown={(e) => handleMouseDown(e, hour)}
                   onMouseEnter={() => handleMouseEnter(hour)}
                 >
-                  {/* 30-minute divider */}
-                  <div className="absolute left-0 right-0 top-1/2 border-t border-dashed border-gray-300 pointer-events-none" />
-
                   {isDraggedOver && (
                     <div className="absolute inset-0 border-2 border-blue-500 bg-blue-100/40 pointer-events-none" />
                   )}

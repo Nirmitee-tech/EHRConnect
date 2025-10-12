@@ -1,22 +1,38 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Save, X, ArrowLeft, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, ArrowLeft, Loader2, Clock, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { AppointmentType, DEFAULT_APPOINTMENT_TYPES, PROVIDER_COLORS } from '@/types/staff';
 import { AppointmentTypesService } from '@/services/appointment-types.service';
+import { SettingsService } from '@/services/settings.service';
+import { AppointmentSettings } from '@/types/settings';
+import { useFacility } from '@/contexts/facility-context';
 
 export default function AppointmentTypesPage() {
+  const { currentFacility } = useFacility();
   const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
   const [editingType, setEditingType] = useState<AppointmentType | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Load appointment types on mount
+  // Organization-wide settings
+  const [orgSettings, setOrgSettings] = useState<AppointmentSettings>({
+    defaultDuration: 30,
+    slotDuration: 60,
+    workingHours: { start: '09:00', end: '17:00' },
+    allowedDurations: [15, 30, 45, 60, 90, 120]
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // Load appointment types and org settings on mount
   useEffect(() => {
     loadAppointmentTypes();
-  }, []);
+    if (currentFacility?.id) {
+      loadOrgSettings();
+    }
+  }, [currentFacility]);
 
   const loadAppointmentTypes = async () => {
     setLoading(true);
@@ -97,6 +113,33 @@ export default function AppointmentTypesPage() {
   const handleCancel = () => {
     setEditingType(null);
     setIsCreating(false);
+  };
+
+  // Organization settings functions
+  const loadOrgSettings = async () => {
+    if (!currentFacility?.id) return;
+
+    try {
+      const settings = await SettingsService.getOrganizationSettings(currentFacility.id);
+      setOrgSettings(settings.appointmentSettings);
+    } catch (error) {
+      console.error('Error loading org settings:', error);
+    }
+  };
+
+  const handleSaveOrgSettings = async () => {
+    if (!currentFacility?.id) return;
+
+    try {
+      setSavingSettings(true);
+      await SettingsService.updateAppointmentSettings(currentFacility.id, orgSettings);
+      alert('Settings saved successfully!');
+    } catch (error: any) {
+      console.error('Error saving settings:', error);
+      alert(error.message || 'Failed to save settings');
+    } finally {
+      setSavingSettings(false);
+    }
   };
 
   if (loading) {
@@ -269,6 +312,68 @@ export default function AppointmentTypesPage() {
           </div>
         </div>
       )}
+
+      {/* Organization-wide Appointment Settings */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Settings className="h-5 w-5 text-blue-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Organization-wide Settings</h2>
+          </div>
+          <button
+            onClick={handleSaveOrgSettings}
+            disabled={savingSettings}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          >
+            <Save className="h-4 w-4" />
+            {savingSettings ? 'Saving...' : 'Save Settings'}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          {/* Default Duration */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Clock className="inline h-4 w-4 mr-1" />
+              Default Appointment Duration
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min="5"
+                max="240"
+                step="5"
+                value={orgSettings.defaultDuration}
+                onChange={(e) => setOrgSettings({ ...orgSettings, defaultDuration: parseInt(e.target.value) || 30 })}
+                className="w-24 px-3 py-2 border border-gray-300 rounded-lg"
+              />
+              <span className="text-sm text-gray-600">minutes</span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Applied to new appointments automatically</p>
+          </div>
+
+          {/* Slot Duration */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Clock className="inline h-4 w-4 mr-1" />
+              Calendar Slot Duration
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min="5"
+                max="120"
+                step="5"
+                value={orgSettings.slotDuration}
+                onChange={(e) => setOrgSettings({ ...orgSettings, slotDuration: parseInt(e.target.value) || 60 })}
+                className="w-24 px-3 py-2 border border-gray-300 rounded-lg"
+              />
+              <span className="text-sm text-gray-600">minutes</span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Time slot size in calendar grid</p>
+          </div>
+        </div>
+      </div>
 
       {/* Appointment Types List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
