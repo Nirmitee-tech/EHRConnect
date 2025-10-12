@@ -10,6 +10,7 @@ interface WeekViewDraggableProps {
   onAppointmentClick?: (appointment: Appointment) => void;
   onAppointmentDrop?: (appointment: Appointment, newDate: Date, newHour: number) => void;
   onCreateAppointment?: (date: Date, startHour: number, endHour: number) => void;
+  onAppointmentResize?: (appointment: Appointment, newStartTime: Date, newEndTime: Date) => void;
 }
 
 export function WeekViewDraggable({
@@ -17,7 +18,8 @@ export function WeekViewDraggable({
   appointments,
   onAppointmentClick,
   onAppointmentDrop,
-  onCreateAppointment
+  onCreateAppointment,
+  onAppointmentResize
 }: WeekViewDraggableProps) {
   const [draggedAppointment, setDraggedAppointment] = useState<Appointment | null>(null);
   const [dragOver, setDragOver] = useState<{date: Date; hour: number} | null>(null);
@@ -25,7 +27,10 @@ export function WeekViewDraggable({
   const [createStart, setCreateStart] = useState<{date: Date; hour: number} | null>(null);
   const [createEnd, setCreateEnd] = useState<{date: Date; hour: number} | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [resizingAppointment, setResizingAppointment] = useState<{appointment: Appointment; edge: 'top' | 'bottom'} | null>(null);
+  const [resizePreview, setResizePreview] = useState<{newStart?: Date; newEnd?: Date} | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
 
   // Update current time every minute
   useEffect(() => {
@@ -35,6 +40,67 @@ export function WeekViewDraggable({
 
     return () => clearInterval(timer);
   }, []);
+
+  // Global mouse move handler for smooth resizing
+  useEffect(() => {
+    if (!resizingAppointment) return;
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!gridContainerRef.current) return;
+
+      const { appointment, edge } = resizingAppointment;
+      const aptStart = new Date(appointment.startTime);
+      const aptEnd = new Date(appointment.endTime);
+
+      // Get grid container bounds
+      const gridRect = gridContainerRef.current.getBoundingClientRect();
+      const relativeY = e.clientY - gridRect.top;
+
+      // Calculate which hour and minute we're at (60px per hour)
+      const totalMinutes = Math.max(0, Math.min(1440, (relativeY / 60) * 60)); // 0-1440 minutes (24 hours)
+      const snappedMinutes = Math.round(totalMinutes / 15) * 15; // Snap to 15-minute intervals
+
+      const hours = Math.floor(snappedMinutes / 60);
+      const minutes = snappedMinutes % 60;
+
+      // Get the date from the appointment
+      const appointmentDate = new Date(appointment.startTime);
+      const newTime = new Date(appointmentDate);
+      newTime.setHours(hours, minutes, 0, 0);
+
+      if (edge === 'top') {
+        // Dragging top edge - change start time
+        const currentEndTime = resizePreview?.newEnd || aptEnd;
+        const maxStart = new Date(currentEndTime);
+        maxStart.setMinutes(maxStart.getMinutes() - 15);
+
+        if (newTime.getTime() <= maxStart.getTime()) {
+          setResizePreview({ newStart: newTime, newEnd: currentEndTime });
+        }
+      } else {
+        // Dragging bottom edge - change end time
+        const currentStartTime = resizePreview?.newStart || aptStart;
+        const minEnd = new Date(currentStartTime);
+        minEnd.setMinutes(minEnd.getMinutes() + 15);
+
+        if (newTime.getTime() >= minEnd.getTime()) {
+          setResizePreview({ newStart: currentStartTime, newEnd: newTime });
+        }
+      }
+    };
+
+    const handleGlobalMouseUp = () => {
+      handleResizeEnd();
+    };
+
+    document.addEventListener('mousemove', handleGlobalMouseMove);
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [resizingAppointment, resizePreview]);
 
   const getWeekDates = () => {
     const dates: Date[] = [];
@@ -211,23 +277,107 @@ export function WeekViewDraggable({
 
   const handleDragOver = (e: React.DragEvent, date: Date, hour: number) => {
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
-    setDragOver({ date, hour });
+
+    // Update drag over state
+    if (!dragOver || dragOver.date.toDateString() !== date.toDateString() || dragOver.hour !== hour) {
+      setDragOver({ date, hour });
+    }
   };
 
-  const handleDragLeave = () => {
-    setDragOver(null);
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    // Only clear if leaving the entire grid area
+    const target = e.currentTarget;
+    const relatedTarget = e.relatedTarget as HTMLElement;
+
+    if (!relatedTarget || !target.contains(relatedTarget)) {
+      setDragOver(null);
+    }
   };
 
   const handleDrop = (e: React.DragEvent, date: Date, hour: number) => {
     e.preventDefault();
-    
+
     if (draggedAppointment) {
       onAppointmentDrop?.(draggedAppointment, date, hour);
     }
-    
+
     setDraggedAppointment(null);
     setDragOver(null);
+  };
+
+  // Resize handlers
+  const handleResizeStart = (appointment: Appointment, edge: 'top' | 'bottom', e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizingAppointment({ appointment, edge });
+    setResizePreview({});
+  };
+
+  const handleResizeMove = (e: React.MouseEvent, date: Date, hour: number) => {
+    if (!resizingAppointment) return;
+
+    const { appointment, edge } = resizingAppointment;
+    const aptStart = new Date(appointment.startTime);
+    const aptEnd = new Date(appointment.endTime);
+
+    // Calculate new time based on mouse position within the hour slot
+    const target = e.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    const relativeY = e.clientY - rect.top;
+    const percentInCell = relativeY / rect.height;
+    const minutesInHour = Math.floor(percentInCell * 60);
+
+    // Snap to 15-minute intervals
+    const snappedMinutes = Math.round(minutesInHour / 15) * 15;
+
+    const newTime = new Date(date);
+    newTime.setHours(hour, snappedMinutes, 0, 0);
+
+    if (edge === 'top') {
+      // Dragging top edge - change start time
+      // Use the current preview end time if available, otherwise use original end time
+      const currentEndTime = resizePreview?.newEnd || aptEnd;
+
+      // Don't allow start to go past end minus 15 minutes
+      const maxStart = new Date(currentEndTime);
+      maxStart.setMinutes(maxStart.getMinutes() - 15);
+
+      if (newTime.getTime() <= maxStart.getTime()) {
+        setResizePreview({ newStart: newTime, newEnd: currentEndTime });
+      }
+    } else {
+      // Dragging bottom edge - change end time
+      // Use the current preview start time if available, otherwise use original start time
+      const currentStartTime = resizePreview?.newStart || aptStart;
+
+      // Don't allow end to go before start plus 15 minutes
+      const minEnd = new Date(currentStartTime);
+      minEnd.setMinutes(minEnd.getMinutes() + 15);
+
+      if (newTime.getTime() >= minEnd.getTime()) {
+        setResizePreview({ newStart: currentStartTime, newEnd: newTime });
+      }
+    }
+  };
+
+  const handleResizeEnd = () => {
+    if (resizingAppointment && resizePreview && (resizePreview.newStart || resizePreview.newEnd)) {
+      const { appointment } = resizingAppointment;
+      const newStartTime = resizePreview.newStart || new Date(appointment.startTime);
+      const newEndTime = resizePreview.newEnd || new Date(appointment.endTime);
+
+      // Only call if times actually changed
+      if (newStartTime.getTime() !== new Date(appointment.startTime).getTime() ||
+          newEndTime.getTime() !== new Date(appointment.endTime).getTime()) {
+        onAppointmentResize?.(appointment, newStartTime, newEndTime);
+      }
+    }
+
+    setResizingAppointment(null);
+    setResizePreview(null);
   };
 
   // Click and drag to create appointments
@@ -452,8 +602,8 @@ export function WeekViewDraggable({
 
       {/* All-day events row */}
       {allDayEvents.length > 0 && (
-        <div className="grid grid-cols-[80px_repeat(7,minmax(120px,1fr))] border-b-2 border-gray-300 bg-gray-50">
-          <div className="border-r border-gray-200 p-2 text-right text-xs font-medium text-gray-600">
+        <div className="grid grid-cols-[80px_repeat(7,minmax(120px,1fr))] border-b border-gray-200 bg-gray-50/50">
+          <div className="border-r border-gray-200 py-2 px-2 text-right text-[10px] font-semibold text-gray-500 uppercase">
             All Day
           </div>
           {weekDates.map((date, idx) => {
@@ -462,21 +612,34 @@ export function WeekViewDraggable({
             return (
               <div
                 key={idx}
-                className={`min-h-[60px] border-r border-gray-200 p-1 last:border-r-0 ${
-                  isToday ? 'bg-blue-50/30' : 'bg-white'
+                className={`relative min-h-[50px] border-r border-gray-200 p-1 last:border-r-0 ${
+                  isToday ? 'bg-blue-50/40' : 'bg-white'
                 }`}
               >
-                {dayAllDayEvents.map((apt) => (
-                  <DraggableAppointmentCard
-                    key={apt.id}
-                    appointment={apt}
-                    onClick={() => onAppointmentClick?.(apt)}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    className="mb-1"
-                    compact
-                  />
-                ))}
+                <div className="flex flex-col gap-1">
+                  {dayAllDayEvents.map((apt) => {
+                    const isHexColor = typeof apt.practitionerColor === 'string' && apt.practitionerColor.startsWith('#');
+                    const bgColor = apt.practitionerColor || 'bg-indigo-500';
+
+                    return (
+                      <div
+                        key={apt.id}
+                        onClick={() => onAppointmentClick?.(apt)}
+                        className="cursor-pointer rounded px-2 py-1 text-[11px] font-medium text-white shadow-sm hover:shadow-md transition-shadow"
+                        style={isHexColor ? { backgroundColor: apt.practitionerColor } : undefined}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = 'move';
+                          e.dataTransfer.setData('application/json', JSON.stringify(apt));
+                          handleDragStart(apt);
+                        }}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <div className="truncate">{apt.patientName}</div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
@@ -485,7 +648,7 @@ export function WeekViewDraggable({
 
       {/* Time grid */}
       <div className="flex-1 overflow-y-auto relative" ref={scrollContainerRef}>
-        <div className="grid grid-cols-[80px_repeat(7,minmax(120px,1fr))] relative" style={{ minHeight: '1440px' }}>
+        <div ref={gridContainerRef} className="grid grid-cols-[80px_repeat(7,minmax(120px,1fr))] relative" style={{ minHeight: '1440px' }}>
           {/* Time labels and grid cells */}
           {timeSlots.map((time, timeIdx) => {
             const [hour] = time.split(':').map(Number);
@@ -506,17 +669,28 @@ export function WeekViewDraggable({
                   return (
                     <div
                       key={dateIdx}
-                      className={`h-[60px] border-b border-r border-gray-200 last:border-r-0 transition-colors ${
+                      className={`relative h-[60px] border-b border-r border-gray-200 last:border-r-0 transition-colors ${
                         isToday ? 'bg-blue-50/30' : 'bg-white'
-                      } ${isDraggedOver ? 'bg-blue-100 ring-2 ring-inset ring-blue-400' : ''} ${
+                      } ${isDraggedOver ? 'bg-blue-100' : ''} ${
                         inCreateRange ? 'bg-green-100 ring-2 ring-inset ring-green-400' : ''
                       }`}
                       onDragOver={(e) => handleDragOver(e, date, hour)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, date, hour)}
                       onMouseDown={(e) => handleMouseDown(e, date, hour)}
-                      onMouseEnter={() => handleMouseEnter(date, hour)}
-                    />
+                      onMouseEnter={(e) => {
+                        handleMouseEnter(date, hour);
+                        if (resizingAppointment) {
+                          handleResizeMove(e, date, hour);
+                        }
+                      }}
+                      onMouseUp={resizingAppointment ? handleResizeEnd : undefined}
+                    >
+                      {/* Visual indicator for drag over */}
+                      {isDraggedOver && (
+                        <div className="absolute inset-0 border-2 border-blue-500 bg-blue-100/50 pointer-events-none" />
+                      )}
+                    </div>
                   );
                 })}
               </React.Fragment>
@@ -554,34 +728,90 @@ export function WeekViewDraggable({
                 }}
               >
                 {dateAppointments.map((apt) => {
-                  const style = calculateAppointmentStyle(apt);
+                  const isBeingResized = resizingAppointment?.appointment.id === apt.id;
+                  const baseStyle = calculateAppointmentStyle(apt);
+
+                  // Apply resize preview if this appointment is being resized
+                  let style = baseStyle;
+                  if (isBeingResized && resizePreview) {
+                    const previewStart = resizePreview.newStart || new Date(apt.startTime);
+                    const previewEnd = resizePreview.newEnd || new Date(apt.endTime);
+
+                    const startHour = previewStart.getHours();
+                    const startMinutes = previewStart.getMinutes();
+                    const top = (startHour * 60 + startMinutes);
+
+                    const durationMs = previewEnd.getTime() - previewStart.getTime();
+                    const durationMinutes = durationMs / (1000 * 60);
+                    const height = Math.max((durationMinutes / 60) * 60, 30);
+
+                    style = { top, height };
+                  }
+
                   const layoutInfo = layout?.get(apt.id);
 
                   // Check if this is the appointment being dragged
                   const isDragging = draggedAppointment?.id === apt.id;
+
+                  const appointmentElement = (
+                    <div className="relative h-full group">
+                      {/* Main appointment card */}
+                      <div
+                        className="h-full"
+                        onClick={(e) => {
+                          // Only trigger click if not resizing
+                          if (!resizingAppointment) {
+                            onAppointmentClick?.(apt);
+                          }
+                        }}
+                      >
+                        <DraggableAppointmentCard
+                          appointment={apt}
+                          onClick={undefined}
+                          onDragStart={handleDragStart}
+                          onDragEnd={handleDragEnd}
+                          className="h-full"
+                          spanning
+                        />
+                      </div>
+
+                      {/* Top resize handle - only show if appointment is tall enough */}
+                      {style.height >= 45 && (
+                        <div
+                          className="absolute top-0 left-0 right-0 h-3 cursor-ns-resize opacity-0 group-hover:opacity-100 z-50 flex items-start justify-center"
+                          onMouseDown={(e) => handleResizeStart(apt, 'top', e)}
+                          title="Drag to change start time"
+                        >
+                          <div className="w-8 h-1 bg-blue-500/50 rounded-full mt-1" />
+                        </div>
+                      )}
+
+                      {/* Bottom resize handle */}
+                      <div
+                        className="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize opacity-0 group-hover:opacity-100 z-50 flex items-end justify-center"
+                        onMouseDown={(e) => handleResizeStart(apt, 'bottom', e)}
+                        title="Drag to change end time"
+                      >
+                        <div className="w-8 h-1 bg-blue-500/50 rounded-full mb-1" />
+                      </div>
+                    </div>
+                  );
 
                   if (!layoutInfo) {
                     // Single appointment, no overlap
                     return (
                       <div
                         key={apt.id}
-                        className={`absolute pointer-events-auto ${isDragging ? 'opacity-50' : ''}`}
+                        className={`absolute pointer-events-auto ${isDragging ? 'opacity-50' : ''} ${isBeingResized ? 'opacity-70' : ''}`}
                         style={{
                           top: `${style.top}px`,
                           height: `${style.height}px`,
                           left: '2px',
                           right: '2px',
-                          zIndex: isDragging ? 1000 : 10
+                          zIndex: isDragging || isBeingResized ? 1000 : 10
                         }}
                       >
-                        <DraggableAppointmentCard
-                          appointment={apt}
-                          onClick={() => onAppointmentClick?.(apt)}
-                          onDragStart={handleDragStart}
-                          onDragEnd={handleDragEnd}
-                          className="h-full"
-                          spanning
-                        />
+                        {appointmentElement}
                       </div>
                     );
                   }
@@ -593,23 +823,16 @@ export function WeekViewDraggable({
                   return (
                     <div
                       key={apt.id}
-                      className={`absolute pointer-events-auto ${isDragging ? 'opacity-50' : ''}`}
+                      className={`absolute pointer-events-auto ${isDragging ? 'opacity-50' : ''} ${isBeingResized ? 'opacity-70' : ''}`}
                       style={{
                         top: `${style.top}px`,
                         height: `${style.height}px`,
                         left: `calc(${leftPercent}% + 1px)`,
                         width: `calc(${columnWidth}% - 2px)`,
-                        zIndex: isDragging ? 1000 : 10 + layoutInfo.column
+                        zIndex: isDragging || isBeingResized ? 1000 : 10 + layoutInfo.column
                       }}
                     >
-                      <DraggableAppointmentCard
-                        appointment={apt}
-                        onClick={() => onAppointmentClick?.(apt)}
-                        onDragStart={handleDragStart}
-                        onDragEnd={handleDragEnd}
-                        className="h-full"
-                        spanning
-                      />
+                      {appointmentElement}
                     </div>
                   );
                 })}

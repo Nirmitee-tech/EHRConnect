@@ -460,16 +460,58 @@ export default function AppointmentsPage() {
   const handleCreateFromDrag = (date: Date, startHour: number, endHour: number) => {
     const startTime = new Date(date);
     startTime.setHours(startHour, 0, 0, 0);
-    
+
     const endTime = new Date(date);
     endTime.setHours(endHour, 0, 0, 0);
-    
+
     // Calculate duration in minutes
     const durationMinutes = (endHour - startHour) * 60;
-    
+
     // Open the drawer with pre-filled date and time
     setClickedDate(startTime);
     setIsDrawerOpen(true);
+  };
+
+  const handleAppointmentResize = async (appointment: Appointment, newStartTime: Date, newEndTime: Date) => {
+    try {
+      // Calculate new duration in minutes
+      const durationMs = newEndTime.getTime() - newStartTime.getTime();
+      const newDuration = Math.round(durationMs / (1000 * 60));
+
+      console.log('🔄 Resizing appointment:', {
+        id: appointment.id,
+        patient: appointment.patientName,
+        oldStart: new Date(appointment.startTime).toLocaleString(),
+        oldEnd: new Date(appointment.endTime).toLocaleString(),
+        oldDuration: appointment.duration,
+        newStart: newStartTime.toLocaleString(),
+        newEnd: newEndTime.toLocaleString(),
+        newDuration
+      });
+
+      // Optimistically update the UI first
+      setAllAppointments(prev => prev.map(apt =>
+        apt.id === appointment.id
+          ? { ...apt, startTime: newStartTime, endTime: newEndTime, duration: newDuration }
+          : apt
+      ));
+
+      // Update the appointment in the backend
+      const updates: Partial<Appointment> = {
+        startTime: newStartTime,
+        endTime: newEndTime,
+        duration: newDuration
+      };
+
+      const result = await AppointmentService.updateAppointment(appointment.id, updates);
+      console.log('✅ Appointment resized successfully:', result);
+
+    } catch (error) {
+      console.error('❌ Error resizing appointment:', error);
+      alert('Failed to resize appointment. Please try again.');
+      // Reload to revert visual changes on error
+      loadAppointments();
+    }
   };
 
   return (
@@ -565,6 +607,7 @@ export default function AppointmentsPage() {
                   onAppointmentClick={handleAppointmentClick}
                   onAppointmentDrop={handleAppointmentDrop}
                   onCreateAppointment={handleCreateFromDrag}
+                  onAppointmentResize={handleAppointmentResize}
                 />
               )}
               {view === 'month' && (

@@ -176,45 +176,57 @@ export class AppointmentService {
    */
   static async updateAppointment(id: string, updates: Partial<Appointment>): Promise<Appointment> {
     try {
-      // Build FHIR update payload with only the fields we're updating
-      const updatePayload: Partial<FHIRAppointment> = {
-        resourceType: 'Appointment',
-        id: id
-      };
+      // Build PATCH operations array dynamically based on what's being updated
+      const patchOps: Array<{op: string; path: string; value: any}> = [];
 
       if (updates.status) {
-        updatePayload.status = AppointmentService.mapStatusToFHIR(updates.status);
-      }
-      if (updates.startTime) {
-        updatePayload.start = updates.startTime instanceof Date
-          ? updates.startTime.toISOString()
-          : new Date(updates.startTime).toISOString();
-      }
-      if (updates.endTime) {
-        updatePayload.end = updates.endTime instanceof Date
-          ? updates.endTime.toISOString()
-          : new Date(updates.endTime).toISOString();
-      }
-      if (updates.duration) {
-        updatePayload.minutesDuration = updates.duration;
-      }
-      if (updates.reason) {
-        updatePayload.comment = updates.reason;
+        patchOps.push({
+          op: 'replace',
+          path: '/status',
+          value: AppointmentService.mapStatusToFHIR(updates.status)
+        });
       }
 
-      // Use PATCH instead of full update
-      const result = await medplum.patchResource('Appointment', id, [
-        {
+      if (updates.startTime) {
+        patchOps.push({
           op: 'replace',
           path: '/start',
-          value: updatePayload.start
-        },
-        {
+          value: updates.startTime instanceof Date
+            ? updates.startTime.toISOString()
+            : new Date(updates.startTime).toISOString()
+        });
+      }
+
+      if (updates.endTime) {
+        patchOps.push({
           op: 'replace',
           path: '/end',
-          value: updatePayload.end
-        }
-      ]);
+          value: updates.endTime instanceof Date
+            ? updates.endTime.toISOString()
+            : new Date(updates.endTime).toISOString()
+        });
+      }
+
+      if (updates.duration !== undefined) {
+        patchOps.push({
+          op: 'replace',
+          path: '/minutesDuration',
+          value: updates.duration
+        });
+      }
+
+      if (updates.reason) {
+        patchOps.push({
+          op: 'replace',
+          path: '/comment',
+          value: updates.reason
+        });
+      }
+
+      console.log('Sending PATCH operations:', patchOps);
+
+      // Use PATCH with only the fields being updated
+      const result = await medplum.patchResource('Appointment', id, patchOps);
 
       return AppointmentService.transformFHIRAppointment(result);
     } catch (error) {
