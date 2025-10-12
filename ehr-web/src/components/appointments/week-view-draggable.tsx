@@ -12,6 +12,8 @@ interface WeekViewDraggableProps {
   onAppointmentDrop?: (appointment: Appointment, newDate: Date, newHour: number) => void;
   onCreateAppointment?: (date: Date, startHour: number, endHour: number) => void;
   onAppointmentResize?: (appointment: Appointment, newStartTime: Date, newEndTime: Date) => void;
+  onStatusChange?: (appointmentId: string, newStatus: string) => void;
+  onStartEncounter?: (appointment: Appointment) => void;
 }
 
 export function WeekViewDraggable({
@@ -20,7 +22,9 @@ export function WeekViewDraggable({
   onAppointmentClick,
   onAppointmentDrop,
   onCreateAppointment,
-  onAppointmentResize
+  onAppointmentResize,
+  onStatusChange,
+  onStartEncounter
 }: WeekViewDraggableProps) {
   const [draggedAppointment, setDraggedAppointment] = useState<Appointment | null>(null);
   const [dragOver, setDragOver] = useState<{date: Date; hour: number} | null>(null);
@@ -818,6 +822,17 @@ export function WeekViewDraggable({
                           onDragStart={handleDragStart}
                           onDragEnd={handleDragEnd}
                           className="h-full"
+                          onStatusChange={(id, status) => {
+                            if (onStatusChange) {
+                              onStatusChange(id, status);
+                            }
+                          }}
+                          onStartEncounter={(id) => {
+                            const appointment = appointments.find(a => a.id === id);
+                            if (appointment && onStartEncounter) {
+                              onStartEncounter(appointment);
+                            }
+                          }}
                         />
                       </div>
 

@@ -537,6 +537,26 @@ export default function AppointmentsPage() {
     }
   };
 
+  const handleStatusChange = async (appointmentId: string, newStatus: string) => {
+    try {
+      // Optimistically update the UI
+      setAllAppointments(prev => prev.map(apt =>
+        apt.id === appointmentId ? { ...apt, status: newStatus as any } : apt
+      ));
+
+      // Update the appointment in the backend
+      await AppointmentService.updateAppointment(appointmentId, { status: newStatus as any });
+
+      // Reload to ensure data consistency
+      loadAppointments();
+      loadStats();
+    } catch (error) {
+      console.error('Error updating appointment status:', error);
+      alert('Failed to update appointment status. Please try again.');
+      loadAppointments();
+    }
+  };
+
   return (
     <div className="flex h-screen flex-col bg-gray-50">
       {/* Floating Add Button */}
@@ -641,6 +661,8 @@ export default function AppointmentsPage() {
                   onAppointmentDrop={handleAppointmentDrop}
                   onCreateAppointment={handleCreateFromDrag}
                   onAppointmentResize={handleAppointmentResize}
+                  onStatusChange={handleStatusChange}
+                  onStartEncounter={handleStartEncounter}
                 />
               )}
               {view === 'month' && (

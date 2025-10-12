@@ -162,6 +162,84 @@ export function CompactAppointmentCard({
               📍 {appointment.location}
             </div>
           )}
+
+          {/* Bottom Action Buttons - Always visible */}
+          <div className="mt-auto pt-1 border-t border-gray-200/50">
+            {!showActions && (
+              <div className="flex items-center gap-0.5 justify-end">
+                {appointment.status === 'scheduled' && (
+                  <>
+                    <div className="text-[8px] text-gray-400 px-1">Start</div>
+                    <div className="text-[8px] text-gray-400 px-1">Cancel</div>
+                  </>
+                )}
+                {appointment.status === 'in-progress' && (
+                  <>
+                    <div className="text-[8px] text-gray-400 px-1">Complete</div>
+                    <div className="text-[8px] text-gray-400 px-1">Details</div>
+                  </>
+                )}
+                {(appointment.status === 'completed' || appointment.status === 'cancelled') && (
+                  <div className="text-[8px] text-gray-400 px-1">Details</div>
+                )}
+              </div>
+            )}
+
+            {showActions && (
+              <div className="flex items-center gap-0.5">
+                {appointment.status === 'scheduled' && (
+                  <>
+                    <button
+                      onClick={(e) => handleAction(e, 'start')}
+                      className="flex-1 flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-blue-600 text-white rounded text-[8px] font-medium hover:bg-blue-700 transition-colors"
+                      title="Start Encounter"
+                    >
+                      <Play className="h-2 w-2" fill="currentColor" />
+                      Start
+                    </button>
+                    <button
+                      onClick={(e) => handleAction(e, 'cancel')}
+                      className="flex-1 flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-gray-400 text-white rounded text-[8px] font-medium hover:bg-gray-500 transition-colors"
+                      title="Cancel Appointment"
+                    >
+                      <XCircle className="h-2 w-2" />
+                      Cancel
+                    </button>
+                  </>
+                )}
+                {appointment.status === 'in-progress' && (
+                  <>
+                    <button
+                      onClick={(e) => handleAction(e, 'complete')}
+                      className="flex-1 flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-green-600 text-white rounded text-[8px] font-medium hover:bg-green-700 transition-colors"
+                      title="Complete Appointment"
+                    >
+                      <CheckCircle className="h-2 w-2" />
+                      Complete
+                    </button>
+                    <button
+                      onClick={(e) => handleAction(e, 'details')}
+                      className="flex-1 flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-gray-400 text-white rounded text-[8px] font-medium hover:bg-gray-500 transition-colors"
+                      title="View Details"
+                    >
+                      <FileText className="h-2 w-2" />
+                      Details
+                    </button>
+                  </>
+                )}
+                {(appointment.status === 'completed' || appointment.status === 'cancelled') && (
+                  <button
+                    onClick={(e) => handleAction(e, 'details')}
+                    className="w-full flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-gray-400 text-white rounded text-[8px] font-medium hover:bg-gray-500 transition-colors"
+                    title="View Details"
+                  >
+                    <FileText className="h-2 w-2" />
+                    Details
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
