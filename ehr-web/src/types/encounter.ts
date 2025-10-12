@@ -68,6 +68,42 @@ export interface Package {
   price: number;
 }
 
+// Note Data (for social and internal notes)
+export interface NoteData {
+  id: string;
+  type: 'social' | 'internal';
+  content: string;
+  createdBy: string;
+  createdByName: string;
+  createdAt: Date | string;
+  updatedAt?: Date | string;
+  remarks?: string;
+}
+
+// Address Data
+export interface AddressData {
+  id: string;
+  type: 'Home' | 'Work' | 'Other';
+  addressLine1: string;
+  addressLine2: string;
+  locality: string;
+  city: string;
+  pincode: string;
+  state: string;
+  country: string;
+  areaCode: string;
+  landlineNumber: string;
+  emergencyContactName: string;
+  emergencyContactNumber: string;
+  spouseName: string;
+  spouseContactNumber: string;
+  generalPractitioner: string;
+  isActive: boolean;
+  isPrimary: boolean;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+
 export interface Encounter {
   id: string;
   appointmentId?: string;
@@ -116,6 +152,13 @@ export interface Encounter {
   patientHistory?: string;
   patientAllergies?: string;
   patientHabits?: string;
+
+  // Patient Address and Contact Information (array to support multiple addresses)
+  addresses?: AddressData[];
+
+  // Patient Notes
+  socialNotes?: NoteData[];
+  internalNotes?: NoteData[];
 
   // Legacy fields
   presentingProblem?: string;

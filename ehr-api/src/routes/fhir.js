@@ -317,6 +317,15 @@ router.patch('/:resourceType/:id', async (req, res) => {
   const { resourceType, id } = req.params;
   const patchOperations = req.body;
 
+  // Debug logging
+  console.log('PATCH Request received:');
+  console.log('Resource Type:', resourceType);
+  console.log('Resource ID:', id);
+  console.log('Content-Type:', req.headers['content-type']);
+  console.log('Body type:', typeof patchOperations);
+  console.log('Is Array:', Array.isArray(patchOperations));
+  console.log('Body:', JSON.stringify(patchOperations, null, 2));
+
   try {
     // First, get the current resource
     const getQuery = `

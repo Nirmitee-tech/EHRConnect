@@ -2,54 +2,52 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import {
   ArrowLeft,
-  User,
   Calendar,
-  Clock,
-  MapPin,
-  Save,
-  CheckCircle,
-  XCircle,
-  Heart,
-  Activity,
-  Thermometer,
-  Wind,
-  Droplet,
-  TrendingUp,
-  FileText,
-  Stethoscope,
-  Pill,
-  ClipboardList
+  Printer,
+  User,
+  Phone,
+  Mail,
+  MoreVertical,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
-import { Encounter } from '@/types/encounter';
+import { Encounter, AddressData, NoteData } from '@/types/encounter';
 import { EncounterService } from '@/services/encounter.service';
+import { AddressService } from '@/services/address.service';
+import { PatientSidebar } from '@/components/encounters/patient-sidebar';
+import { ClinicalNoteSection } from '@/components/encounters/clinical-note-section';
+import { TreatmentPlanSection } from '@/components/encounters/treatment-plan-section';
+import { PrescriptionsSection } from '@/components/encounters/prescriptions-section';
+import { InstructionsSection } from '@/components/encounters/instructions-section';
+import { PackageSection } from '@/components/encounters/package-section';
 
 export default function EncounterPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
   const encounterId = params.id as string;
 
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'vitals' | 'assessment' | 'plan' | 'notes'>('vitals');
 
-  // Form state
-  const [vitals, setVitals] = useState({
-    bloodPressureSystolic: '',
-    bloodPressureDiastolic: '',
-    heartRate: '',
-    temperature: '',
-    respiratoryRate: '',
-    oxygenSaturation: '',
-    weight: '',
-    height: '',
+  // Expanded sections for accordion
+  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({
+    clinicalNote: false,
+    treatmentPlan: false,
+    prescriptions: false,
+    instructions: false,
+    packages: false
   });
 
-  const [chiefComplaint, setChiefComplaint] = useState('');
-  const [presentingProblem, setPresentingProblem] = useState('');
-  const [clinicalNotes, setClinicalNotes] = useState('');
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   useEffect(() => {
     loadEncounter();
@@ -59,25 +57,28 @@ export default function EncounterPage() {
     try {
       setLoading(true);
       const data = await EncounterService.getById(encounterId);
-      setEncounter(data);
 
-      // Populate form with existing data
-      if (data.vitals) {
-        setVitals({
-          bloodPressureSystolic: data.vitals.bloodPressureSystolic?.toString() || '',
-          bloodPressureDiastolic: data.vitals.bloodPressureDiastolic?.toString() || '',
-          heartRate: data.vitals.heartRate?.toString() || '',
-          temperature: data.vitals.temperature?.toString() || '',
-          respiratoryRate: data.vitals.respiratoryRate?.toString() || '',
-          oxygenSaturation: data.vitals.oxygenSaturation?.toString() || '',
-          weight: data.vitals.weight?.toString() || '',
-          height: data.vitals.height?.toString() || '',
-        });
+      // Load patient addresses and notes
+      if (data.patientId) {
+        try {
+          console.log('📥 Loading patient data for patient:', data.patientId);
+          const patientData = await AddressService.getPatientData(data.patientId);
+          console.log('📥 Patient data loaded:', patientData);
+          data.addresses = patientData.addresses;
+          data.socialNotes = patientData.socialNotes;
+          data.internalNotes = patientData.internalNotes;
+          console.log('📥 Setting encounter with addresses:', data.addresses);
+        } catch (error) {
+          console.error('Error loading patient data:', error);
+          // Continue with empty arrays if patient data fails to load
+          data.addresses = [];
+          data.socialNotes = [];
+          data.internalNotes = [];
+        }
       }
 
-      setChiefComplaint(data.chiefComplaint || '');
-      setPresentingProblem(data.presentingProblem || '');
-      setClinicalNotes(data.clinicalNotes || '');
+      console.log('📥 Final encounter data before setState:', data);
+      setEncounter(data);
     } catch (error) {
       console.error('Error loading encounter:', error);
     } finally {
@@ -85,80 +86,30 @@ export default function EncounterPage() {
     }
   };
 
-  const handleSave = async (skipReload = false) => {
+  const updateEncounterField = (field: keyof Encounter, value: any) => {
     if (!encounter) return;
-
-    try {
-      setSaving(true);
-
-      // Calculate BMI if height and weight are provided
-      let bmi: number | undefined;
-      if (vitals.height && vitals.weight) {
-        const heightInMeters = parseFloat(vitals.height) / 100;
-        bmi = parseFloat(vitals.weight) / (heightInMeters * heightInMeters);
-      }
-
-      await EncounterService.update(encounter.id, {
-        vitals: {
-          bloodPressureSystolic: vitals.bloodPressureSystolic ? parseFloat(vitals.bloodPressureSystolic) : undefined,
-          bloodPressureDiastolic: vitals.bloodPressureDiastolic ? parseFloat(vitals.bloodPressureDiastolic) : undefined,
-          heartRate: vitals.heartRate ? parseFloat(vitals.heartRate) : undefined,
-          temperature: vitals.temperature ? parseFloat(vitals.temperature) : undefined,
-          respiratoryRate: vitals.respiratoryRate ? parseFloat(vitals.respiratoryRate) : undefined,
-          oxygenSaturation: vitals.oxygenSaturation ? parseFloat(vitals.oxygenSaturation) : undefined,
-          weight: vitals.weight ? parseFloat(vitals.weight) : undefined,
-          height: vitals.height ? parseFloat(vitals.height) : undefined,
-          bmi,
-        },
-        chiefComplaint,
-        presentingProblem,
-        clinicalNotes,
-      });
-
-      if (!skipReload) {
-        await loadEncounter();
-      }
-    } catch (error) {
-      console.error('Error saving encounter:', error);
-      throw error; // Re-throw to handle in complete function
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCompleteEncounter = async () => {
-    if (!encounter) return;
-
-    if (confirm('Are you sure you want to complete this encounter? This will also mark the appointment as completed.')) {
-      try {
-        setSaving(true);
-
-        // First save any pending changes (skip reload)
-        await handleSave(true);
-
-        // Then complete the encounter (which also completes the appointment)
-        await EncounterService.complete(encounter.id);
-
-        // Show success message
-        alert('Encounter completed successfully! The appointment has been marked as completed.');
-
-        // Navigate back to appointments
-        router.push('/appointments');
-      } catch (error) {
-        console.error('Error completing encounter:', error);
-        alert('Failed to complete encounter. Please try again.');
-      } finally {
-        setSaving(false);
-      }
-    }
+    setEncounter({
+      ...encounter,
+      [field]: value
+    });
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading encounter...</p>
+      <div className="flex h-screen">
+        {/* Left Sidebar Skeleton */}
+        <div className="w-64 bg-white border-r border-gray-200 p-4">
+          <div className="animate-pulse space-y-4">
+            <div className="h-12 bg-gray-200 rounded"></div>
+            <div className="h-32 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+        {/* Main Content Skeleton */}
+        <div className="flex-1 bg-gray-50 p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+            <div className="h-64 bg-white rounded"></div>
+          </div>
         </div>
       </div>
     );
@@ -166,14 +117,12 @@ export default function EncounterPage() {
 
   if (!encounter) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Encounter Not Found</h2>
-          <p className="text-gray-600 mb-4">The encounter you're looking for doesn't exist.</p>
+          <p className="text-gray-600">Encounter not found</p>
           <button
             onClick={() => router.push('/appointments')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Back to Appointments
           </button>
@@ -182,299 +131,400 @@ export default function EncounterPage() {
     );
   }
 
+  // Get primary address for header display
+  const primaryAddress = encounter.addresses?.find(addr => addr.isPrimary && addr.isActive) ||
+                        encounter.addresses?.find(addr => addr.isActive);
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-4">
+    <div className="flex h-screen overflow-hidden bg-gray-50">
+      {/* Left Sidebar - Patient Info - STICKY */}
+      <PatientSidebar
+        patientName={encounter.patientName}
+        patientId={encounter.patientId}
+        relationshipDate={new Date(encounter.startTime).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+        patientHistory={encounter.patientHistory}
+        patientAllergies={encounter.patientAllergies}
+        patientHabits={encounter.patientHabits}
+        addresses={encounter.addresses || []}
+        socialNotes={encounter.socialNotes || []}
+        internalNotes={encounter.internalNotes || []}
+        currentUserId={session?.fhirUser || session?.user?.email || 'unknown'}
+        currentUserName={session?.user?.name || 'Unknown User'}
+        onBack={() => router.push('/appointments')}
+        onUpdateMedicalInfo={(data) => {
+          setEncounter({
+            ...encounter,
+            ...data
+          });
+        }}
+        onUpdateAddresses={async (addresses: AddressData[]) => {
+          try {
+            // Update addresses along with preserving existing notes
+            await AddressService.updatePatientData(
+              encounter.patientId,
+              addresses,
+              encounter.socialNotes || [],
+              encounter.internalNotes || []
+            );
+            console.log('✅ Addresses saved successfully:', addresses);
+            // Update the encounter state with new addresses
+            setEncounter({
+              ...encounter,
+              addresses
+            });
+            console.log('✅ Encounter state updated with new addresses');
+          } catch (error) {
+            console.error('❌ Failed to update addresses:', error);
+            throw error;
+          }
+        }}
+        onUpdateSocialNotes={async (notes: NoteData[]) => {
+          try {
+            // Update social notes along with preserving addresses and internal notes
+            await AddressService.updatePatientData(
+              encounter.patientId,
+              encounter.addresses || [],
+              notes,
+              encounter.internalNotes || []
+            );
+            setEncounter({
+              ...encounter,
+              socialNotes: notes
+            });
+          } catch (error) {
+            console.error('Failed to update social notes:', error);
+            throw error;
+          }
+        }}
+        onUpdateInternalNotes={async (notes: NoteData[]) => {
+          try {
+            // Update internal notes along with preserving addresses and social notes
+            await AddressService.updatePatientData(
+              encounter.patientId,
+              encounter.addresses || [],
+              encounter.socialNotes || [],
+              notes
+            );
+            setEncounter({
+              ...encounter,
+              internalNotes: notes
+            });
+          } catch (error) {
+            console.error('Failed to update internal notes:', error);
+            throw error;
+          }
+        }}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {/* Top Header Bar */}
+        <div className="bg-white border-b border-gray-200 px-6 py-3">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/appointments')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5 text-gray-600" />
-              </button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{encounter.patientName}</h1>
-                <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
-                  <span className="flex items-center gap-1">
-                    <Stethoscope className="h-4 w-4" />
-                    {encounter.practitionerName}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    {new Date(encounter.startTime).toLocaleDateString()}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    {new Date(encounter.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  {encounter.location && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      {encounter.location}
-                    </span>
+                <p className="text-xs text-gray-500">Blood Group:</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div>
+                <p className="text-xs text-gray-500">Contact</p>
+                <p className="text-sm font-medium">
+                  Gen. Practitioner: {primaryAddress?.generalPractitioner || '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Emergency:</p>
+                <p className="text-sm font-medium">
+                  {primaryAddress?.emergencyContactName || '-'}
+                  {primaryAddress?.emergencyContactNumber && ` (${primaryAddress.emergencyContactNumber})`}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Payment Due</p>
+                <p className="text-sm font-medium">₹ 0.00</p>
+              </div>
+              <button className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 transition-colors">Receive</button>
+              <button className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 transition-colors">Refund</button>
+              <button className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 transition-colors">Send Payment Link</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="flex px-6">
+            <button className="px-4 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600">
+              VISITS
+            </button>
+            <button className="px-4 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
+              DOCS & IMAGES
+            </button>
+            <button className="px-4 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
+              MEMBERSHIP
+            </button>
+            <button className="px-4 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
+              ORTHODONTIC
+            </button>
+          </div>
+        </div>
+
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="container-fluid px-6 py-6 space-y-4 max-w-full">
+            {/* Visit Card */}
+            <div className="bg-white rounded-lg border border-gray-200">
+              {/* Visit Header */}
+              <div className="flex items-center justify-between px-6 py-3 bg-yellow-50 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="px-3 py-1 bg-yellow-400 text-white font-semibold text-sm rounded">
+                    {new Date(encounter.startTime).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()}
+                  </div>
+                  <button className="p-1 hover:bg-gray-100 rounded">
+                    <Printer className="h-4 w-4 text-gray-600" />
+                  </button>
+                </div>
+                <button className="p-1 hover:bg-gray-100 rounded">
+                  <MoreVertical className="h-4 w-4 text-gray-600" />
+                </button>
+              </div>
+
+              {/* Clinical Note Section */}
+              <div className="border-b border-gray-200">
+                <button
+                  onClick={() => toggleSection('clinicalNote')}
+                  className="w-full px-6 py-3 bg-gray-50 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <h3 className="font-semibold text-sm">CLINICAL NOTE</h3>
+                  </div>
+                  {expandedSections.clinicalNote ? (
+                    <ChevronDown className="h-4 w-4 text-gray-600" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-gray-600" />
+                  )}
+                </button>
+                <div className="px-6 py-4">
+                  {/* Summary Table */}
+                  <div className="mb-4 grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Chief Complaint</span>
+                      <span className="text-gray-600">{encounter.chiefComplaint ? '1' : '0'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Findings</span>
+                      <span className="text-gray-600">{encounter.findings?.length || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Investigation</span>
+                      <span className="text-gray-600">{encounter.investigations?.length || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Diagnosis</span>
+                      <span className="text-gray-600">{encounter.diagnoses?.length || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Notes</span>
+                      <span className="text-gray-600">{encounter.clinicalNotes ? '1' : '0'}</span>
+                    </div>
+                  </div>
+
+                  {/* Findings Table if exists */}
+                  {encounter.findings && encounter.findings.length > 0 && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">#</th>
+                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">Surface</th>
+                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">Pop</th>
+                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">TOP</th>
+                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">Pulp Sensibility</th>
+                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">Conclusion</th>
+                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">Files</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {encounter.findings.map((finding, idx) => (
+                            <tr key={finding.id} className="border-t border-gray-200">
+                              <td className="px-3 py-2">{idx + 1}</td>
+                              <td className="px-3 py-2">{finding.surface || '-'}</td>
+                              <td className="px-3 py-2">{finding.pop || '-'}</td>
+                              <td className="px-3 py-2">{finding.top || '-'}</td>
+                              <td className="px-3 py-2">{finding.pulpSensibility || '-'}</td>
+                              <td className="px-3 py-2">{finding.conclusion || '-'}</td>
+                              <td className="px-3 py-2">-</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Expandable content */}
+                  {expandedSections.clinicalNote && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <ClinicalNoteSection
+                        chiefComplaint={encounter.chiefComplaint}
+                        findings={encounter.findings}
+                        investigations={encounter.investigations}
+                        diagnoses={encounter.diagnoses}
+                        clinicalNotes={encounter.clinicalNotes}
+                        onUpdate={(data) => {
+                          setEncounter({
+                            ...encounter,
+                            ...data
+                          });
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Treatment Plan Section */}
+              <div className="border-b border-gray-200">
+                <button
+                  onClick={() => toggleSection('treatmentPlan')}
+                  className="w-full px-6 py-3 bg-gray-50 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <h3 className="font-semibold text-sm">TREATMENT PLAN</h3>
+                  </div>
+                  {expandedSections.treatmentPlan ? (
+                    <ChevronDown className="h-4 w-4 text-gray-600" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-gray-600" />
+                  )}
+                </button>
+                <div className="px-6 py-4">
+                  {encounter.treatmentPlan && encounter.treatmentPlan.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">Treatment</th>
+                            <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">Charges</th>
+                            <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">Gross Amt</th>
+                            <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">Disc</th>
+                            <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">Net Amt</th>
+                            <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">GST</th>
+                            <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">Total</th>
+                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">Note</th>
+                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">Files</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {encounter.treatmentPlan.map((item) => (
+                            <tr key={item.id} className="border-t border-gray-200">
+                              <td className="px-3 py-2">{item.treatment}</td>
+                              <td className="px-3 py-2 text-right">{item.charges.toFixed(2)}</td>
+                              <td className="px-3 py-2 text-right">{item.grossAmount.toFixed(2)}</td>
+                              <td className="px-3 py-2 text-right">{item.discount.toFixed(2)}</td>
+                              <td className="px-3 py-2 text-right">{item.netAmount.toFixed(2)}</td>
+                              <td className="px-3 py-2 text-right">{item.gst.toFixed(2)}</td>
+                              <td className="px-3 py-2 text-right font-medium">{item.total.toFixed(2)}</td>
+                              <td className="px-3 py-2">{item.note || '-'}</td>
+                              <td className="px-3 py-2">-</td>
+                            </tr>
+                          ))}
+                          <tr className="border-t-2 border-gray-300 bg-gray-50 font-semibold">
+                            <td className="px-3 py-2">Total</td>
+                            <td className="px-3 py-2 text-right">
+                              {encounter.treatmentPlan.reduce((sum, item) => sum + item.charges, 0).toFixed(2)}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              {encounter.treatmentPlan.reduce((sum, item) => sum + item.grossAmount, 0).toFixed(2)}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              {encounter.treatmentPlan.reduce((sum, item) => sum + item.discount, 0).toFixed(2)}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              {encounter.treatmentPlan.reduce((sum, item) => sum + item.netAmount, 0).toFixed(2)}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              {encounter.treatmentPlan.reduce((sum, item) => sum + item.gst, 0).toFixed(2)}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              {encounter.treatmentPlan.reduce((sum, item) => sum + item.total, 0).toFixed(2)}
+                            </td>
+                            <td className="px-3 py-2" colSpan={2}></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No treatment plan added</p>
+                  )}
+
+                  {/* Expandable content */}
+                  {expandedSections.treatmentPlan && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <TreatmentPlanSection
+                        treatmentPlan={encounter.treatmentPlan}
+                        onUpdate={(treatmentPlan) => updateEncounterField('treatmentPlan', treatmentPlan)}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Instructions Section */}
+              <div>
+                <button
+                  onClick={() => toggleSection('instructions')}
+                  className="w-full px-6 py-3 bg-gray-50 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <h3 className="font-semibold text-sm">INSTRUCTIONS</h3>
+                  </div>
+                  {expandedSections.instructions ? (
+                    <ChevronDown className="h-4 w-4 text-gray-600" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-gray-600" />
+                  )}
+                </button>
+                <div className="px-6 py-4">
+                  {encounter.instructions && encounter.instructions.length > 0 ? (
+                    <div className="flex items-center gap-2 text-sm">
+                      <User className="h-4 w-4 text-gray-400" />
+                      <span>{encounter.instructions.map(i => i.text).join(', ')}</span>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No instructions added</p>
+                  )}
+
+                  {/* Expandable content */}
+                  {expandedSections.instructions && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <InstructionsSection
+                        instructions={encounter.instructions}
+                        onUpdate={(instructions) => updateEncounterField('instructions', instructions)}
+                      />
+                    </div>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${
-                encounter.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' :
-                encounter.status === 'completed' ? 'bg-green-100 text-green-800' :
-                'bg-gray-100 text-gray-800'
-              }`}>
-                {encounter.status === 'in-progress' ? 'In Progress' : encounter.status}
-              </span>
-
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-              >
-                <Save className="h-4 w-4" />
-                {saving ? 'Saving...' : 'Save'}
+            {/* Expand All Visits Button */}
+            <div className="text-center">
+              <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                Expand all visits
               </button>
-
-              {encounter.status === 'in-progress' && (
-                <button
-                  onClick={handleCompleteEncounter}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
-                >
-                  <CheckCircle className="h-4 w-4" />
-                  Complete Encounter
-                </button>
-              )}
             </div>
-          </div>
 
-          {/* Tabs */}
-          <div className="flex gap-1 border-t border-gray-200">
-            {[
-              { id: 'vitals', label: 'Vitals', icon: Activity },
-              { id: 'assessment', label: 'Assessment', icon: ClipboardList },
-              { id: 'plan', label: 'Plan', icon: Pill },
-              { id: 'notes', label: 'Notes', icon: FileText },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                  activeTab === tab.id
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-                }`}
-              >
-                <tab.icon className="h-4 w-4" />
-                {tab.label}
+            {/* Get Lifetime Data Button */}
+            <div className="text-center py-8">
+              <button className="px-6 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition-colors">
+                Get Lifetime Data
               </button>
-            ))}
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'vitals' && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Vital Signs</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Blood Pressure */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                  <Heart className="h-4 w-4 text-red-500" />
-                  Blood Pressure
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    placeholder="Systolic"
-                    value={vitals.bloodPressureSystolic}
-                    onChange={(e) => setVitals({ ...vitals, bloodPressureSystolic: e.target.value })}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <span className="text-gray-500">/</span>
-                  <input
-                    type="number"
-                    placeholder="Diastolic"
-                    value={vitals.bloodPressureDiastolic}
-                    onChange={(e) => setVitals({ ...vitals, bloodPressureDiastolic: e.target.value })}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <span className="text-xs text-gray-500">mmHg</span>
-              </div>
-
-              {/* Heart Rate */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                  <Activity className="h-4 w-4 text-pink-500" />
-                  Heart Rate
-                </label>
-                <input
-                  type="number"
-                  placeholder="Enter heart rate"
-                  value={vitals.heartRate}
-                  onChange={(e) => setVitals({ ...vitals, heartRate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <span className="text-xs text-gray-500">bpm</span>
-              </div>
-
-              {/* Temperature */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                  <Thermometer className="h-4 w-4 text-orange-500" />
-                  Temperature
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder="Enter temperature"
-                  value={vitals.temperature}
-                  onChange={(e) => setVitals({ ...vitals, temperature: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <span className="text-xs text-gray-500">°F</span>
-              </div>
-
-              {/* Respiratory Rate */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                  <Wind className="h-4 w-4 text-cyan-500" />
-                  Respiratory Rate
-                </label>
-                <input
-                  type="number"
-                  placeholder="Enter rate"
-                  value={vitals.respiratoryRate}
-                  onChange={(e) => setVitals({ ...vitals, respiratoryRate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <span className="text-xs text-gray-500">breaths/min</span>
-              </div>
-
-              {/* Oxygen Saturation */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                  <Droplet className="h-4 w-4 text-blue-500" />
-                  O₂ Saturation
-                </label>
-                <input
-                  type="number"
-                  placeholder="Enter SpO2"
-                  value={vitals.oxygenSaturation}
-                  onChange={(e) => setVitals({ ...vitals, oxygenSaturation: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <span className="text-xs text-gray-500">%</span>
-              </div>
-
-              {/* Weight */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                  <TrendingUp className="h-4 w-4 text-purple-500" />
-                  Weight
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder="Enter weight"
-                  value={vitals.weight}
-                  onChange={(e) => setVitals({ ...vitals, weight: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <span className="text-xs text-gray-500">kg</span>
-              </div>
-
-              {/* Height */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                  <TrendingUp className="h-4 w-4 text-green-500" />
-                  Height
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder="Enter height"
-                  value={vitals.height}
-                  onChange={(e) => setVitals({ ...vitals, height: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <span className="text-xs text-gray-500">cm</span>
-              </div>
-
-              {/* BMI (calculated) */}
-              {vitals.weight && vitals.height && (
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                    <User className="h-4 w-4 text-indigo-500" />
-                    BMI
-                  </label>
-                  <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg">
-                    <span className="text-lg font-semibold text-gray-900">
-                      {(parseFloat(vitals.weight) / Math.pow(parseFloat(vitals.height) / 100, 2)).toFixed(1)}
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-500">kg/m²</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'assessment' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Chief Complaint</h2>
-              <textarea
-                value={chiefComplaint}
-                onChange={(e) => setChiefComplaint(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="What is the patient's main concern?"
-              />
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Presenting Problem</h2>
-              <textarea
-                value={presentingProblem}
-                onChange={(e) => setPresentingProblem(e.target.value)}
-                rows={6}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Describe the presenting problem in detail (HPI, onset, duration, severity, etc.)"
-              />
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'plan' && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Treatment Plan</h2>
-            <p className="text-gray-600 mb-4">Treatment plan and prescriptions will be added here.</p>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <Pill className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-500">Prescription module coming soon</p>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'notes' && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Clinical Notes</h2>
-            <textarea
-              value={clinicalNotes}
-              onChange={(e) => setClinicalNotes(e.target.value)}
-              rows={15}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
-              placeholder="Enter clinical notes, observations, and documentation..."
-            />
-          </div>
-        )}
       </div>
     </div>
   );
