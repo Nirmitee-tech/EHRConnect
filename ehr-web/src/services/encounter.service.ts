@@ -155,7 +155,60 @@ export class EncounterService {
         }
       }
 
-      return EncounterService.transformFHIREncounter(fhirEncounter, appointment);
+      // Load vitals from FHIR Observations
+      let vitalsFromObservations: any = {};
+      try {
+        const observations = await medplum.searchResources('Observation', {
+          encounter: `Encounter/${id}`,
+          category: 'vital-signs'
+        });
+
+        console.log(`📊 Loaded ${observations.length} vital observations for encounter ${id}`);
+
+        // Map observations back to vitals object
+        const loincToVitalKey: Record<string, string> = {
+          '9279-1': 'respiratoryRate',
+          '8867-4': 'heartRate',
+          '8310-5': 'temperature',
+          '2708-6': 'oxygenSaturation',
+          '8480-6': 'bloodPressureSystolic',
+          '8462-4': 'bloodPressureDiastolic',
+          '8302-2': 'height',
+          '29463-7': 'weight',
+          '39156-5': 'bmi',
+          '1558-6': 'bloodGlucoseFasting',
+          '87422-2': 'bloodGlucosePostprandial',
+          '2339-0': 'bloodGlucoseRandom',
+          '4548-4': 'hba1c',
+          '72514-3': 'painScore',
+          '9269-2': 'glasgowComaScale',
+        };
+
+        for (const obs of observations) {
+          const loincCode = (obs as any).code?.coding?.find((c: any) => c.system === 'http://loinc.org')?.code;
+          if (loincCode && loincToVitalKey[loincCode]) {
+            const vitalKey = loincToVitalKey[loincCode];
+            const value = (obs as any).valueQuantity?.value || (obs as any).valueString;
+            if (value !== undefined) {
+              vitalsFromObservations[vitalKey] = value;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading vital observations:', error);
+      }
+
+      const encounter = EncounterService.transformFHIREncounter(fhirEncounter, appointment);
+
+      // Merge vitals from Observations with vitals from extensions (extensions take precedence)
+      if (Object.keys(vitalsFromObservations).length > 0) {
+        encounter.vitals = {
+          ...vitalsFromObservations,
+          ...encounter.vitals
+        };
+      }
+
+      return encounter;
     } catch (error) {
       console.error('Error fetching encounter:', error);
       throw error;
@@ -167,7 +220,14 @@ export class EncounterService {
    */
   static async update(id: string, data: Partial<Encounter>): Promise<Encounter> {
     try {
+      console.log('🔄 EncounterService.update - Starting update for encounter:', id);
+      console.log('🔄 EncounterService.update - Data to update:', data);
+
       const patchOps: Array<{op: string; path: string; value: any}> = [];
+
+      // Read encounter once for extensions and period
+      const encounter = await medplum.readResource('Encounter', id);
+      console.log('🔄 EncounterService.update - Current encounter:', encounter);
 
       if (data.status) {
         patchOps.push({
@@ -186,7 +246,6 @@ export class EncounterService {
       }
 
       if (data.endTime) {
-        const encounter = await medplum.readResource('Encounter', id);
         patchOps.push({
           op: 'replace',
           path: '/period',
@@ -197,11 +256,151 @@ export class EncounterService {
         });
       }
 
-      const result = await medplum.patchResource('Encounter', id, patchOps);
-      return EncounterService.transformFHIREncounter(result);
+      // Handle vitals and clinical notes in extensions
+      if (data.vitals || data.clinicalNotes !== undefined) {
+        const extensions = (encounter as any).extension || [];
+
+        // Update or add vitals extension
+        if (data.vitals) {
+          console.log('💉 EncounterService.update - Saving vitals to extension:', data.vitals);
+          const vitalsExtIndex = extensions.findIndex((ext: any) => ext.url === 'vitals');
+          const vitalsExt = {
+            url: 'vitals',
+            valueString: JSON.stringify(data.vitals)
+          };
+
+          if (vitalsExtIndex >= 0) {
+            extensions[vitalsExtIndex] = vitalsExt;
+          } else {
+            extensions.push(vitalsExt);
+          }
+
+          // Also create FHIR Observation resources for vitals
+          await this.createVitalObservations(id, encounter.subject?.reference || '', data.vitals);
+        }
+
+        // Update or add clinical notes extension
+        if (data.clinicalNotes !== undefined) {
+          const notesExtIndex = extensions.findIndex((ext: any) => ext.url === 'clinicalNotes');
+          const notesExt = {
+            url: 'clinicalNotes',
+            valueString: data.clinicalNotes
+          };
+
+          if (notesExtIndex >= 0) {
+            extensions[notesExtIndex] = notesExt;
+          } else {
+            extensions.push(notesExt);
+          }
+        }
+
+        patchOps.push({
+          op: 'replace',
+          path: '/extension',
+          value: extensions
+        });
+      }
+
+      if (patchOps.length > 0) {
+        console.log('🔄 EncounterService.update - Applying patch operations:', patchOps);
+        const result = await medplum.patchResource('Encounter', id, patchOps);
+        console.log('✅ EncounterService.update - Successfully updated encounter');
+        return EncounterService.transformFHIREncounter(result);
+      }
+
+      console.log('⚠️ EncounterService.update - No patch operations to apply');
+      return this.getById(id);
     } catch (error) {
-      console.error('Error updating encounter:', error);
+      console.error('❌ EncounterService.update - Error updating encounter:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Create FHIR Observation resources for vitals
+   */
+  private static async createVitalObservations(encounterId: string, patientReference: string, vitals: any): Promise<void> {
+    try {
+      console.log('💉 Creating FHIR Observations for vitals:', vitals);
+
+      // Mapping of vital signs to LOINC codes
+      const vitalMappings: Record<string, { code: string; display: string; unit: string }> = {
+        respiratoryRate: { code: '9279-1', display: 'Respiratory rate', unit: '/min' },
+        heartRate: { code: '8867-4', display: 'Heart rate', unit: '/min' },
+        temperature: { code: '8310-5', display: 'Body temperature', unit: 'degF' },
+        oxygenSaturation: { code: '2708-6', display: 'Oxygen saturation', unit: '%' },
+        bloodPressureSystolic: { code: '8480-6', display: 'Systolic blood pressure', unit: 'mmHg' },
+        bloodPressureDiastolic: { code: '8462-4', display: 'Diastolic blood pressure', unit: 'mmHg' },
+        height: { code: '8302-2', display: 'Body height', unit: 'cm' },
+        weight: { code: '29463-7', display: 'Body weight', unit: 'kg' },
+        bmi: { code: '39156-5', display: 'Body mass index', unit: 'kg/m2' },
+        bloodGlucoseFasting: { code: '1558-6', display: 'Fasting glucose', unit: 'mg/dL' },
+        bloodGlucosePostprandial: { code: '87422-2', display: 'Postprandial glucose', unit: 'mg/dL' },
+        bloodGlucoseRandom: { code: '2339-0', display: 'Glucose', unit: 'mg/dL' },
+        hba1c: { code: '4548-4', display: 'Hemoglobin A1c', unit: '%' },
+        pulseRate: { code: '8867-4', display: 'Pulse rate', unit: '/min' },
+        painScore: { code: '72514-3', display: 'Pain severity', unit: '{score}' },
+        glasgowComaScale: { code: '9269-2', display: 'Glasgow coma score', unit: '{score}' },
+      };
+
+      // Create observations for each vital sign
+      const observations = [];
+      for (const [vitalKey, value] of Object.entries(vitals)) {
+        if (value && vitalMappings[vitalKey]) {
+          const mapping = vitalMappings[vitalKey];
+
+          const observation = {
+            resourceType: 'Observation',
+            status: 'final',
+            category: [{
+              coding: [{
+                system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+                code: 'vital-signs',
+                display: 'Vital Signs'
+              }]
+            }],
+            code: {
+              coding: [{
+                system: 'http://loinc.org',
+                code: mapping.code,
+                display: mapping.display
+              }],
+              text: mapping.display
+            },
+            subject: {
+              reference: patientReference
+            },
+            encounter: {
+              reference: `Encounter/${encounterId}`
+            },
+            effectiveDateTime: new Date().toISOString(),
+            valueQuantity: typeof value === 'number' ? {
+              value: value,
+              unit: mapping.unit,
+              system: 'http://unitsofmeasure.org',
+              code: mapping.unit
+            } : undefined,
+            valueString: typeof value === 'string' ? value : undefined
+          };
+
+          observations.push(observation);
+        }
+      }
+
+      // Create all observations
+      for (const obs of observations) {
+        try {
+          await medplum.createResource(obs as any);
+          console.log(`✅ Created Observation for ${obs.code.text}`);
+        } catch (error) {
+          console.error(`❌ Failed to create Observation for ${obs.code.text}:`, error);
+        }
+      }
+
+      console.log(`✅ Created ${observations.length} FHIR Observations`);
+    } catch (error) {
+      console.error('❌ Error creating vital observations:', error);
+      // Don't throw - we still have vitals in extensions
     }
   }
 
@@ -273,6 +472,14 @@ export class EncounterService {
     const practitioner = fhir.participant?.[0]?.individual;
     const appointmentRef = fhir.appointment?.[0]?.reference;
 
+    // Extract vitals from extensions
+    const vitalsExt = (fhir as any).extension?.find((ext: any) => ext.url === 'vitals');
+    const vitals = vitalsExt?.valueString ? JSON.parse(vitalsExt.valueString) : undefined;
+
+    // Extract clinical notes from extensions
+    const notesExt = (fhir as any).extension?.find((ext: any) => ext.url === 'clinicalNotes');
+    const clinicalNotes = notesExt?.valueString;
+
     return {
       id: fhir.id!,
       appointmentId: appointmentRef?.split('/')[1],
@@ -288,7 +495,10 @@ export class EncounterService {
       startTime: new Date(fhir.period?.start || new Date()),
       endTime: fhir.period?.end ? new Date(fhir.period.end) : undefined,
       reasonDisplay: fhir.reasonCode?.[0]?.text,
+      chiefComplaint: fhir.reasonCode?.[0]?.text,
       location: fhir.location?.[0]?.location?.display,
+      vitals,
+      clinicalNotes,
       createdAt: new Date(fhir.meta?.lastUpdated || new Date()),
       updatedAt: new Date(fhir.meta?.lastUpdated || new Date())
     };

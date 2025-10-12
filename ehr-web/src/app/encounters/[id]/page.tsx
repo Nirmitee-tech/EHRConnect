@@ -21,6 +21,7 @@ import { PatientSidebar } from '@/components/encounters/patient-sidebar';
 import { MedicalInfoDrawer } from '@/components/encounters/medical-info-drawer';
 import { MedicalHistoryDrawer } from '@/components/encounters/medical-history-drawer';
 import { ClinicalNoteSection } from '@/components/encounters/clinical-note-section';
+import { ClinicalNoteForm } from '@/components/encounters/clinical-note-form';
 import { TreatmentPlanSection } from '@/components/encounters/treatment-plan-section';
 import { PrescriptionsSection } from '@/components/encounters/prescriptions-section';
 import { InstructionsSection } from '@/components/encounters/instructions-section';
@@ -513,18 +514,30 @@ export default function EncounterPage() {
                   {/* Expandable content */}
                   {expandedSections.clinicalNote && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
-                      <ClinicalNoteSection
-                        chiefComplaint={encounter.chiefComplaint}
-                        findings={encounter.findings}
-                        investigations={encounter.investigations}
-                        diagnoses={encounter.diagnoses}
-                        clinicalNotes={encounter.clinicalNotes}
-                        onUpdate={(data) => {
-                          setEncounter({
-                            ...encounter,
-                            ...data
-                          });
+                      <ClinicalNoteForm
+                        encounter={encounter}
+                        onUpdate={async (data) => {
+                          try {
+                            console.log('💾 Saving clinical note data:', data);
+
+                            // Update local state immediately for responsive UI
+                            setEncounter({
+                              ...encounter,
+                              ...data
+                            });
+
+                            // Save to backend
+                            await EncounterService.update(encounter.id, data);
+
+                            console.log('✅ Clinical note data saved successfully');
+                          } catch (error) {
+                            console.error('❌ Failed to save clinical note data:', error);
+                            throw error;
+                          }
                         }}
+                        practitioners={[
+                          { id: encounter.practitionerId, name: encounter.practitionerName }
+                        ]}
                       />
                     </div>
                   )}
