@@ -21,7 +21,6 @@ import {
   ChevronDown,
   Info
 } from 'lucide-react';
-import { MedicalInfoSidebar } from './medical-info-sidebar';
 import { AddressDrawer } from './address-drawer';
 import { StickyNotesSection } from './sticky-notes-section';
 import { AddressData, NoteData } from '@/types/encounter';
@@ -339,13 +338,41 @@ export function PatientSidebar({
           </div>
         </div>
 
-        {/* Medical Information */}
-        <MedicalInfoSidebar
-          patientHistory={patientHistory}
-          patientAllergies={patientAllergies}
-          patientHabits={patientHabits}
-          onUpdate={onUpdateMedicalInfo}
-        />
+        {/* Blood Group - Compact */}
+        <div className="px-3 py-2 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-blue-900">Blood Group</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-900">-</span>
+              <button className="text-blue-600 hover:text-blue-700">
+                <Edit className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Payment Due Section - Compact */}
+        <div className="px-3 py-3 border-b border-gray-200">
+          <div className="mb-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-semibold text-blue-900">Payment Due</span>
+              <span className="text-sm font-semibold text-gray-900">₹ 0.00</span>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <button className="w-full px-2 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium">
+              Receive Payment
+            </button>
+            <div className="flex items-center gap-1.5">
+              <button className="flex-1 px-2 py-1.5 text-xs border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors">
+                Refund
+              </button>
+              <button className="flex-1 px-2 py-1.5 text-xs border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors">
+                Send Link
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Address Drawer */}

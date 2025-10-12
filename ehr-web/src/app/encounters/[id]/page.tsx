@@ -18,6 +18,8 @@ import { Encounter, AddressData, NoteData } from '@/types/encounter';
 import { EncounterService } from '@/services/encounter.service';
 import { AddressService } from '@/services/address.service';
 import { PatientSidebar } from '@/components/encounters/patient-sidebar';
+import { MedicalInfoDrawer } from '@/components/encounters/medical-info-drawer';
+import { MedicalHistoryDrawer } from '@/components/encounters/medical-history-drawer';
 import { ClinicalNoteSection } from '@/components/encounters/clinical-note-section';
 import { TreatmentPlanSection } from '@/components/encounters/treatment-plan-section';
 import { PrescriptionsSection } from '@/components/encounters/prescriptions-section';
@@ -32,6 +34,8 @@ export default function EncounterPage() {
 
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showMedicalInfoDrawer, setShowMedicalInfoDrawer] = useState(false);
+  const [showMedicalHistoryDrawer, setShowMedicalHistoryDrawer] = useState(false);
 
   // Expanded sections for accordion
   const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({
@@ -58,7 +62,7 @@ export default function EncounterPage() {
       setLoading(true);
       const data = await EncounterService.getById(encounterId);
 
-      // Load patient addresses and notes
+      // Load patient addresses, notes, and medical info
       if (data.patientId) {
         try {
           console.log('📥 Loading patient data for patient:', data.patientId);
@@ -67,6 +71,9 @@ export default function EncounterPage() {
           data.addresses = patientData.addresses;
           data.socialNotes = patientData.socialNotes;
           data.internalNotes = patientData.internalNotes;
+          data.patientHistory = patientData.patientHistory;
+          data.patientHabitsStructured = patientData.habitsStructured;
+          data.patientAllergiesStructured = patientData.allergiesStructured;
 
           // Also get patient resource to check active status
           try {
@@ -151,6 +158,40 @@ export default function EncounterPage() {
   // Get primary address for header display
   const primaryAddress = encounter.addresses?.find(addr => addr.isPrimary && addr.isActive) ||
                         encounter.addresses?.find(addr => addr.isActive);
+
+  // Helper function to format structured habits for display
+  const formatHabitsDisplay = (): string => {
+    if (encounter.patientHabitsStructured) {
+      const { status, habits } = encounter.patientHabitsStructured;
+      if (status === 'noHabits') return 'No Habits';
+      if (status === 'unknown') return 'Unknown';
+      if (status === 'haveHabits') {
+        const activeHabits = habits
+          .filter(h => h.status === 'active')
+          .map(h => `${h.name} (${h.frequency})`)
+          .join(', ');
+        return activeHabits || 'Have Habits (none specified)';
+      }
+    }
+    return encounter.patientHabits || '-';
+  };
+
+  // Helper function to format structured allergies for display
+  const formatAllergiesDisplay = (): string => {
+    if (encounter.patientAllergiesStructured) {
+      const { status, allergies } = encounter.patientAllergiesStructured;
+      if (status === 'noAllergies') return 'No Allergies';
+      if (status === 'unknown') return 'Unknown';
+      if (status === 'haveAllergies') {
+        const activeAllergies = allergies
+          .filter(a => a.status === 'active')
+          .map(a => `${a.name} (${a.severity})`)
+          .join(', ');
+        return activeAllergies || 'Have Allergies (none specified)';
+      }
+    }
+    return encounter.patientAllergies || '-';
+  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -247,37 +288,113 @@ export default function EncounterPage() {
         }}
       />
 
+      {/* Medical Info Drawer */}
+      <MedicalInfoDrawer
+        isOpen={showMedicalInfoDrawer}
+        onClose={() => setShowMedicalInfoDrawer(false)}
+        patientHistory={encounter.patientHistory}
+        patientHabitsStructured={encounter.patientHabitsStructured}
+        patientAllergiesStructured={encounter.patientAllergiesStructured}
+        onUpdate={async (data) => {
+          try {
+            console.log('📝 Updating medical info with data:', data);
+
+            // Update encounter state locally
+            setEncounter({
+              ...encounter,
+              ...data
+            });
+
+            // Save all medical data to FHIR (including patient history)
+            await AddressService.updatePatientMedicalInfo(
+              encounter.patientId,
+              data.patientHistory || encounter.patientHistory,
+              data.patientHabitsStructured || encounter.patientHabitsStructured,
+              data.patientAllergiesStructured || encounter.patientAllergiesStructured
+            );
+            console.log('✅ Medical info saved successfully');
+          } catch (error) {
+            console.error('❌ Failed to save medical info:', error);
+            alert('Failed to save medical information. Please try again.');
+          }
+        }}
+      />
+
+      {/* Medical History Drawer */}
+      <MedicalHistoryDrawer
+        isOpen={showMedicalHistoryDrawer}
+        onClose={() => setShowMedicalHistoryDrawer(false)}
+        patientId={encounter.patientId}
+        currentEncounterDate={new Date(encounter.startTime).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+      />
+
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden flex flex-col">
         {/* Top Header Bar */}
         <div className="bg-white border-b border-gray-200 px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div>
-                <p className="text-xs text-gray-500">Blood Group:</p>
+          <div className="flex items-start justify-between gap-8">
+            {/* Left Section - Medical Information */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-1">
+                <h3 className="text-sm font-semibold text-gray-900">Medical Information</h3>
+                <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded font-medium">Latest</span>
+                <button
+                  onClick={() => setShowMedicalInfoDrawer(true)}
+                  className="text-blue-600 hover:text-blue-700"
+                  title="Edit Medical Information"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                </button>
+                <span className="text-xs text-gray-400">•</span>
+                <button
+                  onClick={() => setShowMedicalHistoryDrawer(true)}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  View History
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-x-6 text-xs">
+                <div>
+                  <span className="text-gray-600 block mb-0.5">History</span>
+                  <p className="text-red-600 font-medium">{encounter.patientHistory || '-'}</p>
+                </div>
+                <div>
+                  <span className="text-gray-600 block mb-0.5">Allergies</span>
+                  <p className="text-red-600 font-medium truncate" title={formatAllergiesDisplay()}>{formatAllergiesDisplay()}</p>
+                </div>
+                <div>
+                  <span className="text-gray-600 block mb-0.5">Habits</span>
+                  <p className="text-gray-900 truncate" title={formatHabitsDisplay()}>{formatHabitsDisplay()}</p>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div>
-                <p className="text-xs text-gray-500">Contact</p>
-                <p className="text-sm font-medium">
-                  Gen. Practitioner: {primaryAddress?.generalPractitioner || '-'}
-                </p>
+
+            {/* Right Section - Contact Information */}
+            <div className="border-l border-gray-200 pl-8">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-sm font-semibold text-gray-900">Emergency Contact</h3>
+                <button className="text-blue-600 hover:text-blue-700">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                </button>
               </div>
-              <div>
-                <p className="text-xs text-gray-500">Emergency:</p>
-                <p className="text-sm font-medium">
-                  {primaryAddress?.emergencyContactName || '-'}
-                  {primaryAddress?.emergencyContactNumber && ` (${primaryAddress.emergencyContactNumber})`}
-                </p>
+              <div className="text-xs space-y-0.5 min-w-[200px]">
+                <div>
+                  <span className="text-gray-600">Name: </span>
+                  <span className="text-gray-900 font-medium">{primaryAddress?.emergencyContactName || '-'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Phone: </span>
+                  <span className="text-gray-900 font-medium">{primaryAddress?.emergencyContactNumber || '-'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Practitioner: </span>
+                  <span className="text-gray-900 font-medium">{primaryAddress?.generalPractitioner || '-'}</span>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-gray-500">Payment Due</p>
-                <p className="text-sm font-medium">₹ 0.00</p>
-              </div>
-              <button className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 transition-colors">Receive</button>
-              <button className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 transition-colors">Refund</button>
-              <button className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 transition-colors">Send Payment Link</button>
             </div>
           </div>
         </div>

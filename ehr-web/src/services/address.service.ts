@@ -1,13 +1,20 @@
-import { AddressData, NoteData } from '@/types/encounter';
+import { AddressData, NoteData, HabitsData, AllergiesData } from '@/types/encounter';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const FHIR_BASE_URL = `${API_BASE_URL}/fhir/R4`;
 
 export class AddressService {
   /**
-   * Get patient with addresses and notes from FHIR Patient resource
+   * Get patient with addresses, notes, and medical info from FHIR Patient resource
    */
-  static async getPatientData(patientId: string): Promise<{addresses: AddressData[], socialNotes: NoteData[], internalNotes: NoteData[]}> {
+  static async getPatientData(patientId: string): Promise<{
+    addresses: AddressData[],
+    socialNotes: NoteData[],
+    internalNotes: NoteData[],
+    patientHistory?: string,
+    habitsStructured?: HabitsData,
+    allergiesStructured?: AllergiesData
+  }> {
     try {
       console.log('🔷 AddressService.getPatientData - Fetching patient:', patientId);
       const response = await fetch(`${FHIR_BASE_URL}/Patient/${patientId}`, {
@@ -39,8 +46,20 @@ export class AddressService {
       const internalNotesExt = patient.extension?.find((ext: any) => ext.url === 'internalNotes');
       const internalNotes: NoteData[] = internalNotesExt?.valueString ? JSON.parse(internalNotesExt.valueString) : [];
 
-      console.log('🔷 AddressService.getPatientData - Returning:', { addresses, socialNotes, internalNotes });
-      return { addresses, socialNotes, internalNotes };
+      // Extract patient history from extension
+      const patientHistoryExt = patient.extension?.find((ext: any) => ext.url === 'patientHistory');
+      const patientHistory: string | undefined = patientHistoryExt?.valueString;
+
+      // Extract structured habits from extension
+      const habitsExt = patient.extension?.find((ext: any) => ext.url === 'habitsStructured');
+      const habitsStructured: HabitsData | undefined = habitsExt?.valueString ? JSON.parse(habitsExt.valueString) : undefined;
+
+      // Extract structured allergies from extension
+      const allergiesExt = patient.extension?.find((ext: any) => ext.url === 'allergiesStructured');
+      const allergiesStructured: AllergiesData | undefined = allergiesExt?.valueString ? JSON.parse(allergiesExt.valueString) : undefined;
+
+      console.log('🔷 AddressService.getPatientData - Returning:', { addresses, socialNotes, internalNotes, patientHistory, habitsStructured, allergiesStructured });
+      return { addresses, socialNotes, internalNotes, patientHistory, habitsStructured, allergiesStructured };
     } catch (error) {
       console.error('Error fetching patient data:', error);
       return { addresses: [], socialNotes: [], internalNotes: [] };
@@ -201,6 +220,9 @@ export class AddressService {
       console.log('  - Social notes count:', socialNotes.length);
       console.log('  - Internal notes count:', internalNotes.length);
 
+      // Get current patient data to preserve medical info
+      const currentData = await this.getPatientData(patientId);
+
       const extensions = [
         {
           url: 'addresses',
@@ -215,6 +237,28 @@ export class AddressService {
           valueString: JSON.stringify(internalNotes)
         }
       ];
+
+      // Preserve patient history if exists
+      if (currentData.patientHistory !== undefined) {
+        extensions.push({
+          url: 'patientHistory',
+          valueString: currentData.patientHistory
+        });
+      }
+
+      // Preserve structured medical data if exists
+      if (currentData.habitsStructured) {
+        extensions.push({
+          url: 'habitsStructured',
+          valueString: JSON.stringify(currentData.habitsStructured)
+        });
+      }
+      if (currentData.allergiesStructured) {
+        extensions.push({
+          url: 'allergiesStructured',
+          valueString: JSON.stringify(currentData.allergiesStructured)
+        });
+      }
 
       const patchOps = [
         {
@@ -247,6 +291,99 @@ export class AddressService {
       console.log('✅ AddressService.updatePatientData - Success! Updated patient:', result);
     } catch (error) {
       console.error('❌ AddressService.updatePatientData - Error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update patient medical information (history, structured habits, structured allergies)
+   */
+  static async updatePatientMedicalInfo(
+    patientId: string,
+    patientHistory?: string,
+    habitsStructured?: HabitsData,
+    allergiesStructured?: AllergiesData
+  ): Promise<void> {
+    try {
+      console.log('🔷 AddressService.updatePatientMedicalInfo - Called with:');
+      console.log('  - Patient ID:', patientId);
+      console.log('  - Patient History:', patientHistory);
+      console.log('  - Habits Structured:', habitsStructured);
+      console.log('  - Allergies Structured:', allergiesStructured);
+
+      // Get current patient data to preserve addresses and notes
+      const currentData = await this.getPatientData(patientId);
+
+      const extensions = [
+        {
+          url: 'addresses',
+          valueString: JSON.stringify(currentData.addresses)
+        },
+        {
+          url: 'socialNotes',
+          valueString: JSON.stringify(currentData.socialNotes)
+        },
+        {
+          url: 'internalNotes',
+          valueString: JSON.stringify(currentData.internalNotes)
+        }
+      ];
+
+      // Add patient history
+      if (patientHistory !== undefined) {
+        extensions.push({
+          url: 'patientHistory',
+          valueString: patientHistory
+        });
+      }
+
+      // Add structured habits
+      if (habitsStructured) {
+        extensions.push({
+          url: 'habitsStructured',
+          valueString: JSON.stringify(habitsStructured)
+        });
+      }
+
+      // Add structured allergies
+      if (allergiesStructured) {
+        extensions.push({
+          url: 'allergiesStructured',
+          valueString: JSON.stringify(allergiesStructured)
+        });
+      }
+
+      const patchOps = [
+        {
+          op: 'replace',
+          path: '/extension',
+          value: extensions
+        }
+      ];
+
+      console.log('🔷 AddressService.updatePatientMedicalInfo - Patch operations:', JSON.stringify(patchOps, null, 2));
+
+      const response = await fetch(`${FHIR_BASE_URL}/Patient/${patientId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(patchOps),
+      });
+
+      console.log('🔷 AddressService.updatePatientMedicalInfo - Response status:', response.status);
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('🔷 AddressService.updatePatientMedicalInfo - Error response:', error);
+        throw new Error(error.issue?.[0]?.details?.text || 'Failed to update medical info');
+      }
+
+      const result = await response.json();
+      console.log('✅ AddressService.updatePatientMedicalInfo - Success! Updated patient:', result);
+    } catch (error) {
+      console.error('❌ AddressService.updatePatientMedicalInfo - Error:', error);
       throw error;
     }
   }

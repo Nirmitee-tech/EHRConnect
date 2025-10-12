@@ -104,6 +104,51 @@ export interface AddressData {
   updatedAt?: Date | string;
 }
 
+// Structured Habits Data
+export type HabitStatus = 'unknown' | 'noHabits' | 'haveHabits';
+export type HabitItemStatus = 'active' | 'toBeConfirmed' | 'inactive' | 'notSelected';
+export type HabitFrequency = 'never' | 'rare' | 'occasional' | 'low' | 'medium' | 'high' | 'other' | 'unknown';
+
+export interface HabitItem {
+  name: string;
+  status: HabitItemStatus;
+  frequency: HabitFrequency;
+}
+
+export interface HabitsData {
+  status: HabitStatus;
+  habits: HabitItem[];
+}
+
+// Structured Allergies Data
+export type AllergyStatus = 'unknown' | 'noAllergies' | 'haveAllergies';
+export type AllergyItemStatus = 'active' | 'toBeConfirmed' | 'inactive' | 'notSelected';
+export type AllergySeverity = 'mild' | 'moderate' | 'severe' | 'unknown';
+
+export interface AllergyItem {
+  name: string;
+  status: AllergyItemStatus;
+  severity: AllergySeverity;
+}
+
+// Drug Allergies Data
+export type DrugAllergyType = 'medication' | 'anesthesia' | 'antibiotic' | 'other';
+
+export interface DrugAllergyItem {
+  id: string;
+  type: DrugAllergyType;
+  drugName: string;
+  reaction: string;
+  severity: AllergySeverity;
+  status: AllergyItemStatus;
+}
+
+export interface AllergiesData {
+  status: AllergyStatus;
+  allergies: AllergyItem[];
+  drugAllergies?: DrugAllergyItem[];
+}
+
 export interface Encounter {
   id: string;
   appointmentId?: string;
@@ -153,6 +198,10 @@ export interface Encounter {
   patientAllergies?: string;
   patientHabits?: string;
   patientActive?: boolean;
+
+  // Structured medical data
+  patientHabitsStructured?: HabitsData;
+  patientAllergiesStructured?: AllergiesData;
 
   // Patient Address and Contact Information (array to support multiple addresses)
   addresses?: AddressData[];
