@@ -17,7 +17,16 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
   const [editedStaff, setEditedStaff] = useState<StaffMember | null>(staff);
   const [activeSection, setActiveSection] = useState<'details' | 'hours' | 'vacation' | 'settings'>('details');
 
+  // Update editedStaff when staff prop changes
+  React.useEffect(() => {
+    if (staff) {
+      setEditedStaff(staff);
+    }
+  }, [staff]);
+
   if (!isOpen || !editedStaff) return null;
+
+  const isNewStaff = !editedStaff.id;
 
   const handleSave = () => {
     if (editedStaff) {
@@ -68,8 +77,12 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
           <div className="border-b border-gray-200 px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">{editedStaff.name}</h2>
-                <p className="text-sm text-gray-600">{editedStaff.specialty}</p>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {isNewStaff ? 'Add New Staff Member' : editedStaff.name}
+                </h2>
+                <p className="text-sm text-gray-600">
+                  {isNewStaff ? 'Fill in the details below' : editedStaff.specialty}
+                </p>
               </div>
               <button
                 onClick={onClose}
@@ -377,7 +390,7 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Save className="h-4 w-4" />
-              Save Changes
+              {isNewStaff ? 'Create Staff Member' : 'Save Changes'}
             </button>
           </div>
         </div>

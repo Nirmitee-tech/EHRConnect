@@ -36,11 +36,6 @@ export function WeekViewDraggable({
     return () => clearInterval(timer);
   }, []);
 
-  // Optional: Debug logging (commented out for production)
-  // React.useEffect(() => {
-  //   console.log('WeekView - Appointments:', appointments.length);
-  // }, [appointments]);
-
   const getWeekDates = () => {
     const dates: Date[] = [];
     const current = new Date(currentDate);
@@ -72,17 +67,137 @@ export function WeekViewDraggable({
     return slots;
   };
 
-  const getAppointmentsForDateAndTime = (date: Date, timeSlot: string) => {
-    const [hour] = timeSlot.split(':').map(Number);
-
+  // Get all appointments for a specific date (not just a time slot)
+  const getAppointmentsForDate = (date: Date) => {
     return appointments.filter(apt => {
-      const aptDate = new Date(apt.startTime);
-      const aptHour = aptDate.getHours();
+      // Skip all-day events - they're shown separately
+      if (apt.isAllDay) return false;
 
-      const dateMatches = aptDate.toDateString() === date.toDateString();
-      const hourMatches = aptHour === hour;
-      return dateMatches && hourMatches;
+      const aptStart = new Date(apt.startTime);
+      const aptEnd = new Date(apt.endTime);
+
+      // Skip appointments with invalid dates
+      if (isNaN(aptStart.getTime()) || isNaN(aptEnd.getTime())) {
+        return false;
+      }
+
+      // Normalize dates for comparison (remove time component)
+      const compareDate = new Date(date);
+      compareDate.setHours(0, 0, 0, 0);
+
+      const aptDateOnly = new Date(aptStart);
+      aptDateOnly.setHours(0, 0, 0, 0);
+
+      // Check if appointment is on this date
+      return aptDateOnly.getTime() === compareDate.getTime();
     });
+  };
+
+  // Calculate appointment positioning and dimensions
+  const calculateAppointmentStyle = (appointment: Appointment) => {
+    const aptStart = new Date(appointment.startTime);
+    const aptEnd = new Date(appointment.endTime);
+
+    // Calculate start position in pixels from midnight
+    const startHour = aptStart.getHours();
+    const startMinutes = aptStart.getMinutes();
+    const startPosition = (startHour * 60 + startMinutes) * (60 / 60); // 60px per hour
+
+    // Calculate duration in pixels
+    const durationMs = aptEnd.getTime() - aptStart.getTime();
+    const durationMinutes = durationMs / (1000 * 60);
+    const height = (durationMinutes / 60) * 60; // 60px per hour
+
+    return {
+      top: startPosition,
+      height: Math.max(height, 30) // Minimum height of 30px
+    };
+  };
+
+  // Detect overlapping appointments and calculate horizontal offset
+  const calculateAppointmentLayout = (dateAppointments: Appointment[]) => {
+    if (dateAppointments.length === 0) {
+      return new Map<string, { column: number; totalColumns: number; overlappingWith: Set<string> }>();
+    }
+
+    // Sort by start time, then by duration (longer first)
+    const sorted = [...dateAppointments].sort((a, b) => {
+      const aStart = new Date(a.startTime).getTime();
+      const bStart = new Date(b.startTime).getTime();
+      if (aStart !== bStart) return aStart - bStart;
+
+      const aDuration = new Date(a.endTime).getTime() - aStart;
+      const bDuration = new Date(b.endTime).getTime() - bStart;
+      return bDuration - aDuration;
+    });
+
+    // Build overlap groups
+    const overlaps = new Map<string, Set<string>>();
+
+    sorted.forEach((apt, i) => {
+      const aptStart = new Date(apt.startTime);
+      const aptEnd = new Date(apt.endTime);
+      const aptOverlaps = new Set<string>();
+
+      sorted.forEach((other, j) => {
+        if (i === j) return;
+
+        const otherStart = new Date(other.startTime);
+        const otherEnd = new Date(other.endTime);
+
+        // Check if appointments overlap
+        if (aptStart < otherEnd && aptEnd > otherStart) {
+          aptOverlaps.add(other.id);
+        }
+      });
+
+      overlaps.set(apt.id, aptOverlaps);
+    });
+
+    // Assign columns using graph coloring
+    const layoutMap = new Map<string, { column: number; totalColumns: number; overlappingWith: Set<string> }>();
+    const columnAssignments = new Map<string, number>();
+
+    sorted.forEach(apt => {
+      const aptOverlaps = overlaps.get(apt.id) || new Set();
+
+      // Find columns already used by overlapping appointments
+      const usedColumns = new Set<number>();
+      aptOverlaps.forEach(overlapId => {
+        const col = columnAssignments.get(overlapId);
+        if (col !== undefined) {
+          usedColumns.add(col);
+        }
+      });
+
+      // Find first available column
+      let column = 0;
+      while (usedColumns.has(column)) {
+        column++;
+      }
+
+      columnAssignments.set(apt.id, column);
+    });
+
+    // Calculate max columns needed for each appointment's overlap group
+    sorted.forEach(apt => {
+      const aptOverlaps = overlaps.get(apt.id) || new Set();
+      const column = columnAssignments.get(apt.id) || 0;
+
+      // Find max column in this overlap group
+      let maxColumn = column;
+      aptOverlaps.forEach(overlapId => {
+        const col = columnAssignments.get(overlapId);
+        if (col !== undefined && col > maxColumn) {
+          maxColumn = col;
+        }
+      });
+
+      const totalColumns = maxColumn + 1;
+      layoutMap.set(apt.id, { column, totalColumns, overlappingWith: aptOverlaps });
+    });
+
+    return layoutMap;
   };
 
   const handleDragStart = (appointment: Appointment) => {
@@ -160,9 +275,50 @@ export function WeekViewDraggable({
     return hour >= minHour && hour <= maxHour;
   };
 
-  const weekDates = getWeekDates();
+  const weekDates = React.useMemo(() => getWeekDates(), [currentDate]);
   const timeSlots = getTimeSlots();
   const today = new Date();
+
+  // Pre-calculate appointments for each date
+  const appointmentsByDate = React.useMemo(() => {
+    const map = new Map<string, Appointment[]>();
+    weekDates.forEach(date => {
+      const dateStr = date.toDateString();
+      const dateApts = getAppointmentsForDate(date);
+      map.set(dateStr, dateApts);
+
+      // Debug logging
+      if (dateApts.length > 0) {
+        console.log(`📅 ${dateStr}: ${dateApts.length} appointments`, dateApts.map(a => ({
+          name: a.patientName,
+          start: new Date(a.startTime).toLocaleTimeString(),
+          end: new Date(a.endTime).toLocaleTimeString()
+        })));
+      }
+    });
+    return map;
+  }, [appointments, currentDate]);
+
+  // Pre-calculate layout for each date
+  const layoutByDate = React.useMemo(() => {
+    const map = new Map<string, Map<string, { column: number; totalColumns: number }>>();
+    weekDates.forEach(date => {
+      const dateStr = date.toDateString();
+      const dateApts = appointmentsByDate.get(dateStr) || [];
+      const layout = calculateAppointmentLayout(dateApts);
+      map.set(dateStr, layout);
+
+      // Debug logging
+      if (dateApts.length > 1) {
+        console.log(`📐 ${dateStr} layout:`, Array.from(layout.entries()).map(([id, info]) => ({
+          id: id.substring(0, 8),
+          column: info.column,
+          totalColumns: info.totalColumns
+        })));
+      }
+    });
+    return map;
+  }, [appointmentsByDate, currentDate]);
 
   // Auto-scroll to current time on mount and when week changes
   useEffect(() => {
@@ -329,20 +485,20 @@ export function WeekViewDraggable({
 
       {/* Time grid */}
       <div className="flex-1 overflow-y-auto relative" ref={scrollContainerRef}>
-        <div className="grid grid-cols-[80px_repeat(7,minmax(120px,1fr))] relative">
+        <div className="grid grid-cols-[80px_repeat(7,minmax(120px,1fr))] relative" style={{ minHeight: '1440px' }}>
+          {/* Time labels and grid cells */}
           {timeSlots.map((time, timeIdx) => {
             const [hour] = time.split(':').map(Number);
 
             return (
               <React.Fragment key={timeIdx}>
                 {/* Time label */}
-                <div className="border-b border-r border-gray-200 bg-gray-50 p-2 text-right text-xs text-gray-500">
+                <div className="border-b border-r border-gray-200 bg-gray-50 p-2 text-right text-xs text-gray-500 h-[60px]">
                   {time}
                 </div>
 
-                {/* Day columns */}
+                {/* Day columns - empty cells for grid */}
                 {weekDates.map((date, dateIdx) => {
-                  const dayAppointments = getAppointmentsForDateAndTime(date, time);
                   const isToday = date.toDateString() === today.toDateString();
                   const isDraggedOver = dragOver?.date.toDateString() === date.toDateString() && dragOver.hour === hour;
                   const inCreateRange = isInCreateRange(date, hour);
@@ -350,7 +506,7 @@ export function WeekViewDraggable({
                   return (
                     <div
                       key={dateIdx}
-                      className={`relative min-h-[60px] border-b border-r border-gray-200 p-1 last:border-r-0 transition-colors ${
+                      className={`h-[60px] border-b border-r border-gray-200 last:border-r-0 transition-colors ${
                         isToday ? 'bg-blue-50/30' : 'bg-white'
                       } ${isDraggedOver ? 'bg-blue-100 ring-2 ring-inset ring-blue-400' : ''} ${
                         inCreateRange ? 'bg-green-100 ring-2 ring-inset ring-green-400' : ''
@@ -360,29 +516,104 @@ export function WeekViewDraggable({
                       onDrop={(e) => handleDrop(e, date, hour)}
                       onMouseDown={(e) => handleMouseDown(e, date, hour)}
                       onMouseEnter={() => handleMouseEnter(date, hour)}
-                    >
-                      {dayAppointments.map((apt) => (
+                    />
+                  );
+                })}
+              </React.Fragment>
+            );
+          })}
+
+          {/* Appointments overlay - absolutely positioned */}
+          {/* Disable pointer events on appointment overlay while dragging to allow drops */}
+          {weekDates.map((date, dateIdx) => {
+            const dateStr = date.toDateString();
+            const dateAppointments = appointmentsByDate.get(dateStr) || [];
+            const layout = layoutByDate.get(dateStr);
+
+            // Debug logging for rendering
+            if (dateAppointments.length > 0 && dateStr === 'Mon Oct 13 2025') {
+              console.log(`🎨 RENDERING ${dateAppointments.length} appointments for ${dateStr}:`, {
+                appointments: dateAppointments.map(a => ({
+                  id: a.id.substring(0, 8),
+                  name: a.patientName,
+                  style: calculateAppointmentStyle(a),
+                  layout: layout?.get(a.id)
+                }))
+              });
+            }
+
+            return (
+              <div
+                key={`appointments-${dateIdx}`}
+                className="absolute pointer-events-none"
+                style={{
+                  left: `calc(80px + ${dateIdx} * (100% - 80px) / 7)`,
+                  width: `calc((100% - 80px) / 7)`,
+                  top: 0,
+                  height: '100%'
+                }}
+              >
+                {dateAppointments.map((apt) => {
+                  const style = calculateAppointmentStyle(apt);
+                  const layoutInfo = layout?.get(apt.id);
+
+                  // Check if this is the appointment being dragged
+                  const isDragging = draggedAppointment?.id === apt.id;
+
+                  if (!layoutInfo) {
+                    // Single appointment, no overlap
+                    return (
+                      <div
+                        key={apt.id}
+                        className={`absolute pointer-events-auto ${isDragging ? 'opacity-50' : ''}`}
+                        style={{
+                          top: `${style.top}px`,
+                          height: `${style.height}px`,
+                          left: '2px',
+                          right: '2px',
+                          zIndex: isDragging ? 1000 : 10
+                        }}
+                      >
                         <DraggableAppointmentCard
-                          key={apt.id}
                           appointment={apt}
                           onClick={() => onAppointmentClick?.(apt)}
                           onDragStart={handleDragStart}
                           onDragEnd={handleDragEnd}
-                          className="mb-1"
-                          compact
+                          className="h-full"
+                          spanning
                         />
-                      ))}
+                      </div>
+                    );
+                  }
 
-                      {/* Visual hint for empty slots */}
-                      {dayAppointments.length === 0 && !isCreating && (
-                        <div className="flex h-full items-center justify-center text-xs text-gray-300 opacity-0 hover:opacity-100 transition-opacity">
-                          Click & drag to create
-                        </div>
-                      )}
+                  // Multiple overlapping appointments
+                  const columnWidth = 100 / layoutInfo.totalColumns;
+                  const leftPercent = (layoutInfo.column * 100) / layoutInfo.totalColumns;
+
+                  return (
+                    <div
+                      key={apt.id}
+                      className={`absolute pointer-events-auto ${isDragging ? 'opacity-50' : ''}`}
+                      style={{
+                        top: `${style.top}px`,
+                        height: `${style.height}px`,
+                        left: `calc(${leftPercent}% + 1px)`,
+                        width: `calc(${columnWidth}% - 2px)`,
+                        zIndex: isDragging ? 1000 : 10 + layoutInfo.column
+                      }}
+                    >
+                      <DraggableAppointmentCard
+                        appointment={apt}
+                        onClick={() => onAppointmentClick?.(apt)}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                        className="h-full"
+                        spanning
+                      />
                     </div>
                   );
                 })}
-              </React.Fragment>
+              </div>
             );
           })}
 

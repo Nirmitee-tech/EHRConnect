@@ -6,6 +6,7 @@ export interface Appointment {
   patientName: string;
   practitionerId?: string;
   practitionerName: string;
+  practitionerColor?: string; // Practitioner's color from staff settings
   appointmentType?: string;
   type?: string;
   status: AppointmentStatus;

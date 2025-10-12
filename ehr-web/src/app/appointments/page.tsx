@@ -235,7 +235,15 @@ export default function AppointmentsPage() {
     setLoading(true);
     try {
       const { startDate, endDate } = getDateRange();
+      console.log('Loading appointments from:', startDate.toLocaleDateString(), 'to:', endDate.toLocaleDateString());
       const data = await AppointmentService.getAppointments(startDate, endDate);
+      console.log('Loaded appointments:', data.length);
+      console.log('Appointments data:', data.map(apt => ({
+        id: apt.id,
+        patient: apt.patientName,
+        start: new Date(apt.startTime).toLocaleString(),
+        end: new Date(apt.endTime).toLocaleString()
+      })));
       setAllAppointments(data);
       calculateStats(data);
     } catch (error) {

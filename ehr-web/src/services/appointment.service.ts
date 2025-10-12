@@ -50,12 +50,59 @@ export class AppointmentService {
       }
 
       const bundle = await medplum.searchResources('Appointment', searchParams);
+      const appointments = bundle.map((fhir) => AppointmentService.transformFHIRAppointment(fhir));
 
-      return bundle.map((fhir) => AppointmentService.transformFHIRAppointment(fhir));
+      // Fetch all unique practitioners to get their colors
+      const practitionerIds = [...new Set(appointments.map(apt => apt.practitionerId).filter(Boolean))];
+
+      if (practitionerIds.length > 0) {
+        const practitionersMap = await AppointmentService.fetchPractitionerColors(practitionerIds);
+
+        // Add practitioner colors to appointments
+        return appointments.map(apt => ({
+          ...apt,
+          practitionerColor: apt.practitionerId ? practitionersMap[apt.practitionerId] : undefined
+        }));
+      }
+
+      return appointments;
     } catch (error) {
       console.error('Error fetching appointments:', error);
       return [];
     }
+  }
+
+  /**
+   * Fetch practitioner colors from FHIR
+   */
+  private static async fetchPractitionerColors(practitionerIds: string[]): Promise<Record<string, string>> {
+    const colorsMap: Record<string, string> = {};
+
+    try {
+      // Fetch practitioners in parallel
+      const practitioners = await Promise.all(
+        practitionerIds.map(id =>
+          medplum.readResource('Practitioner', id).catch(() => null)
+        )
+      );
+
+      practitioners.forEach((practitioner) => {
+        if (practitioner) {
+          // Extract color from extension
+          const colorExtension = practitioner.extension?.find(
+            (ext: any) => ext.url === 'http://ehrconnect.io/fhir/StructureDefinition/practitioner-color'
+          );
+
+          if (colorExtension?.valueString) {
+            colorsMap[practitioner.id] = colorExtension.valueString;
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching practitioner colors:', error);
+    }
+
+    return colorsMap;
   }
 
   /**

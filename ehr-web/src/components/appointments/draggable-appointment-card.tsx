@@ -11,6 +11,7 @@ interface DraggableAppointmentCardProps {
   onDragEnd?: () => void;
   className?: string;
   compact?: boolean;
+  spanning?: boolean;
 }
 
 export function DraggableAppointmentCard({
@@ -19,7 +20,8 @@ export function DraggableAppointmentCard({
   onDragStart,
   onDragEnd,
   className,
-  compact = false
+  compact = false,
+  spanning = false
 }: DraggableAppointmentCardProps) {
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.effectAllowed = 'move';
@@ -44,13 +46,14 @@ export function DraggableAppointmentCard({
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      className="cursor-move"
+      className="cursor-move h-full"
     >
       <AppointmentCard
         appointment={appointment}
         onClick={onClick}
         className={className}
         compact={compact}
+        spanning={spanning}
       />
     </div>
   );

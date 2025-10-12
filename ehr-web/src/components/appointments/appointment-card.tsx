@@ -10,6 +10,7 @@ interface AppointmentCardProps {
   onClick?: (e?: React.MouseEvent) => void;
   className?: string;
   compact?: boolean;
+  spanning?: boolean; // For week view spanning appointments
 }
 
 const statusColors: Record<AppointmentStatus, { bg: string; border: string; text: string }> = {
@@ -34,9 +35,11 @@ export function AppointmentCard({
   appointment,
   onClick,
   className,
-  compact = false
+  compact = false,
+  spanning = false
 }: AppointmentCardProps) {
-  const colors = statusColors[appointment.status];
+  // Fallback to 'scheduled' if status is not recognized
+  const colors = statusColors[appointment.status] || statusColors['scheduled'];
 
   const formatTime = (date: Date | string) => {
     return new Date(date).toLocaleTimeString('en-US', {
@@ -46,29 +49,69 @@ export function AppointmentCard({
     });
   };
 
-  // Determine color: custom color > type color > status color
+  // Determine color priority:
+  // 1. Practitioner color (from staff)
+  // 2. Appointment type color
+  // 3. Status color (default)
   const appointmentType = appointment.category || appointment.appointmentType || appointment.type;
-  const typeColor = appointmentType ? typeColors[appointmentType] : null;
-  const bgColor = appointment.color || typeColor || colors.bg;
-  const useColorBg = !!(appointment.color || typeColor);
+  const typeColor = appointmentType ? typeColors[appointmentType.toLowerCase()] : null;
+  const practitionerColor = appointment.practitionerColor; // This will be set from staff service
+
+  // Use practitioner color if available, otherwise type color
+  // Ensure we have a valid color value before using it
+  const useColorBg = !!(practitionerColor || typeColor);
+  const bgColor = useColorBg ? (practitionerColor || typeColor) : colors.bg;
   const textColor = useColorBg ? 'text-white' : colors.text;
   const borderColor = useColorBg ? '' : colors.border;
 
-  if (compact) {
+  // Spanning appointment card (for week view)
+  if (spanning) {
+    const isHexColor = typeof bgColor === 'string' && bgColor.startsWith('#');
+
     return (
       <div
         onClick={onClick}
         className={cn(
-          'cursor-pointer rounded px-2 py-1.5 text-xs transition-all hover:shadow-md',
-          useColorBg ? `${bgColor} text-white` : `${colors.bg} border-l-4 ${colors.border}`,
+          'cursor-pointer rounded px-1.5 py-1 text-xs h-full overflow-hidden border-l-2 flex flex-col shadow-sm',
+          useColorBg && !isHexColor ? `${bgColor} text-white border-white/30` : !useColorBg ? `${colors.bg} ${colors.border}` : 'text-white border-white/30',
           className
         )}
+        style={isHexColor ? { backgroundColor: bgColor } : undefined}
+      >
+        <div className={cn('font-semibold text-[11px] leading-tight truncate', useColorBg ? 'text-white' : colors.text)}>
+          {appointment.patientName}
+        </div>
+        <div className={cn('text-[10px] mt-0.5 truncate', useColorBg ? 'text-white/90' : 'text-gray-600')}>
+          {formatTime(appointment.startTime)}
+        </div>
+        {appointment.reason && (
+          <div className={cn('text-[10px] mt-0.5 line-clamp-1', useColorBg ? 'text-white/80' : 'text-gray-500')}>
+            {appointment.reason}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (compact) {
+    // Check if bgColor is a hex color (starts with #) vs a Tailwind class
+    const isHexColor = typeof bgColor === 'string' && bgColor.startsWith('#');
+
+    return (
+      <div
+        onClick={onClick}
+        className={cn(
+          'cursor-pointer rounded px-2 py-1.5 text-xs transition-all hover:shadow-md min-w-[70px] border',
+          useColorBg && !isHexColor ? `${bgColor} text-white border-transparent` : !useColorBg ? `${colors.bg} border-l-4 ${colors.border}` : 'text-white border-gray-200',
+          className
+        )}
+        style={isHexColor ? { backgroundColor: bgColor } : undefined}
       >
         <div className={cn('font-medium truncate', useColorBg ? 'text-white' : colors.text)}>
           {appointment.patientName}
         </div>
         {!appointment.isAllDay && (
-          <div className={cn('mt-0.5 text-xs', useColorBg ? 'text-white/90' : 'text-gray-600')}>
+          <div className={cn('mt-0.5 text-xs truncate', useColorBg ? 'text-white/90' : 'text-gray-600')}>
             {formatTime(appointment.startTime)}
           </div>
         )}

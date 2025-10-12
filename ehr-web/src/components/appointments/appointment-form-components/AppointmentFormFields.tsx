@@ -40,42 +40,54 @@ export function AppointmentFormFields({
     }
   };
 
+  const [showAddDoctor, setShowAddDoctor] = useState(false);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+
   return (
     <div className="space-y-4">
-      {/* Center/Facility */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Center<span className="text-red-500">*</span>
-        </label>
-        <select
-          value={formData.centerId}
-          onChange={(e) => onFormDataChange('centerId', e.target.value)}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-        >
-          <option value="">Select Center</option>
-          <option value="center1">Main Center</option>
-          <option value="center2">Branch Center</option>
-        </select>
-      </div>
-
       {/* Doctor */}
       <div>
         <label className="block text-sm font-medium text-gray-700">
           Doctor<span className="text-red-500">*</span>
         </label>
-        <select
-          required
-          value={formData.doctorId}
-          onChange={onDoctorChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-        >
-          <option value="">Select Doctor</option>
-          {practitioners.map((doctor) => (
-            <option key={doctor.id} value={doctor.id}>
-              {doctor.name}
+        {!showAddDoctor ? (
+          <select
+            required
+            value={formData.doctorId}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === '__add_new__') {
+                setShowAddDoctor(true);
+              } else {
+                onDoctorChange(e);
+              }
+            }}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="">Select Doctor</option>
+            {practitioners.map((doctor) => (
+              <option key={doctor.id} value={doctor.id}>
+                {doctor.name}
+              </option>
+            ))}
+            <option value="__add_new__" className="font-medium text-blue-600">
+              + Create New Practitioner
             </option>
-          ))}
-        </select>
+          </select>
+        ) : (
+          <div className="mt-1 space-y-2">
+            <p className="text-sm text-gray-600">
+              Please go to Staff Management to add a new practitioner, then return here.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowAddDoctor(false)}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              ← Back to selection
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Patient */}
@@ -203,18 +215,71 @@ export function AppointmentFormFields({
         <label className="block text-sm font-medium text-gray-700">
           Treatment Category
         </label>
-        <select
-          value={formData.treatmentCategory}
-          onChange={(e) => onFormDataChange('treatmentCategory', e.target.value)}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-        >
-          <option value="">Not Specified</option>
-          {treatmentCategories.map((category) => (
-            <option key={category} value={category}>
-              {category}
+        {!showAddCategory ? (
+          <select
+            value={formData.treatmentCategory}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === '__add_new__') {
+                setShowAddCategory(true);
+              } else {
+                onFormDataChange('treatmentCategory', value);
+              }
+            }}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="">Not Specified</option>
+            {treatmentCategories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+            <option value="__add_new__" className="font-medium text-blue-600">
+              + Add New Category
             </option>
-          ))}
-        </select>
+          </select>
+        ) : (
+          <div className="mt-1 space-y-2">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Enter new category name"
+                className="block flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                autoFocus
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const input = e.currentTarget;
+                    if (input.value.trim()) {
+                      onFormDataChange('treatmentCategory', input.value.trim());
+                      setShowAddCategory(false);
+                    }
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={(e) => {
+                  const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                  if (input?.value.trim()) {
+                    onFormDataChange('treatmentCategory', input.value.trim());
+                    setShowAddCategory(false);
+                  }
+                }}
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Add
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAddCategory(false)}
+              className="text-sm text-gray-600 hover:text-gray-800"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Date and Time */}
