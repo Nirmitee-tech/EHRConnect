@@ -268,7 +268,7 @@ export function StickyNotesSection({
 
       {/* Delete Confirmation Dialog */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Note</h3>
             <p className="text-sm text-gray-600 mb-4">

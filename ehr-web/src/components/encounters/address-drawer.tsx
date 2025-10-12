@@ -170,11 +170,26 @@ export function AddressDrawer({
     }
   };
 
-  const handleToggleStatus = (index: number, newStatus: boolean) => {
-    const updatedAddresses = [...addresses];
-    updatedAddresses[index].isActive = newStatus;
-    setAddresses(updatedAddresses);
-    setShowStatusConfirm(null);
+  const handleToggleStatus = async (index: number, newStatus: boolean) => {
+    try {
+      console.log('🔄 Toggling address status:', { index, newStatus });
+      const updatedAddresses = [...addresses];
+      updatedAddresses[index].isActive = newStatus;
+
+      // Save immediately to database
+      setSaving(true);
+      await onSave(updatedAddresses);
+
+      setAddresses(updatedAddresses);
+      setShowStatusConfirm(null);
+      console.log('✅ Address status updated successfully');
+    } catch (error) {
+      console.error('❌ Failed to update address status:', error);
+      alert('Failed to update address status. Please try again.');
+      setShowStatusConfirm(null);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSaveAll = async () => {
@@ -252,12 +267,12 @@ export function AddressDrawer({
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 z-40"
+        className="fixed inset-0 bg-black bg-opacity-30 z-[9998]"
         onClick={onClose}
       />
 
       {/* Side Drawer */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-4xl bg-white shadow-xl z-50 flex flex-col">
+      <div className="fixed right-0 top-0 h-full w-full max-w-4xl bg-white shadow-xl z-[9999] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
           <h2 className="text-lg font-semibold text-gray-900">Address & Contact Management</h2>
@@ -689,7 +704,7 @@ export function AddressDrawer({
 
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirm !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Address</h3>
             <p className="text-sm text-gray-600 mb-4">
@@ -715,7 +730,7 @@ export function AddressDrawer({
 
       {/* Status Change Confirmation Dialog */}
       {showStatusConfirm !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               {showStatusConfirm.status ? 'Activate' : 'Deactivate'} Address

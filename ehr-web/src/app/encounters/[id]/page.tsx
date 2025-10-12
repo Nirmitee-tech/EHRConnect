@@ -67,6 +67,22 @@ export default function EncounterPage() {
           data.addresses = patientData.addresses;
           data.socialNotes = patientData.socialNotes;
           data.internalNotes = patientData.internalNotes;
+
+          // Also get patient resource to check active status
+          try {
+            const patientResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/fhir/R4/Patient/${data.patientId}`, {
+              credentials: 'include',
+            });
+            if (patientResponse.ok) {
+              const patient = await patientResponse.json();
+              data.patientActive = patient.active !== false; // Default to true if not set
+              console.log('📥 Patient active status:', data.patientActive);
+            }
+          } catch (error) {
+            console.error('Error loading patient active status:', error);
+            data.patientActive = true; // Default to active
+          }
+
           console.log('📥 Setting encounter with addresses:', data.addresses);
         } catch (error) {
           console.error('Error loading patient data:', error);
@@ -74,6 +90,7 @@ export default function EncounterPage() {
           data.addresses = [];
           data.socialNotes = [];
           data.internalNotes = [];
+          data.patientActive = true;
         }
       }
 
@@ -145,6 +162,7 @@ export default function EncounterPage() {
         patientHistory={encounter.patientHistory}
         patientAllergies={encounter.patientAllergies}
         patientHabits={encounter.patientHabits}
+        patientActive={encounter.patientActive}
         addresses={encounter.addresses || []}
         socialNotes={encounter.socialNotes || []}
         internalNotes={encounter.internalNotes || []}
@@ -211,6 +229,19 @@ export default function EncounterPage() {
             });
           } catch (error) {
             console.error('Failed to update internal notes:', error);
+            throw error;
+          }
+        }}
+        onUpdatePatientStatus={async (active: boolean) => {
+          try {
+            await AddressService.updatePatientStatus(encounter.patientId, active);
+            setEncounter({
+              ...encounter,
+              patientActive: active
+            });
+            console.log('✅ Patient status updated in encounter state:', active);
+          } catch (error) {
+            console.error('❌ Failed to update patient status:', error);
             throw error;
           }
         }}

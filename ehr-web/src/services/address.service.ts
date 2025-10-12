@@ -143,6 +143,48 @@ export class AddressService {
   }
 
   /**
+   * Update patient active status
+   */
+  static async updatePatientStatus(patientId: string, active: boolean): Promise<void> {
+    try {
+      console.log('🔷 AddressService.updatePatientStatus - Called with:', { patientId, active });
+
+      const patchOps = [
+        {
+          op: 'replace',
+          path: '/active',
+          value: active
+        }
+      ];
+
+      console.log('🔷 AddressService.updatePatientStatus - Patch operations:', JSON.stringify(patchOps, null, 2));
+
+      const response = await fetch(`${FHIR_BASE_URL}/Patient/${patientId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(patchOps),
+      });
+
+      console.log('🔷 AddressService.updatePatientStatus - Response status:', response.status);
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('🔷 AddressService.updatePatientStatus - Error response:', error);
+        throw new Error(error.issue?.[0]?.details?.text || 'Failed to update patient status');
+      }
+
+      const result = await response.json();
+      console.log('✅ AddressService.updatePatientStatus - Success! Updated patient:', result);
+    } catch (error) {
+      console.error('❌ AddressService.updatePatientStatus - Error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Update both addresses and notes together (more efficient)
    */
   static async updatePatientData(

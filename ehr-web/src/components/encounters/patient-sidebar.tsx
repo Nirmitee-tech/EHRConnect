@@ -40,6 +40,7 @@ interface PatientSidebarProps {
   patientHistory?: string;
   patientAllergies?: string;
   patientHabits?: string;
+  patientActive?: boolean;
   addresses?: AddressData[];
   socialNotes?: NoteData[];
   internalNotes?: NoteData[];
@@ -54,6 +55,7 @@ interface PatientSidebarProps {
   onUpdateAddresses: (addresses: AddressData[]) => Promise<void>;
   onUpdateSocialNotes: (notes: NoteData[]) => Promise<void>;
   onUpdateInternalNotes: (notes: NoteData[]) => Promise<void>;
+  onUpdatePatientStatus?: (active: boolean) => Promise<void>;
 }
 
 export function PatientSidebar({
@@ -70,6 +72,7 @@ export function PatientSidebar({
   patientHistory,
   patientAllergies,
   patientHabits,
+  patientActive = true,
   addresses = [],
   socialNotes = [],
   internalNotes = [],
@@ -79,10 +82,13 @@ export function PatientSidebar({
   onUpdateMedicalInfo,
   onUpdateAddresses,
   onUpdateSocialNotes,
-  onUpdateInternalNotes
+  onUpdateInternalNotes,
+  onUpdatePatientStatus
 }: PatientSidebarProps) {
   const [addressExpanded, setAddressExpanded] = useState(false);
   const [showAddressDrawer, setShowAddressDrawer] = useState(false);
+  const [patientStatus, setPatientStatus] = useState<'active' | 'inactive'>(patientActive ? 'active' : 'inactive');
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
 
   // Get primary address for quick display
   const primaryAddress = addresses.find(addr => addr.isPrimary && addr.isActive) || addresses.find(addr => addr.isActive);
@@ -321,8 +327,13 @@ export function PatientSidebar({
         {/* Status - Compact */}
         <div className="px-3 py-2 border-b border-gray-200">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-medium text-green-600">Active</span>
-            <button className="text-blue-600 hover:text-blue-700 font-medium">
+            <span className={`font-medium ${patientStatus === 'active' ? 'text-green-600' : 'text-red-600'}`}>
+              {patientStatus === 'active' ? 'Active' : 'Inactive'}
+            </span>
+            <button
+              onClick={() => setShowStatusDialog(true)}
+              className="text-blue-600 hover:text-blue-700 font-medium"
+            >
               Change
             </button>
           </div>
@@ -345,6 +356,60 @@ export function PatientSidebar({
         addresses={addresses}
         onSave={onUpdateAddresses}
       />
+
+      {/* Patient Status Change Dialog */}
+      {showStatusDialog && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Change Patient Status
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Current status: <span className={`font-semibold ${patientStatus === 'active' ? 'text-green-600' : 'text-red-600'}`}>
+                {patientStatus === 'active' ? 'Active' : 'Inactive'}
+              </span>
+            </p>
+            <p className="text-sm text-gray-600 mb-4">
+              Do you want to change the patient status to <span className={`font-semibold ${patientStatus === 'active' ? 'text-red-600' : 'text-green-600'}`}>
+                {patientStatus === 'active' ? 'Inactive' : 'Active'}
+              </span>?
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowStatusDialog(false)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const newStatus = patientStatus === 'active' ? 'inactive' : 'active';
+                  const active = newStatus === 'active';
+
+                  try {
+                    if (onUpdatePatientStatus) {
+                      await onUpdatePatientStatus(active);
+                    }
+                    setPatientStatus(newStatus);
+                    setShowStatusDialog(false);
+                    console.log('✅ Patient status changed to:', newStatus);
+                  } catch (error) {
+                    console.error('❌ Failed to update patient status:', error);
+                    alert('Failed to update patient status. Please try again.');
+                  }
+                }}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  patientStatus === 'active'
+                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                    : 'bg-green-600 hover:bg-green-700 text-white'
+                }`}
+              >
+                Change to {patientStatus === 'active' ? 'Inactive' : 'Active'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

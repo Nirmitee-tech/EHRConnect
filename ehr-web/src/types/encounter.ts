@@ -152,6 +152,7 @@ export interface Encounter {
   patientHistory?: string;
   patientAllergies?: string;
   patientHabits?: string;
+  patientActive?: boolean;
 
   // Patient Address and Contact Information (array to support multiple addresses)
   addresses?: AddressData[];
