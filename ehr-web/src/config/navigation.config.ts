@@ -22,7 +22,8 @@ import {
   Database,
   Building2,
   Code,
-  FileCode
+  FileCode,
+  Settings
 } from 'lucide-react';
 import { NavSection, PageInfo } from '@/types/navigation';
 
@@ -113,7 +114,8 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
     items: [
       { name: 'User Management', href: '/users', icon: Users },
       { name: 'Roles & Permissions', href: '/settings/roles', icon: Shield },
-      { name: 'Audit Logs', href: '/audit-logs', icon: ScrollText }
+      { name: 'Audit Logs', href: '/audit-logs', icon: ScrollText },
+      { name: 'Settings', href: '/settings', icon: Settings }
     ]
   },
   {

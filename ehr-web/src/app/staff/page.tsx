@@ -6,17 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { useFacility } from '@/contexts/facility-context';
-
-interface StaffMember {
-  id: string;
-  name: string;
-  specialty: string;
-  phone: string;
-  email: string;
-  qualification: string;
-  active: boolean;
-  resourceType: string;
-}
+import { StaffMember, DEFAULT_OFFICE_HOURS } from '@/types/staff';
+import { StaffDetailDrawer } from '@/components/staff/staff-detail-drawer';
+import { StaffService } from '@/services/staff.service';
 
 export default function StaffPage() {
   const { currentFacility } = useFacility();
@@ -27,48 +19,23 @@ export default function StaffPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [totalCount, setTotalCount] = useState(0);
+  const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Load staff from FHIR API
+  // Load staff from FHIR API using StaffService
   const loadStaff = async (search: string = '') => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      let url = '/api/fhir/Practitioner?_count=50';
-      if (search) {
-        url += `&name=${encodeURIComponent(search)}`;
-      }
-      if (activeTab === 'doctor') {
-        url += '&active=true';
-      }
-
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Failed to fetch practitioners');
-      }
-
-      const bundle = await response.json();
-      setTotalCount(bundle.total || 0);
-
-      const staffMembers: StaffMember[] = (bundle.entry || []).map((entry: any) => {
-        const resource = entry.resource;
-        const name = resource.name?.[0];
-        const telecom = resource.telecom || [];
-        const qualification = resource.qualification?.[0];
-        
-        return {
-          id: resource.id,
-          name: name ? `${(name.given || []).join(' ')} ${name.family || ''}`.trim() : 'Unknown',
-          specialty: qualification?.code?.coding?.[0]?.display || 'General Practitioner',
-          phone: telecom.find((t: any) => t.system === 'phone')?.value || '',
-          email: telecom.find((t: any) => t.system === 'email')?.value || '',
-          qualification: qualification?.code?.text || qualification?.code?.coding?.[0]?.display || 'Medical Doctor',
-          active: resource.active !== false,
-          resourceType: resource.resourceType
-        };
+      const staffMembers = await StaffService.getPractitioners({
+        name: search || undefined,
+        active: activeTab === 'doctor' ? true : undefined,
+        count: 50
       });
 
       setStaffData(staffMembers);
+      setTotalCount(staffMembers.length);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load staff');
       setStaffData([]);
@@ -95,14 +62,40 @@ export default function StaffPage() {
     loadStaff();
   }, [activeTab]);
 
-  const getWorkingDays = () => ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  
+  const handleStaffClick = (staff: StaffMember) => {
+    setSelectedStaff(staff);
+    setIsDrawerOpen(true);
+  };
+
+  const handleSaveStaff = async (updatedStaff: StaffMember) => {
+    try {
+      // Save to backend using StaffService
+      await StaffService.updatePractitioner(updatedStaff.id, updatedStaff);
+
+      // Update local state
+      setStaffData(prevData =>
+        prevData.map(staff => staff.id === updatedStaff.id ? updatedStaff : staff)
+      );
+    } catch (error) {
+      console.error('Error saving staff:', error);
+      alert('Failed to save staff changes. Please try again.');
+    }
+  };
+
+  const getWorkingDays = (staff: StaffMember) => {
+    const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    return days.map((day, index) => ({
+      day,
+      isWorking: staff.officeHours?.[index]?.isWorking || false
+    }));
+  };
+
   const WorkingDayCircle = ({ day, isActive }: { day: string; isActive: boolean }) => (
     <div
       className={`
         w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-200
-        ${isActive 
-          ? 'bg-[#5BA6FF] text-white' 
+        ${isActive
+          ? 'bg-[#5BA6FF] text-white'
           : 'bg-[#E5E7EB] text-[#9CA3AF]'
         }
       `}
@@ -110,6 +103,13 @@ export default function StaffPage() {
       {day}
     </div>
   );
+
+  const getOfficeHoursDisplay = (staff: StaffMember) => {
+    const workingDays = staff.officeHours?.filter(h => h.isWorking) || [];
+    if (workingDays.length === 0) return 'No hours set';
+    const firstDay = workingDays[0];
+    return `${firstDay.startTime} - ${firstDay.endTime}`;
+  };
 
   return (
     <div className="space-y-6">
@@ -308,16 +308,20 @@ export default function StaffPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {staffData.map((staff, index) => (
-                    <tr 
-                      key={staff.id} 
-                      className="hover:bg-gray-50 transition-all duration-200"
+                    <tr
+                      key={staff.id}
+                      className="hover:bg-gray-50 transition-all duration-200 cursor-pointer"
                       style={{
                         animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both`
                       }}
+                      onClick={() => handleStaffClick(staff)}
                     >
                       <td className="px-6 py-6">
                         <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
+                          <div
+                            className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold"
+                            style={{ backgroundColor: staff.color || '#3B82F6' }}
+                          >
                             {staff.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                           </div>
                           <div>
@@ -345,15 +349,15 @@ export default function StaffPage() {
                       </td>
                       <td className="px-6 py-6">
                         <div className="flex space-x-1">
-                          {getWorkingDays().map((day, dayIndex) => (
+                          {getWorkingDays(staff).map(({ day, isWorking }, dayIndex) => (
                             <WorkingDayCircle
                               key={dayIndex}
                               day={day}
-                              isActive={Math.random() > 0.2} // Simulate working days
+                              isActive={isWorking}
                             />
                           ))}
                         </div>
-                        <div className="text-xs text-gray-500 mt-2">Mon - Fri, 9 AM - 5 PM</div>
+                        <div className="text-xs text-gray-500 mt-2">{getOfficeHoursDisplay(staff)}</div>
                       </td>
                       <td className="px-6 py-6">
                         <div className="flex items-center space-x-2">
@@ -365,20 +369,28 @@ export default function StaffPage() {
                       <td className="px-6 py-6">
                         <div className="flex flex-col space-y-2">
                           <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-md ${
-                            staff.active 
-                              ? 'bg-[#E8F5E8] text-[#047857]' 
+                            staff.active
+                              ? 'bg-[#E8F5E8] text-[#047857]'
                               : 'bg-[#F3F4F6] text-[#4B5563]'
                           }`}>
                             {staff.active ? 'Active' : 'Inactive'}
                           </span>
-                          <span className="inline-flex px-3 py-1 text-xs font-medium rounded-md bg-[#FFF4E0] text-[#D97706]">
-                            PART-TIME
+                          <span className="inline-flex px-3 py-1 text-xs font-medium rounded-md bg-[#FFF4E0] text-[#D97706] uppercase">
+                            {staff.employmentType || 'full-time'}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-6">
                         <div className="flex items-center space-x-2">
-                          <Button variant="ghost" size="sm" className="hover:bg-gray-100">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="hover:bg-gray-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStaffClick(staff);
+                            }}
+                          >
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </div>
@@ -391,6 +403,17 @@ export default function StaffPage() {
           )}
         </div>
       )}
+
+      {/* Staff Detail Drawer */}
+      <StaffDetailDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setSelectedStaff(null);
+        }}
+        staff={selectedStaff}
+        onSave={handleSaveStaff}
+      />
     </div>
   );
 }

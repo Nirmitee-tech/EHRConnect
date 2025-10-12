@@ -13,6 +13,8 @@ import { EventFilters, EventCategory } from '@/components/appointments/event-fil
 import { AppointmentService } from '@/services/appointment.service';
 import { Loader2, Plus, ChevronDown, RefreshCw, Info, ArrowRight, Keyboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PrintAppointments } from '@/components/appointments/print-appointments';
+import { useFacility } from '@/contexts/facility-context';
 
 // Medical appointment categories
 const medicalCategories: EventCategory[] = [
@@ -24,6 +26,7 @@ const medicalCategories: EventCategory[] = [
 ];
 
 export default function AppointmentsPage() {
+  const { currentFacility } = useFacility();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>('week');
   const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
@@ -514,21 +517,29 @@ export default function AppointmentsPage() {
         </div>
       )}
 
-      <CalendarToolbar
-        currentDate={currentDate}
-        view={view}
-        onViewChange={handleViewChange}
-        onDateChange={handleDateChange}
-        onToday={handleToday}
-        viewMode={viewMode}
-        onViewModeChange={(mode) => {
-          setViewMode(mode);
-          // If switching to doctor view, set a default doctor (first in list)
-          if (mode === 'doctor' && practitioners.length > 0) {
-            setCurrentDoctorId(practitioners[0].name);
-          }
-        }}
-      />
+      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
+        <CalendarToolbar
+          currentDate={currentDate}
+          view={view}
+          onViewChange={handleViewChange}
+          onDateChange={handleDateChange}
+          onToday={handleToday}
+          viewMode={viewMode}
+          onViewModeChange={(mode) => {
+            setViewMode(mode);
+            // If switching to doctor view, set a default doctor (first in list)
+            if (mode === 'doctor' && practitioners.length > 0) {
+              setCurrentDoctorId(practitioners[0].name);
+            }
+          }}
+        />
+        <PrintAppointments
+          appointments={filteredAppointments}
+          date={currentDate}
+          view={view}
+          facilityName={currentFacility?.name}
+        />
+      </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Main calendar area */}
