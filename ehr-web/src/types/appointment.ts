@@ -1,5 +1,8 @@
 export type AppointmentStatus = 'scheduled' | 'in-progress' | 'completed' | 'cancelled' | 'no-show' | 'rescheduled' | 'waitlist';
 
+// Types of all-day events
+export type AllDayEventType = 'appointment' | 'leave' | 'vacation' | 'holiday' | 'conference' | 'training' | 'other';
+
 export interface Appointment {
   id: string;
   patientId?: string;
@@ -20,6 +23,7 @@ export interface Appointment {
   category?: string;
   color?: string;
   isAllDay?: boolean;
+  allDayEventType?: AllDayEventType; // Type of all-day event
   location?: string; // Location/room where appointment takes place
 }
 

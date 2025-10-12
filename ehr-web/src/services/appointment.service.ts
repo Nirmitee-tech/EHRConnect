@@ -52,20 +52,32 @@ export class AppointmentService {
       const bundle = await medplum.searchResources('Appointment', searchParams);
       const appointments = bundle.map((fhir) => AppointmentService.transformFHIRAppointment(fhir));
 
+      // Fetch ALL practitioners (not just those with appointments) to get vacations/leaves
+      const allPractitioners = await medplum.searchResources('Practitioner', { active: 'true' });
+      const allPractitionerIds = allPractitioners.map((p: any) => p.id).filter(Boolean);
+
       // Fetch all unique practitioners to get their colors
       const practitionerIds = [...new Set(appointments.map(apt => apt.practitionerId).filter(Boolean))];
+
+      let allAppointments = [...appointments];
 
       if (practitionerIds.length > 0) {
         const practitionersMap = await AppointmentService.fetchPractitionerColors(practitionerIds);
 
         // Add practitioner colors to appointments
-        return appointments.map(apt => ({
+        allAppointments = appointments.map(apt => ({
           ...apt,
           practitionerColor: apt.practitionerId ? practitionersMap[apt.practitionerId] : undefined
         }));
       }
 
-      return appointments;
+      // Fetch practitioner vacations and leaves for ALL practitioners
+      if (allPractitionerIds.length > 0) {
+        const vacationEvents = await AppointmentService.fetchPractitionerVacations(startDate, endDate, allPractitionerIds);
+        allAppointments = [...allAppointments, ...vacationEvents];
+      }
+
+      return allAppointments;
     } catch (error) {
       console.error('Error fetching appointments:', error);
       return [];
@@ -103,6 +115,99 @@ export class AppointmentService {
     }
 
     return colorsMap;
+  }
+
+  /**
+   * Fetch practitioner vacations and leaves as all-day events
+   */
+  private static async fetchPractitionerVacations(
+    startDate: Date,
+    endDate: Date,
+    practitionerIds: string[]
+  ): Promise<Appointment[]> {
+    const vacationEvents: Appointment[] = [];
+
+    try {
+      // Fetch all practitioners
+      const practitioners = await Promise.all(
+        practitionerIds.map(id =>
+          medplum.readResource('Practitioner', id).catch(() => null)
+        )
+      );
+
+      practitioners.forEach((practitioner) => {
+        if (!practitioner) return;
+
+        // Extract vacation/leave data from extension
+        const vacationExtension = practitioner.extension?.find(
+          (ext: any) => ext.url === 'http://ehrconnect.io/fhir/StructureDefinition/practitioner-vacation'
+        );
+
+        if (vacationExtension?.valueString) {
+          try {
+            const vacations = JSON.parse(vacationExtension.valueString);
+
+            vacations.forEach((vacation: any) => {
+              const vacationStart = new Date(vacation.startDate);
+              const vacationEnd = new Date(vacation.endDate);
+
+              // Check if vacation overlaps with the requested date range
+              if (vacationStart <= endDate && vacationEnd >= startDate) {
+                // Get practitioner name
+                const practitionerName = practitioner.name?.[0]
+                  ? `${practitioner.name[0].given?.join(' ') || ''} ${practitioner.name[0].family || ''}`.trim()
+                  : 'Unknown Practitioner';
+
+                // Get practitioner color
+                const colorExtension = practitioner.extension?.find(
+                  (ext: any) => ext.url === 'http://ehrconnect.io/fhir/StructureDefinition/practitioner-color'
+                );
+
+                // Create an all-day event for each day in the vacation range
+                let currentDate = new Date(vacationStart);
+                currentDate.setHours(0, 0, 0, 0);
+
+                const rangeEnd = new Date(vacationEnd);
+                rangeEnd.setHours(0, 0, 0, 0);
+
+                while (currentDate <= rangeEnd) {
+                  // Only include dates within the requested range
+                  if (currentDate >= startDate && currentDate <= endDate) {
+                    vacationEvents.push({
+                      id: `vacation-${practitioner.id}-${vacation.id}-${currentDate.toISOString()}`,
+                      patientId: practitioner.id,
+                      patientName: practitionerName,
+                      practitionerId: practitioner.id,
+                      practitionerName: practitionerName,
+                      practitionerColor: colorExtension?.valueString,
+                      appointmentType: vacation.type || 'vacation',
+                      status: 'scheduled',
+                      startTime: new Date(currentDate),
+                      endTime: new Date(currentDate),
+                      duration: 0,
+                      isAllDay: true,
+                      allDayEventType: vacation.type || 'vacation',
+                      reason: `${practitionerName} - ${vacation.type || 'Vacation'}`,
+                      createdAt: new Date(),
+                      updatedAt: new Date()
+                    });
+                  }
+
+                  // Move to next day
+                  currentDate.setDate(currentDate.getDate() + 1);
+                }
+              }
+            });
+          } catch (parseError) {
+            console.error('Error parsing vacation data:', parseError);
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching practitioner vacations:', error);
+    }
+
+    return vacationEvents;
   }
 
   /**

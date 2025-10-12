@@ -618,15 +618,38 @@ export function WeekViewDraggable({
               >
                 <div className="flex flex-col gap-1">
                   {dayAllDayEvents.map((apt) => {
+                    // Determine event type and styling
+                    const eventType = apt.allDayEventType || 'appointment';
+
+                    // Define colors and icons for different event types
+                    const eventStyles: Record<string, { bg: string; text: string; icon: string; border: string }> = {
+                      'leave': { bg: 'bg-orange-500', text: 'text-white', icon: '🏖️', border: 'border-orange-600' },
+                      'vacation': { bg: 'bg-purple-500', text: 'text-white', icon: '✈️', border: 'border-purple-600' },
+                      'holiday': { bg: 'bg-red-500', text: 'text-white', icon: '🎉', border: 'border-red-600' },
+                      'conference': { bg: 'bg-blue-500', text: 'text-white', icon: '🎤', border: 'border-blue-600' },
+                      'training': { bg: 'bg-green-500', text: 'text-white', icon: '📚', border: 'border-green-600' },
+                      'other': { bg: 'bg-gray-500', text: 'text-white', icon: '📌', border: 'border-gray-600' },
+                      'appointment': { bg: '', text: 'text-white', icon: '📅', border: '' }
+                    };
+
+                    const style = eventStyles[eventType] || eventStyles.appointment;
+
+                    // For regular appointments, use practitioner color
                     const isHexColor = typeof apt.practitionerColor === 'string' && apt.practitionerColor.startsWith('#');
-                    const bgColor = apt.practitionerColor || 'bg-indigo-500';
+                    const useCustomColor = eventType === 'appointment' && apt.practitionerColor;
+                    const bgColor = useCustomColor ? (isHexColor ? null : apt.practitionerColor) : null;
 
                     return (
                       <div
                         key={apt.id}
                         onClick={() => onAppointmentClick?.(apt)}
-                        className="cursor-pointer rounded px-2 py-1 text-[11px] font-medium text-white shadow-sm hover:shadow-md transition-shadow"
-                        style={isHexColor ? { backgroundColor: apt.practitionerColor } : undefined}
+                        className={`cursor-pointer rounded px-2 py-1.5 text-[11px] font-medium shadow-sm hover:shadow-md transition-all border-l-4 ${
+                          useCustomColor && !isHexColor ? bgColor : style.bg
+                        } ${style.text} ${style.border}`}
+                        style={useCustomColor && isHexColor ? {
+                          backgroundColor: apt.practitionerColor,
+                          borderLeftColor: apt.practitionerColor
+                        } : undefined}
                         draggable
                         onDragStart={(e) => {
                           e.dataTransfer.effectAllowed = 'move';
@@ -635,7 +658,15 @@ export function WeekViewDraggable({
                         }}
                         onDragEnd={handleDragEnd}
                       >
-                        <div className="truncate">{apt.patientName}</div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs">{style.icon}</span>
+                          <span className="truncate flex-1">{apt.patientName}</span>
+                          {eventType !== 'appointment' && (
+                            <span className="text-[9px] opacity-90 uppercase font-semibold">
+                              {eventType}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     );
                   })}

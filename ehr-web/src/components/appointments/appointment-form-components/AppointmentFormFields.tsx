@@ -282,6 +282,50 @@ export function AppointmentFormFields({
         )}
       </div>
 
+      {/* All-Day Event Toggle */}
+      <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <CalendarIcon className="h-4 w-4 text-gray-600" />
+          <span className="text-sm font-medium text-gray-700">All-Day Event</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => onFormDataChange('isAllDay', !formData.isAllDay)}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            formData.isAllDay ? 'bg-blue-600' : 'bg-gray-300'
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              formData.isAllDay ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+
+      {/* All-Day Event Type - Only show if isAllDay is true */}
+      {formData.isAllDay && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Event Type<span className="text-red-500">*</span>
+          </label>
+          <select
+            required={formData.isAllDay}
+            value={formData.allDayEventType || 'appointment'}
+            onChange={(e) => onFormDataChange('allDayEventType', e.target.value)}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="appointment">📅 Regular Appointment</option>
+            <option value="leave">🏖️ Leave</option>
+            <option value="vacation">✈️ Vacation</option>
+            <option value="holiday">🎉 Holiday</option>
+            <option value="conference">🎤 Conference</option>
+            <option value="training">📚 Training</option>
+            <option value="other">📌 Other</option>
+          </select>
+        </div>
+      )}
+
       {/* Date and Time */}
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -299,52 +343,56 @@ export function AppointmentFormFields({
             <CalendarIcon className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Time<span className="text-red-500">*</span>
-          </label>
-          <div className="relative mt-1">
-            <input
-              type="time"
-              required
-              value={formData.time}
-              onChange={(e) => onFormDataChange('time', e.target.value)}
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            <Clock className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        {!formData.isAllDay && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Time<span className="text-red-500">*</span>
+            </label>
+            <div className="relative mt-1">
+              <input
+                type="time"
+                required={!formData.isAllDay}
+                value={formData.time}
+                onChange={(e) => onFormDataChange('time', e.target.value)}
+                className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <Clock className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Duration */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Duration</label>
-        <div className="mt-1 grid grid-cols-2 gap-4">
-          <div>
-            <input
-              type="number"
-              min="0"
-              value={formData.durationHours}
-              onChange={(e) => onFormDataChange('durationHours', parseInt(e.target.value) || 0)}
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="0"
-            />
-            <span className="mt-1 text-xs text-gray-500">Hour(s)</span>
-          </div>
-          <div>
-            <input
-              type="number"
-              min="0"
-              max="59"
-              value={formData.durationMinutes}
-              onChange={(e) => onFormDataChange('durationMinutes', parseInt(e.target.value) || 0)}
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="30"
-            />
-            <span className="mt-1 text-xs text-gray-500">Minute(s)</span>
+      {/* Duration - Hide for all-day events */}
+      {!formData.isAllDay && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Duration</label>
+          <div className="mt-1 grid grid-cols-2 gap-4">
+            <div>
+              <input
+                type="number"
+                min="0"
+                value={formData.durationHours}
+                onChange={(e) => onFormDataChange('durationHours', parseInt(e.target.value) || 0)}
+                className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="0"
+              />
+              <span className="mt-1 text-xs text-gray-500">Hour(s)</span>
+            </div>
+            <div>
+              <input
+                type="number"
+                min="0"
+                max="59"
+                value={formData.durationMinutes}
+                onChange={(e) => onFormDataChange('durationMinutes', parseInt(e.target.value) || 0)}
+                className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="30"
+              />
+              <span className="mt-1 text-xs text-gray-500">Minute(s)</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Notes */}
       <div>
