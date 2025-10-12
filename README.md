@@ -175,6 +175,29 @@ const encounters = await fhirService.getPatientEncounters('patient-id')
 const medications = await fhirService.getPatientMedications('patient-id')
 ```
 
+## 📦 Inventory Management API
+
+The platform now includes a multi-tenant inventory service tailored for hospitals and clinics. It provides lot-level tracking, supplier management, per-location par levels, and auditable stock transactions via the REST API exposed by `ehr-api`.
+
+### Core Endpoints
+
+| Endpoint | Description |
+| --- | --- |
+| `GET /api/inventory/categories` | List product categories (optionally including inactive records). |
+| `POST /api/inventory/categories` | Create a category for grouping medication, consumables, or devices. |
+| `GET /api/inventory/suppliers` | Retrieve supplier profiles with contact information and activity flags. |
+| `POST /api/inventory/suppliers` | Register a new vendor/wholesaler for purchasing workflows. |
+| `GET /api/inventory/items` | Search inventory items with on-hand totals, next expiration, and filters by category/location. |
+| `POST /api/inventory/items` | Create a new tracked item, including reorder rules and per-location par settings. |
+| `GET /api/inventory/items/:id` | Detailed item view including active lots and storage locations. |
+| `POST /api/inventory/items/:id/lots` | Receive a new lot/batch with supplier, expiry, and initial quantity. |
+| `GET /api/inventory/lots` | Monitor lots across facilities, with filters for status, expiry window, or item. |
+| `POST /api/inventory/stock-movements` | Record receipts, issues, transfers, adjustments, returns, or wastage events. |
+| `GET /api/inventory/stock-movements` | Audit trail of all stock transactions with references to encounters or documents. |
+| `GET /api/inventory/dashboard/overview` | Snapshot of low stock items, expiring lots, and controlled substances per facility. |
+
+> **Tip:** All inventory routes require the organization context header `x-org-id`, and they optionally honour `x-user-id` for audit logging.
+
 ## 🔍 Troubleshooting
 
 ### Common Issues
