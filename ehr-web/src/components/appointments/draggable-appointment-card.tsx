@@ -23,17 +23,25 @@ export function DraggableAppointmentCard({
   compact = false,
   spanning = false
 }: DraggableAppointmentCardProps) {
+  // Only allow dragging scheduled appointments
+  const isDraggable = appointment.status === 'scheduled';
+
   const handleDragStart = (e: React.DragEvent) => {
+    if (!isDraggable) {
+      e.preventDefault();
+      return;
+    }
+
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('application/json', JSON.stringify(appointment));
-    
+
     // Create a visual feedback element
     const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
     dragImage.style.opacity = '0.8';
     document.body.appendChild(dragImage);
     e.dataTransfer.setDragImage(dragImage, 0, 0);
     setTimeout(() => document.body.removeChild(dragImage), 0);
-    
+
     onDragStart?.(appointment, e);
   };
 
@@ -43,10 +51,10 @@ export function DraggableAppointmentCard({
 
   return (
     <div
-      draggable
+      draggable={isDraggable}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      className="cursor-move h-full"
+      className={`h-full ${isDraggable ? 'cursor-move' : 'cursor-not-allowed'}`}
     >
       <AppointmentCard
         appointment={appointment}

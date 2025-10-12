@@ -621,6 +621,8 @@ export function WeekViewDraggable({
                 <div className="flex flex-col gap-1">
                   {dayAllDayEvents.map((apt) => {
                     const eventType = apt.allDayEventType || 'appointment';
+                    // Only allow dragging scheduled appointments
+                    const isDraggable = apt.status === 'scheduled';
 
                     const eventStyles: Record<string, { bg: string; text: string; icon: string; border: string }> = {
                       'leave': { bg: 'bg-orange-500', text: 'text-white', icon: '🏖️', border: 'border-orange-600' },
@@ -642,15 +644,19 @@ export function WeekViewDraggable({
                       <div
                         key={apt.id}
                         onClick={() => onAppointmentClick?.(apt)}
-                        className={`cursor-pointer rounded px-1.5 py-1 text-[10px] font-medium shadow-sm hover:shadow transition-all border-l-3 ${
+                        className={`${isDraggable ? 'cursor-pointer' : 'cursor-not-allowed'} rounded px-1.5 py-1 text-[10px] font-medium shadow-sm hover:shadow transition-all border-l-3 ${
                           useCustomColor && !isHexColor ? bgColor : style.bg
                         } ${style.text} ${style.border}`}
                         style={useCustomColor && isHexColor ? {
                           backgroundColor: apt.practitionerColor,
                           borderLeftColor: apt.practitionerColor
                         } : undefined}
-                        draggable
+                        draggable={isDraggable}
                         onDragStart={(e) => {
+                          if (!isDraggable) {
+                            e.preventDefault();
+                            return;
+                          }
                           e.dataTransfer.effectAllowed = 'move';
                           e.dataTransfer.setData('application/json', JSON.stringify(apt));
                           handleDragStart(apt);

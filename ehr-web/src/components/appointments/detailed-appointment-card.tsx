@@ -78,11 +78,18 @@ export function DetailedAppointmentCard({
   // Use practitioner color if available
   const borderColor = appointment.practitionerColor || '#3b82f6';
 
+  // Only allow dragging scheduled appointments
+  const isDraggable = appointment.status === 'scheduled';
+
   return (
     <div
-      className={`relative ${className}`}
-      draggable
+      className={`relative ${className} ${!isDraggable ? 'cursor-not-allowed' : ''}`}
+      draggable={isDraggable}
       onDragStart={(e) => {
+        if (!isDraggable) {
+          e.preventDefault();
+          return;
+        }
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('application/json', JSON.stringify(appointment));
         onDragStart?.(appointment);
