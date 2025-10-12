@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight, Printer } from 'lucide-react';
 import { CalendarView } from '@/types/appointment';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +13,7 @@ interface CalendarToolbarProps {
   onToday: () => void;
   viewMode?: 'admin' | 'doctor';
   onViewModeChange?: (mode: 'admin' | 'doctor') => void;
+  onPrintSchedule?: () => void;
 }
 
 export function CalendarToolbar({
@@ -23,7 +23,8 @@ export function CalendarToolbar({
   onDateChange,
   onToday,
   viewMode = 'admin',
-  onViewModeChange
+  onViewModeChange,
+  onPrintSchedule
 }: CalendarToolbarProps) {
   const formatDisplayDate = () => {
     const options: Intl.DateTimeFormatOptions = { 
@@ -60,105 +61,132 @@ export function CalendarToolbar({
   };
 
   return (
-    <div className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handlePrevious}
-            className="h-8 w-8"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleNext}
-            className="h-8 w-8"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <h2 className="text-lg font-semibold text-gray-900">
+    <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2.5 shadow-sm">
+      {/* Left Section: Date Display */}
+      <div className="flex items-center gap-3">
+        {/* Date Display - Prominent */}
+        <h2 className="text-xl font-semibold text-gray-900">
           {formatDisplayDate()}
         </h2>
       </div>
 
+      {/* Right Section: All Controls */}
       <div className="flex items-center gap-2">
-        {/* View Mode Selector */}
-        {onViewModeChange && (
-          <div className="flex rounded-lg border border-gray-300 bg-white mr-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onViewModeChange('admin')}
-              className={cn(
-                'h-9 rounded-r-none border-r text-xs px-3',
-                viewMode === 'admin' && 'bg-blue-100 text-blue-700 font-medium'
-              )}
-            >
-              Admin View
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onViewModeChange('doctor')}
-              className={cn(
-                'h-9 rounded-l-none text-xs px-3',
-                viewMode === 'doctor' && 'bg-blue-100 text-blue-700 font-medium'
-              )}
-            >
-              Doctor View
-            </Button>
-          </div>
-        )}
-
-        <Button
-          variant="outline"
-          size="sm"
+        {/* Today Button - First */}
+        <button
           onClick={onToday}
-          className="h-9"
+          className="h-8 px-3 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 transition-colors border border-gray-300"
         >
           Today
-        </Button>
+        </button>
 
-        <div className="ml-2 flex rounded-lg border border-gray-300 bg-white">
-          <Button
-            variant="ghost"
-            size="sm"
+        {/* Navigation Arrows - After Today */}
+        <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
+          <button
+            onClick={handlePrevious}
+            className="h-8 w-8 flex items-center justify-center hover:bg-gray-100 transition-colors border-r border-gray-300"
+            title="Previous"
+          >
+            <ChevronLeft className="h-4 w-4 text-gray-600" />
+          </button>
+          <button
+            onClick={handleNext}
+            className="h-8 w-8 flex items-center justify-center hover:bg-gray-100 transition-colors"
+            title="Next"
+          >
+            <ChevronRight className="h-4 w-4 text-gray-600" />
+          </button>
+        </div>
+
+        {/* Divider */}
+        <div className="h-6 w-px bg-gray-300" />
+
+        {/* View Type Selector - Day/Week/Month */}
+        <div className="flex items-center rounded-md border border-gray-300 h-8 overflow-hidden">
+          <button
             onClick={() => onViewChange('day')}
             className={cn(
-              'h-9 rounded-r-none border-r',
-              view === 'day' && 'bg-gray-100'
+              'h-full px-3 text-xs font-semibold transition-colors border-r border-gray-300',
+              view === 'day'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-50'
             )}
           >
             Day
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
+          </button>
+          <button
             onClick={() => onViewChange('week')}
             className={cn(
-              'h-9 rounded-none border-r',
-              view === 'week' && 'bg-gray-100'
+              'h-full px-3 text-xs font-semibold transition-colors border-r border-gray-300',
+              view === 'week'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-50'
             )}
           >
             Week
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
+          </button>
+          <button
             onClick={() => onViewChange('month')}
             className={cn(
-              'h-9 rounded-l-none',
-              view === 'month' && 'bg-gray-100'
+              'h-full px-3 text-xs font-semibold transition-colors',
+              view === 'month'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-50'
             )}
           >
             Month
-          </Button>
+          </button>
         </div>
+
+        {/* View Mode Selector - Admin/Doctor */}
+        {onViewModeChange && (
+          <>
+            {/* Divider */}
+            <div className="h-6 w-px bg-gray-300" />
+
+            <div className="flex items-center rounded-md border border-gray-300 h-8 overflow-hidden">
+              <button
+                onClick={() => onViewModeChange('admin')}
+                className={cn(
+                  'h-full px-3 text-xs font-semibold transition-colors border-r border-gray-300',
+                  viewMode === 'admin'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                )}
+              >
+                Admin
+              </button>
+              <button
+                onClick={() => onViewModeChange('doctor')}
+                className={cn(
+                  'h-full px-3 text-xs font-semibold transition-colors',
+                  viewMode === 'doctor'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                )}
+              >
+                Doctor
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* Print Schedule Button */}
+        {onPrintSchedule && (
+          <>
+            {/* Divider */}
+            <div className="h-6 w-px bg-gray-300" />
+
+            <button
+              onClick={onPrintSchedule}
+              className="h-8 px-3 flex items-center gap-1.5 text-xs font-semibold text-gray-700 rounded-md hover:bg-gray-100 transition-colors border border-gray-300"
+              title="Print Schedule"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              Print
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

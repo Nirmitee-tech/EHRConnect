@@ -573,24 +573,26 @@ export function WeekViewDraggable({
         }
       }}
     >
-      {/* Week header */}
-      <div className="grid grid-cols-[80px_repeat(7,minmax(120px,1fr))] border-b border-gray-200 bg-gray-50">
-        <div className="border-r border-gray-200 p-2"></div>
+      {/* Week header - Compact */}
+      <div className="grid grid-cols-[64px_repeat(7,minmax(100px,1fr))] border-b border-gray-200 bg-white shadow-sm">
+        <div className="border-r border-gray-200"></div>
         {weekDates.map((date, idx) => {
           const isToday = date.toDateString() === today.toDateString();
           return (
             <div
               key={idx}
-              className="flex flex-col items-center justify-center border-r border-gray-200 p-2 last:border-r-0"
+              className={`flex flex-col items-center justify-center border-r border-gray-200 py-2 last:border-r-0 ${
+                isToday ? 'bg-blue-50/50' : ''
+              }`}
             >
-              <div className="text-xs font-medium text-gray-500 uppercase">
+              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
                 {date.toLocaleDateString('en-US', { weekday: 'short' })}
               </div>
               <div
-                className={`mt-1 flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
+                className={`mt-1 flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
                   isToday
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-900'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 {date.getDate()}
@@ -600,11 +602,11 @@ export function WeekViewDraggable({
         })}
       </div>
 
-      {/* All-day events row */}
+      {/* All-day events row - Compact */}
       {allDayEvents.length > 0 && (
-        <div className="grid grid-cols-[80px_repeat(7,minmax(120px,1fr))] border-b border-gray-200 bg-gray-50/50">
-          <div className="border-r border-gray-200 py-2 px-2 text-right text-[10px] font-semibold text-gray-500 uppercase">
-            All Day
+        <div className="grid grid-cols-[64px_repeat(7,minmax(100px,1fr))] border-b border-gray-200 bg-gray-50/30">
+          <div className="border-r border-gray-200 py-1.5 px-2 text-right">
+            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">All Day</span>
           </div>
           {weekDates.map((date, idx) => {
             const dayAllDayEvents = getAllDayEventsForDate(date);
@@ -612,16 +614,14 @@ export function WeekViewDraggable({
             return (
               <div
                 key={idx}
-                className={`relative min-h-[50px] border-r border-gray-200 p-1 last:border-r-0 ${
-                  isToday ? 'bg-blue-50/40' : 'bg-white'
+                className={`relative min-h-[44px] border-r border-gray-200 p-1 last:border-r-0 ${
+                  isToday ? 'bg-blue-50/30' : 'bg-white/50'
                 }`}
               >
                 <div className="flex flex-col gap-1">
                   {dayAllDayEvents.map((apt) => {
-                    // Determine event type and styling
                     const eventType = apt.allDayEventType || 'appointment';
 
-                    // Define colors and icons for different event types
                     const eventStyles: Record<string, { bg: string; text: string; icon: string; border: string }> = {
                       'leave': { bg: 'bg-orange-500', text: 'text-white', icon: '🏖️', border: 'border-orange-600' },
                       'vacation': { bg: 'bg-purple-500', text: 'text-white', icon: '✈️', border: 'border-purple-600' },
@@ -634,7 +634,6 @@ export function WeekViewDraggable({
 
                     const style = eventStyles[eventType] || eventStyles.appointment;
 
-                    // For regular appointments, use practitioner color
                     const isHexColor = typeof apt.practitionerColor === 'string' && apt.practitionerColor.startsWith('#');
                     const useCustomColor = eventType === 'appointment' && apt.practitionerColor;
                     const bgColor = useCustomColor ? (isHexColor ? null : apt.practitionerColor) : null;
@@ -643,7 +642,7 @@ export function WeekViewDraggable({
                       <div
                         key={apt.id}
                         onClick={() => onAppointmentClick?.(apt)}
-                        className={`cursor-pointer rounded px-2 py-1.5 text-[11px] font-medium shadow-sm hover:shadow-md transition-all border-l-4 ${
+                        className={`cursor-pointer rounded px-1.5 py-1 text-[10px] font-medium shadow-sm hover:shadow transition-all border-l-3 ${
                           useCustomColor && !isHexColor ? bgColor : style.bg
                         } ${style.text} ${style.border}`}
                         style={useCustomColor && isHexColor ? {
@@ -658,14 +657,9 @@ export function WeekViewDraggable({
                         }}
                         onDragEnd={handleDragEnd}
                       >
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs">{style.icon}</span>
-                          <span className="truncate flex-1">{apt.patientName}</span>
-                          {eventType !== 'appointment' && (
-                            <span className="text-[9px] opacity-90 uppercase font-semibold">
-                              {eventType}
-                            </span>
-                          )}
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px]">{style.icon}</span>
+                          <span className="truncate flex-1 font-semibold">{apt.patientName}</span>
                         </div>
                       </div>
                     );
@@ -677,18 +671,19 @@ export function WeekViewDraggable({
         </div>
       )}
 
-      {/* Time grid */}
-      <div className="flex-1 overflow-y-auto relative" ref={scrollContainerRef}>
-        <div ref={gridContainerRef} className="grid grid-cols-[80px_repeat(7,minmax(120px,1fr))] relative" style={{ minHeight: '1440px' }}>
+      {/* Time grid - Optimized */}
+      <div className="flex-1 overflow-y-auto relative bg-white" ref={scrollContainerRef}>
+        <div ref={gridContainerRef} className="grid grid-cols-[64px_repeat(7,minmax(100px,1fr))] relative" style={{ minHeight: '1440px' }}>
           {/* Time labels and grid cells */}
           {timeSlots.map((time, timeIdx) => {
             const [hour] = time.split(':').map(Number);
+            const formattedTime = hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`;
 
             return (
               <React.Fragment key={timeIdx}>
-                {/* Time label */}
-                <div className="border-b border-r border-gray-200 bg-gray-50 p-2 text-right text-xs text-gray-500 h-[60px]">
-                  {time}
+                {/* Time label - Compact */}
+                <div className="border-b border-r border-gray-200 bg-gray-50/80 py-1 px-2 text-right h-[60px] flex items-start justify-end">
+                  <span className="text-[10px] font-semibold text-gray-500">{formattedTime}</span>
                 </div>
 
                 {/* Day columns - empty cells for grid */}
@@ -700,11 +695,11 @@ export function WeekViewDraggable({
                   return (
                     <div
                       key={dateIdx}
-                      className={`relative h-[60px] border-b border-r border-gray-200 last:border-r-0 transition-colors ${
-                        isToday ? 'bg-blue-50/30' : 'bg-white'
-                      } ${isDraggedOver ? 'bg-blue-100' : ''} ${
-                        inCreateRange ? 'bg-green-100 ring-2 ring-inset ring-green-400' : ''
-                      }`}
+                      className={`relative h-[60px] border-b border-r border-gray-100 last:border-r-0 transition-colors ${
+                        isToday ? 'bg-blue-50/20' : 'bg-white'
+                      } ${isDraggedOver ? 'bg-blue-100/70 ring-1 ring-inset ring-blue-400' : ''} ${
+                        inCreateRange ? 'bg-green-50 ring-2 ring-inset ring-green-400' : ''
+                      } hover:bg-gray-50/50`}
                       onDragOver={(e) => handleDragOver(e, date, hour)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, date, hour)}
@@ -717,9 +712,12 @@ export function WeekViewDraggable({
                       }}
                       onMouseUp={resizingAppointment ? handleResizeEnd : undefined}
                     >
+                      {/* 30-minute divider line */}
+                      <div className="absolute left-0 right-0 top-1/2 border-t border-gray-100 pointer-events-none" />
+
                       {/* Visual indicator for drag over */}
                       {isDraggedOver && (
-                        <div className="absolute inset-0 border-2 border-blue-500 bg-blue-100/50 pointer-events-none" />
+                        <div className="absolute inset-0 border-2 border-blue-400 bg-blue-100/30 pointer-events-none rounded" />
                       )}
                     </div>
                   );
@@ -729,31 +727,18 @@ export function WeekViewDraggable({
           })}
 
           {/* Appointments overlay - absolutely positioned */}
-          {/* Disable pointer events on appointment overlay while dragging to allow drops */}
           {weekDates.map((date, dateIdx) => {
             const dateStr = date.toDateString();
             const dateAppointments = appointmentsByDate.get(dateStr) || [];
             const layout = layoutByDate.get(dateStr);
-
-            // Debug logging for rendering
-            if (dateAppointments.length > 0 && dateStr === 'Mon Oct 13 2025') {
-              console.log(`🎨 RENDERING ${dateAppointments.length} appointments for ${dateStr}:`, {
-                appointments: dateAppointments.map(a => ({
-                  id: a.id.substring(0, 8),
-                  name: a.patientName,
-                  style: calculateAppointmentStyle(a),
-                  layout: layout?.get(a.id)
-                }))
-              });
-            }
 
             return (
               <div
                 key={`appointments-${dateIdx}`}
                 className="absolute pointer-events-none"
                 style={{
-                  left: `calc(80px + ${dateIdx} * (100% - 80px) / 7)`,
-                  width: `calc((100% - 80px) / 7)`,
+                  left: `calc(64px + ${dateIdx} * (100% - 64px) / 7)`,
+                  width: `calc((100% - 64px) / 7)`,
                   top: 0,
                   height: '100%'
                 }}
@@ -789,7 +774,7 @@ export function WeekViewDraggable({
                       {/* Main appointment card */}
                       <div
                         className="h-full"
-                        onClick={(e) => {
+                        onClick={() => {
                           // Only trigger click if not resizing
                           if (!resizingAppointment) {
                             onAppointmentClick?.(apt);
@@ -801,7 +786,7 @@ export function WeekViewDraggable({
                           onClick={undefined}
                           onDragStart={handleDragStart}
                           onDragEnd={handleDragEnd}
-                          className="h-full"
+                          className="h-full shadow-sm hover:shadow-md transition-shadow rounded-md"
                           spanning
                         />
                       </div>
@@ -813,7 +798,7 @@ export function WeekViewDraggable({
                           onMouseDown={(e) => handleResizeStart(apt, 'top', e)}
                           title="Drag to change start time"
                         >
-                          <div className="w-8 h-1 bg-blue-500/50 rounded-full mt-1" />
+                          <div className="w-10 h-1 bg-blue-500 rounded-full mt-1 shadow-sm" />
                         </div>
                       )}
 
@@ -823,22 +808,22 @@ export function WeekViewDraggable({
                         onMouseDown={(e) => handleResizeStart(apt, 'bottom', e)}
                         title="Drag to change end time"
                       >
-                        <div className="w-8 h-1 bg-blue-500/50 rounded-full mb-1" />
+                        <div className="w-10 h-1 bg-blue-500 rounded-full mb-1 shadow-sm" />
                       </div>
                     </div>
                   );
 
                   if (!layoutInfo) {
-                    // Single appointment, no overlap
+                    // Single appointment, no overlap - tighter spacing
                     return (
                       <div
                         key={apt.id}
-                        className={`absolute pointer-events-auto ${isDragging ? 'opacity-50' : ''} ${isBeingResized ? 'opacity-70' : ''}`}
+                        className={`absolute pointer-events-auto ${isDragging ? 'opacity-50' : ''} ${isBeingResized ? 'opacity-70 ring-2 ring-blue-400' : ''}`}
                         style={{
                           top: `${style.top}px`,
                           height: `${style.height}px`,
-                          left: '2px',
-                          right: '2px',
+                          left: '1px',
+                          right: '1px',
                           zIndex: isDragging || isBeingResized ? 1000 : 10
                         }}
                       >
@@ -847,19 +832,19 @@ export function WeekViewDraggable({
                     );
                   }
 
-                  // Multiple overlapping appointments
+                  // Multiple overlapping appointments - tighter spacing
                   const columnWidth = 100 / layoutInfo.totalColumns;
                   const leftPercent = (layoutInfo.column * 100) / layoutInfo.totalColumns;
 
                   return (
                     <div
                       key={apt.id}
-                      className={`absolute pointer-events-auto ${isDragging ? 'opacity-50' : ''} ${isBeingResized ? 'opacity-70' : ''}`}
+                      className={`absolute pointer-events-auto ${isDragging ? 'opacity-50' : ''} ${isBeingResized ? 'opacity-70 ring-2 ring-blue-400' : ''}`}
                       style={{
                         top: `${style.top}px`,
                         height: `${style.height}px`,
                         left: `calc(${leftPercent}% + 1px)`,
-                        width: `calc(${columnWidth}% - 2px)`,
+                        width: `calc(${columnWidth}% - 1px)`,
                         zIndex: isDragging || isBeingResized ? 1000 : 10 + layoutInfo.column
                       }}
                     >
@@ -878,20 +863,20 @@ export function WeekViewDraggable({
               style={{ top: `${getCurrentTimePosition()}px` }}
             >
               {/* Time label */}
-              <div className="absolute left-0 w-[80px] flex items-center justify-end pr-2">
-                <span className="bg-red-600 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded shadow-sm">
+              <div className="absolute left-0 w-[64px] flex items-center justify-end pr-1.5">
+                <span className="bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-md">
                   {currentTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                 </span>
               </div>
               {/* Red line across all columns */}
-              <div className="absolute left-[80px] right-0 flex">
-                <div className="h-0.5 bg-red-600 shadow-sm" style={{ width: '100%' }}>
+              <div className="absolute left-[64px] right-0 flex">
+                <div className="h-0.5 bg-red-600 shadow-md" style={{ width: '100%' }}>
                   {/* Circle indicator at the start of today's column */}
                   {getTodayColumnIndex() !== -1 && (
                     <div
-                      className="absolute -top-1 w-2.5 h-2.5 bg-red-600 rounded-full shadow-sm"
+                      className="absolute -top-1 w-2.5 h-2.5 bg-red-600 rounded-full shadow-md"
                       style={{
-                        left: `calc(${(getTodayColumnIndex() / 7) * 100}% + 4px)`
+                        left: `calc(${(getTodayColumnIndex() / 7) * 100}% + 3px)`
                       }}
                     />
                   )}
@@ -902,22 +887,25 @@ export function WeekViewDraggable({
         </div>
       </div>
 
-      {/* Instructions overlay */}
+      {/* Instructions overlay - Compact */}
       {isCreating && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium z-50">
-          Drag to set appointment duration • Release to create
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-600 text-white px-3 py-1.5 rounded-lg shadow-xl text-xs font-semibold z-50 flex items-center gap-2">
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+          </svg>
+          Drag to set duration • Release to create
         </div>
       )}
 
-      {/* Scroll to Now button - only show when viewing today */}
+      {/* Scroll to Now button - Compact and modern */}
       {isCurrentTimeVisible() && (
         <button
           onClick={scrollToNow}
-          className="absolute bottom-4 right-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium z-30 flex items-center gap-2 transition-colors"
+          className="absolute bottom-4 right-4 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white px-3 py-1.5 rounded-lg shadow-lg hover:shadow-xl text-xs font-bold z-30 flex items-center gap-1.5 transition-all"
           title="Scroll to current time"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           Now
         </button>
