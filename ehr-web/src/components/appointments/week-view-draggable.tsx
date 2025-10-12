@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Appointment } from '@/types/appointment';
-import { DetailedAppointmentCard } from './detailed-appointment-card';
+import { CompactAppointmentCard } from './compact-appointment-card';
 import { useCalendarSettings } from '@/hooks/useCalendarSettings';
 
 interface WeekViewDraggableProps {
@@ -164,19 +164,19 @@ export function WeekViewDraggable({
     const aptStart = new Date(appointment.startTime);
     const aptEnd = new Date(appointment.endTime);
 
-    // Calculate start position in pixels from midnight
+    // Calculate start position in pixels from midnight (1px per minute)
     const startHour = aptStart.getHours();
     const startMinutes = aptStart.getMinutes();
-    const startPosition = (startHour * 60 + startMinutes) * (60 / 60); // 60px per hour
+    const startPosition = (startHour * 60 + startMinutes); // 1px per minute
 
-    // Calculate duration in pixels
+    // Calculate duration in pixels (1px per minute)
     const durationMs = aptEnd.getTime() - aptStart.getTime();
     const durationMinutes = durationMs / (1000 * 60);
-    const height = (durationMinutes / 60) * 60; // 60px per hour
+    const height = durationMinutes; // 1px per minute
 
     return {
       top: startPosition,
-      height: Math.max(height, 60) // Minimum height of 60px for DetailedAppointmentCard
+      height: Math.max(height, 30) // Minimum height of 30px for CompactAppointmentCard
     };
   };
 
@@ -786,11 +786,11 @@ export function WeekViewDraggable({
 
                     const startHour = previewStart.getHours();
                     const startMinutes = previewStart.getMinutes();
-                    const top = (startHour * 60 + startMinutes);
+                    const top = (startHour * 60 + startMinutes); // 1px per minute
 
                     const durationMs = previewEnd.getTime() - previewStart.getTime();
                     const durationMinutes = durationMs / (1000 * 60);
-                    const height = Math.max((durationMinutes / 60) * 60, 60); // Minimum 60px for DetailedAppointmentCard
+                    const height = Math.max(durationMinutes, 30); // Minimum 30px for CompactAppointmentCard
 
                     style = { top, height };
                   }
@@ -812,7 +812,7 @@ export function WeekViewDraggable({
                           }
                         }}
                       >
-                        <DetailedAppointmentCard
+                        <CompactAppointmentCard
                           appointment={apt}
                           onClick={undefined}
                           onDragStart={handleDragStart}
@@ -822,23 +822,23 @@ export function WeekViewDraggable({
                       </div>
 
                       {/* Top resize handle - only show if appointment is tall enough */}
-                      {style.height >= 60 && (
+                      {style.height >= 40 && (
                         <div
-                          className="absolute top-0 left-0 right-0 h-3 cursor-ns-resize opacity-0 group-hover:opacity-100 z-50 flex items-start justify-center"
+                          className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 z-50 flex items-start justify-center"
                           onMouseDown={(e) => handleResizeStart(apt, 'top', e)}
                           title="Drag to change start time"
                         >
-                          <div className="w-12 h-1.5 bg-blue-500 rounded-full mt-1 shadow-sm" />
+                          <div className="w-8 h-1 bg-blue-500 rounded-full mt-0.5 shadow-sm" />
                         </div>
                       )}
 
                       {/* Bottom resize handle */}
                       <div
-                        className="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize opacity-0 group-hover:opacity-100 z-50 flex items-end justify-center"
+                        className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 z-50 flex items-end justify-center"
                         onMouseDown={(e) => handleResizeStart(apt, 'bottom', e)}
                         title="Drag to change end time"
                       >
-                        <div className="w-12 h-1.5 bg-blue-500 rounded-full mb-1 shadow-sm" />
+                        <div className="w-8 h-1 bg-blue-500 rounded-full mb-0.5 shadow-sm" />
                       </div>
                     </div>
                   );
