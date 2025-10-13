@@ -16,9 +16,11 @@ const onboardingRoutes = require('./routes/onboarding');
 const billingRoutes = require('./routes/billing');
 const inventoryRoutes = require('./routes/inventory');
 const inventoryMastersRoutes = require('./routes/inventory-masters');
+const auditRoutes = require('./routes/audit');
 const { initializeDatabase } = require('./database/init');
 const socketService = require('./services/socket.service');
 const billingJobs = require('./services/billing.jobs');
+const auditLogger = require('./middleware/audit-logger');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -38,11 +40,14 @@ app.use(cors({
   origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
   credentials: true
 }));
-app.use(express.json({ 
+app.use(express.json({
   limit: '10mb',
   type: ['application/json', 'application/fhir+json']
 }));
 app.use(express.urlencoded({ extended: true }));
+
+// Audit logging middleware (must be registered after body parsers)
+app.use(auditLogger());
 
 
 // Make database available to routes
@@ -149,6 +154,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/inventory/masters', inventoryMastersRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/orgs/:orgId/audit', auditRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
