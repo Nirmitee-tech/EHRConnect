@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS billing_tenant_settings (
   UNIQUE(org_id)
 );
 
-CREATE INDEX idx_billing_tenant_settings_org_id ON billing_tenant_settings(org_id);
+CREATE INDEX IF NOT EXISTS idx_billing_tenant_settings_org_id ON billing_tenant_settings(org_id);
 
 -- =====================================================
 -- BILLING MASTERS: CPT CODES
@@ -39,9 +39,9 @@ CREATE TABLE IF NOT EXISTS billing_cpt_codes (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_billing_cpt_codes_code ON billing_cpt_codes(code);
-CREATE INDEX idx_billing_cpt_codes_category ON billing_cpt_codes(category);
-CREATE INDEX idx_billing_cpt_codes_active ON billing_cpt_codes(active);
+CREATE INDEX IF NOT EXISTS idx_billing_cpt_codes_code ON billing_cpt_codes(code);
+CREATE INDEX IF NOT EXISTS idx_billing_cpt_codes_category ON billing_cpt_codes(category);
+CREATE INDEX IF NOT EXISTS idx_billing_cpt_codes_active ON billing_cpt_codes(active);
 
 -- =====================================================
 -- BILLING MASTERS: ICD CODES (ICD-10)
@@ -60,9 +60,9 @@ CREATE TABLE IF NOT EXISTS billing_icd_codes (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_billing_icd_codes_code ON billing_icd_codes(code);
-CREATE INDEX idx_billing_icd_codes_category ON billing_icd_codes(category);
-CREATE INDEX idx_billing_icd_codes_active ON billing_icd_codes(active);
+CREATE INDEX IF NOT EXISTS idx_billing_icd_codes_code ON billing_icd_codes(code);
+CREATE INDEX IF NOT EXISTS idx_billing_icd_codes_category ON billing_icd_codes(category);
+CREATE INDEX IF NOT EXISTS idx_billing_icd_codes_active ON billing_icd_codes(active);
 
 -- =====================================================
 -- BILLING MASTERS: MODIFIERS
@@ -78,8 +78,8 @@ CREATE TABLE IF NOT EXISTS billing_modifiers (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_billing_modifiers_code ON billing_modifiers(code);
-CREATE INDEX idx_billing_modifiers_type ON billing_modifiers(modifier_type);
+CREATE INDEX IF NOT EXISTS idx_billing_modifiers_code ON billing_modifiers(code);
+CREATE INDEX IF NOT EXISTS idx_billing_modifiers_type ON billing_modifiers(modifier_type);
 
 -- =====================================================
 -- BILLING MASTERS: PROVIDERS
@@ -104,9 +104,9 @@ CREATE TABLE IF NOT EXISTS billing_providers (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_billing_providers_npi ON billing_providers(npi);
-CREATE INDEX idx_billing_providers_specialty ON billing_providers(specialty);
-CREATE INDEX idx_billing_providers_active ON billing_providers(active);
+CREATE INDEX IF NOT EXISTS idx_billing_providers_npi ON billing_providers(npi);
+CREATE INDEX IF NOT EXISTS idx_billing_providers_specialty ON billing_providers(specialty);
+CREATE INDEX IF NOT EXISTS idx_billing_providers_active ON billing_providers(active);
 
 -- =====================================================
 -- BILLING MASTERS: PAYERS (Insurance Companies)
@@ -129,9 +129,9 @@ CREATE TABLE IF NOT EXISTS billing_payers (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_billing_payers_name ON billing_payers(name);
-CREATE INDEX idx_billing_payers_payer_id ON billing_payers(payer_id);
-CREATE INDEX idx_billing_payers_active ON billing_payers(active);
+CREATE INDEX IF NOT EXISTS idx_billing_payers_name ON billing_payers(name);
+CREATE INDEX IF NOT EXISTS idx_billing_payers_payer_id ON billing_payers(payer_id);
+CREATE INDEX IF NOT EXISTS idx_billing_payers_active ON billing_payers(active);
 
 -- =====================================================
 -- BILLING MASTERS: FEE SCHEDULES
@@ -151,9 +151,9 @@ CREATE TABLE IF NOT EXISTS billing_fee_schedules (
   UNIQUE(org_id, payer_id, cpt_code, effective_from)
 );
 
-CREATE INDEX idx_billing_fee_schedules_org_id ON billing_fee_schedules(org_id);
-CREATE INDEX idx_billing_fee_schedules_payer_id ON billing_fee_schedules(payer_id);
-CREATE INDEX idx_billing_fee_schedules_cpt_code ON billing_fee_schedules(cpt_code);
+CREATE INDEX IF NOT EXISTS idx_billing_fee_schedules_org_id ON billing_fee_schedules(org_id);
+CREATE INDEX IF NOT EXISTS idx_billing_fee_schedules_payer_id ON billing_fee_schedules(payer_id);
+CREATE INDEX IF NOT EXISTS idx_billing_fee_schedules_cpt_code ON billing_fee_schedules(cpt_code);
 
 -- =====================================================
 -- ELIGIBILITY HISTORY
@@ -174,9 +174,9 @@ CREATE TABLE IF NOT EXISTS billing_eligibility_history (
   CONSTRAINT unique_eligibility_check UNIQUE(patient_id, payer_id, service_date, checked_at)
 );
 
-CREATE INDEX idx_billing_eligibility_patient_id ON billing_eligibility_history(patient_id);
-CREATE INDEX idx_billing_eligibility_org_id ON billing_eligibility_history(org_id);
-CREATE INDEX idx_billing_eligibility_checked_at ON billing_eligibility_history(checked_at DESC);
+CREATE INDEX IF NOT EXISTS idx_billing_eligibility_patient_id ON billing_eligibility_history(patient_id);
+CREATE INDEX IF NOT EXISTS idx_billing_eligibility_org_id ON billing_eligibility_history(org_id);
+CREATE INDEX IF NOT EXISTS idx_billing_eligibility_checked_at ON billing_eligibility_history(checked_at DESC);
 
 -- =====================================================
 -- PRIOR AUTHORIZATIONS
@@ -209,11 +209,11 @@ CREATE TABLE IF NOT EXISTS billing_prior_authorizations (
   metadata JSONB
 );
 
-CREATE INDEX idx_billing_prior_auth_patient_id ON billing_prior_authorizations(patient_id);
-CREATE INDEX idx_billing_prior_auth_encounter_id ON billing_prior_authorizations(encounter_id);
-CREATE INDEX idx_billing_prior_auth_org_id ON billing_prior_authorizations(org_id);
-CREATE INDEX idx_billing_prior_auth_status ON billing_prior_authorizations(status);
-CREATE INDEX idx_billing_prior_auth_valid_to ON billing_prior_authorizations(valid_to);
+CREATE INDEX IF NOT EXISTS idx_billing_prior_auth_patient_id ON billing_prior_authorizations(patient_id);
+CREATE INDEX IF NOT EXISTS idx_billing_prior_auth_encounter_id ON billing_prior_authorizations(encounter_id);
+CREATE INDEX IF NOT EXISTS idx_billing_prior_auth_org_id ON billing_prior_authorizations(org_id);
+CREATE INDEX IF NOT EXISTS idx_billing_prior_auth_status ON billing_prior_authorizations(status);
+CREATE INDEX IF NOT EXISTS idx_billing_prior_auth_valid_to ON billing_prior_authorizations(valid_to);
 
 -- =====================================================
 -- CLAIMS
@@ -277,15 +277,15 @@ CREATE TABLE IF NOT EXISTS billing_claims (
   metadata JSONB
 );
 
-CREATE INDEX idx_billing_claims_claim_number ON billing_claims(claim_number);
-CREATE INDEX idx_billing_claims_claim_md_id ON billing_claims(claim_md_id);
-CREATE INDEX idx_billing_claims_patient_id ON billing_claims(patient_id);
-CREATE INDEX idx_billing_claims_encounter_id ON billing_claims(encounter_id);
-CREATE INDEX idx_billing_claims_org_id ON billing_claims(org_id);
-CREATE INDEX idx_billing_claims_payer_id ON billing_claims(payer_id);
-CREATE INDEX idx_billing_claims_status ON billing_claims(status);
-CREATE INDEX idx_billing_claims_service_date ON billing_claims(service_date_from, service_date_to);
-CREATE INDEX idx_billing_claims_submission_date ON billing_claims(submission_date DESC);
+CREATE INDEX IF NOT EXISTS idx_billing_claims_claim_number ON billing_claims(claim_number);
+CREATE INDEX IF NOT EXISTS idx_billing_claims_claim_md_id ON billing_claims(claim_md_id);
+CREATE INDEX IF NOT EXISTS idx_billing_claims_patient_id ON billing_claims(patient_id);
+CREATE INDEX IF NOT EXISTS idx_billing_claims_encounter_id ON billing_claims(encounter_id);
+CREATE INDEX IF NOT EXISTS idx_billing_claims_org_id ON billing_claims(org_id);
+CREATE INDEX IF NOT EXISTS idx_billing_claims_payer_id ON billing_claims(payer_id);
+CREATE INDEX IF NOT EXISTS idx_billing_claims_status ON billing_claims(status);
+CREATE INDEX IF NOT EXISTS idx_billing_claims_service_date ON billing_claims(service_date_from, service_date_to);
+CREATE INDEX IF NOT EXISTS idx_billing_claims_submission_date ON billing_claims(submission_date DESC);
 
 -- =====================================================
 -- CLAIM LINE ITEMS
@@ -326,9 +326,9 @@ CREATE TABLE IF NOT EXISTS billing_claim_lines (
   UNIQUE(claim_id, line_number)
 );
 
-CREATE INDEX idx_billing_claim_lines_claim_id ON billing_claim_lines(claim_id);
-CREATE INDEX idx_billing_claim_lines_cpt_code ON billing_claim_lines(cpt_code);
-CREATE INDEX idx_billing_claim_lines_service_date ON billing_claim_lines(service_date);
+CREATE INDEX IF NOT EXISTS idx_billing_claim_lines_claim_id ON billing_claim_lines(claim_id);
+CREATE INDEX IF NOT EXISTS idx_billing_claim_lines_cpt_code ON billing_claim_lines(cpt_code);
+CREATE INDEX IF NOT EXISTS idx_billing_claim_lines_service_date ON billing_claim_lines(service_date);
 
 -- =====================================================
 -- REMITTANCE (ERA - Electronic Remittance Advice)
@@ -360,10 +360,10 @@ CREATE TABLE IF NOT EXISTS billing_remittance (
   metadata JSONB
 );
 
-CREATE INDEX idx_billing_remittance_org_id ON billing_remittance(org_id);
-CREATE INDEX idx_billing_remittance_payer_id ON billing_remittance(payer_id);
-CREATE INDEX idx_billing_remittance_status ON billing_remittance(status);
-CREATE INDEX idx_billing_remittance_payment_date ON billing_remittance(payment_date DESC);
+CREATE INDEX IF NOT EXISTS idx_billing_remittance_org_id ON billing_remittance(org_id);
+CREATE INDEX IF NOT EXISTS idx_billing_remittance_payer_id ON billing_remittance(payer_id);
+CREATE INDEX IF NOT EXISTS idx_billing_remittance_status ON billing_remittance(status);
+CREATE INDEX IF NOT EXISTS idx_billing_remittance_payment_date ON billing_remittance(payment_date DESC);
 
 -- =====================================================
 -- REMITTANCE LINE ITEMS (Maps to Claim Lines)
@@ -390,8 +390,8 @@ CREATE TABLE IF NOT EXISTS billing_remittance_lines (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_billing_remittance_lines_remittance_id ON billing_remittance_lines(remittance_id);
-CREATE INDEX idx_billing_remittance_lines_claim_id ON billing_remittance_lines(claim_id);
+CREATE INDEX IF NOT EXISTS idx_billing_remittance_lines_remittance_id ON billing_remittance_lines(remittance_id);
+CREATE INDEX IF NOT EXISTS idx_billing_remittance_lines_claim_id ON billing_remittance_lines(claim_id);
 
 -- =====================================================
 -- PAYMENT LEDGER (Accounting Journal)
@@ -425,11 +425,11 @@ CREATE TABLE IF NOT EXISTS billing_payment_ledger (
   metadata JSONB
 );
 
-CREATE INDEX idx_billing_payment_ledger_org_id ON billing_payment_ledger(org_id);
-CREATE INDEX idx_billing_payment_ledger_patient_id ON billing_payment_ledger(patient_id);
-CREATE INDEX idx_billing_payment_ledger_claim_id ON billing_payment_ledger(claim_id);
-CREATE INDEX idx_billing_payment_ledger_remittance_id ON billing_payment_ledger(remittance_id);
-CREATE INDEX idx_billing_payment_ledger_transaction_date ON billing_payment_ledger(transaction_date DESC);
+CREATE INDEX IF NOT EXISTS idx_billing_payment_ledger_org_id ON billing_payment_ledger(org_id);
+CREATE INDEX IF NOT EXISTS idx_billing_payment_ledger_patient_id ON billing_payment_ledger(patient_id);
+CREATE INDEX IF NOT EXISTS idx_billing_payment_ledger_claim_id ON billing_payment_ledger(claim_id);
+CREATE INDEX IF NOT EXISTS idx_billing_payment_ledger_remittance_id ON billing_payment_ledger(remittance_id);
+CREATE INDEX IF NOT EXISTS idx_billing_payment_ledger_transaction_date ON billing_payment_ledger(transaction_date DESC);
 
 -- =====================================================
 -- CLAIM STATUS HISTORY (Audit Trail)
@@ -445,38 +445,47 @@ CREATE TABLE IF NOT EXISTS billing_claim_status_history (
   metadata JSONB
 );
 
-CREATE INDEX idx_billing_claim_status_history_claim_id ON billing_claim_status_history(claim_id);
-CREATE INDEX idx_billing_claim_status_history_changed_at ON billing_claim_status_history(changed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_billing_claim_status_history_claim_id ON billing_claim_status_history(claim_id);
+CREATE INDEX IF NOT EXISTS idx_billing_claim_status_history_changed_at ON billing_claim_status_history(changed_at DESC);
 
 -- =====================================================
 -- TRIGGERS
 -- =====================================================
 
 -- Update updated_at timestamp
+DROP TRIGGER IF EXISTS update_billing_tenant_settings_updated_at ON billing_tenant_settings;
 CREATE TRIGGER update_billing_tenant_settings_updated_at BEFORE UPDATE ON billing_tenant_settings
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_billing_cpt_codes_updated_at ON billing_cpt_codes;
 CREATE TRIGGER update_billing_cpt_codes_updated_at BEFORE UPDATE ON billing_cpt_codes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_billing_icd_codes_updated_at ON billing_icd_codes;
 CREATE TRIGGER update_billing_icd_codes_updated_at BEFORE UPDATE ON billing_icd_codes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_billing_modifiers_updated_at ON billing_modifiers;
 CREATE TRIGGER update_billing_modifiers_updated_at BEFORE UPDATE ON billing_modifiers
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_billing_payers_updated_at ON billing_payers;
 CREATE TRIGGER update_billing_payers_updated_at BEFORE UPDATE ON billing_payers
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_billing_fee_schedules_updated_at ON billing_fee_schedules;
 CREATE TRIGGER update_billing_fee_schedules_updated_at BEFORE UPDATE ON billing_fee_schedules
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_billing_prior_authorizations_updated_at ON billing_prior_authorizations;
 CREATE TRIGGER update_billing_prior_authorizations_updated_at BEFORE UPDATE ON billing_prior_authorizations
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_billing_claims_updated_at ON billing_claims;
 CREATE TRIGGER update_billing_claims_updated_at BEFORE UPDATE ON billing_claims
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_billing_claim_lines_updated_at ON billing_claim_lines;
 CREATE TRIGGER update_billing_claim_lines_updated_at BEFORE UPDATE ON billing_claim_lines
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -492,6 +501,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_log_claim_status_change ON billing_claims;
 CREATE TRIGGER trigger_log_claim_status_change
   AFTER UPDATE ON billing_claims
   FOR EACH ROW

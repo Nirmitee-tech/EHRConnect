@@ -15,10 +15,10 @@ CREATE TABLE IF NOT EXISTS inventory_categories (
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   metadata JSONB,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  UNIQUE(org_id, LOWER(name))
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_categories_org_name_unique ON inventory_categories(org_id, LOWER(name));
 CREATE INDEX IF NOT EXISTS idx_inventory_categories_org ON inventory_categories(org_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_categories_active ON inventory_categories(org_id, is_active);
 
@@ -39,10 +39,10 @@ CREATE TABLE IF NOT EXISTS inventory_suppliers (
   metadata JSONB,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  UNIQUE(org_id, LOWER(name)),
   UNIQUE(org_id, code)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_suppliers_org_name_unique ON inventory_suppliers(org_id, LOWER(name));
 CREATE INDEX IF NOT EXISTS idx_inventory_suppliers_org ON inventory_suppliers(org_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_suppliers_active ON inventory_suppliers(org_id, is_active);
 
@@ -71,10 +71,10 @@ CREATE TABLE IF NOT EXISTS inventory_items (
   metadata JSONB,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  UNIQUE(org_id, LOWER(name)),
   UNIQUE(org_id, sku)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_items_org_name_unique ON inventory_items(org_id, LOWER(name));
 CREATE INDEX IF NOT EXISTS idx_inventory_items_org ON inventory_items(org_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_items_category ON inventory_items(org_id, category_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_items_active ON inventory_items(org_id, is_active);
@@ -189,22 +189,27 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_inventory_categories_updated ON inventory_categories;
 CREATE TRIGGER trg_inventory_categories_updated
 BEFORE UPDATE ON inventory_categories
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+DROP TRIGGER IF EXISTS trg_inventory_suppliers_updated ON inventory_suppliers;
 CREATE TRIGGER trg_inventory_suppliers_updated
 BEFORE UPDATE ON inventory_suppliers
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+DROP TRIGGER IF EXISTS trg_inventory_items_updated ON inventory_items;
 CREATE TRIGGER trg_inventory_items_updated
 BEFORE UPDATE ON inventory_items
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+DROP TRIGGER IF EXISTS trg_inventory_item_locations_updated ON inventory_item_locations;
 CREATE TRIGGER trg_inventory_item_locations_updated
 BEFORE UPDATE ON inventory_item_locations
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+DROP TRIGGER IF EXISTS trg_inventory_lots_updated ON inventory_lots;
 CREATE TRIGGER trg_inventory_lots_updated
 BEFORE UPDATE ON inventory_lots
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();

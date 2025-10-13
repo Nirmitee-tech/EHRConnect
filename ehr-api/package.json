@@ -9,6 +9,7 @@
     "migrate": "node src/migrations/run-migrations.js",
     "seed": "node src/seeds/seed-data.js",
     "seed:roles": "node src/scripts/seed-default-roles.js",
+    "seed:inventory": "node src/database/seeders/seed-inventory-masters.js",
     "sync:permissions": "node src/scripts/sync-permissions-to-keycloak.js",
     "test": "jest"
   },

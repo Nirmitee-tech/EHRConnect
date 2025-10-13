@@ -15,6 +15,7 @@ const userRoutes = require('./routes/users');
 const onboardingRoutes = require('./routes/onboarding');
 const billingRoutes = require('./routes/billing');
 const inventoryRoutes = require('./routes/inventory');
+const inventoryMastersRoutes = require('./routes/inventory-masters');
 const { initializeDatabase } = require('./database/init');
 const socketService = require('./services/socket.service');
 const billingJobs = require('./services/billing.jobs');
@@ -146,6 +147,7 @@ app.use('/api/rbac', rbacRoutes);
 app.use('/api/rbac/v2', rbacEnhancedRoutes); // Enhanced RBAC with permission matrix
 app.use('/api/auth', authRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/inventory/masters', inventoryMastersRoutes);
 app.use('/api/inventory', inventoryRoutes);
 
 // Health check
