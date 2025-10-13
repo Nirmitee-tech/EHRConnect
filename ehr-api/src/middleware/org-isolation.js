@@ -1,4 +1,4 @@
-const { query } = require('../database/connection');
+const auditService = require('../services/audit.service');
 
 /**
  * Middleware to enforce org isolation at API level
@@ -14,15 +14,17 @@ function enforceOrgIsolation(req, res, next) {
   }
 
   if (requestedOrgId && requestedOrgId !== tokenOrgId) {
-    logSecurityViolation({
-      type: 'ORG_ISOLATION_VIOLATION',
-      userId,
-      tokenOrgId,
-      requestedOrgId,
-      endpoint: req.path,
+    auditService.logSecurityViolation({
+      orgId: tokenOrgId,
+      actorUserId: userId,
+      endpoint: req.originalUrl || req.path,
       method: req.method,
-      ip: req.ip,
+      ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      details: {
+        requestedOrgId,
+        providedOrgId: tokenOrgId
+      }
     });
 
     return res.status(403).json({ 
@@ -39,33 +41,6 @@ function enforceOrgIsolation(req, res, next) {
   };
 
   next();
-}
-
-async function logSecurityViolation(event) {
-  try {
-    await query(
-      `INSERT INTO audit_events (
-        org_id, actor_user_id, action, target_type,
-        status, metadata, ip_address, user_agent
-      )
-      VALUES ($1, $2, $3, $4, 'failure', $5, $6, $7)`,
-      [
-        event.tokenOrgId,
-        event.userId,
-        event.type,
-        'SecurityViolation',
-        JSON.stringify({
-          requestedOrgId: event.requestedOrgId,
-          endpoint: event.endpoint,
-          method: event.method,
-        }),
-        event.ip,
-        event.userAgent,
-      ]
-    );
-  } catch (error) {
-    console.error('Failed to log security violation:', error);
-  }
 }
 
 module.exports = { enforceOrgIsolation };

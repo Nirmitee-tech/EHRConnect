@@ -209,12 +209,14 @@ CREATE TABLE IF NOT EXISTS audit_events (
   target_type TEXT NOT NULL, -- 'Organization', 'User', 'Location', 'RoleAssignment'
   target_id UUID, -- ID of the affected entity
   target_name TEXT, -- Human-readable target name
+  category TEXT NOT NULL DEFAULT 'system', -- Logical grouping for filtering (http_requests, authentication, etc.)
   status TEXT NOT NULL CHECK (status IN ('success', 'failure', 'pending')),
   error_message TEXT, -- If status = 'failure'
   metadata JSONB, -- Additional context (changes made, etc.)
   ip_address INET,
   user_agent TEXT,
   session_id TEXT,
+  request_id TEXT,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -225,6 +227,48 @@ CREATE INDEX idx_audit_events_target_type ON audit_events(target_type);
 CREATE INDEX idx_audit_events_target_id ON audit_events(target_id);
 CREATE INDEX idx_audit_events_created_at ON audit_events(created_at DESC);
 CREATE INDEX idx_audit_events_org_created ON audit_events(org_id, created_at DESC);
+
+CREATE OR REPLACE FUNCTION set_audit_event_category()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.category IS NULL OR NEW.category = 'system' THEN
+    NEW.category := CASE
+      WHEN NEW.action LIKE 'AUTH.%' THEN 'authentication'
+      WHEN NEW.action LIKE 'SECURITY.%' THEN 'security'
+      WHEN NEW.action LIKE 'ORG.%' THEN 'administration'
+      WHEN NEW.action LIKE 'ROLE.%' THEN 'administration'
+      WHEN NEW.action LIKE 'USER.%' THEN 'administration'
+      WHEN NEW.action LIKE 'INVENTORY.%' THEN 'data_changes'
+      WHEN NEW.action LIKE 'BILLING.%' THEN 'data_changes'
+      WHEN NEW.action LIKE 'HTTP.%' THEN 'http_requests'
+      ELSE COALESCE(NEW.category, 'data_changes')
+    END;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER audit_events_category_default
+  BEFORE INSERT ON audit_events
+  FOR EACH ROW
+  EXECUTE FUNCTION set_audit_event_category();
+
+-- =====================================================
+-- AUDIT SETTINGS (per-organization preferences)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS audit_settings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  preference_key TEXT NOT NULL,
+  enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  config JSONB NOT NULL DEFAULT '{}'::JSONB,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_by UUID REFERENCES users(id),
+  UNIQUE(org_id, preference_key)
+);
+
+CREATE INDEX idx_audit_settings_org ON audit_settings(org_id);
+CREATE INDEX idx_audit_settings_key ON audit_settings(org_id, preference_key);
 
 -- =====================================================
 -- EMAIL VERIFICATIONS
