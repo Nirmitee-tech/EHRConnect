@@ -1,6 +1,52 @@
 import { medplum } from '@/lib/medplum';
 import { Appointment, AppointmentStats, AppointmentStatus } from '@/types/appointment';
 
+export type AppointmentPrefillAdvisorySeverity = 'info' | 'warning';
+
+export interface AppointmentPrefillAdvisory {
+  code:
+    | 'missing-provider-npi'
+    | 'no-active-coverage'
+    | 'multiple-coverages'
+    | 'missing-subscriber-id'
+    | 'missing-patient-account'
+    | 'encounter-not-started';
+  severity: AppointmentPrefillAdvisorySeverity;
+  message: string;
+  detail?: string;
+}
+
+export interface AppointmentBillingCoverageSummary {
+  id: string;
+  subscriberId?: string;
+  policyNumber?: string;
+  payerName?: string;
+  payerReference?: string;
+  planName?: string;
+  relationship?: string;
+  order?: number;
+}
+
+export interface AppointmentBillingContext {
+  appointment: Appointment;
+  patient?: {
+    id: string;
+    name: string;
+    dateOfBirth?: string;
+    identifiers?: Array<{ system?: string; value?: string; type?: string }>;
+    accountNumber?: string;
+  };
+  provider?: {
+    id: string;
+    name: string;
+    npi?: string;
+  };
+  encounterId?: string;
+  coverage?: AppointmentBillingCoverageSummary;
+  coverageOptions?: AppointmentBillingCoverageSummary[];
+  advisories?: AppointmentPrefillAdvisory[];
+}
+
 // FHIR Appointment type
 interface FHIRAppointment {
   resourceType: 'Appointment';
@@ -81,6 +127,279 @@ export class AppointmentService {
     } catch (error) {
       console.error('Error fetching appointments:', error);
       return [];
+    }
+  }
+
+  /**
+   * Build a billing context payload for superbill/claim creation
+   */
+  static async getBillingContext(appointmentId: string): Promise<AppointmentBillingContext> {
+    try {
+      const fhirAppointment: any = await medplum.readResource('Appointment', appointmentId);
+      const appointment = AppointmentService.transformFHIRAppointment(fhirAppointment);
+
+      const patientParticipant = fhirAppointment.participant?.find((p: any) =>
+        p.actor?.reference?.startsWith('Patient/')
+      );
+      const practitionerParticipant = fhirAppointment.participant?.find((p: any) =>
+        p.actor?.reference?.startsWith('Practitioner/')
+      );
+
+      const patientId: string | undefined = patientParticipant?.actor?.reference?.split('/')[1];
+      const practitionerId: string | undefined = practitionerParticipant?.actor?.reference?.split('/')[1];
+
+      let patientInfo: AppointmentBillingContext['patient'];
+      if (patientId) {
+        try {
+          const patientResource: any = await medplum.readResource('Patient', patientId);
+          const primaryName = patientResource.name?.[0];
+          const identifierList: any[] = Array.isArray(patientResource.identifier)
+            ? patientResource.identifier
+            : [];
+          const simplifiedIdentifiers = identifierList.length > 0
+            ? identifierList.map((identifier: any) => ({
+                system: identifier.system,
+                value: identifier.value,
+                type:
+                  identifier.type?.text ||
+                  identifier.type?.coding?.[0]?.display ||
+                  identifier.type?.coding?.[0]?.code,
+              }))
+            : undefined;
+          const accountIdentifier = identifierList.find((identifier: any) => {
+            const typeCoding = identifier.type?.coding?.[0];
+            const typeCode = typeCoding?.code?.toLowerCase();
+            const typeDisplay = typeCoding?.display?.toLowerCase();
+            const typeText = identifier.type?.text?.toLowerCase();
+
+            return (
+              typeCode === 'mr' ||
+              typeCode === 'mrn' ||
+              typeDisplay === 'mrn' ||
+              typeDisplay === 'medical record' ||
+              typeText?.includes('medical record') ||
+              typeText?.includes('account')
+            );
+          });
+          const fallbackIdentifier = identifierList[0];
+
+          patientInfo = {
+            id: patientId,
+            name: primaryName
+              ? `${primaryName.given?.join(' ') || ''} ${primaryName.family || ''}`.trim() || patientParticipant?.actor?.display ||
+                'Unknown Patient'
+              : patientParticipant?.actor?.display || 'Unknown Patient',
+            dateOfBirth: patientResource.birthDate,
+            identifiers: simplifiedIdentifiers,
+            accountNumber: accountIdentifier?.value || fallbackIdentifier?.value,
+          };
+        } catch (error) {
+          console.error('Failed to load patient for billing context', error);
+        }
+      }
+
+      let providerInfo: AppointmentBillingContext['provider'];
+      if (practitionerId) {
+        try {
+          const practitionerResource: any = await medplum.readResource('Practitioner', practitionerId);
+          const practitionerName = practitionerResource.name?.[0]
+            ? `${practitionerResource.name[0].given?.join(' ') || ''} ${practitionerResource.name[0].family || ''}`.trim()
+            : practitionerParticipant?.actor?.display || 'Unknown Practitioner';
+
+          const npiIdentifier = Array.isArray(practitionerResource.identifier)
+            ? practitionerResource.identifier.find((identifier: any) => {
+                const system = identifier.system?.toLowerCase() || '';
+                const typeCode = identifier.type?.coding?.[0]?.code?.toLowerCase();
+                const typeText = identifier.type?.text?.toLowerCase();
+                return system.includes('npi') || typeCode === 'npi' || typeText === 'npi';
+              })
+            : undefined;
+
+          providerInfo = {
+            id: practitionerId,
+            name: practitionerName,
+            npi: npiIdentifier?.value,
+          };
+        } catch (error) {
+          console.error('Failed to load practitioner for billing context', error);
+        }
+      }
+
+      const advisories: AppointmentPrefillAdvisory[] = [];
+
+      let encounterId: string | undefined;
+      try {
+        const encounters: any[] = await medplum.searchResources('Encounter', {
+          appointment: `Appointment/${appointmentId}`,
+          _sort: '-_lastUpdated',
+          _count: 1,
+        });
+
+        if (encounters?.length > 0) {
+          encounterId = encounters[0].id;
+        }
+      } catch (error) {
+        console.error('Failed to load encounter for billing context', error);
+      }
+
+      let coverageInfo: AppointmentBillingCoverageSummary | undefined;
+      let coverageOptions: AppointmentBillingCoverageSummary[] | undefined;
+      if (patientId) {
+        try {
+          const coverages: any[] = await medplum.searchResources('Coverage', {
+            patient: `Patient/${patientId}`,
+            status: 'active',
+            _sort: '-period-start',
+            _count: 5,
+          });
+
+          if (coverages?.length > 0) {
+            const payerNameCache = new Map<string, string>();
+
+            const resolvePayerName = async (reference?: string, fallback?: string) => {
+              if (!reference) {
+                return fallback;
+              }
+
+              if (payerNameCache.has(reference)) {
+                return payerNameCache.get(reference) || fallback;
+              }
+
+              try {
+                const payerId = reference.split('/')[1];
+                if (payerId) {
+                  const organization: any = await medplum.readResource('Organization', payerId);
+                  if (organization?.name) {
+                    payerNameCache.set(reference, organization.name);
+                    return organization.name;
+                  }
+                }
+              } catch (error) {
+                console.error('Failed to load coverage payer organization', error);
+              }
+
+              payerNameCache.set(reference, fallback || '');
+              return fallback;
+            };
+
+            const mappedCoverages = await Promise.all(
+              coverages.map(async (coverage: any) => {
+                if (!coverage?.id) {
+                  return undefined;
+                }
+
+                const payerReference = coverage.payor?.[0]?.reference;
+                const payerName = await resolvePayerName(payerReference, coverage.payor?.[0]?.display);
+
+                const planClass = Array.isArray(coverage.class)
+                  ? coverage.class.find((cls: any) =>
+                      cls.type?.coding?.some((coding: any) => (coding.code || '').toLowerCase() === 'plan')
+                    )
+                  : undefined;
+
+                const rawOrder = (coverage as any).order ?? (coverage as any).priority;
+                const orderValue = typeof rawOrder === 'number'
+                  ? rawOrder
+                  : typeof rawOrder?.valuePositiveInt === 'number'
+                  ? rawOrder.valuePositiveInt
+                  : undefined;
+
+                return {
+                  id: coverage.id,
+                  subscriberId: coverage.subscriberId || coverage.identifier?.[0]?.value,
+                  policyNumber: coverage.identifier?.[0]?.value,
+                  payerName: payerName || coverage.payor?.[0]?.display,
+                  payerReference,
+                  planName: planClass?.name || planClass?.value,
+                  relationship:
+                    coverage.relationship?.text ||
+                    coverage.relationship?.coding?.[0]?.display ||
+                    coverage.relationship?.coding?.[0]?.code,
+                  order: orderValue,
+                } as AppointmentBillingCoverageSummary;
+              })
+            );
+
+            coverageOptions = mappedCoverages.filter(
+              (coverage): coverage is AppointmentBillingCoverageSummary => Boolean(coverage?.id)
+            );
+
+            if (coverageOptions.length > 0) {
+              coverageOptions.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+              coverageInfo = coverageOptions[0];
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load coverage for billing context', error);
+        }
+      }
+
+      if (providerInfo && !providerInfo.npi) {
+        advisories.push({
+          code: 'missing-provider-npi',
+          severity: 'warning',
+          message: 'Rendering provider is missing an NPI.',
+          detail: 'Add the practitioner NPI in the provider profile so claims can be validated.',
+        });
+      }
+
+      if (!coverageOptions || coverageOptions.length === 0) {
+        advisories.push({
+          code: 'no-active-coverage',
+          severity: 'warning',
+          message: 'No active coverage was found for this patient.',
+          detail: 'Choose a payer manually or add coverage before validating the superbill.',
+        });
+      } else {
+        if (coverageOptions.length > 1) {
+          advisories.push({
+            code: 'multiple-coverages',
+            severity: 'info',
+            message: 'Patient has multiple active coverages.',
+            detail: 'Confirm the correct payer order before submitting the claim to avoid denials.',
+          });
+        }
+
+        if (coverageInfo && !coverageInfo.subscriberId) {
+          advisories.push({
+            code: 'missing-subscriber-id',
+            severity: 'warning',
+            message: 'Selected coverage is missing a subscriber/member ID.',
+            detail: 'Update the coverage or enter a subscriber number before submission.',
+          });
+        }
+      }
+
+      if (patientInfo && !patientInfo.accountNumber) {
+        advisories.push({
+          code: 'missing-patient-account',
+          severity: 'info',
+          message: 'Patient record does not include an account or MRN identifier.',
+          detail: 'Billing can proceed but consider assigning an account number for auditing.',
+        });
+      }
+
+      if (!encounterId) {
+        advisories.push({
+          code: 'encounter-not-started',
+          severity: 'info',
+          message: 'No encounter was started from this appointment.',
+          detail: 'Start an encounter to capture documentation that supports the superbill.',
+        });
+      }
+
+      return {
+        appointment,
+        patient: patientInfo,
+        provider: providerInfo,
+        encounterId,
+        coverage: coverageInfo,
+        coverageOptions,
+        advisories,
+      };
+    } catch (error) {
+      console.error('Error building appointment billing context:', error);
+      throw error;
     }
   }
 

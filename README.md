@@ -46,6 +46,20 @@ npm run dev
 - **Keycloak Admin**: http://localhost:8080 (admin/admin123)
 - **Medplum FHIR Server**: http://localhost:8103
 
+### 5. Initialize the API database (migrations & seeds)
+
+The billing and scheduling workflows rely on the PostgreSQL schema that lives in `ehr-api`. Run the migrations and seeders once your infrastructure containers are online:
+
+```bash
+cd ehr-api
+npm install            # if you have not already
+npm run migrate        # executes src/migrations/run-migrations.js and applies SQL files in src/database/migrations
+npm run seed           # loads billing masters (CPT, ICD, modifiers, payers, fee schedules) and demo providers
+npm run seed:inventory # optional: populate inventory locations, suppliers, and categories
+```
+
+You can re-run the seeding scripts safely—each script performs idempotent upserts so it will refresh the reference data without creating duplicates.
+
 ## 🔑 Authentication
 
 ### Default Users (Keycloak Realm: ehr-realm)

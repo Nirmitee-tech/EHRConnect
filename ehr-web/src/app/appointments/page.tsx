@@ -1087,6 +1087,9 @@ export default function AppointmentsPage() {
           loadAppointments();
           loadStats();
         }}
+        onCreateSuperbill={(apt) => {
+          router.push(`/billing/claims/new?appointmentId=${apt.id}`);
+        }}
       />
     </div>
   );
