@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Phone, MapPin, MessageCircle, CreditCard, Clock, Edit3, UserX, UserCheck, XCircle, Copy, FileText, CheckCircle } from 'lucide-react';
+import { X, Phone, MapPin, MessageCircle, CreditCard, Clock, Edit3, UserX, UserCheck, XCircle, Copy, FileText, CheckCircle, Receipt } from 'lucide-react';
 import { Appointment } from '@/types/appointment';
 import { EncounterService } from '@/services/encounter.service';
 import { useRouter } from 'next/navigation';
@@ -17,6 +17,7 @@ interface AppointmentDetailsDrawerProps {
   onCopy: (appointment: Appointment) => void;
   onStartEncounter?: (appointment: Appointment) => void;
   onAppointmentUpdated?: () => void;
+  onCreateSuperbill?: (appointment: Appointment) => void;
 }
 
 export function AppointmentDetailsDrawer({
@@ -29,7 +30,8 @@ export function AppointmentDetailsDrawer({
   onCancel,
   onCopy,
   onStartEncounter,
-  onAppointmentUpdated
+  onAppointmentUpdated,
+  onCreateSuperbill
 }: AppointmentDetailsDrawerProps) {
   const router = useRouter();
   const [isCompleting, setIsCompleting] = useState(false);
@@ -277,6 +279,30 @@ export function AppointmentDetailsDrawer({
               Bill & Collect
             </button>
           </div>
+
+          {onCreateSuperbill && (
+            <div className="bg-white border border-gray-200 rounded p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className="text-xs text-green-600 font-medium">Billing Workflow</div>
+                  <div className="text-sm font-semibold text-gray-900 mt-1">Create Superbills</div>
+                </div>
+                <Receipt className="h-4 w-4 text-gray-400" />
+              </div>
+              <button
+                onClick={() => {
+                  onCreateSuperbill(appointment);
+                  onClose();
+                }}
+                className="w-full py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-xs font-medium"
+              >
+                Launch Superbill
+              </button>
+              <p className="text-[11px] text-gray-500 mt-2">
+                Prefills claim details with this appointment's patient, provider, and service dates.
+              </p>
+            </div>
+          )}
 
           {/* Notes Section */}
           <div className="bg-white border border-gray-200 rounded p-3">
