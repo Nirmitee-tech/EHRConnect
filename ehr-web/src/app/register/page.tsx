@@ -177,7 +177,7 @@ export default function RegisterPage() {
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
   // Real-time validation
-  const validateField = (name: string, value: string): string => {
+  const validateField = (name: string, value: string, data: FormData = formData): string => {
     switch (name) {
       case 'owner_email':
         return !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value
@@ -189,7 +189,7 @@ export default function RegisterPage() {
           return 'Include uppercase, lowercase, and numbers';
         return '';
       case 'confirm_password':
-        return value && value !== formData.owner_password
+        return value && value !== data.owner_password
           ? 'Passwords do not match'
           : '';
       case 'contact_phone':
@@ -207,27 +207,53 @@ export default function RegisterPage() {
 
   const handleFieldChange = (name: string, value: string) => {
     setFormData(prev => {
-      if (name.includes('.')) {
-        const [, child] = name.split('.');
-        return {
+      let updated: FormData;
+
+      if (name.startsWith('address.')) {
+        const [, child] = name.split('.') as [string, keyof FormData['address']];
+        updated = {
           ...prev,
           address: { ...prev.address, [child]: value }
         };
+      } else {
+        updated = { ...prev, [name as keyof FormData]: value } as FormData;
       }
-      return { ...prev, [name]: value };
-    });
 
-    // Validate on change if field was touched
-    if (touchedFields[name]) {
-      const error = validateField(name, value);
-      setFieldErrors(prev => ({ ...prev, [name]: error }));
-    }
+      if (touchedFields[name]) {
+        const error = validateField(name, value, updated);
+        setFieldErrors(prevErrors => ({ ...prevErrors, [name]: error }));
+      }
+
+      if (name === 'owner_password' && touchedFields.confirm_password) {
+        const confirmError = validateField('confirm_password', updated.confirm_password, updated);
+        setFieldErrors(prevErrors => ({ ...prevErrors, confirm_password: confirmError }));
+      }
+
+      return updated;
+    });
   };
 
   const handleFieldBlur = (name: string, value: string) => {
-    setTouchedFields(prev => ({ ...prev, [name]: true }));
-    const error = validateField(name, value);
+    const updatedTouched = { ...touchedFields, [name]: true };
+    setTouchedFields(updatedTouched);
+
+    const currentData = name.startsWith('address.')
+      ? {
+          ...formData,
+          address: {
+            ...formData.address,
+            [name.split('.')[1] as keyof FormData['address']]: value
+          }
+        }
+      : ({ ...formData, [name as keyof FormData]: value } as FormData);
+
+    const error = validateField(name, value, currentData);
     setFieldErrors(prev => ({ ...prev, [name]: error }));
+
+    if (name === 'owner_password' && updatedTouched.confirm_password) {
+      const confirmError = validateField('confirm_password', currentData.confirm_password, currentData);
+      setFieldErrors(prev => ({ ...prev, confirm_password: confirmError }));
+    }
   };
 
   const isStepValid = (stepIndex: number): boolean => {
@@ -725,44 +751,32 @@ export default function RegisterPage() {
                         </div>
 
                         <div className="space-y-4">
-                          <InputWithValidation
-                            label="Full Name"
-                            name="owner_name"
-                            icon={User}
-                            type="text"
-                            required
-                            placeholder="Dr. John Doe"
-                          />
+                          {renderInput('Full Name', 'owner_name', User, {
+                            type: 'text',
+                            required: true,
+                            placeholder: 'Dr. John Doe',
+                          })}
 
-                          <InputWithValidation
-                            label="Email Address"
-                            name="owner_email"
-                            icon={Mail}
-                            type="email"
-                            required
-                            placeholder="admin@hospital.com"
-                          />
+                          {renderInput('Email Address', 'owner_email', Mail, {
+                            type: 'email',
+                            required: true,
+                            placeholder: 'admin@hospital.com',
+                          })}
 
                           <div className="grid grid-cols-2 gap-4">
-                            <InputWithValidation
-                              label="Password"
-                              name="owner_password"
-                              icon={Lock}
-                              type="password"
-                              required
-                              minLength={8}
-                              placeholder="••••••••"
-                            />
+                            {renderInput('Password', 'owner_password', Lock, {
+                              type: 'password',
+                              required: true,
+                              minLength: 8,
+                              placeholder: '••••••••',
+                            })}
 
-                            <InputWithValidation
-                              label="Confirm Password"
-                              name="confirm_password"
-                              icon={Lock}
-                              type="password"
-                              required
-                              minLength={8}
-                              placeholder="••••••••"
-                            />
+                            {renderInput('Confirm Password', 'confirm_password', Lock, {
+                              type: 'password',
+                              required: true,
+                              minLength: 8,
+                              placeholder: '••••••••',
+                            })}
                           </div>
 
                           <div className="bg-violet-50 border-2 border-violet-200 px-4 py-3 rounded-lg text-sm text-violet-900">
@@ -784,49 +798,36 @@ export default function RegisterPage() {
                         </div>
 
                         <div className="space-y-4">
-                          <InputWithValidation
-                            label="Address Line 1"
-                            name="address.line1"
-                            icon={MapPin}
-                            type="text"
-                            placeholder="Street address"
-                          />
+                          {renderInput('Address Line 1', 'address.line1', MapPin, {
+                            type: 'text',
+                            placeholder: 'Street address',
+                          })}
 
-                          <InputWithValidation
-                            label="Address Line 2"
-                            name="address.line2"
-                            type="text"
-                            placeholder="Suite, building, floor"
-                          />
+                          {renderInput('Address Line 2', 'address.line2', undefined, {
+                            type: 'text',
+                            placeholder: 'Suite, building, floor',
+                          })}
 
                           <div className="grid grid-cols-2 gap-4">
-                            <InputWithValidation
-                              label="City"
-                              name="address.city"
-                              type="text"
-                              placeholder="City"
-                            />
+                            {renderInput('City', 'address.city', undefined, {
+                              type: 'text',
+                              placeholder: 'City',
+                            })}
 
-                            <InputWithValidation
-                              label="State"
-                              name="address.state"
-                              type="text"
-                              placeholder="State"
-                            />
+                            {renderInput('State', 'address.state', undefined, {
+                              type: 'text',
+                              placeholder: 'State',
+                            })}
 
-                            <InputWithValidation
-                              label="Postal Code"
-                              name="address.postal_code"
-                              type="text"
-                              placeholder="PIN/ZIP"
-                            />
+                            {renderInput('Postal Code', 'address.postal_code', undefined, {
+                              type: 'text',
+                              placeholder: 'PIN/ZIP',
+                            })}
 
-                            <InputWithValidation
-                              label="Country"
-                              name="address.country"
-                              type="text"
-                              placeholder="Country"
-                            />
+                            {renderInput('Country', 'address.country', undefined, {
+                              type: 'text',
+                              placeholder: 'Country',
+                            })}
                           </div>
                         </div>
                       </div>
