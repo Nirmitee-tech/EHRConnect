@@ -670,3 +670,26 @@ FOR EACH ROW EXECUTE FUNCTION set_inventory_updated_at();
 CREATE TRIGGER trg_inventory_lots_updated
 BEFORE UPDATE ON inventory_lots
 FOR EACH ROW EXECUTE FUNCTION set_inventory_updated_at();
+
+-- =====================================================
+-- DASHBOARD SNAPSHOTS (Role-based analytics payloads)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS dashboard_snapshots (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  org_id UUID,
+  location_ids UUID[],
+  role_level TEXT NOT NULL CHECK (role_level IN ('executive', 'clinical', 'operations', 'billing', 'patient', 'general')),
+  data_mode TEXT NOT NULL CHECK (data_mode IN ('actual', 'demo')),
+  period_start DATE NOT NULL,
+  period_end DATE NOT NULL,
+  payload JSONB NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_dashboard_snapshots_org_role_mode
+  ON dashboard_snapshots(org_id, role_level, data_mode, period_end DESC);
+
+CREATE INDEX IF NOT EXISTS idx_dashboard_snapshots_role_mode
+  ON dashboard_snapshots(role_level, data_mode, period_end DESC);
+
