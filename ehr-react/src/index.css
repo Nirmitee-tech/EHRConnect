@@ -1,0 +1,216 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap");
+@import "tailwindcss";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* EHR Connect Theme - Keycloak Purple/Green Palette */
+  --radius: 0.625rem;
+
+  /* Background colors */
+  --background: 245 246 248;
+  --foreground: 31 41 55;
+
+  /* Card colors */
+  --card: 255 255 255;
+  --card-foreground: 31 41 55;
+
+  /* Popover colors */
+  --popover: 255 255 255;
+  --popover-foreground: 31 41 55;
+
+  /* Primary brand purple - Keycloak aligned */
+  --primary: 102 126 234;
+  --primary-foreground: 255 255 255;
+
+  /* Secondary colors */
+  --secondary: 243 244 246;
+  --secondary-foreground: 55 65 81;
+
+  /* Muted colors */
+  --muted: 249 250 251;
+  --muted-foreground: 107 114 128;
+
+  /* Accent colors */
+  --accent: 238 242 255;
+  --accent-foreground: 79 124 255;
+
+  /* Destructive/error colors */
+  --destructive: 239 68 68;
+  --destructive-foreground: 255 255 255;
+
+  /* Border and input */
+  --border: 229 231 235;
+  --input: 249 250 251;
+  --ring: 79 124 255;
+
+  /* Chart colors - EHR theme */
+  --chart-1: 102 126 234;
+  --chart-2: 16 185 129;
+  --chart-3: 245 158 11;
+  --chart-4: 118 75 162;
+  --chart-5: 236 72 153;
+
+  /* Sidebar colors - EHR purple theme */
+  --sidebar: 255 255 255;
+  --sidebar-foreground: 55 65 81;
+  --sidebar-primary: 102 126 234;
+  --sidebar-primary-foreground: 255 255 255;
+  --sidebar-accent: 243 244 246;
+  --sidebar-accent-foreground: 102 126 234;
+  --sidebar-border: 229 231 235;
+  --sidebar-ring: 102 126 234;
+
+  /* Professional badge colors */
+  --badge-blue: #5BA6FF;
+  --badge-blue-light: #E0EFFF;
+  --badge-amber: #FFD88D;
+  --badge-amber-light: #FFF4E0;
+  --badge-green: #A7E0A7;
+  --badge-green-light: #E8F5E8;
+  --badge-gray: #D1D5DB;
+  --badge-gray-light: #F3F4F6;
+}
+
+.dark {
+  --background: 17 24 39;
+  --foreground: 249 250 251;
+  --card: 31 41 55;
+  --card-foreground: 249 250 251;
+  --popover: 31 41 55;
+  --popover-foreground: 249 250 251;
+  --primary: 79 124 255;
+  --primary-foreground: 255 255 255;
+  --secondary: 55 65 81;
+  --secondary-foreground: 249 250 251;
+  --muted: 55 65 81;
+  --muted-foreground: 156 163 175;
+  --accent: 55 65 81;
+  --accent-foreground: 249 250 251;
+  --destructive: 239 68 68;
+  --border: 55 65 81;
+  --input: 55 65 81;
+  --ring: 79 124 255;
+  --chart-1: 79 124 255;
+  --chart-2: 16 185 129;
+  --chart-3: 245 158 11;
+  --chart-4: 139 92 246;
+  --chart-5: 236 72 153;
+  --sidebar: 31 41 55;
+  --sidebar-foreground: 249 250 251;
+  --sidebar-primary: 79 124 255;
+  --sidebar-primary-foreground: 255 255 255;
+  --sidebar-accent: 55 65 81;
+  --sidebar-accent-foreground: 249 250 251;
+  --sidebar-border: 55 65 81;
+  --sidebar-ring: 79 124 255;
+}
+
+@layer base {
+  * {
+    border-color: rgb(var(--border));
+  }
+  body {
+    background-color: rgb(var(--background));
+    color: rgb(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    min-height: 100vh;
+  }
+}
+
+/* Professional badge styles */
+.badge-blue {
+  background-color: var(--badge-blue-light);
+  color: #2563EB;
+}
+
+.badge-amber {
+  background-color: var(--badge-amber-light);
+  color: #D97706;
+}
+
+.badge-green {
+  background-color: var(--badge-green-light);
+  color: #047857;
+}
+
+.badge-gray {
+  background-color: var(--badge-gray-light);
+  color: #4B5563;
+}
+
+/* Professional day badge styles */
+.day-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: #5BA6FF;
+  color: #FFFFFF;
+}
+
+.day-badge-inactive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: #E5E7EB;
+  color: #9CA3AF;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.7);
+}
+
+/* Smooth transitions for all interactive elements */
+button, a, input, select, textarea {
+  transition: all 0.2s ease-out;
+}
+
+/* Focus styles */
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid rgba(79, 124, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* Loading shimmer effect */
+.shimmer {
+  background: #f3f4f6;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}

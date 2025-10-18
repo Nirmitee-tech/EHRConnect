@@ -1,12 +1,11 @@
-'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { signIn, signOut, useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import { AlertTriangle, ArrowUpRight, Loader2, TrendingUp } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { DashboardDataMode, DashboardSection, DashboardSnapshotPayload, DashboardSummaryMetric } from '@/types/dashboard'
+import type { DashboardDataMode, DashboardSection, DashboardSnapshotPayload, DashboardSummaryMetric } from '@/types/dashboard'
 import { getDemoDashboard } from '@/data/dashboard-demo'
 
 const TIME_RANGE_OPTIONS = [
@@ -22,9 +21,9 @@ type LocationOption = { id: string; name: string }
 
 type RoleLevel = 'executive' | 'clinical' | 'operations' | 'billing' | 'patient' | 'general'
 
-function deriveRoleLevel(session: ReturnType<typeof useSession>['data']): RoleLevel {
-  const roles = Array.isArray(session?.roles) ? session.roles.map(role => role.toUpperCase()) : []
-  const permissions = Array.isArray(session?.permissions) ? session.permissions.map(permission => permission.toLowerCase()) : []
+function deriveRoleLevel(user: ReturnType<typeof useAuth>['user']): RoleLevel {
+  const roles = Array.isArray(user?.realm_access?.roles) ? user?.realm_access?.roles?.map(role => role.toUpperCase()) : []
+  const permissions = Array.isArray(user?.permissions) ? user.permissions.map(permission => permission.toLowerCase()) : []
 
   if (roles.some(role => ['PLATFORM_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'SUPER ADMINISTRATOR', 'ADMINISTRATOR'].includes(role))) {
     return 'executive'
@@ -153,7 +152,7 @@ function getMetricChangeDisplay(metric: DashboardSummaryMetric) {
 }
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession()
+  const { user, isAuthenticated, isLoading, token, login, logout } = useAuth()
   const [checkingOnboarding, setCheckingOnboarding] = useState(true)
   const [loadingDashboard, setLoadingDashboard] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -163,31 +162,31 @@ export default function DashboardPage() {
   const [selectedLocation, setSelectedLocation] = useState<string>('all')
   const [availableLocations, setAvailableLocations] = useState<LocationOption[]>([])
 
-  const roleLevel = useMemo(() => deriveRoleLevel(session), [session])
-  const orgId = session?.org_id
+  const roleLevel = useMemo(() => deriveRoleLevel(user), [user])
+  const orgId = user?.org_id
 
   useEffect(() => {
-    if (session?.accessToken) {
+    if (token) {
       if (!orgId) {
         window.location.href = '/onboarding'
         return
       }
       checkOnboardingStatus(orgId)
     }
-  }, [session, orgId])
+  }, [token, orgId])
 
   useEffect(() => {
-    if (!session || checkingOnboarding) {
+    if (!isAuthenticated || checkingOnboarding) {
       return
     }
     loadDashboard(dataMode)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, dataMode, timeRange, selectedLocation, roleLevel, checkingOnboarding])
+  }, [isAuthenticated, dataMode, timeRange, selectedLocation, roleLevel, checkingOnboarding])
 
   const checkOnboardingStatus = async (organizationId: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/orgs/${organizationId}/onboarding-status`
+        `${import.meta.env.VITE_API_URL}/api/orgs/${organizationId}/onboarding-status`
       )
 
       if (response.ok) {
@@ -206,7 +205,7 @@ export default function DashboardPage() {
   }
 
   const loadDashboard = async (mode: DashboardDataMode) => {
-    if (!session) {
+    if (!isAuthenticated) {
       return
     }
 
@@ -231,21 +230,21 @@ export default function DashboardPage() {
 
       const headers = new Headers()
       headers.set('Content-Type', 'application/json')
-      if (session.accessToken) {
-        headers.set('Authorization', `Bearer ${session.accessToken}`)
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`)
       }
       if (orgId) {
         headers.set('x-org-id', orgId)
       }
-      if (session.userId) {
-        headers.set('x-user-id', session.userId)
+      if (user?.sub) {
+        headers.set("x-user-id", user?.sub || "")
       }
-      if (session.roles) {
-        headers.set('x-user-roles', JSON.stringify(session.roles))
+      if (user?.realm_access?.roles) {
+        headers.set('x-user-roles', JSON.stringify(user?.realm_access?.roles))
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/dashboard/overview?${params.toString()}`,
+        `${import.meta.env.VITE_API_URL}/api/dashboard/overview?${params.toString()}`,
         {
           method: 'GET',
           headers
@@ -293,7 +292,7 @@ export default function DashboardPage() {
     setDataMode(mode)
   }
 
-  if (status === 'loading' || checkingOnboarding) {
+  if (isLoading || checkingOnboarding) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -301,7 +300,7 @@ export default function DashboardPage() {
     )
   }
 
-  if (!session) {
+  if (!isAuthenticated) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
         <Card className="w-full max-w-md">
@@ -312,7 +311,7 @@ export default function DashboardPage() {
             <p className="text-gray-600">
               Please sign in to access the EHR system.
             </p>
-            <Button onClick={() => signIn('keycloak')} className="w-full">
+            <Button onClick={() => login('keycloak')} className="w-full">
               Sign In with Keycloak
             </Button>
           </CardContent>
@@ -335,7 +334,7 @@ export default function DashboardPage() {
             {meta?.description || 'Actionable insights tailored to your responsibilities.'}
           </p>
           <p className="text-sm text-muted-foreground mt-2">
-            Welcome, {session.user?.name || session.user?.email}{' '}
+            Welcome, {user?.name || user?.email}{' '}
             {orgId ? `· Org ID: ${orgId}` : ''}
           </p>
         </div>
@@ -355,7 +354,7 @@ export default function DashboardPage() {
             >
               Demo Data
             </Button>
-            <Button variant="outline" size="sm" onClick={() => signOut()}>
+            <Button variant="outline" size="sm" onClick={() => logout()}>
               Sign Out
             </Button>
           </div>
