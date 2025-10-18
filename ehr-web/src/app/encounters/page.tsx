@@ -23,12 +23,14 @@ import {
 } from 'lucide-react';
 import { Encounter, EncounterStatus } from '@/types/encounter';
 import { EncounterService } from '@/services/encounter.service';
+import { useTabs } from '@/contexts/tab-context';
 import { format } from 'date-fns';
 
 const ITEMS_PER_PAGE = 15;
 
 export default function EncountersPage() {
   const router = useRouter();
+  const { addTab } = useTabs();
   const [encounters, setEncounters] = useState<Encounter[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -177,8 +179,13 @@ export default function EncountersPage() {
     return format(d, 'h:mm a');
   };
 
-  const handleEncounterClick = (encounterId: string) => {
-    router.push(`/encounters/${encounterId}`);
+  const handleEncounterClick = (encounter: Encounter) => {
+    // Open encounter in a new tab
+    addTab({
+      title: `Encounter - ${encounter.patientName}`,
+      path: `/encounters/${encounter.id}`,
+      closeable: true
+    });
   };
 
   const clearFilters = () => {
@@ -425,7 +432,7 @@ export default function EncountersPage() {
                   {paginatedEncounters.map((encounter) => (
                     <tr
                       key={encounter.id}
-                      onClick={() => handleEncounterClick(encounter.id)}
+                      onClick={() => handleEncounterClick(encounter)}
                       className="hover:bg-blue-50 cursor-pointer transition-colors"
                     >
                       <td className="px-4 py-3">
@@ -475,7 +482,7 @@ export default function EncountersPage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleEncounterClick(encounter.id);
+                            handleEncounterClick(encounter);
                           }}
                           className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
                         >
