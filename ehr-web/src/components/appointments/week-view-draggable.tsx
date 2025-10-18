@@ -34,6 +34,7 @@ export function WeekViewDraggable({
   const [currentTime, setCurrentTime] = useState(new Date());
   const [resizingAppointment, setResizingAppointment] = useState<{appointment: Appointment; edge: 'top' | 'bottom'} | null>(null);
   const [resizePreview, setResizePreview] = useState<{newStart?: Date; newEnd?: Date} | null>(null);
+  const [hoveredAppointmentId, setHoveredAppointmentId] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
 
@@ -834,7 +835,11 @@ export function WeekViewDraggable({
                   const isDragging = draggedAppointment?.id === apt.id;
 
                   const appointmentElement = (
-                    <div className="relative h-full group">
+                    <div
+                      className="relative h-full group"
+                      onMouseEnter={() => setHoveredAppointmentId(apt.id)}
+                      onMouseLeave={() => setHoveredAppointmentId(null)}
+                    >
                       {/* Main appointment card */}
                       <div
                         className="h-full"
@@ -887,6 +892,8 @@ export function WeekViewDraggable({
                     </div>
                   );
 
+                  const isHovered = hoveredAppointmentId === apt.id;
+
                   if (!layoutInfo) {
                     // Single appointment, no overlap - tighter spacing
                     return (
@@ -898,7 +905,7 @@ export function WeekViewDraggable({
                           height: `${style.height}px`,
                           left: '1px',
                           right: '1px',
-                          zIndex: isDragging || isBeingResized ? 1000 : 10,
+                          zIndex: isDragging || isBeingResized ? 1000 : isHovered ? 100 : 10,
                           // When dragging, make element invisible and non-interactive
                           visibility: isDragging ? 'hidden' : 'visible'
                         }}
@@ -921,7 +928,7 @@ export function WeekViewDraggable({
                         height: `${style.height}px`,
                         left: `calc(${leftPercent}% + 1px)`,
                         width: `calc(${columnWidth}% - 1px)`,
-                        zIndex: isDragging || isBeingResized ? 1000 : 10 + layoutInfo.column,
+                        zIndex: isDragging || isBeingResized ? 1000 : isHovered ? 100 : 10 + layoutInfo.column,
                         // When dragging, make element invisible and non-interactive
                         visibility: isDragging ? 'hidden' : 'visible'
                       }}
