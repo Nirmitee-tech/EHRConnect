@@ -6,6 +6,28 @@ const nextConfig: NextConfig = {
   // Optimize for faster development
   reactStrictMode: false, // Disable in dev to reduce double-rendering
 
+  // Allow external images
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+      },
+      {
+        protocol: 'https',
+        hostname: 'logo.clearbit.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.io',
+      },
+    ],
+  },
+
   // Speed up Fast Refresh
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-dialog', '@radix-ui/react-select'],

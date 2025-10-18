@@ -12,6 +12,7 @@ import { patientService } from '@/services/patient.service';
 import { TabPageWrapper } from '@/components/layout/tab-page-wrapper';
 import { useTabNavigation } from '@/hooks/use-tab-navigation';
 import { PatientHeader } from './components/PatientHeader';
+import { DashboardTab } from './components/tabs/DashboardTab';
 import { OverviewTab } from './components/tabs/OverviewTab';
 import { VitalsTab } from './components/tabs/VitalsTab';
 import { EncountersTab } from './components/tabs/EncountersTab';
@@ -29,7 +30,8 @@ export default function PatientDetailPage() {
   const patientId = params?.id as string;
   const { openPatientEditTab } = useTabNavigation();
 
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [selectedEncounter, setSelectedEncounter] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [patient, setPatient] = useState<PatientDetails | null>(null);
 
@@ -390,13 +392,14 @@ export default function PatientDetailPage() {
   }
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: User },
-    { id: 'encounters', label: 'Encounters', icon: Calendar, count: encounters.length },
-    { id: 'problems', label: 'Problems', icon: AlertCircle, count: problems.length },
-    { id: 'medications', label: 'Medications', icon: Pill, count: medications.length },
-    { id: 'allergies', label: 'Allergies', icon: AlertCircle, count: allergies.length },
-    { id: 'vitals', label: 'Vitals & Obs', icon: Activity, count: observations.length },
-    { id: 'documents', label: 'Documents', icon: FileText }
+    { id: 'dashboard', label: 'Dashboard', icon: Activity },
+    { id: 'history', label: 'History', icon: FileText },
+    { id: 'report', label: 'Report', icon: FileText },
+    { id: 'documents', label: 'Documents', icon: FileText },
+    { id: 'transactions', label: 'Transactions', icon: FileText },
+    { id: 'issues', label: 'Issues', icon: AlertCircle },
+    { id: 'ledger', label: 'Ledger', icon: FileText },
+    { id: 'external-data', label: 'External Data', icon: FileText }
   ];
 
   return (
@@ -406,6 +409,9 @@ export default function PatientDetailPage() {
           patient={patient}
           onEdit={() => openPatientEditTab(patientId, patient.name)}
           onNewVisit={() => setShowEncounterDrawer(true)}
+          encounters={encounters}
+          selectedEncounter={selectedEncounter}
+          onEncounterSelect={setSelectedEncounter}
         />
 
         <div className="bg-white border-b border-gray-200 px-6">
@@ -446,7 +452,17 @@ export default function PatientDetailPage() {
 
         <div className="flex-1 overflow-y-auto p-6">
           {/* Browser-style tabs - all tabs rendered and cached, instant switching */}
-          <div style={{ display: activeTab === 'overview' ? 'block' : 'none' }}>
+          <div style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}>
+            <DashboardTab
+              patient={patient}
+              allergies={allergies}
+              problems={problems}
+              medications={medications}
+              encounters={encounters}
+              observations={observations}
+            />
+          </div>
+          <div style={{ display: activeTab === 'history' ? 'block' : 'none' }}>
             <OverviewTab
               encounters={encounters}
               problems={problems}
@@ -454,39 +470,39 @@ export default function PatientDetailPage() {
               allergies={allergies}
             />
           </div>
-          <div style={{ display: activeTab === 'vitals' ? 'block' : 'none' }}>
+          <div style={{ display: activeTab === 'report' ? 'block' : 'none' }}>
             <VitalsTab
               observations={observations}
               onRecordVitals={() => setShowVitalsDrawer(true)}
             />
           </div>
-          <div style={{ display: activeTab === 'encounters' ? 'block' : 'none' }}>
+          <div style={{ display: activeTab === 'documents' ? 'block' : 'none' }}>
+            <DocumentsTab />
+          </div>
+          <div style={{ display: activeTab === 'transactions' ? 'block' : 'none' }}>
             <EncountersTab
               encounters={encounters}
               observations={observations}
               onNewEncounter={() => setShowEncounterDrawer(true)}
             />
           </div>
-          <div style={{ display: activeTab === 'problems' ? 'block' : 'none' }}>
+          <div style={{ display: activeTab === 'issues' ? 'block' : 'none' }}>
             <ProblemsTab
               problems={problems}
               onAddProblem={() => setShowProblemDrawer(true)}
             />
           </div>
-          <div style={{ display: activeTab === 'medications' ? 'block' : 'none' }}>
+          <div style={{ display: activeTab === 'ledger' ? 'block' : 'none' }}>
             <MedicationsTab
               medications={medications}
               onPrescribe={() => setShowMedicationDrawer(true)}
             />
           </div>
-          <div style={{ display: activeTab === 'allergies' ? 'block' : 'none' }}>
+          <div style={{ display: activeTab === 'external-data' ? 'block' : 'none' }}>
             <AllergiesTab
               allergies={allergies}
               onAddAllergy={() => setShowAllergyDrawer(true)}
             />
-          </div>
-          <div style={{ display: activeTab === 'documents' ? 'block' : 'none' }}>
-            <DocumentsTab />
           </div>
         </div>
 
