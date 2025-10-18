@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
 
 interface VitalsChartsProps {
   chartData: any[];
 }
 
-export function VitalsCharts({ chartData }: VitalsChartsProps) {
+export const VitalsCharts = memo(function VitalsCharts({ chartData }: VitalsChartsProps) {
   return (
     <div className="grid grid-cols-2 gap-4">
       <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -63,4 +63,4 @@ export function VitalsCharts({ chartData }: VitalsChartsProps) {
       </div>
     </div>
   );
-}
+});

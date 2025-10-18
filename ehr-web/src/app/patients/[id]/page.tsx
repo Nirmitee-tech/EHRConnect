@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, lazy, Suspense, memo } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { User, Edit, Calendar, Pill, AlertCircle, Activity, FileText, Loader2 } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@nirmitee.io/design-system';
 import { useParams } from 'next/navigation';
@@ -12,26 +12,17 @@ import { patientService } from '@/services/patient.service';
 import { TabPageWrapper } from '@/components/layout/tab-page-wrapper';
 import { useTabNavigation } from '@/hooks/use-tab-navigation';
 import { PatientHeader } from './components/PatientHeader';
+import { OverviewTab } from './components/tabs/OverviewTab';
+import { VitalsTab } from './components/tabs/VitalsTab';
+import { EncountersTab } from './components/tabs/EncountersTab';
+import { ProblemsTab } from './components/tabs/ProblemsTab';
+import { MedicationsTab } from './components/tabs/MedicationsTab';
+import { AllergiesTab } from './components/tabs/AllergiesTab';
+import { DocumentsTab } from './components/tabs/DocumentsTab';
+import { VitalsDrawer } from './components/drawers/VitalsDrawer';
+import { ProblemDrawer } from './components/drawers/ProblemDrawer';
+import { MedicationDrawer } from './components/drawers/MedicationDrawer';
 import { PatientDetails, VitalsFormData, ProblemFormData, MedicationFormData } from './components/types';
-
-// Lazy load tab components for better performance
-const OverviewTab = lazy(() => import('./components/tabs/OverviewTab').then(m => ({ default: m.OverviewTab })));
-const VitalsTab = lazy(() => import('./components/tabs/VitalsTab').then(m => ({ default: m.VitalsTab })));
-const EncountersTab = lazy(() => import('./components/tabs/EncountersTab').then(m => ({ default: m.EncountersTab })));
-const ProblemsTab = lazy(() => import('./components/tabs/ProblemsTab').then(m => ({ default: m.ProblemsTab })));
-const MedicationsTab = lazy(() => import('./components/tabs/MedicationsTab').then(m => ({ default: m.MedicationsTab })));
-const AllergiesTab = lazy(() => import('./components/tabs/AllergiesTab').then(m => ({ default: m.AllergiesTab })));
-const DocumentsTab = lazy(() => import('./components/tabs/DocumentsTab').then(m => ({ default: m.DocumentsTab })));
-const VitalsDrawer = lazy(() => import('./components/drawers/VitalsDrawer').then(m => ({ default: m.VitalsDrawer })));
-const ProblemDrawer = lazy(() => import('./components/drawers/ProblemDrawer').then(m => ({ default: m.ProblemDrawer })));
-const MedicationDrawer = lazy(() => import('./components/drawers/MedicationDrawer').then(m => ({ default: m.MedicationDrawer })));
-
-// Loading component for tabs
-const TabLoader = () => (
-  <div className="flex items-center justify-center h-64">
-    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-  </div>
-);
 
 export default function PatientDetailPage() {
   const params = useParams();
@@ -42,13 +33,12 @@ export default function PatientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [patient, setPatient] = useState<PatientDetails | null>(null);
 
-  // Lazy load data only when tabs are accessed
+  // Load all data upfront - browser-style tabs
   const [encounters, setEncounters] = useState<any[]>([]);
   const [problems, setProblems] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
   const [allergies, setAllergies] = useState<any[]>([]);
   const [observations, setObservations] = useState<any[]>([]);
-  const [dataLoaded, setDataLoaded] = useState<Record<string, boolean>>({});
 
   // Drawer states
   const [showEditDrawer, setShowEditDrawer] = useState(false);
@@ -58,14 +48,31 @@ export default function PatientDetailPage() {
   const [showMedicationDrawer, setShowMedicationDrawer] = useState(false);
   const [showAllergyDrawer, setShowAllergyDrawer] = useState(false);
 
-  // Load only basic patient data initially
-  const loadPatientBasicData = async () => {
+  // Load ALL data upfront in parallel - browser-style tabs
+  const loadAllPatientData = async () => {
     if (!patientId) return;
 
     try {
       setLoading(true);
 
-      const patientResource = await fhirService.read('Patient', patientId) as any;
+      // Load everything in parallel for instant tab switching
+      const [
+        patientResource,
+        encounterRes,
+        conditionRes,
+        medicationRes,
+        allergyRes,
+        observationRes
+      ] = await Promise.all([
+        fhirService.read('Patient', patientId),
+        fhirService.search('Encounter', { patient: patientId, _count: 10, _sort: '-date' }),
+        fhirService.search('Condition', { patient: patientId, _count: 20 }),
+        fhirService.search('MedicationRequest', { patient: patientId, _count: 20, status: 'active' }),
+        fhirService.search('AllergyIntolerance', { patient: patientId, _count: 20 }),
+        fhirService.search('Observation', { patient: patientId, _count: 50, _sort: '-date', category: 'vital-signs' })
+      ]);
+
+      // Set patient data
       const name = patientResource.name?.[0];
       const fullName = `${name?.given?.join(' ') || ''} ${name?.family || ''}`.trim();
       const phone = patientResource.telecom?.find((t: any) => t.system === 'phone')?.value || '-';
@@ -87,6 +94,13 @@ export default function PatientDetailPage() {
         email
       });
 
+      // Set all data - everything is ready
+      setEncounters(encounterRes.entry?.map((e: any) => e.resource) || []);
+      setProblems(conditionRes.entry?.map((e: any) => e.resource) || []);
+      setMedications(medicationRes.entry?.map((e: any) => e.resource) || []);
+      setAllergies(allergyRes.entry?.map((e: any) => e.resource) || []);
+      setObservations(observationRes.entry?.map((e: any) => e.resource) || []);
+
     } catch (error) {
       console.error('Error loading patient data:', error);
     } finally {
@@ -94,85 +108,12 @@ export default function PatientDetailPage() {
     }
   };
 
-  // Load tab-specific data only when needed
-  const loadTabData = async (tabId: string) => {
-    if (!patientId || dataLoaded[tabId]) return;
-
-    try {
-      setDataLoaded(prev => ({ ...prev, [tabId]: true }));
-
-      switch (tabId) {
-        case 'overview':
-        case 'encounters':
-          if (!dataLoaded.encounters) {
-            const encounterRes = await fhirService.search('Encounter', {
-              patient: patientId,
-              _count: 10,
-              _sort: '-date'
-            });
-            setEncounters(encounterRes.entry?.map((e: any) => e.resource) || []);
-            setDataLoaded(prev => ({ ...prev, encounters: true }));
-          }
-          break;
-
-        case 'problems':
-          const conditionRes = await fhirService.search('Condition', {
-            patient: patientId,
-            _count: 20
-          });
-          setProblems(conditionRes.entry?.map((e: any) => e.resource) || []);
-          break;
-
-        case 'medications':
-          const medicationRes = await fhirService.search('MedicationRequest', {
-            patient: patientId,
-            _count: 20,
-            status: 'active'
-          });
-          setMedications(medicationRes.entry?.map((e: any) => e.resource) || []);
-          break;
-
-        case 'allergies':
-          const allergyRes = await fhirService.search('AllergyIntolerance', {
-            patient: patientId,
-            _count: 20
-          });
-          setAllergies(allergyRes.entry?.map((e: any) => e.resource) || []);
-          break;
-
-        case 'vitals':
-          const observationRes = await fhirService.search('Observation', {
-            patient: patientId,
-            _count: 50, // Reduced from 100
-            _sort: '-date',
-            category: 'vital-signs'
-          });
-          setObservations(observationRes.entry?.map((e: any) => e.resource) || []);
-          break;
-      }
-    } catch (error) {
-      console.error(`Error loading ${tabId} data:`, error);
-    }
-  };
-
   useEffect(() => {
-    loadPatientBasicData();
+    loadAllPatientData();
   }, [patientId]);
 
-  // Load data for active tab
-  useEffect(() => {
-    if (patient) {
-      loadTabData(activeTab);
-    }
-  }, [activeTab, patient]);
-
   const refreshData = () => {
-    // Reset data loaded flags and reload current tab
-    setDataLoaded({});
-    loadPatientBasicData();
-    if (patient) {
-      loadTabData(activeTab);
-    }
+    loadAllPatientData();
   };
 
   const handleStartVisit = async (encounterData: any) => {
@@ -471,13 +412,14 @@ export default function PatientDetailPage() {
           <div className="flex gap-1">
             {tabs.map((tab) => {
               const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`
                     flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors
-                    ${activeTab === tab.id
+                    ${isActive
                       ? 'border-primary text-primary'
                       : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                     }
@@ -488,7 +430,7 @@ export default function PatientDetailPage() {
                   {tab.count !== undefined && (
                     <span className={`
                       px-1.5 py-0.5 rounded-full text-xs font-semibold
-                      ${activeTab === tab.id
+                      ${isActive
                         ? 'bg-primary text-white'
                         : 'bg-gray-100 text-gray-600'
                       }
@@ -503,48 +445,49 @@ export default function PatientDetailPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
-          <Suspense fallback={<TabLoader />}>
-            {activeTab === 'overview' && (
-              <OverviewTab
-                encounters={encounters}
-                problems={problems}
-                medications={medications}
-                allergies={allergies}
-              />
-            )}
-            {activeTab === 'vitals' && (
-              <VitalsTab
-                observations={observations}
-                onRecordVitals={() => setShowVitalsDrawer(true)}
-              />
-            )}
-            {activeTab === 'encounters' && (
-              <EncountersTab
-                encounters={encounters}
-                observations={observations}
-                onNewEncounter={() => setShowEncounterDrawer(true)}
-              />
-            )}
-            {activeTab === 'problems' && (
-              <ProblemsTab
-                problems={problems}
-                onAddProblem={() => setShowProblemDrawer(true)}
-              />
-            )}
-            {activeTab === 'medications' && (
-              <MedicationsTab
-                medications={medications}
-                onPrescribe={() => setShowMedicationDrawer(true)}
-              />
-            )}
-            {activeTab === 'allergies' && (
-              <AllergiesTab
-                allergies={allergies}
-                onAddAllergy={() => setShowAllergyDrawer(true)}
-              />
-            )}
-            {activeTab === 'documents' && <DocumentsTab />}
-          </Suspense>
+          {/* Browser-style tabs - all tabs rendered and cached, instant switching */}
+          <div style={{ display: activeTab === 'overview' ? 'block' : 'none' }}>
+            <OverviewTab
+              encounters={encounters}
+              problems={problems}
+              medications={medications}
+              allergies={allergies}
+            />
+          </div>
+          <div style={{ display: activeTab === 'vitals' ? 'block' : 'none' }}>
+            <VitalsTab
+              observations={observations}
+              onRecordVitals={() => setShowVitalsDrawer(true)}
+            />
+          </div>
+          <div style={{ display: activeTab === 'encounters' ? 'block' : 'none' }}>
+            <EncountersTab
+              encounters={encounters}
+              observations={observations}
+              onNewEncounter={() => setShowEncounterDrawer(true)}
+            />
+          </div>
+          <div style={{ display: activeTab === 'problems' ? 'block' : 'none' }}>
+            <ProblemsTab
+              problems={problems}
+              onAddProblem={() => setShowProblemDrawer(true)}
+            />
+          </div>
+          <div style={{ display: activeTab === 'medications' ? 'block' : 'none' }}>
+            <MedicationsTab
+              medications={medications}
+              onPrescribe={() => setShowMedicationDrawer(true)}
+            />
+          </div>
+          <div style={{ display: activeTab === 'allergies' ? 'block' : 'none' }}>
+            <AllergiesTab
+              allergies={allergies}
+              onAddAllergy={() => setShowAllergyDrawer(true)}
+            />
+          </div>
+          <div style={{ display: activeTab === 'documents' ? 'block' : 'none' }}>
+            <DocumentsTab />
+          </div>
         </div>
 
         {/* Edit Patient Drawer */}
@@ -598,34 +541,22 @@ export default function PatientDetailPage() {
           </DrawerContent>
         </Drawer>
 
-        {/* Vitals, Problem, Medication Drawers - Only load when needed */}
-        {showVitalsDrawer && (
-          <Suspense fallback={null}>
-            <VitalsDrawer
-              open={showVitalsDrawer}
-              onOpenChange={setShowVitalsDrawer}
-              onSave={handleSaveVitals}
-            />
-          </Suspense>
-        )}
-        {showProblemDrawer && (
-          <Suspense fallback={null}>
-            <ProblemDrawer
-              open={showProblemDrawer}
-              onOpenChange={setShowProblemDrawer}
-              onSave={handleSaveProblem}
-            />
-          </Suspense>
-        )}
-        {showMedicationDrawer && (
-          <Suspense fallback={null}>
-            <MedicationDrawer
-              open={showMedicationDrawer}
-              onOpenChange={setShowMedicationDrawer}
-              onSave={handleSaveMedication}
-            />
-          </Suspense>
-        )}
+        {/* Vitals, Problem, Medication Drawers */}
+        <VitalsDrawer
+          open={showVitalsDrawer}
+          onOpenChange={setShowVitalsDrawer}
+          onSave={handleSaveVitals}
+        />
+        <ProblemDrawer
+          open={showProblemDrawer}
+          onOpenChange={setShowProblemDrawer}
+          onSave={handleSaveProblem}
+        />
+        <MedicationDrawer
+          open={showMedicationDrawer}
+          onOpenChange={setShowMedicationDrawer}
+          onSave={handleSaveMedication}
+        />
 
         {/* Add Allergy Drawer */}
         <Drawer open={showAllergyDrawer} onOpenChange={setShowAllergyDrawer}>

@@ -14,7 +14,7 @@ import { MiniCalendar } from '@/components/appointments/mini-calendar';
 import { EventFilters, EventCategory } from '@/components/appointments/event-filters';
 import { AppointmentService } from '@/services/appointment.service';
 import { EncounterService } from '@/services/encounter.service';
-import { Loader2, Plus, ChevronDown, RefreshCw, Info, ArrowRight, Keyboard } from 'lucide-react';
+import { Loader2, Plus, ChevronDown, RefreshCw, Info, ArrowRight, Keyboard, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PrintAppointments } from '@/components/appointments/print-appointments';
 import { useFacility } from '@/contexts/facility-context';
@@ -61,6 +61,7 @@ export default function AppointmentsPage() {
   const [viewMode, setViewMode] = useState<'admin' | 'doctor'>('admin');
   const [currentDoctorId, setCurrentDoctorId] = useState<string | null>(null); // For doctor view
   const [showLocations, setShowLocations] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -678,156 +679,176 @@ export default function AppointmentsPage() {
         </div>
 
         {/* Right Sidebar - Compact Style */}
-        <div className="w-80 border-l border-gray-200 bg-gray-50 flex flex-col">
-          {/* Header with Today */}
-          <div className="bg-white px-4 py-2.5 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-900">Today</h2>
+        <div className={`border-l border-gray-200 bg-gray-50 flex flex-col transition-all duration-300 ${
+          isSidebarCollapsed ? 'w-12' : 'w-80'
+        }`}>
+          {/* Toggle Button */}
+          <div className="bg-white border-b border-gray-200 flex items-center justify-between px-2 py-2.5">
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="p-1 hover:bg-gray-100 rounded transition-colors"
+              title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {isSidebarCollapsed ? (
+                <ChevronLeft className="h-4 w-4 text-gray-600" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-gray-600" />
+              )}
+            </button>
+            {!isSidebarCollapsed && (
+              <h2 className="text-sm font-semibold text-gray-900 flex-1 ml-2">Today</h2>
+            )}
           </div>
 
           {/* Tabs */}
-          <div className="bg-white border-b border-gray-200 flex">
-            <button
-              onClick={() => setActiveTab('appointments')}
-              className={`flex-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
-                activeTab === 'appointments'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-1.5">
-                <span>Appointments</span>
-                {tabCounts.inPersonCount > 0 && (
-                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                    activeTab === 'appointments' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-                  }`}>
-                    {tabCounts.inPersonCount}
-                  </span>
-                )}
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('online')}
-              className={`flex-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
-                activeTab === 'online'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-1.5">
-                <span>Online</span>
-                {tabCounts.onlineCount > 0 && (
-                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                    activeTab === 'online' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-                  }`}>
-                    {tabCounts.onlineCount}
-                  </span>
-                )}
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('followups')}
-              className={`flex-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
-                activeTab === 'followups'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-1.5">
-                <span>Follow ups</span>
-                {tabCounts.followupCount > 0 && (
-                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                    activeTab === 'followups' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-                  }`}>
-                    {tabCounts.followupCount}
-                  </span>
-                )}
-              </div>
-            </button>
-          </div>
-
-          {/* Status Filters - Compact */}
-          <div className="bg-white px-3 py-2 border-b border-gray-200">
-            <div className="flex items-center gap-1.5 overflow-x-auto">
+          {!isSidebarCollapsed && (
+            <div className="bg-white border-b border-gray-200 flex">
               <button
-                onClick={() => setStatusFilter(null)}
-                className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
-                  statusFilter === null
-                    ? 'bg-blue-900 text-white ring-2 ring-blue-900 ring-offset-1'
-                    : 'bg-blue-100 text-blue-900 hover:bg-blue-200'
+                onClick={() => setActiveTab('appointments')}
+                className={`flex-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+                  activeTab === 'appointments'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <div className="text-center">
-                  <div className="text-lg font-bold">{stats.total}</div>
-                  <div className="text-[10px] font-medium uppercase tracking-wide">All</div>
+                <div className="flex items-center justify-center gap-1.5">
+                  <span>Appointments</span>
+                  {tabCounts.inPersonCount > 0 && (
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                      activeTab === 'appointments' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                    }`}>
+                      {tabCounts.inPersonCount}
+                    </span>
+                  )}
                 </div>
               </button>
               <button
-                onClick={() => setStatusFilter(statusFilter === 'scheduled' ? null : 'scheduled')}
-                className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
-                  statusFilter === 'scheduled'
-                    ? 'bg-gray-700 text-white ring-2 ring-gray-700 ring-offset-1'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                onClick={() => setActiveTab('online')}
+                className={`flex-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+                  activeTab === 'online'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <div className="text-center">
-                  <div className="text-base font-bold">{stats.scheduled}</div>
-                  <div className="text-[10px] font-medium uppercase tracking-wide">Sched</div>
+                <div className="flex items-center justify-center gap-1.5">
+                  <span>Online</span>
+                  {tabCounts.onlineCount > 0 && (
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                      activeTab === 'online' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                    }`}>
+                      {tabCounts.onlineCount}
+                    </span>
+                  )}
                 </div>
               </button>
               <button
-                onClick={() => setStatusFilter(statusFilter === 'in-progress' ? null : 'in-progress')}
-                className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
-                  statusFilter === 'in-progress'
-                    ? 'bg-red-600 text-white ring-2 ring-red-600 ring-offset-1'
-                    : 'bg-red-100 text-red-700 hover:bg-red-200'
+                onClick={() => setActiveTab('followups')}
+                className={`flex-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+                  activeTab === 'followups'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <div className="text-center">
-                  <div className="text-base font-bold">{stats.inProgress}</div>
-                  <div className="text-[10px] font-medium uppercase tracking-wide">In Out</div>
+                <div className="flex items-center justify-center gap-1.5">
+                  <span>Follow ups</span>
+                  {tabCounts.followupCount > 0 && (
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                      activeTab === 'followups' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                    }`}>
+                      {tabCounts.followupCount}
+                    </span>
+                  )}
                 </div>
-              </button>
-              <button
-                onClick={() => setStatusFilter(statusFilter === 'completed' ? null : 'completed')}
-                className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
-                  statusFilter === 'completed'
-                    ? 'bg-green-600 text-white ring-2 ring-green-600 ring-offset-1'
-                    : 'bg-green-100 text-green-700 hover:bg-green-200'
-                }`}
-              >
-                <div className="text-center">
-                  <div className="text-base font-bold">{stats.completed}</div>
-                  <div className="text-[10px] font-medium uppercase tracking-wide">Done</div>
-                </div>
-              </button>
-              <button
-                onClick={() => setStatusFilter(statusFilter === 'cancelled' ? null : 'cancelled')}
-                className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
-                  statusFilter === 'cancelled'
-                    ? 'bg-gray-700 text-white ring-2 ring-gray-700 ring-offset-1'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <div className="text-center">
-                  <div className="text-base font-bold">{stats.cancelled}</div>
-                  <div className="text-[10px] font-medium uppercase tracking-wide">Cancel</div>
-                </div>
-              </button>
-              <button
-                onClick={() => {
-                  loadAppointments();
-                  loadStats();
-                }}
-                className="flex items-center justify-center min-w-[44px] h-14 text-gray-400 hover:text-gray-600 transition-colors"
-                title="Refresh"
-              >
-                <RefreshCw className="h-4 w-4" />
               </button>
             </div>
-          </div>
+          )}
+
+          {/* Status Filters - Compact */}
+          {!isSidebarCollapsed && (
+            <div className="bg-white px-3 py-2 border-b border-gray-200">
+              <div className="flex items-center gap-1.5 overflow-x-auto">
+                <button
+                  onClick={() => setStatusFilter(null)}
+                  className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
+                    statusFilter === null
+                      ? 'bg-blue-900 text-white ring-2 ring-blue-900 ring-offset-1'
+                      : 'bg-blue-100 text-blue-900 hover:bg-blue-200'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="text-lg font-bold">{stats.total}</div>
+                    <div className="text-[10px] font-medium uppercase tracking-wide">All</div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setStatusFilter(statusFilter === 'scheduled' ? null : 'scheduled')}
+                  className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
+                    statusFilter === 'scheduled'
+                      ? 'bg-gray-700 text-white ring-2 ring-gray-700 ring-offset-1'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="text-base font-bold">{stats.scheduled}</div>
+                    <div className="text-[10px] font-medium uppercase tracking-wide">Sched</div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setStatusFilter(statusFilter === 'in-progress' ? null : 'in-progress')}
+                  className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
+                    statusFilter === 'in-progress'
+                      ? 'bg-red-600 text-white ring-2 ring-red-600 ring-offset-1'
+                      : 'bg-red-100 text-red-700 hover:bg-red-200'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="text-base font-bold">{stats.inProgress}</div>
+                    <div className="text-[10px] font-medium uppercase tracking-wide">In Out</div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setStatusFilter(statusFilter === 'completed' ? null : 'completed')}
+                  className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
+                    statusFilter === 'completed'
+                      ? 'bg-green-600 text-white ring-2 ring-green-600 ring-offset-1'
+                      : 'bg-green-100 text-green-700 hover:bg-green-200'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="text-base font-bold">{stats.completed}</div>
+                    <div className="text-[10px] font-medium uppercase tracking-wide">Done</div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setStatusFilter(statusFilter === 'cancelled' ? null : 'cancelled')}
+                  className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
+                    statusFilter === 'cancelled'
+                      ? 'bg-gray-700 text-white ring-2 ring-gray-700 ring-offset-1'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="text-base font-bold">{stats.cancelled}</div>
+                    <div className="text-[10px] font-medium uppercase tracking-wide">Cancel</div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => {
+                    loadAppointments();
+                    loadStats();
+                  }}
+                  className="flex items-center justify-center min-w-[44px] h-14 text-gray-400 hover:text-gray-600 transition-colors"
+                  title="Refresh"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Collapsible Filters */}
-          <div className="flex-1 overflow-y-auto">
+          {!isSidebarCollapsed && (
+            <div className="flex-1 overflow-y-auto">
             {/* Treatment Categories */}
             <div className="bg-white border-b border-gray-200">
               <button
@@ -1049,6 +1070,7 @@ export default function AppointmentsPage() {
               )}
             </div>
           </div>
+          )}
         </div>
       </div>
 

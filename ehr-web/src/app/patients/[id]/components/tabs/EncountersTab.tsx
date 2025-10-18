@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Calendar, Activity, Plus } from 'lucide-react';
 import { Button, Badge } from '@nirmitee.io/design-system';
 
@@ -8,7 +8,7 @@ interface EncountersTabProps {
   onNewEncounter: () => void;
 }
 
-export function EncountersTab({ encounters, observations, onNewEncounter }: EncountersTabProps) {
+export const EncountersTab = memo(function EncountersTab({ encounters, observations, onNewEncounter }: EncountersTabProps) {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -175,4 +175,4 @@ export function EncountersTab({ encounters, observations, onNewEncounter }: Enco
       </div>
     </div>
   );
-}
+});

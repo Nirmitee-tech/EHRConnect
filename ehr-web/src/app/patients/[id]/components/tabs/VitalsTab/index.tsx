@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { Plus, Filter } from 'lucide-react';
 import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@nirmitee.io/design-system';
 import { VitalsAlerts } from './VitalsAlerts';
@@ -11,7 +11,7 @@ interface VitalsTabProps {
   onRecordVitals: () => void;
 }
 
-export function VitalsTab({ observations, onRecordVitals }: VitalsTabProps) {
+export const VitalsTab = memo(function VitalsTab({ observations, onRecordVitals }: VitalsTabProps) {
   const [dateFilter, setDateFilter] = useState('all');
 
   const filteredObservations = useMemo(() => {
@@ -154,4 +154,4 @@ export function VitalsTab({ observations, onRecordVitals }: VitalsTabProps) {
       <VitalsTable observations={filteredObservations} />
     </div>
   );
-}
+});

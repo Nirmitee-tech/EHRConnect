@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Plus } from 'lucide-react';
 import { Button, Badge } from '@nirmitee.io/design-system';
 
@@ -7,7 +7,7 @@ interface ProblemsTabProps {
   onAddProblem: () => void;
 }
 
-export function ProblemsTab({ problems, onAddProblem }: ProblemsTabProps) {
+export const ProblemsTab = memo(function ProblemsTab({ problems, onAddProblem }: ProblemsTabProps) {
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-lg border border-gray-200">
@@ -64,4 +64,4 @@ export function ProblemsTab({ problems, onAddProblem }: ProblemsTabProps) {
       </div>
     </div>
   );
-}
+});

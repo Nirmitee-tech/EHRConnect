@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { FileText, Plus } from 'lucide-react';
 import { Button } from '@nirmitee.io/design-system';
 
-export function DocumentsTab() {
+export const DocumentsTab = memo(function DocumentsTab() {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-8">
       <div className="text-center">
@@ -16,4 +16,4 @@ export function DocumentsTab() {
       </div>
     </div>
   );
-}
+});

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Calendar, AlertCircle, Pill, AlertTriangle } from 'lucide-react';
 import { Badge } from '@nirmitee.io/design-system';
 
@@ -9,7 +9,7 @@ interface OverviewTabProps {
   allergies: any[];
 }
 
-export function OverviewTab({ encounters, problems, medications, allergies }: OverviewTabProps) {
+export const OverviewTab = memo(function OverviewTab({ encounters, problems, medications, allergies }: OverviewTabProps) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-4">
@@ -129,4 +129,4 @@ export function OverviewTab({ encounters, problems, medications, allergies }: Ov
       )}
     </div>
   );
-}
+});
