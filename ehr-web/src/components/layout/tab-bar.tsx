@@ -1,10 +1,83 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
 import { useTabs } from '@/contexts/tab-context';
 import { X, MoreHorizontal, XCircle } from 'lucide-react';
 
-export function TabBar() {
+// Memoize individual tab component
+const TabItem = memo(({
+  tab,
+  isActive,
+  isDragging,
+  isDragOver,
+  onTabClick,
+  onCloseTab,
+  onContextMenu,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd
+}: {
+  tab: any;
+  isActive: boolean;
+  isDragging: boolean;
+  isDragOver: boolean;
+  onTabClick: (tabId: string) => void;
+  onCloseTab: (e: React.MouseEvent, tabId: string) => void;
+  onContextMenu: (e: React.MouseEvent, tabId: string) => void;
+  onDragStart: (e: React.DragEvent, tabId: string) => void;
+  onDragOver: (e: React.DragEvent, tabId: string) => void;
+  onDragLeave: () => void;
+  onDrop: (e: React.DragEvent, tabId: string) => void;
+  onDragEnd: () => void;
+}) => (
+  <div
+    draggable
+    onDragStart={(e) => onDragStart(e, tab.id)}
+    onDragOver={(e) => onDragOver(e, tab.id)}
+    onDragLeave={onDragLeave}
+    onDrop={(e) => onDrop(e, tab.id)}
+    onDragEnd={onDragEnd}
+    onClick={() => onTabClick(tab.id)}
+    onContextMenu={(e) => onContextMenu(e, tab.id)}
+    className={`
+      group flex items-center gap-2 px-3 py-1.5 rounded-t-md cursor-pointer
+      min-w-[120px] max-w-[200px] transition-all
+      ${isActive
+        ? 'bg-white border-t border-x border-gray-300 shadow-sm'
+        : 'bg-gray-200 hover:bg-gray-300 border-t border-x border-transparent'
+      }
+      ${isDragging ? 'opacity-50' : ''}
+      ${isDragOver ? 'border-l-2 border-l-blue-500' : ''}
+    `}
+  >
+    {tab.icon && React.isValidElement(tab.icon) && (
+      <span className="flex-shrink-0">{tab.icon}</span>
+    )}
+
+    <span className="flex-1 truncate text-sm font-medium text-gray-700">
+      {tab.title}
+    </span>
+
+    {tab.closeable !== false && (
+      <button
+        onClick={(e) => onCloseTab(e, tab.id)}
+        className={`
+          flex-shrink-0 rounded p-0.5 transition-colors
+          ${isActive ? 'hover:bg-gray-200' : 'opacity-0 group-hover:opacity-100 hover:bg-gray-400'}
+        `}
+        aria-label="Close tab"
+      >
+        <X size={14} className="text-gray-600" />
+      </button>
+    )}
+  </div>
+));
+
+TabItem.displayName = 'TabItem';
+
+export const TabBar = memo(function TabBar() {
   const { tabs, activeTabId, setActiveTab, closeTab, closeAllTabs, closeOtherTabs } = useTabs();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tabId: string } | null>(null);
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
@@ -25,40 +98,40 @@ export function TabBar() {
     }
   }, [contextMenu]);
 
-  const handleTabClick = (tabId: string) => {
+  const handleTabClick = useCallback((tabId: string) => {
     setActiveTab(tabId);
-  };
+  }, [setActiveTab]);
 
-  const handleCloseTab = (e: React.MouseEvent, tabId: string) => {
+  const handleCloseTab = useCallback((e: React.MouseEvent, tabId: string) => {
     e.stopPropagation();
     closeTab(tabId);
-  };
+  }, [closeTab]);
 
-  const handleContextMenu = (e: React.MouseEvent, tabId: string) => {
+  const handleContextMenu = useCallback((e: React.MouseEvent, tabId: string) => {
     e.preventDefault();
     setContextMenu({ x: e.clientX, y: e.clientY, tabId });
-  };
+  }, []);
 
-  const handleDragStart = (e: React.DragEvent, tabId: string) => {
+  const handleDragStart = useCallback((e: React.DragEvent, tabId: string) => {
     setDraggedTabId(tabId);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
-  };
+  }, []);
 
-  const handleDragOver = (e: React.DragEvent, tabId: string) => {
+  const handleDragOver = useCallback((e: React.DragEvent, tabId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
 
     if (draggedTabId && draggedTabId !== tabId) {
       setDragOverTabId(tabId);
     }
-  };
+  }, [draggedTabId]);
 
-  const handleDragLeave = () => {
+  const handleDragLeave = useCallback(() => {
     setDragOverTabId(null);
-  };
+  }, []);
 
-  const handleDrop = (e: React.DragEvent, targetTabId: string) => {
+  const handleDrop = useCallback((e: React.DragEvent, targetTabId: string) => {
     e.preventDefault();
 
     if (draggedTabId && draggedTabId !== targetTabId) {
@@ -73,12 +146,12 @@ export function TabBar() {
 
     setDraggedTabId(null);
     setDragOverTabId(null);
-  };
+  }, [draggedTabId, tabs]);
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     setDraggedTabId(null);
     setDragOverTabId(null);
-  };
+  }, []);
 
   if (tabs.length === 0) {
     return null;
@@ -93,48 +166,21 @@ export function TabBar() {
           const isDragOver = tab.id === dragOverTabId;
 
           return (
-            <div
+            <TabItem
               key={tab.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, tab.id)}
-              onDragOver={(e) => handleDragOver(e, tab.id)}
+              tab={tab}
+              isActive={isActive}
+              isDragging={isDragging}
+              isDragOver={isDragOver}
+              onTabClick={handleTabClick}
+              onCloseTab={handleCloseTab}
+              onContextMenu={handleContextMenu}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, tab.id)}
+              onDrop={handleDrop}
               onDragEnd={handleDragEnd}
-              onClick={() => handleTabClick(tab.id)}
-              onContextMenu={(e) => handleContextMenu(e, tab.id)}
-              className={`
-                group flex items-center gap-2 px-3 py-1.5 rounded-t-md cursor-pointer
-                min-w-[120px] max-w-[200px] transition-all
-                ${isActive
-                  ? 'bg-white border-t border-x border-gray-300 shadow-sm'
-                  : 'bg-gray-200 hover:bg-gray-300 border-t border-x border-transparent'
-                }
-                ${isDragging ? 'opacity-50' : ''}
-                ${isDragOver ? 'border-l-2 border-l-blue-500' : ''}
-              `}
-            >
-              {tab.icon && React.isValidElement(tab.icon) && (
-                <span className="flex-shrink-0">{tab.icon}</span>
-              )}
-
-              <span className="flex-1 truncate text-sm font-medium text-gray-700">
-                {tab.title}
-              </span>
-
-              {tab.closeable !== false && (
-                <button
-                  onClick={(e) => handleCloseTab(e, tab.id)}
-                  className={`
-                    flex-shrink-0 rounded p-0.5 transition-colors
-                    ${isActive ? 'hover:bg-gray-200' : 'opacity-0 group-hover:opacity-100 hover:bg-gray-400'}
-                  `}
-                  aria-label="Close tab"
-                >
-                  <X size={14} className="text-gray-600" />
-                </button>
-              )}
-            </div>
+            />
           );
         })}
       </div>
@@ -147,30 +193,30 @@ export function TabBar() {
           style={{ top: contextMenu.y, left: contextMenu.x }}
         >
           <button
-            onClick={() => {
+            onClick={useCallback(() => {
               closeTab(contextMenu.tabId);
               setContextMenu(null);
-            }}
+            }, [closeTab, contextMenu.tabId])}
             className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
           >
             <X size={14} />
             Close
           </button>
           <button
-            onClick={() => {
+            onClick={useCallback(() => {
               closeOtherTabs(contextMenu.tabId);
               setContextMenu(null);
-            }}
+            }, [closeOtherTabs, contextMenu.tabId])}
             className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
           >
             <MoreHorizontal size={14} />
             Close Others
           </button>
           <button
-            onClick={() => {
+            onClick={useCallback(() => {
               closeAllTabs();
               setContextMenu(null);
-            }}
+            }, [closeAllTabs])}
             className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
           >
             <XCircle size={14} />
@@ -180,4 +226,4 @@ export function TabBar() {
       )}
     </>
   );
-}
+});

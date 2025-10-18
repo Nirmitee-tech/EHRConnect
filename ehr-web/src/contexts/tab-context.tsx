@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useTransition } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
 export interface Tab {
@@ -33,7 +33,6 @@ export function TabProvider({ children }: { children: React.ReactNode }) {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isPending, startTransition] = useTransition();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -52,9 +51,11 @@ export function TabProvider({ children }: { children: React.ReactNode }) {
     setIsInitialized(true);
   }, []);
 
-  // Save tabs to sessionStorage whenever they change
+  // Save tabs to sessionStorage whenever they change (debounced)
   useEffect(() => {
-    if (isInitialized) {
+    if (!isInitialized) return;
+
+    const timeoutId = setTimeout(() => {
       try {
         // Remove icons before saving to avoid serialization issues
         const tabsToSave = tabs.map(({ icon, ...rest }) => rest);
@@ -65,7 +66,9 @@ export function TabProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('Failed to save tabs to storage:', error);
       }
-    }
+    }, 100); // Debounce by 100ms
+
+    return () => clearTimeout(timeoutId);
   }, [tabs, activeTabId, isInitialized]);
 
   // Generate unique tab ID
@@ -78,24 +81,16 @@ export function TabProvider({ children }: { children: React.ReactNode }) {
     (tab: Omit<Tab, 'id'> & { id?: string }): string => {
       const tabId = tab.id || generateTabId();
 
-      console.log('[Tab Context] addTab called:', { path: tab.path, title: tab.title });
-
       // Check if tab with same path already exists
       const existingTab = tabs.find((t) => t.path === tab.path);
       if (existingTab) {
-        console.log('[Tab Context] Existing tab found, activating:', existingTab.id);
         // Only navigate if this tab is not already active
         if (existingTab.id !== activeTabId) {
           setActiveTabId(existingTab.id);
-          // Use Next.js router with startTransition for instant navigation
-          startTransition(() => {
-            router.push(existingTab.path);
-          });
+          router.push(existingTab.path);
         }
         return existingTab.id;
       }
-
-      console.log('[Tab Context] Creating new tab');
 
       // Enforce max tabs limit
       if (tabs.length >= MAX_TABS) {
@@ -119,15 +114,11 @@ export function TabProvider({ children }: { children: React.ReactNode }) {
 
       setTabs((prev) => [...prev, newTab]);
       setActiveTabId(tabId);
-
-      // Use Next.js router with startTransition for instant navigation
-      startTransition(() => {
-        router.push(tab.path);
-      });
+      router.push(tab.path);
 
       return tabId;
     },
-    [tabs, generateTabId, router, startTransition]
+    [tabs, activeTabId, generateTabId, router]
   );
 
   // Remove a tab
@@ -141,9 +132,7 @@ export function TabProvider({ children }: { children: React.ReactNode }) {
           const removedIndex = prev.findIndex((t) => t.id === tabId);
           const nextTab = filtered[Math.min(removedIndex, filtered.length - 1)];
           setActiveTabId(nextTab.id);
-          startTransition(() => {
-            router.push(nextTab.path);
-          });
+          router.push(nextTab.path);
         } else if (filtered.length === 0) {
           setActiveTabId(null);
         }
@@ -151,21 +140,19 @@ export function TabProvider({ children }: { children: React.ReactNode }) {
         return filtered;
       });
     },
-    [activeTabId, router, startTransition]
+    [activeTabId, router]
   );
 
   // Set active tab
   const setActiveTab = useCallback(
     (tabId: string) => {
       const tab = tabs.find((t) => t.id === tabId);
-      if (tab) {
+      if (tab && tabId !== activeTabId) {
         setActiveTabId(tabId);
-        startTransition(() => {
-          router.push(tab.path);
-        });
+        router.push(tab.path);
       }
     },
-    [tabs, router, startTransition]
+    [tabs, activeTabId, router]
   );
 
   // Update tab properties
@@ -234,7 +221,7 @@ export function TabProvider({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, tabs, activeTabId, isInitialized]);
 
-  const value: TabContextType = {
+  const value: TabContextType = useMemo(() => ({
     tabs,
     activeTabId,
     addTab,
@@ -245,7 +232,7 @@ export function TabProvider({ children }: { children: React.ReactNode }) {
     closeAllTabs,
     closeOtherTabs,
     reorderTabs,
-  };
+  }), [tabs, activeTabId, addTab, removeTab, setActiveTab, updateTab, closeTab, closeAllTabs, closeOtherTabs, reorderTabs]);
 
   return <TabContext.Provider value={value}>{children}</TabContext.Provider>;
 }
