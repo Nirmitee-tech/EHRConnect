@@ -311,3 +311,25 @@ input:focus, select:focus, textarea:focus {
     opacity: 1;
   }
 }
+
+/* Compact SearchableSelect for encounter header */
+.compact-select button {
+  padding: 0.375rem 0.75rem !important;
+  font-size: 0.75rem !important;
+  min-height: auto !important;
+}
+
+.compact-select .truncate {
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+}
+
+.compact-select svg {
+  width: 0.875rem !important;
+  height: 0.875rem !important;
+}
+
+.compact-select input {
+  padding: 0.375rem 0.75rem !important;
+  font-size: 0.75rem !important;
+}

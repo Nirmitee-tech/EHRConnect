@@ -20,7 +20,7 @@ export function DrawerFooter({ loading, onCancel }: DrawerFooterProps) {
       <Button
         type="submit"
         disabled={loading}
-        className="bg-blue-600 hover:bg-blue-700"
+        className="bg-blue-600 text-white hover:bg-blue-700"
       >
         {loading ? 'SAVING...' : 'SAVE'}
       </Button>

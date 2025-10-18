@@ -14,9 +14,10 @@ import {
   ChevronDown,
   ChevronRight
 } from 'lucide-react';
-import { Encounter, AddressData, NoteData, InsuranceData } from '@/types/encounter';
+import { Encounter, AddressData, NoteData, InsuranceData, EncounterStatus } from '@/types/encounter';
 import { EncounterService } from '@/services/encounter.service';
 import { AddressService } from '@/services/address.service';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { PatientSidebar } from '@/components/encounters/patient-sidebar';
 import { MedicalInfoDrawer } from '@/components/encounters/medical-info-drawer';
 import { MedicalHistoryDrawer } from '@/components/encounters/medical-history-drawer';
@@ -35,6 +36,7 @@ export default function EncounterPage() {
 
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   const [showMedicalInfoDrawer, setShowMedicalInfoDrawer] = useState(false);
   const [showMedicalHistoryDrawer, setShowMedicalHistoryDrawer] = useState(false);
 
@@ -122,7 +124,7 @@ export default function EncounterPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen">
+      <div className="flex h-full -m-6">
         {/* Left Sidebar Skeleton */}
         <div className="w-64 bg-white border-r border-gray-200 p-4">
           <div className="animate-pulse space-y-4">
@@ -143,7 +145,7 @@ export default function EncounterPage() {
 
   if (!encounter) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center -m-6">
         <div className="text-center">
           <p className="text-gray-600">Encounter not found</p>
           <button
@@ -196,7 +198,7 @@ export default function EncounterPage() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-full overflow-hidden bg-gray-50 -m-6">
       {/* Left Sidebar - Patient Info - STICKY */}
       <PatientSidebar
         patientName={encounter.patientName}
@@ -351,7 +353,7 @@ export default function EncounterPage() {
         <div className="bg-white border-b border-gray-200 px-6 py-3">
           <div className="flex items-start justify-between gap-8">
             {/* Left Section - Medical Information */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0" style={{ maxWidth: 'calc(100% - 250px)' }}>
               <div className="flex items-center gap-3 mb-1">
                 <h3 className="text-sm font-semibold text-gray-900">Medical Information</h3>
                 <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded font-medium">Latest</span>
@@ -388,28 +390,111 @@ export default function EncounterPage() {
               </div>
             </div>
 
-            {/* Right Section - Emergency Contact */}
-            <div className="border-l border-gray-200 pl-8">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-sm font-semibold text-gray-900">Emergency Contact</h3>
-                <button className="text-blue-600 hover:text-blue-700">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                </button>
+            {/* Right Section - Status & Emergency Contact */}
+            <div className="flex flex-col gap-3">
+              {/* Encounter Status */}
+              <div className="min-w-[200px]">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-sm font-semibold text-gray-900">Status</h3>
+                  {updatingStatus && (
+                    <span className="text-[10px] text-blue-600 font-medium">Updating...</span>
+                  )}
+                </div>
+                <div className="compact-select">
+                  <SearchableSelect
+                    value={encounter.status}
+                    onChange={async (newStatus) => {
+                      const previousStatus = encounter.status;
+
+                      try {
+                        setUpdatingStatus(true);
+                        console.log(`🔄 Updating encounter status from ${previousStatus} to ${newStatus}`);
+
+                        // Optimistically update UI
+                        setEncounter({ ...encounter, status: newStatus as EncounterStatus });
+
+                        // Update backend
+                        await EncounterService.updateStatus(encounter.id, newStatus as EncounterStatus);
+
+                        console.log('✅ Encounter status updated successfully');
+                      } catch (error) {
+                        console.error('❌ Error updating encounter status:', error);
+
+                        // Revert on error
+                        setEncounter({ ...encounter, status: previousStatus });
+                        alert('Failed to update encounter status. Please try again.');
+                      } finally {
+                        setUpdatingStatus(false);
+                      }
+                    }}
+                    options={[
+                      {
+                        value: 'planned',
+                        label: 'Planned',
+                        color: '#dbeafe',
+                        textColor: '#1e40af'
+                      },
+                      {
+                        value: 'in-progress',
+                        label: 'In Progress',
+                        color: '#dcfce7',
+                        textColor: '#15803d'
+                      },
+                      {
+                        value: 'on-hold',
+                        label: 'On Hold',
+                        color: '#fef3c7',
+                        textColor: '#92400e'
+                      },
+                      {
+                        value: 'completed',
+                        label: 'Completed',
+                        color: '#f3f4f6',
+                        textColor: '#4b5563'
+                      },
+                      {
+                        value: 'cancelled',
+                        label: 'Cancelled',
+                        color: '#fee2e2',
+                        textColor: '#991b1b'
+                      },
+                      {
+                        value: 'entered-in-error',
+                        label: 'Entered in Error',
+                        color: '#fecaca',
+                        textColor: '#7f1d1d'
+                      }
+                    ]}
+                    disabled={updatingStatus}
+                    showColorInButton={true}
+                    placeholder="Select..."
+                  />
+                </div>
               </div>
-              <div className="text-xs space-y-0.5 min-w-[200px]">
-                <div>
-                  <span className="text-gray-600">Name: </span>
-                  <span className="text-gray-900 font-medium">{primaryAddress?.emergencyContactName || '-'}</span>
+
+              {/* Emergency Contact */}
+              <div className="border-t border-gray-200 pt-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-sm font-semibold text-gray-900">Emergency Contact</h3>
+                  <button className="text-blue-600 hover:text-blue-700">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
                 </div>
-                <div>
-                  <span className="text-gray-600">Phone: </span>
-                  <span className="text-gray-900 font-medium">{primaryAddress?.emergencyContactNumber || '-'}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Practitioner: </span>
-                  <span className="text-gray-900 font-medium">{primaryAddress?.generalPractitioner || '-'}</span>
+                <div className="text-xs space-y-0.5">
+                  <div>
+                    <span className="text-gray-600">Name: </span>
+                    <span className="text-gray-900 font-medium">{primaryAddress?.emergencyContactName || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Phone: </span>
+                    <span className="text-gray-900 font-medium">{primaryAddress?.emergencyContactNumber || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Practitioner: </span>
+                    <span className="text-gray-900 font-medium">{primaryAddress?.generalPractitioner || '-'}</span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -18,6 +18,7 @@ import { Loader2, Plus, ChevronDown, RefreshCw, Info, ArrowRight, Keyboard, Chev
 import { Button } from '@/components/ui/button';
 import { PrintAppointments } from '@/components/appointments/print-appointments';
 import { useFacility } from '@/contexts/facility-context';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 // Medical appointment categories
 const medicalCategories: EventCategory[] = [
@@ -567,10 +568,10 @@ export default function AppointmentsPage() {
       {/* Floating Add Button */}
       <Button
         onClick={handleNewAppointment}
-        className="fixed bottom-8 right-8 z-30 h-14 w-14 rounded-full bg-blue-600 p-0 shadow-lg hover:bg-blue-700"
+        className="fixed bottom-8 right-8 z-30 h-14 w-14 rounded-full bg-blue-600 text-white p-0 shadow-lg hover:bg-blue-700"
         title="New Appointment (Ctrl+N)"
       >
-        <Plus className="h-6 w-6" />
+        <Plus className="h-6 w-6 text-white" />
       </Button>
 
       {/* Keyboard Shortcuts Helper */}
@@ -940,18 +941,17 @@ export default function AppointmentsPage() {
             {viewMode === 'doctor' && (
               <div className="bg-white border-b border-gray-200">
                 <div className="px-4 py-2.5">
-                  <h3 className="text-xs font-medium text-gray-900 mb-2">Select Practitioner</h3>
-                  <select
+                  <SearchableSelect
+                    label="Select Practitioner"
+                    options={practitioners.map(p => ({
+                      value: p.name,
+                      label: p.name,
+                      subtitle: `${p.count} appointment${p.count !== 1 ? 's' : ''}`
+                    }))}
                     value={currentDoctorId || ''}
-                    onChange={(e) => setCurrentDoctorId(e.target.value)}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    {practitioners.map((practitioner) => (
-                      <option key={practitioner.name} value={practitioner.name}>
-                        {practitioner.name} ({practitioner.count})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => setCurrentDoctorId(value)}
+                    placeholder="Choose a practitioner..."
+                  />
                 </div>
               </div>
             )}

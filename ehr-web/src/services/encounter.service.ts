@@ -514,6 +514,60 @@ export class EncounterService {
   }
 
   /**
+   * Get all encounters with optional filters
+   */
+  static async getAll(filters?: {
+    status?: EncounterStatus;
+    class?: string;
+    practitionerId?: string;
+    patientId?: string;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<Encounter[]> {
+    try {
+      const params: any = {
+        _sort: '-date',
+        _count: 100
+      };
+
+      if (filters?.status) {
+        params.status = filters.status;
+      }
+      if (filters?.class) {
+        // Map our class names to FHIR codes
+        const classCodeMap: Record<string, string> = {
+          'ambulatory': 'AMB',
+          'emergency': 'EMER',
+          'inpatient': 'IMP',
+          'outpatient': 'OUTPATIENT',
+          'virtual': 'VR'
+        };
+        const fhirCode = classCodeMap[filters.class] || filters.class;
+        params.class = fhirCode;
+      }
+      if (filters?.practitionerId) {
+        params.participant = `Practitioner/${filters.practitionerId}`;
+      }
+      if (filters?.patientId) {
+        params.subject = `Patient/${filters.patientId}`;
+      }
+      if (filters?.startDate) {
+        params.date = `ge${filters.startDate.toISOString()}`;
+      }
+      if (filters?.endDate) {
+        const endParam = `le${filters.endDate.toISOString()}`;
+        params.date = params.date ? `${params.date}&date=${endParam}` : endParam;
+      }
+
+      const bundle = await medplum.searchResources('Encounter', params);
+      return bundle.map((fhir: FHIREncounter) => EncounterService.transformFHIREncounter(fhir));
+    } catch (error) {
+      console.error('Error fetching all encounters:', error);
+      return [];
+    }
+  }
+
+  /**
    * Transform FHIR Encounter to our Encounter type
    */
   private static transformFHIREncounter(fhir: FHIREncounter, appointment?: Appointment): Encounter {

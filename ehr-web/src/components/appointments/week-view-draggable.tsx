@@ -852,7 +852,7 @@ export function WeekViewDraggable({
                       >
                         <CompactAppointmentCard
                           appointment={apt}
-                          onClick={undefined}
+                          onClick={() => onAppointmentClick?.(apt)}
                           onDragStart={handleDragStart}
                           onDragEnd={handleDragEnd}
                           className="h-full"

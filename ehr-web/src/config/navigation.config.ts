@@ -23,7 +23,8 @@ import {
   Building2,
   Code,
   FileCode,
-  Settings
+  Settings,
+  Activity
 } from 'lucide-react';
 import { NavSection, PageInfo } from '@/types/navigation';
 
@@ -35,6 +36,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
     title: 'CLINIC',
     items: [
       { name: 'Appointments', href: '/appointments', icon: Calendar },
+      { name: 'Encounters', href: '/encounters', icon: Activity },
       { name: 'Patients', href: '/patients', icon: Users },
       { name: 'Treatments', href: '/treatments', icon: Stethoscope },
       { name: 'Staff List', href: '/staff', icon: UserCheck }
