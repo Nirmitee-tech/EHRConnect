@@ -284,9 +284,24 @@ export function WeekViewDraggable({
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
 
-    // Update drag over state - we still track by hour for simplicity
-    if (!dragOver || dragOver.date.toDateString() !== date.toDateString() || dragOver.hour !== hour) {
-      setDragOver({ date, hour });
+    // Calculate precise position for visual feedback
+    const target = e.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    const relativeY = e.clientY - rect.top;
+    const percentInCell = relativeY / rect.height;
+    const minutesInSlot = Math.floor(percentInCell * 60);
+    const totalMinutes = minutes + minutesInSlot;
+    const snappedMinutes = Math.round(totalMinutes / 15) * 15;
+
+    // Calculate the snapped hour for visual feedback
+    const snappedHour = hour + Math.floor(snappedMinutes / 60);
+    const finalMinutes = snappedMinutes % 60;
+
+    // Update drag over state with snapped position
+    if (!dragOver ||
+        dragOver.date.toDateString() !== date.toDateString() ||
+        dragOver.hour !== snappedHour) {
+      setDragOver({ date, hour: snappedHour });
     }
   };
 
@@ -305,8 +320,22 @@ export function WeekViewDraggable({
     e.preventDefault();
 
     if (draggedAppointment) {
-      // Pass the hour with decimal for minutes (e.g., 9.5 for 9:30)
-      const hourWithMinutes = hour + (minutes / 60);
+      // Calculate precise drop position within the cell
+      const target = e.currentTarget as HTMLElement;
+      const rect = target.getBoundingClientRect();
+      const relativeY = e.clientY - rect.top;
+
+      // Each cell is 60px tall, calculate the minute offset within this cell
+      const percentInCell = relativeY / rect.height;
+      const minutesInSlot = Math.floor(percentInCell * 60); // 60 minutes per hour slot
+
+      // Snap to 15-minute intervals for cleaner scheduling
+      const totalMinutes = minutes + minutesInSlot;
+      const snappedMinutes = Math.round(totalMinutes / 15) * 15;
+
+      // Convert to decimal hour format (e.g., 9.5 for 9:30, 9.25 for 9:15)
+      const hourWithMinutes = hour + (snappedMinutes / 60);
+
       onAppointmentDrop?.(draggedAppointment, date, hourWithMinutes);
     }
 
@@ -628,8 +657,8 @@ export function WeekViewDraggable({
                 <div className="flex flex-col gap-1">
                   {dayAllDayEvents.map((apt) => {
                     const eventType = apt.allDayEventType || 'appointment';
-                    // Only allow dragging scheduled appointments
-                    const isDraggable = apt.status === 'scheduled';
+                    // Allow dragging all appointments regardless of status
+                    const isDraggable = true;
 
                     const eventStyles: Record<string, { bg: string; text: string; icon: string; border: string }> = {
                       'leave': { bg: 'bg-orange-500', text: 'text-white', icon: '🏖️', border: 'border-orange-600' },
@@ -733,7 +762,7 @@ export function WeekViewDraggable({
                   return (
                     <div
                       key={dateIdx}
-                      className={`relative h-[60px] border-b border-r border-gray-100 last:border-r-0 transition-colors ${
+                      className={`relative h-[60px] border-b border-r border-gray-100 last:border-r-0 transition-all duration-150 ease-in-out ${
                         isToday ? 'bg-blue-50/20' : 'bg-white'
                       } ${isDraggedOver ? 'bg-blue-100/70 ring-1 ring-inset ring-blue-400' : ''} ${
                         inCreateRange ? 'bg-green-50 ring-2 ring-inset ring-green-400' : ''
@@ -863,13 +892,15 @@ export function WeekViewDraggable({
                     return (
                       <div
                         key={apt.id}
-                        className={`absolute pointer-events-auto ${isDragging ? 'opacity-50' : ''} ${isBeingResized ? 'opacity-70 ring-2 ring-blue-400' : ''}`}
+                        className={`absolute pointer-events-auto transition-all duration-200 ease-in-out ${isBeingResized ? 'opacity-70 ring-2 ring-blue-400' : ''}`}
                         style={{
                           top: `${style.top}px`,
                           height: `${style.height}px`,
                           left: '1px',
                           right: '1px',
-                          zIndex: isDragging || isBeingResized ? 1000 : 10
+                          zIndex: isDragging || isBeingResized ? 1000 : 10,
+                          // When dragging, make element invisible and non-interactive
+                          visibility: isDragging ? 'hidden' : 'visible'
                         }}
                       >
                         {appointmentElement}
@@ -884,13 +915,15 @@ export function WeekViewDraggable({
                   return (
                     <div
                       key={apt.id}
-                      className={`absolute pointer-events-auto ${isDragging ? 'opacity-50' : ''} ${isBeingResized ? 'opacity-70 ring-2 ring-blue-400' : ''}`}
+                      className={`absolute pointer-events-auto transition-all duration-200 ease-in-out ${isBeingResized ? 'opacity-70 ring-2 ring-blue-400' : ''}`}
                       style={{
                         top: `${style.top}px`,
                         height: `${style.height}px`,
                         left: `calc(${leftPercent}% + 1px)`,
                         width: `calc(${columnWidth}% - 1px)`,
-                        zIndex: isDragging || isBeingResized ? 1000 : 10 + layoutInfo.column
+                        zIndex: isDragging || isBeingResized ? 1000 : 10 + layoutInfo.column,
+                        // When dragging, make element invisible and non-interactive
+                        visibility: isDragging ? 'hidden' : 'visible'
                       }}
                     >
                       {appointmentElement}

@@ -28,8 +28,10 @@ export function CompactAppointmentCard({
   const router = useRouter();
   const [showActions, setShowActions] = useState(false);
   const { autoNavigateToEncounter } = useCalendarSettings();
-  const startTime = new Date(appointment.startTime);
-  const endTime = new Date(appointment.endTime);
+
+  // Always use the latest appointment times for display
+  const startTime = React.useMemo(() => new Date(appointment.startTime), [appointment.startTime]);
+  const endTime = React.useMemo(() => new Date(appointment.endTime), [appointment.endTime]);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', {
@@ -105,8 +107,9 @@ export function CompactAppointmentCard({
   // Use practitioner color if available
   const borderColor = appointment.practitionerColor || '#3b82f6';
 
-  // Only allow dragging scheduled appointments
-  const isDraggable = appointment.status === 'scheduled';
+  // Allow dragging for all appointments (scheduled, in-progress, completed, cancelled)
+  // This allows users to reschedule any appointment regardless of status
+  const isDraggable = true;
 
   return (
     <div
@@ -127,7 +130,7 @@ export function CompactAppointmentCard({
       onMouseLeave={() => setShowActions(false)}
     >
       <div
-        className={`h-full rounded border-l-[3px] overflow-visible shadow-sm hover:shadow-md transition-all cursor-pointer relative ${getStatusColor(appointment.status)}`}
+        className={`h-full rounded border-l-[3px] overflow-visible shadow-sm hover:shadow-md transition-all duration-200 ease-in-out cursor-pointer relative ${getStatusColor(appointment.status)}`}
         style={{ borderLeftColor: borderColor }}
       >
         <div className="px-1.5 py-1 h-full flex flex-col justify-start relative">

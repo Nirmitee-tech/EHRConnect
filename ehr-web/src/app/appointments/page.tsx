@@ -452,8 +452,12 @@ export default function AppointmentsPage() {
   const handleAppointmentDrop = async (appointment: Appointment, newDate: Date, newHour: number) => {
     try {
       // Calculate new start and end times
+      // newHour can be a decimal (e.g., 9.5 for 9:30)
+      const hours = Math.floor(newHour);
+      const minutes = Math.round((newHour - hours) * 60);
+
       const newStartTime = new Date(newDate);
-      newStartTime.setHours(newHour, 0, 0, 0);
+      newStartTime.setHours(hours, minutes, 0, 0);
 
       const duration = appointment.duration;
       const newEndTime = new Date(newStartTime.getTime() + duration * 60000);
