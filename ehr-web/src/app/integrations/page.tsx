@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   CheckCircle,
@@ -13,28 +13,72 @@ import {
   IntegrationVendor,
   IntegrationConfig,
   INTEGRATION_CATEGORIES,
-  SAMPLE_VENDORS,
   IntegrationStatus
 } from '@/types/integration';
 import { IntegrationConfigDrawer } from '@/components/integrations/integration-config-drawer';
 import { IntegrationLogo } from '@/components/integrations/integration-logo';
+import * as IntegrationsAPI from '@/lib/api/integrations';
+import { useOrganization } from '@/hooks/useOrganization';
 
 type TabCategory = 'all' | 'clinical' | 'financial' | 'operations' | 'technology';
 
 export default function IntegrationsPage() {
+  const { orgId, isLoading: isLoadingOrg } = useOrganization();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<IntegrationCategory | 'all'>('all');
   const [selectedTab, setSelectedTab] = useState<TabCategory>('all');
   const [integrations, setIntegrations] = useState<IntegrationConfig[]>([]);
+  const [vendors, setVendors] = useState<IntegrationVendor[]>([]);
   const [selectedVendor, setSelectedVendor] = useState<IntegrationVendor | null>(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingVendors, setLoadingVendors] = useState(true);
+
+  // Load vendors from API on mount
+  useEffect(() => {
+    loadVendors();
+  }, []);
+
+  // Load integrations from API when org_id is available
+  useEffect(() => {
+    if (orgId) {
+      loadIntegrations();
+    }
+  }, [orgId]);
+
+  const loadVendors = async () => {
+    try {
+      setLoadingVendors(true);
+      const data = await IntegrationsAPI.getVendors();
+      setVendors(data);
+    } catch (error) {
+      console.error('Failed to load vendors:', error);
+    } finally {
+      setLoadingVendors(false);
+    }
+  };
+
+  const loadIntegrations = async () => {
+    if (!orgId) return;
+
+    try {
+      setLoading(true);
+      const data = await IntegrationsAPI.getIntegrations(orgId);
+      setIntegrations(data);
+    } catch (error) {
+      console.error('Failed to load integrations:', error);
+      // Show error toast/notification here
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter vendors based on search, category, and tab
   const filteredVendors = useMemo(() => {
-    return SAMPLE_VENDORS.filter(vendor => {
+    return vendors.filter(vendor => {
       const matchesSearch =
         vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vendor.description.toLowerCase().includes(searchQuery.toLowerCase());
+        (vendor.description && vendor.description.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesCategory = selectedCategory === 'all' || vendor.category === selectedCategory;
 
@@ -52,7 +96,7 @@ export default function IntegrationsPage() {
 
       return matchesSearch && matchesCategory && matchesTab;
     });
-  }, [searchQuery, selectedCategory, selectedTab]);
+  }, [vendors, searchQuery, selectedCategory, selectedTab]);
 
   // Get configured integrations
   const configuredVendorIds = integrations.map(int => int.vendorId);
@@ -63,26 +107,48 @@ export default function IntegrationsPage() {
     setShowConfigModal(true);
   };
 
-  const handleSaveConfig = (config: IntegrationConfig) => {
-    setIntegrations(prev => {
-      const existingIndex = prev.findIndex(int => int.id === config.id);
+  const handleSaveConfig = async (config: IntegrationConfig) => {
+    if (!orgId) {
+      alert('Organization not found. Please log in again.');
+      return;
+    }
+
+    try {
+      const existingIndex = integrations.findIndex(int => int.id === config.id);
+
       if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex] = config;
-        return updated;
+        // Update existing integration
+        await IntegrationsAPI.updateIntegration(config.id, config);
+      } else {
+        // Create new integration
+        await IntegrationsAPI.createIntegration(orgId, config);
       }
-      return [...prev, config];
-    });
-    setShowConfigModal(false);
-    setSelectedVendor(null);
+
+      // Reload integrations
+      await loadIntegrations();
+      setShowConfigModal(false);
+      setSelectedVendor(null);
+    } catch (error) {
+      console.error('Failed to save integration:', error);
+      alert('Failed to save integration. Please try again.');
+    }
   };
 
   const handleToggleIntegration = async (integrationId: string) => {
-    setIntegrations(prev => prev.map(int =>
-      int.id === integrationId
-        ? { ...int, enabled: !int.enabled }
-        : int
-    ));
+    try {
+      const integration = integrations.find(int => int.id === integrationId);
+      if (!integration) return;
+
+      const updated = await IntegrationsAPI.toggleIntegration(integrationId, !integration.enabled);
+
+      // Update local state
+      setIntegrations(prev => prev.map(int =>
+        int.id === integrationId ? updated : int
+      ));
+    } catch (error) {
+      console.error('Failed to toggle integration:', error);
+      alert('Failed to toggle integration. Please try again.');
+    }
   };
 
   const getStatusIcon = (status: IntegrationStatus) => {
@@ -220,7 +286,7 @@ export default function IntegrationsPage() {
               <h2 className="text-sm font-medium text-gray-700 mb-4">Your Active Integrations</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {integrations.map((integration) => {
-                  const vendor = SAMPLE_VENDORS.find(v => v.id === integration.vendorId);
+                  const vendor = vendors.find(v => v.id === integration.vendorId);
                   if (!vendor) return null;
 
                   const categoryInfo = INTEGRATION_CATEGORIES.find(c => c.id === vendor.category);

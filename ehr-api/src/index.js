@@ -18,10 +18,15 @@ const inventoryRoutes = require('./routes/inventory');
 const inventoryMastersRoutes = require('./routes/inventory-masters');
 const auditRoutes = require('./routes/audit');
 const dashboardRoutes = require('./routes/dashboard');
+const integrationsRoutes = require('./routes/integrations');
+const bedManagementRoutes = require('./routes/bed-management');
+const dataMapperRoutes = require('./routes/data-mapper');
 const { initializeDatabase } = require('./database/init');
 const socketService = require('./services/socket.service');
 const billingJobs = require('./services/billing.jobs');
 const auditLogger = require('./middleware/audit-logger');
+const IntegrationService = require('./services/integration.service');
+const { registerAllHandlers } = require('./integrations');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -157,6 +162,9 @@ app.use('/api/inventory/masters', inventoryMastersRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/orgs/:orgId/audit', auditRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/integrations', integrationsRoutes);
+app.use('/api/bed-management', bedManagementRoutes);
+app.use('/api/data-mapper', dataMapperRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -211,11 +219,20 @@ async function startServer() {
     // Initialize billing background jobs
     billingJobs.initialize();
 
+    // Initialize integration handlers
+    const integrationService = new IntegrationService();
+    registerAllHandlers(integrationService);
+    console.log('✅ Integration handlers initialized');
+
+    // Make integrationService globally available
+    global.integrationService = integrationService;
+
     httpServer.listen(PORT, () => {
       console.log(`🚀 FHIR R4 Server running on http://localhost:${PORT}`);
       console.log(`📋 Capability Statement: http://localhost:${PORT}/fhir/R4/metadata`);
       console.log(`🔌 Socket.IO ready for real-time permission updates`);
       console.log(`💰 Billing jobs running for claim sync and ERA processing`);
+      console.log(`🔗 Integration system ready with Epic, Stripe handlers`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

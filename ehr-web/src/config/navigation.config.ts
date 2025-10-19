@@ -25,7 +25,11 @@ import {
   FileCode,
   Settings,
   Activity,
-  Plug
+  Plug,
+  Bed,
+  UserPlus,
+  Map,
+  BedDouble
 } from 'lucide-react';
 import { NavSection, PageInfo } from '@/types/navigation';
 
@@ -39,6 +43,19 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
       { name: 'Appointments', href: '/appointments', icon: Calendar },
       { name: 'Encounters', href: '/encounters', icon: Activity },
       { name: 'Patients', href: '/patients', icon: Users },
+      {
+        name: 'Bed Management',
+        href: '/bed-management',
+        icon: Bed,
+        children: [
+          { name: 'Dashboard', href: '/bed-management', icon: LayoutDashboard },
+          { name: 'Admit Patient', href: '/bed-management/admit', icon: UserPlus },
+          { name: 'Wards', href: '/bed-management/wards', icon: Building2 },
+          { name: 'Beds', href: '/bed-management/beds', icon: BedDouble },
+          { name: 'Bed Status Map', href: '/bed-management/map', icon: Map },
+          { name: 'Reports', href: '/bed-management/reports', icon: BarChart3 }
+        ]
+      },
       { name: 'Treatments', href: '/treatments', icon: Stethoscope },
       { name: 'Staff List', href: '/staff', icon: UserCheck }
     ]
@@ -138,17 +155,21 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
 
 const PAGE_CONFIG: Record<string, PageInfo> = {
   dashboard: { title: 'Dashboard' },
-  patients: { 
-    title: 'Patients', 
+  patients: {
+    title: 'Patients',
     actionButton: { label: 'Add Patient', href: '/patients/new' }
   },
-  staff: { 
-    title: 'Staff List', 
+  staff: {
+    title: 'Staff List',
     actionButton: { label: 'Add Doctor' }
   },
+  'bed-management': {
+    title: 'Bed Management',
+    actionButton: { label: 'Admit Patient', href: '/bed-management/admit' }
+  },
   treatments: { title: 'Treatments' },
-  appointments: { 
-    title: 'Appointments', 
+  appointments: {
+    title: 'Appointments',
     actionButton: { label: 'New Appointment', href: '/appointments/new' }
   },
   accounts: { title: 'Accounts' },

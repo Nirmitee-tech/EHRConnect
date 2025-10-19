@@ -67,6 +67,12 @@ class AuditService {
     return JSON.stringify(a) === JSON.stringify(b);
   }
 
+  isValidUUID(str) {
+    if (!str) return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  }
+
   async getSettings(orgId, client) {
     if (!orgId) {
       return DEFAULT_SETTINGS;
@@ -241,6 +247,9 @@ class AuditService {
       return;
     }
 
+    // Validate actorUserId is a valid UUID or null
+    const validActorUserId = this.isValidUUID(actorUserId) ? actorUserId : null;
+
     const executor = options.client || pool;
     const settings = await this.getSettings(orgId, options.client);
     const category = this.resolveCategory(action, explicitCategory);
@@ -280,7 +289,7 @@ class AuditService {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)` ,
         [
           orgId,
-          actorUserId,
+          validActorUserId,
           action,
           targetType,
           targetId,
@@ -320,6 +329,9 @@ class AuditService {
       return;
     }
 
+    // Validate actorUserId is a valid UUID or null
+    const validActorUserId = this.isValidUUID(actorUserId) ? actorUserId : null;
+
     const settings = await this.getSettings(orgId);
 
     if (!this.shouldLog(settings, 'http_requests')) {
@@ -339,7 +351,7 @@ class AuditService {
 
     await this.logEvent({
       orgId,
-      actorUserId,
+      actorUserId: validActorUserId,
       action: 'HTTP.REQUEST',
       targetType: 'HTTPRequest',
       targetId: null,
