@@ -634,9 +634,11 @@ export interface CreateWardRequest {
   wardType: WardType;
   specialty?: string;
   floorNumber?: string;
+  floor?: string; // Alias for floorNumber
   building?: string;
   description?: string;
   capacity?: number;
+  totalCapacity?: number; // Alias for capacity
   headNurseId?: string;
   genderRestriction?: GenderRestriction;
   ageRestriction?: AgeRestriction;

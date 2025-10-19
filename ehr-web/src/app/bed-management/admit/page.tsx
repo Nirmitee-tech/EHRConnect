@@ -3,8 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, User, Bed, Calendar, FileText, AlertCircle } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  ArrowLeft,
+  User,
+  Bed as BedIcon,
+  AlertCircle,
+  Search,
+  Plus,
+  Check,
+  Building2,
+  X,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,9 +27,27 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import * as bedManagementService from '@/services/bed-management';
 import type { Ward, Bed as BedType, AdmitPatientRequest } from '@/types/bed-management';
 import { useFacility } from '@/contexts/facility-context';
+import { medplum } from '@/lib/medplum';
+
+interface Patient {
+  id: string;
+  name: string;
+  mrn?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  phone?: string;
+}
 
 export default function AdmitPatientPage() {
   const router = useRouter();
@@ -28,18 +56,43 @@ export default function AdmitPatientPage() {
 
   const [orgId, setOrgId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+
+  // Patient search & selection
+  const [patientSearch, setPatientSearch] = useState('');
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [isPatientDrawerOpen, setIsPatientDrawerOpen] = useState(false);
+
+  // Ward & Bed selection
   const [wards, setWards] = useState<Ward[]>([]);
+  const [selectedWard, setSelectedWard] = useState<Ward | null>(null);
   const [availableBeds, setAvailableBeds] = useState<BedType[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<Partial<AdmitPatientRequest>>({
-    patientId: '',
+  const [selectedBed, setSelectedBed] = useState<BedType | null>(null);
+  const [showBedSelection, setShowBedSelection] = useState(false);
+
+  // Form data
+  const [formData, setFormData] = useState({
     admissionDate: new Date().toISOString().split('T')[0],
-    admissionType: 'emergency',
-    priority: 'routine',
+    admissionTime: new Date().toTimeString().slice(0, 5),
+    admissionType: 'emergency' as const,
+    priority: 'routine' as const,
     admissionReason: '',
-    admissionDiagnosis: '',
-    assignBedOnAdmit: false,
+    chiefComplaint: '',
+    primaryDiagnosis: '',
+    attendingDoctorId: '',
+    specialRequirements: '',
   });
+
+  // New patient form
+  const [newPatientData, setNewPatientData] = useState({
+    name: '',
+    dateOfBirth: '',
+    gender: 'male',
+    phone: '',
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Get auth from session
   useEffect(() => {
@@ -58,323 +111,640 @@ export default function AdmitPatientPage() {
   async function loadWards() {
     if (!orgId) return;
     try {
-      const data = await bedManagementService.getWards(orgId, userId || undefined, {
-        locationId: currentFacility?.id,
-        active: true,
-      });
+      const data = await bedManagementService.getWards(orgId, userId || undefined, {});
       setWards(data);
     } catch (error) {
       console.error('Error loading wards:', error);
     }
   }
 
+  async function searchPatients(query: string) {
+    if (query.length < 2) {
+      setPatients([]);
+      return;
+    }
+
+    try {
+      // Use medplum to search patients (same as appointments)
+      const bundle = await medplum.searchResources('Patient', {
+        name: query,
+        _count: 10,
+        _sort: '-_lastUpdated'
+      });
+
+      const patientList: Patient[] = bundle.map((p: any) => {
+        // Extract MRN from identifier
+        const mrn = p.identifier?.find(
+          (id: any) => id.type?.coding?.some((c: any) => c.code === 'MR')
+        )?.value;
+
+        // Extract phone from telecom
+        const phone = p.telecom?.find((t: any) => t.system === 'phone')?.value;
+
+        return {
+          id: p.id!,
+          name: p.name?.[0] ? `${p.name[0].given?.join(' ')} ${p.name[0].family}` : 'Unknown',
+          mrn,
+          dateOfBirth: p.birthDate,
+          gender: p.gender,
+          phone
+        };
+      });
+
+      setPatients(patientList);
+    } catch (error) {
+      console.error('Error searching patients:', error);
+      setPatients([]);
+    }
+  }
+
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      if (patientSearch) {
+        searchPatients(patientSearch);
+      } else {
+        setPatients([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(debounce);
+  }, [patientSearch]);
+
+  function selectPatient(patient: Patient) {
+    setSelectedPatient(patient);
+    setPatients([]);
+    setPatientSearch('');
+  }
+
   async function loadAvailableBeds(wardId: string) {
     if (!orgId) return;
     try {
-      const beds = await bedManagementService.getAvailableBeds(
-        orgId,
-        userId || undefined,
-        wardId
-      );
-      setAvailableBeds(beds);
+      const allBeds = await bedManagementService.getBeds(orgId, userId || undefined, {
+        wardId,
+      });
+      // Filter for available beds
+      const available = allBeds.filter((bed) => bed.status === 'available' && bed.active);
+      setAvailableBeds(available);
     } catch (error) {
       console.error('Error loading beds:', error);
       setAvailableBeds([]);
     }
   }
 
-  function handleWardChange(wardId: string) {
-    setFormData({ ...formData, wardId });
-    setAvailableBeds([]);
-    if (wardId) {
-      loadAvailableBeds(wardId);
-    }
+  function selectWard(ward: Ward) {
+    setSelectedWard(ward);
+    setSelectedBed(null);
+    loadAvailableBeds(ward.id);
+    setShowBedSelection(true);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!orgId) return;
-
+  async function handleCreatePatient() {
     try {
       setLoading(true);
 
-      const admissionData: AdmitPatientRequest = {
-        patientId: formData.patientId!,
-        locationId: currentFacility?.id || '',
-        admissionDate: formData.admissionDate!,
-        admissionType: formData.admissionType as any,
-        priority: formData.priority as any,
-        admissionReason: formData.admissionReason,
-        admissionDiagnosis: formData.admissionDiagnosis,
-        wardId: formData.wardId,
-        bedId: formData.bedId,
-        attendingDoctorId: formData.attendingDoctorId,
-        assignBedOnAdmit: formData.assignBedOnAdmit,
+      // Split name into first and last name
+      const nameParts = newPatientData.name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Create FHIR Patient resource (same as appointments)
+      const patientResource: any = {
+        resourceType: 'Patient',
+        active: true,
+        name: [{
+          use: 'official',
+          family: lastName || firstName,
+          given: lastName ? [firstName] : []
+        }],
+        gender: newPatientData.gender,
+        birthDate: newPatientData.dateOfBirth,
+        telecom: newPatientData.phone ? [{
+          system: 'phone',
+          value: newPatientData.phone,
+          use: 'home'
+        }] : undefined,
+        managingOrganization: currentFacility?.id ? {
+          reference: `Organization/${currentFacility.id}`
+        } : undefined
       };
 
-      await bedManagementService.admitPatient(orgId, userId || undefined, admissionData);
+      const createdPatient = await medplum.createResource(patientResource);
 
-      alert('Patient admitted successfully!');
-      router.push('/bed-management');
+      // Convert to our Patient interface
+      const newPatient: Patient = {
+        id: createdPatient.id!,
+        name: newPatientData.name,
+        dateOfBirth: newPatientData.dateOfBirth,
+        gender: newPatientData.gender,
+        phone: newPatientData.phone,
+      };
+
+      selectPatient(newPatient);
+      setIsPatientDrawerOpen(false);
+      setNewPatientData({ name: '', dateOfBirth: '', gender: 'male', phone: '' });
     } catch (error) {
-      console.error('Error admitting patient:', error);
-      alert('Failed to admit patient. Please try again.');
+      console.error('Error creating patient:', error);
+      setError('Failed to create patient');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleAdmit() {
+    if (!orgId || !selectedPatient) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Use location from selected ward if available, otherwise use a placeholder
+      // The location_id should come from the ward's location
+      const locationId = selectedWard?.locationId || currentFacility?.id || '';
+
+      const admitRequest: Partial<AdmitPatientRequest> = {
+        patientId: selectedPatient.id,
+        patientName: selectedPatient.name,
+        patientMrn: selectedPatient.mrn,
+        locationId: locationId,
+        admissionDate: `${formData.admissionDate}T${formData.admissionTime}`,
+        admissionType: formData.admissionType,
+        admissionReason: formData.admissionReason,
+        chiefComplaint: formData.chiefComplaint,
+        primaryDiagnosis: formData.primaryDiagnosis,
+        priority: formData.priority,
+        specialRequirements: formData.specialRequirements,
+      };
+
+      const result = await bedManagementService.admitPatient(
+        orgId,
+        userId || undefined,
+        admitRequest as AdmitPatientRequest
+      );
+
+      // Assign bed if selected
+      if (selectedBed && result.id) {
+        await bedManagementService.assignBed(orgId, userId || undefined, {
+          hospitalizationId: result.id,
+          bedId: selectedBed.id,
+        });
+      }
+
+      // Success! Redirect to bed management
+      router.push('/bed-management');
+    } catch (err: any) {
+      console.error('Error admitting patient:', err);
+      setError(err.message || 'Failed to admit patient');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admit Patient</h1>
-          <p className="text-muted-foreground">Register a new patient admission</p>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="sm" onClick={() => router.back()}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold">Admit Patient</h1>
+              <p className="text-muted-foreground">Register a new patient admission</p>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="max-w-3xl">
-        <div className="space-y-6">
-          {/* Patient Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Patient Information
-              </CardTitle>
-              <CardDescription>
-                Select or search for the patient to admit
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="patientId">Patient ID / MRN *</Label>
-                <Input
-                  id="patientId"
-                  required
-                  value={formData.patientId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, patientId: e.target.value })
-                  }
-                  placeholder="Enter patient ID or MRN"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Enter the patient's medical record number
-                </p>
-              </div>
+        {/* Error Alert */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-              <div className="grid gap-2">
-                <Label htmlFor="attendingDoctorId">Attending Doctor</Label>
-                <Input
-                  id="attendingDoctorId"
-                  value={formData.attendingDoctorId || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, attendingDoctorId: e.target.value })
-                  }
-                  placeholder="Doctor ID (optional)"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Admission Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Admission Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="admissionDate">Admission Date *</Label>
-                  <Input
-                    id="admissionDate"
-                    type="date"
-                    required
-                    value={formData.admissionDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, admissionDate: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="admissionType">Admission Type *</Label>
-                  <Select
-                    value={formData.admissionType}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, admissionType: value as any })
-                    }
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Main Form */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Patient Selection Card */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Patient Information
+                  </CardTitle>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsPatientDrawerOpen(true)}
+                    className="gap-2"
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="emergency">Emergency</SelectItem>
-                      <SelectItem value="elective">Elective</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                      <SelectItem value="observation">Observation</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <Plus className="h-4 w-4" />
+                    New Patient
+                  </Button>
                 </div>
-              </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!selectedPatient ? (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <Input
+                      placeholder="Search by name, MRN, or phone number..."
+                      value={patientSearch}
+                      onChange={(e) => setPatientSearch(e.target.value)}
+                      className="pl-10"
+                    />
+                    {patients.length > 0 && (
+                      <div className="absolute z-10 w-full mt-2 border rounded-lg bg-white shadow-lg divide-y max-h-60 overflow-y-auto">
+                        {patients.map((patient) => (
+                          <div
+                            key={patient.id}
+                            className="p-3 hover:bg-gray-50 cursor-pointer"
+                            onClick={() => selectPatient(patient)}
+                          >
+                            <div className="font-medium">{patient.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              MRN: {patient.mrn} • {patient.gender} • DOB: {patient.dateOfBirth}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-start justify-between p-4 border rounded-lg bg-primary/5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                        <User className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <div className="font-semibold">{selectedPatient.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          MRN: {selectedPatient.mrn} • {selectedPatient.gender} • DOB:{' '}
+                          {selectedPatient.dateOfBirth}
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedPatient(null)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-              <div className="grid gap-2">
-                <Label htmlFor="priority">Priority *</Label>
-                <Select
-                  value={formData.priority}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, priority: value as any })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="emergency">Emergency</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                    <SelectItem value="routine">Routine</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="admissionReason">Reason for Admission</Label>
-                <Textarea
-                  id="admissionReason"
-                  value={formData.admissionReason || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, admissionReason: e.target.value })
-                  }
-                  placeholder="Brief reason for admission"
-                  rows={2}
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="admissionDiagnosis">Admission Diagnosis</Label>
-                <Textarea
-                  id="admissionDiagnosis"
-                  value={formData.admissionDiagnosis || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, admissionDiagnosis: e.target.value })
-                  }
-                  placeholder="Initial diagnosis"
-                  rows={2}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Bed Assignment */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bed className="h-5 w-5" />
-                Bed Assignment
-              </CardTitle>
-              <CardDescription>
-                Optionally assign a bed during admission
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="assignBedOnAdmit"
-                  checked={formData.assignBedOnAdmit}
-                  onChange={(e) =>
-                    setFormData({ ...formData, assignBedOnAdmit: e.target.checked })
-                  }
-                  className="rounded"
-                />
-                <Label htmlFor="assignBedOnAdmit" className="font-normal">
-                  Assign bed now (can be done later)
-                </Label>
-              </div>
-
-              {formData.assignBedOnAdmit && (
-                <>
+            {/* Admission Details Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Admission Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="wardId">Select Ward</Label>
+                    <Label htmlFor="admissionDate">Admission Date *</Label>
+                    <Input
+                      id="admissionDate"
+                      type="date"
+                      value={formData.admissionDate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, admissionDate: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="admissionTime">Admission Time *</Label>
+                    <Input
+                      id="admissionTime"
+                      type="time"
+                      value={formData.admissionTime}
+                      onChange={(e) =>
+                        setFormData({ ...formData, admissionTime: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="admissionType">Admission Type *</Label>
                     <Select
-                      value={formData.wardId}
-                      onValueChange={handleWardChange}
+                      value={formData.admissionType}
+                      onValueChange={(value: any) =>
+                        setFormData({ ...formData, admissionType: value })
+                      }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Choose a ward" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {wards.map((ward) => (
-                          <SelectItem key={ward.id} value={ward.id}>
-                            {ward.name} ({ward.wardType})
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="emergency">Emergency</SelectItem>
+                        <SelectItem value="elective">Elective</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                        <SelectItem value="newborn">Newborn</SelectItem>
+                        <SelectItem value="transfer_in">Transfer In</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  {formData.wardId && (
-                    <div className="grid gap-2">
-                      <Label htmlFor="bedId">Select Bed</Label>
-                      {availableBeds.length === 0 ? (
-                        <Alert>
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription>
-                            No available beds in this ward
-                          </AlertDescription>
-                        </Alert>
-                      ) : (
-                        <Select
-                          value={formData.bedId}
-                          onValueChange={(value) =>
-                            setFormData({ ...formData, bedId: value })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose a bed" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableBeds.map((bed) => (
-                              <SelectItem key={bed.id} value={bed.id}>
-                                {bed.bedNumber} - {bed.bedType}
-                                {bed.room && ` (Room ${bed.room.roomNumber})`}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                  <div className="grid gap-2">
+                    <Label htmlFor="priority">Priority *</Label>
+                    <Select
+                      value={formData.priority}
+                      onValueChange={(value: any) =>
+                        setFormData({ ...formData, priority: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="routine">Routine</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                        <SelectItem value="emergency">Emergency</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="chiefComplaint">Chief Complaint *</Label>
+                  <Textarea
+                    id="chiefComplaint"
+                    value={formData.chiefComplaint}
+                    onChange={(e) =>
+                      setFormData({ ...formData, chiefComplaint: e.target.value })
+                    }
+                    placeholder="Primary reason for admission"
+                    rows={2}
+                    required
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="admissionReason">Admission Reason *</Label>
+                  <Textarea
+                    id="admissionReason"
+                    value={formData.admissionReason}
+                    onChange={(e) =>
+                      setFormData({ ...formData, admissionReason: e.target.value })
+                    }
+                    placeholder="Detailed reason for admission"
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="primaryDiagnosis">Primary Diagnosis</Label>
+                  <Input
+                    id="primaryDiagnosis"
+                    value={formData.primaryDiagnosis}
+                    onChange={(e) =>
+                      setFormData({ ...formData, primaryDiagnosis: e.target.value })
+                    }
+                    placeholder="Initial diagnosis or working diagnosis"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="specialRequirements">Special Requirements</Label>
+                  <Textarea
+                    id="specialRequirements"
+                    value={formData.specialRequirements}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        specialRequirements: e.target.value,
+                      })
+                    }
+                    placeholder="Isolation, oxygen, monitoring, etc."
+                    rows={2}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Bed Selection */}
+          <div className="space-y-6">
+            {/* Ward Selection Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Select Ward *
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {wards.map((ward) => (
+                  <div
+                    key={ward.id}
+                    className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                      selectedWard?.id === ward.id
+                        ? 'border-primary bg-primary/5'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => selectWard(ward)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="font-semibold">{ward.name}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{ward.code}</div>
+                        <div className="mt-2">
+                          <Badge variant="outline" className="text-xs">
+                            {ward.wardType}
+                          </Badge>
+                        </div>
+                      </div>
+                      {selectedWard?.id === ward.id && (
+                        <Check className="h-5 w-5 text-primary" />
                       )}
                     </div>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
+                    <div className="text-sm text-muted-foreground mt-2">
+                      {ward.availableBeds || 0} beds available
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
 
-          {/* Actions */}
-          <div className="flex justify-end gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Admitting...' : 'Admit Patient'}
-            </Button>
+            {/* Bed Selection Card */}
+            {showBedSelection && selectedWard && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BedIcon className="h-5 w-5" />
+                    Select Bed
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {availableBeds.length === 0 ? (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      No available beds in this ward
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {availableBeds.map((bed) => (
+                        <div
+                          key={bed.id}
+                          className={`relative p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                            selectedBed?.id === bed.id
+                              ? 'border-primary bg-primary text-white'
+                              : 'border-gray-200 hover:border-primary/50 bg-green-50'
+                          }`}
+                          onClick={() => setSelectedBed(bed)}
+                        >
+                          <div className="flex flex-col items-center">
+                            <BedIcon
+                              className={`h-6 w-6 mb-1 ${
+                                selectedBed?.id === bed.id ? 'text-white' : 'text-green-600'
+                              }`}
+                            />
+                            <div
+                              className={`font-bold text-sm ${
+                                selectedBed?.id === bed.id ? 'text-white' : 'text-gray-900'
+                              }`}
+                            >
+                              {bed.bedNumber}
+                            </div>
+                            <div
+                              className={`text-xs ${
+                                selectedBed?.id === bed.id ? 'text-white/90' : 'text-gray-500'
+                              }`}
+                            >
+                              {bed.bedType}
+                            </div>
+                          </div>
+                          {selectedBed?.id === bed.id && (
+                            <div className="absolute top-1 right-1">
+                              <Check className="h-4 w-4 text-white" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <Button
+                size="lg"
+                onClick={handleAdmit}
+                disabled={
+                  loading ||
+                  !selectedPatient ||
+                  !selectedWard ||
+                  !formData.chiefComplaint ||
+                  !formData.admissionReason
+                }
+                className="w-full gap-2 text-white"
+              >
+                {loading ? 'Admitting...' : selectedBed ? 'Admit with Bed' : 'Admit Patient'}
+                <Check className="h-5 w-5" />
+              </Button>
+              {selectedWard && (
+                <div className="text-center text-sm text-muted-foreground">
+                  Ward: {selectedWard.name}
+                  {selectedBed && ` - Bed ${selectedBed.bedNumber}`}
+                </div>
+              )}
+              {!selectedWard && (
+                <div className="text-center text-sm text-orange-600">
+                  Please select a ward to continue
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </form>
+      </div>
+
+      {/* Patient Creation Drawer */}
+      <Sheet open={isPatientDrawerOpen} onOpenChange={setIsPatientDrawerOpen}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Create New Patient</SheetTitle>
+            <SheetDescription>
+              Add a new patient to the system. Fill in the required information below.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6 space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="patientName">Full Name *</Label>
+              <Input
+                id="patientName"
+                placeholder="John Doe"
+                value={newPatientData.name}
+                onChange={(e) =>
+                  setNewPatientData({ ...newPatientData, name: e.target.value })
+                }
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="dob">Date of Birth *</Label>
+              <Input
+                id="dob"
+                type="date"
+                value={newPatientData.dateOfBirth}
+                onChange={(e) =>
+                  setNewPatientData({ ...newPatientData, dateOfBirth: e.target.value })
+                }
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="gender">Gender *</Label>
+              <Select
+                value={newPatientData.gender}
+                onValueChange={(value) =>
+                  setNewPatientData({ ...newPatientData, gender: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+1-555-0000"
+                value={newPatientData.phone}
+                onChange={(e) =>
+                  setNewPatientData({ ...newPatientData, phone: e.target.value })
+                }
+              />
+            </div>
+          </div>
+          <div className="flex gap-3 mt-6">
+            <Button variant="outline" onClick={() => setIsPatientDrawerOpen(false)} className="flex-1">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreatePatient}
+              disabled={!newPatientData.name || !newPatientData.dateOfBirth}
+              className="flex-1 text-white"
+            >
+              Create Patient
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
