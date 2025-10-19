@@ -1,9 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-import { useSearchParams } from 'next/navigation';
-import { Plus, Edit, Trash2, Bed as BedIcon, ArrowLeft } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Bed as BedIcon,
+  ArrowLeft,
+  Search,
+  Filter,
+  Check,
+  X,
+} from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,28 +35,37 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import * as bedManagementService from '@/services/bed-management';
 import type { Bed, CreateBedRequest, Ward, BedType, BedStatus } from '@/types/bed-management';
 import { useFacility } from '@/contexts/facility-context';
 
 export default function BedsPage() {
+  const router = useRouter();
   const { data: session } = useSession();
   const { currentFacility } = useFacility();
   const searchParams = useSearchParams();
-  const wardId = searchParams?.get('wardId');
+  const wardIdParam = searchParams?.get('wardId');
 
   const [orgId, setOrgId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [beds, setBeds] = useState<Bed[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
-  const [selectedWard, setSelectedWard] = useState<Ward | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedWardId, setSelectedWardId] = useState<string>(wardIdParam || 'all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [bedTypeFilter, setBedTypeFilter] = useState<string>('all');
+
+  // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBed, setEditingBed] = useState<Bed | null>(null);
   const [formData, setFormData] = useState<Partial<CreateBedRequest>>({
     bedNumber: '',
     bedType: 'standard',
-    wardId: wardId || '',
+    wardId: wardIdParam || '',
     hasOxygen: false,
     hasSuction: false,
     hasMonitor: false,
@@ -64,45 +83,33 @@ export default function BedsPage() {
     }
   }, [session]);
 
-  // Load beds and wards
+  // Load data
   useEffect(() => {
     if (orgId) {
       loadWards();
-      if (wardId) {
-        loadBeds(wardId);
-      }
+      loadBeds();
     }
-  }, [orgId, userId, wardId]);
+  }, [orgId, userId]);
 
   async function loadWards() {
     if (!orgId) return;
     try {
-      // Load all wards for the organization (don't filter by facility yet)
       const data = await bedManagementService.getWards(orgId, userId || undefined, {});
-      console.log('Loaded wards:', data); // Debug log
       setWards(data);
-      if (wardId) {
-        const ward = data.find((w: Ward) => w.id === wardId);
-        setSelectedWard(ward || null);
-      }
     } catch (error) {
       console.error('Error loading wards:', error);
-      alert('Failed to load wards. Please refresh the page.');
     }
   }
 
-  async function loadBeds(selectedWardId?: string) {
+  async function loadBeds() {
     if (!orgId) return;
     try {
       setLoading(true);
       const filters: any = {};
-      // Only filter by ward if specified, don't filter by location
-      // since we want to show all beds for the organization or ward
-      if (selectedWardId) {
+      if (selectedWardId && selectedWardId !== 'all') {
         filters.wardId = selectedWardId;
       }
       const data = await bedManagementService.getBeds(orgId, userId || undefined, filters);
-      console.log('Loaded beds:', data); // Debug log
       setBeds(data);
     } catch (error) {
       console.error('Error loading beds:', error);
@@ -111,12 +118,57 @@ export default function BedsPage() {
     }
   }
 
+  // Reload beds when ward filter changes
+  useEffect(() => {
+    if (orgId) {
+      loadBeds();
+    }
+  }, [selectedWardId]);
+
+  // Filtered beds based on search and filters
+  const filteredBeds = useMemo(() => {
+    return beds.filter((bed) => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch =
+          bed.bedNumber.toLowerCase().includes(query) ||
+          bed.bedType.toLowerCase().includes(query) ||
+          bed.ward?.name.toLowerCase().includes(query);
+        if (!matchesSearch) return false;
+      }
+
+      // Status filter
+      if (statusFilter !== 'all' && bed.status !== statusFilter) {
+        return false;
+      }
+
+      // Bed type filter
+      if (bedTypeFilter !== 'all' && bed.bedType !== bedTypeFilter) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [beds, searchQuery, statusFilter, bedTypeFilter]);
+
+  // Summary statistics
+  const stats = useMemo(() => {
+    return {
+      total: filteredBeds.length,
+      available: filteredBeds.filter((b) => b.status === 'available').length,
+      occupied: filteredBeds.filter((b) => b.status === 'occupied').length,
+      cleaning: filteredBeds.filter((b) => b.status === 'cleaning').length,
+      maintenance: filteredBeds.filter((b) => b.status === 'maintenance').length,
+    };
+  }, [filteredBeds]);
+
   function openCreateDialog() {
     setEditingBed(null);
     setFormData({
       bedNumber: '',
       bedType: 'standard',
-      wardId: wardId || '',
+      wardId: selectedWardId !== 'all' ? selectedWardId : '',
       hasOxygen: false,
       hasSuction: false,
       hasMonitor: false,
@@ -133,13 +185,11 @@ export default function BedsPage() {
       bedNumber: bed.bedNumber,
       bedType: bed.bedType,
       wardId: bed.wardId,
-      roomId: bed.roomId,
       hasOxygen: bed.hasOxygen,
       hasSuction: bed.hasSuction,
       hasMonitor: bed.hasMonitor,
       hasIvPole: bed.hasIvPole,
       isElectric: bed.isElectric,
-      genderRestriction: bed.genderRestriction,
       notes: bed.notes || '',
     });
     setIsDialogOpen(true);
@@ -150,51 +200,59 @@ export default function BedsPage() {
     if (!orgId) return;
 
     try {
-      if (!formData.wardId) {
-        alert('Please select a ward');
-        return;
-      }
-
-      const bedData: CreateBedRequest = {
-        bedNumber: formData.bedNumber!,
-        bedType: formData.bedType as BedType,
-        wardId: formData.wardId,
-        roomId: formData.roomId,
-        hasOxygen: formData.hasOxygen,
-        hasSuction: formData.hasSuction,
-        hasMonitor: formData.hasMonitor,
-        hasIvPole: formData.hasIvPole,
-        isElectric: formData.isElectric,
-        genderRestriction: formData.genderRestriction,
-        notes: formData.notes,
-      };
-
       if (editingBed) {
-        // Update not implemented in service, would need to add
-        alert('Update bed functionality not yet implemented');
+        await bedManagementService.updateBed(orgId, userId || undefined, editingBed.id, formData);
       } else {
-        await bedManagementService.createBed(orgId, userId || undefined, bedData);
+        await bedManagementService.createBed(
+          orgId,
+          userId || undefined,
+          formData as CreateBedRequest
+        );
       }
-
       setIsDialogOpen(false);
-      loadBeds(wardId || formData.wardId);
-    } catch (error) {
+      loadBeds();
+    } catch (error: any) {
       console.error('Error saving bed:', error);
-      alert('Failed to save bed. Please try again.');
+      alert(error.message || 'Failed to save bed');
     }
   }
 
-  const getBedStatusColor = (status: BedStatus) => {
+  async function handleDelete(bedId: string) {
+    if (!orgId) return;
+    if (!confirm('Are you sure you want to delete this bed?')) return;
+
+    try {
+      await bedManagementService.deleteBed(orgId, userId || undefined, bedId);
+      loadBeds();
+    } catch (error: any) {
+      console.error('Error deleting bed:', error);
+      alert(error.message || 'Failed to delete bed');
+    }
+  }
+
+  function getBedStatusColor(status: BedStatus): string {
     const colors: Record<BedStatus, string> = {
-      available: 'bg-green-100 text-green-800',
-      occupied: 'bg-red-100 text-red-800',
-      reserved: 'bg-yellow-100 text-yellow-800',
-      cleaning: 'bg-blue-100 text-blue-800',
-      maintenance: 'bg-orange-100 text-orange-800',
-      out_of_service: 'bg-gray-100 text-gray-800',
+      available: 'bg-green-500',
+      occupied: 'bg-red-500',
+      reserved: 'bg-yellow-500',
+      cleaning: 'bg-blue-500',
+      maintenance: 'bg-orange-500',
+      out_of_service: 'bg-gray-500',
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  };
+    return colors[status] || 'bg-gray-500';
+  }
+
+  function getBedStatusText(status: BedStatus): string {
+    const text: Record<BedStatus, string> = {
+      available: 'Available',
+      occupied: 'Occupied',
+      reserved: 'Reserved',
+      cleaning: 'Cleaning',
+      maintenance: 'Maintenance',
+      out_of_service: 'Out of Service',
+    };
+    return text[status] || status;
+  }
 
   if (loading) {
     return (
@@ -212,19 +270,12 @@ export default function BedsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.history.back()}
-          >
+          <Button variant="outline" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Bed Management
-              {selectedWard && <span className="text-primary"> - {selectedWard.name}</span>}
-            </h1>
+            <h1 className="text-3xl font-bold tracking-tight">Bed Management</h1>
             <p className="text-muted-foreground">Manage beds and their assignments</p>
           </div>
         </div>
@@ -234,137 +285,208 @@ export default function BedsPage() {
         </Button>
       </div>
 
-      {/* Ward Filter */}
-      {!wardId && wards.length > 0 && (
+      {/* Statistics Cards */}
+      <div className="grid gap-4 md:grid-cols-5">
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <Label htmlFor="wardFilter" className="whitespace-nowrap">
-                Filter by Ward:
-              </Label>
-              <Select
-                value={selectedWard?.id || 'all'}
-                onValueChange={(value) => {
-                  if (value === 'all') {
-                    setSelectedWard(null);
-                    loadBeds();
-                  } else {
-                    const ward = wards.find((w) => w.id === value);
-                    setSelectedWard(ward || null);
-                    loadBeds(value);
-                  }
-                }}
-              >
-                <SelectTrigger className="w-[300px]">
-                  <SelectValue placeholder="All Wards" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Wards</SelectItem>
-                  {wards.map((ward) => (
-                    <SelectItem key={ward.id} value={ward.id}>
-                      {ward.name} ({ward.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
+          <CardHeader className="pb-3">
+            <CardDescription>Total Beds</CardDescription>
+            <CardTitle className="text-3xl">{stats.total}</CardTitle>
+          </CardHeader>
         </Card>
-      )}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>Available</CardDescription>
+            <CardTitle className="text-3xl text-green-600">{stats.available}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>Occupied</CardDescription>
+            <CardTitle className="text-3xl text-red-600">{stats.occupied}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>Cleaning</CardDescription>
+            <CardTitle className="text-3xl text-blue-600">{stats.cleaning}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>Maintenance</CardDescription>
+            <CardTitle className="text-3xl text-orange-600">{stats.maintenance}</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid gap-4 md:grid-cols-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search beds..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            {/* Ward Filter */}
+            <Select value={selectedWardId} onValueChange={setSelectedWardId}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Wards" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Wards</SelectItem>
+                {wards.map((ward) => (
+                  <SelectItem key={ward.id} value={ward.id}>
+                    {ward.name} ({ward.code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Status Filter */}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="available">Available</SelectItem>
+                <SelectItem value="occupied">Occupied</SelectItem>
+                <SelectItem value="reserved">Reserved</SelectItem>
+                <SelectItem value="cleaning">Cleaning</SelectItem>
+                <SelectItem value="maintenance">Maintenance</SelectItem>
+                <SelectItem value="out_of_service">Out of Service</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Bed Type Filter */}
+            <Select value={bedTypeFilter} onValueChange={setBedTypeFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="standard">Standard</SelectItem>
+                <SelectItem value="icu">ICU</SelectItem>
+                <SelectItem value="electric">Electric</SelectItem>
+                <SelectItem value="pediatric">Pediatric</SelectItem>
+                <SelectItem value="bariatric">Bariatric</SelectItem>
+                <SelectItem value="isolation">Isolation</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Beds Grid */}
-      {beds.length === 0 ? (
+      {filteredBeds.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <BedIcon className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No beds configured</h3>
+            <h3 className="text-lg font-semibold mb-2">No beds found</h3>
             <p className="text-muted-foreground mb-4 text-center">
-              {selectedWard
-                ? `Add beds to ${selectedWard.name}`
-                : 'Select a ward and add beds'}
+              {beds.length === 0
+                ? 'Add beds to get started'
+                : 'Try adjusting your filters'}
             </p>
-            <Button onClick={openCreateDialog} className="text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Bed
-            </Button>
+            {beds.length === 0 && (
+              <Button onClick={openCreateDialog} className="text-white">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Bed
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {beds.map((bed) => (
+          {filteredBeds.map((bed) => (
             <Card key={bed.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="flex items-center gap-2">
+                      <BedIcon className="h-5 w-5" />
                       {bed.bedNumber}
-                      {!bed.active && (
-                        <Badge variant="secondary" className="text-xs">
-                          Inactive
-                        </Badge>
-                      )}
                     </CardTitle>
                     <CardDescription className="mt-1">
-                      <Badge variant="outline" className={getBedStatusColor(bed.status)}>
-                        {bed.status}
-                      </Badge>
-                      <span className="ml-2 text-xs">{bed.bedType}</span>
+                      {bed.ward?.name || 'Unknown Ward'}
                     </CardDescription>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEditDialog(bed)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  <Badge className={`${getBedStatusColor(bed.status)} text-white`}>
+                    {getBedStatusText(bed.status)}
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-sm">
-                  {bed.ward && (
-                    <div className="text-muted-foreground">
-                      Ward: <span className="font-medium text-foreground">{bed.ward.name}</span>
-                    </div>
-                  )}
-                  {bed.room && (
-                    <div className="text-muted-foreground">
-                      Room: <span className="font-medium text-foreground">{bed.room.roomNumber}</span>
-                    </div>
-                  )}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Type:</span>
+                    <Badge variant="outline">{bed.bedType}</Badge>
+                  </div>
 
                   {/* Features */}
-                  <div className="flex flex-wrap gap-1 pt-2">
+                  <div className="flex flex-wrap gap-2">
                     {bed.hasOxygen && (
-                      <Badge variant="outline" className="text-xs">O₂</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        Oxygen
+                      </Badge>
                     )}
                     {bed.hasSuction && (
-                      <Badge variant="outline" className="text-xs">Suction</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        Suction
+                      </Badge>
                     )}
                     {bed.hasMonitor && (
-                      <Badge variant="outline" className="text-xs">Monitor</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        Monitor
+                      </Badge>
                     )}
                     {bed.hasIvPole && (
-                      <Badge variant="outline" className="text-xs">IV Pole</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        IV Pole
+                      </Badge>
                     )}
                     {bed.isElectric && (
-                      <Badge variant="outline" className="text-xs">Electric</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        Electric
+                      </Badge>
                     )}
                   </div>
 
-                  {/* Current Patient */}
-                  {bed.currentPatientName && (
-                    <div className="pt-2 border-t">
-                      <div className="font-medium text-foreground">
-                        {bed.currentPatientName}
-                      </div>
-                      {bed.occupiedSince && (
-                        <div className="text-xs text-muted-foreground">
-                          Since: {new Date(bed.occupiedSince).toLocaleDateString()}
-                        </div>
-                      )}
+                  {/* Patient Info if occupied */}
+                  {bed.status === 'occupied' && bed.currentPatientName && (
+                    <div className="pt-3 border-t">
+                      <p className="text-sm font-medium">Current Patient:</p>
+                      <p className="text-sm text-muted-foreground">{bed.currentPatientName}</p>
                     </div>
                   )}
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => openEditDialog(bed)}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(bed.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -376,13 +498,11 @@ export default function BedsPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {editingBed ? 'Edit Bed' : 'Add New Bed'}
-            </DialogTitle>
+            <DialogTitle>{editingBed ? 'Edit Bed' : 'Add New Bed'}</DialogTitle>
             <DialogDescription>
               {editingBed
-                ? 'Update bed information'
-                : 'Add a new bed to the ward'}
+                ? 'Update bed information and features'
+                : 'Add a new bed to the ward with its features'}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
@@ -392,164 +512,123 @@ export default function BedsPage() {
                 <Label htmlFor="wardId">Ward *</Label>
                 <Select
                   value={formData.wardId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, wardId: value })
-                  }
+                  onValueChange={(value) => setFormData({ ...formData, wardId: value })}
                   required
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a ward" />
+                    <SelectValue placeholder="Select ward" />
                   </SelectTrigger>
                   <SelectContent>
-                    {wards.length === 0 ? (
-                      <div className="px-2 py-3 text-sm text-muted-foreground text-center">
-                        No wards available. Please create a ward first.
-                      </div>
-                    ) : (
-                      wards.map((ward) => (
-                        <SelectItem key={ward.id} value={ward.id}>
-                          {ward.name} ({ward.code})
-                        </SelectItem>
-                      ))
-                    )}
+                    {wards.map((ward) => (
+                      <SelectItem key={ward.id} value={ward.id}>
+                        {ward.name} ({ward.code})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Bed Number & Type */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="bedNumber">Bed Number *</Label>
-                  <Input
-                    id="bedNumber"
-                    required
-                    value={formData.bedNumber}
-                    onChange={(e) =>
-                      setFormData({ ...formData, bedNumber: e.target.value })
-                    }
-                    placeholder="e.g., 101-A"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="bedType">Bed Type *</Label>
-                  <Select
-                    value={formData.bedType}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, bedType: value as BedType })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="standard">Standard</SelectItem>
-                      <SelectItem value="icu">ICU</SelectItem>
-                      <SelectItem value="electric">Electric</SelectItem>
-                      <SelectItem value="pediatric">Pediatric</SelectItem>
-                      <SelectItem value="bariatric">Bariatric</SelectItem>
-                      <SelectItem value="isolation">Isolation</SelectItem>
-                      <SelectItem value="stretcher">Stretcher</SelectItem>
-                      <SelectItem value="cot">Cot</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Bed Number */}
+              <div className="grid gap-2">
+                <Label htmlFor="bedNumber">Bed Number *</Label>
+                <Input
+                  id="bedNumber"
+                  value={formData.bedNumber}
+                  onChange={(e) => setFormData({ ...formData, bedNumber: e.target.value })}
+                  placeholder="e.g., 101, A-12"
+                  required
+                />
               </div>
 
-              {/* Features */}
+              {/* Bed Type */}
               <div className="grid gap-2">
-                <Label>Features</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="hasOxygen"
-                      checked={formData.hasOxygen}
-                      onChange={(e) =>
-                        setFormData({ ...formData, hasOxygen: e.target.checked })
-                      }
-                      className="rounded"
-                    />
-                    <Label htmlFor="hasOxygen" className="font-normal">
-                      Oxygen Supply
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="hasSuction"
-                      checked={formData.hasSuction}
-                      onChange={(e) =>
-                        setFormData({ ...formData, hasSuction: e.target.checked })
-                      }
-                      className="rounded"
-                    />
-                    <Label htmlFor="hasSuction" className="font-normal">
-                      Suction
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="hasMonitor"
-                      checked={formData.hasMonitor}
-                      onChange={(e) =>
-                        setFormData({ ...formData, hasMonitor: e.target.checked })
-                      }
-                      className="rounded"
-                    />
-                    <Label htmlFor="hasMonitor" className="font-normal">
-                      Patient Monitor
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="hasIvPole"
-                      checked={formData.hasIvPole}
-                      onChange={(e) =>
-                        setFormData({ ...formData, hasIvPole: e.target.checked })
-                      }
-                      className="rounded"
-                    />
-                    <Label htmlFor="hasIvPole" className="font-normal">
-                      IV Pole
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="isElectric"
-                      checked={formData.isElectric}
-                      onChange={(e) =>
-                        setFormData({ ...formData, isElectric: e.target.checked })
-                      }
-                      className="rounded"
-                    />
-                    <Label htmlFor="isElectric" className="font-normal">
-                      Electric Bed
-                    </Label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Gender Restriction */}
-              <div className="grid gap-2">
-                <Label htmlFor="genderRestriction">Gender Restriction</Label>
+                <Label htmlFor="bedType">Bed Type *</Label>
                 <Select
-                  value={formData.genderRestriction || 'none'}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, genderRestriction: value as any })
-                  }
+                  value={formData.bedType}
+                  onValueChange={(value: BedType) => setFormData({ ...formData, bedType: value })}
+                  required
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No Restriction</SelectItem>
-                    <SelectItem value="male">Male Only</SelectItem>
-                    <SelectItem value="female">Female Only</SelectItem>
+                    <SelectItem value="standard">Standard</SelectItem>
+                    <SelectItem value="icu">ICU</SelectItem>
+                    <SelectItem value="electric">Electric</SelectItem>
+                    <SelectItem value="pediatric">Pediatric</SelectItem>
+                    <SelectItem value="bariatric">Bariatric</SelectItem>
+                    <SelectItem value="isolation">Isolation</SelectItem>
+                    <SelectItem value="stretcher">Stretcher</SelectItem>
+                    <SelectItem value="cot">Cot</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Features */}
+              <div className="grid gap-3">
+                <Label>Features</Label>
+                <div className="grid gap-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="hasOxygen"
+                      checked={formData.hasOxygen}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, hasOxygen: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="hasOxygen" className="font-normal cursor-pointer">
+                      Oxygen Supply
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="hasSuction"
+                      checked={formData.hasSuction}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, hasSuction: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="hasSuction" className="font-normal cursor-pointer">
+                      Suction
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="hasMonitor"
+                      checked={formData.hasMonitor}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, hasMonitor: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="hasMonitor" className="font-normal cursor-pointer">
+                      Monitor
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="hasIvPole"
+                      checked={formData.hasIvPole}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, hasIvPole: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="hasIvPole" className="font-normal cursor-pointer">
+                      IV Pole
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="isElectric"
+                      checked={formData.isElectric}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, isElectric: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="isElectric" className="font-normal cursor-pointer">
+                      Electric Bed
+                    </Label>
+                  </div>
+                </div>
               </div>
 
               {/* Notes */}
@@ -558,20 +637,14 @@ export default function BedsPage() {
                 <Textarea
                   id="notes"
                   value={formData.notes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
-                  }
-                  placeholder="Additional notes about this bed"
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Additional notes or special instructions"
                   rows={3}
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsDialogOpen(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
               <Button type="submit" className="text-white">

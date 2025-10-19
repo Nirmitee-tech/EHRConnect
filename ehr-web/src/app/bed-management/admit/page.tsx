@@ -13,6 +13,7 @@ import {
   Check,
   Building2,
   X,
+  Filter,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,10 +66,14 @@ export default function AdmitPatientPage() {
 
   // Ward & Bed selection
   const [wards, setWards] = useState<Ward[]>([]);
+  const [filteredWards, setFilteredWards] = useState<Ward[]>([]);
+  const [wardSearchQuery, setWardSearchQuery] = useState('');
+  const [wardTypeFilter, setWardTypeFilter] = useState<string>('all');
   const [selectedWard, setSelectedWard] = useState<Ward | null>(null);
+
   const [availableBeds, setAvailableBeds] = useState<BedType[]>([]);
+  const [bedSearchQuery, setBedSearchQuery] = useState('');
   const [selectedBed, setSelectedBed] = useState<BedType | null>(null);
-  const [showBedSelection, setShowBedSelection] = useState(false);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -108,11 +113,44 @@ export default function AdmitPatientPage() {
     if (orgId) loadWards();
   }, [orgId, userId]);
 
+  // Filter wards based on search and type
+  useEffect(() => {
+    let filtered = wards;
+
+    // Filter by ward type
+    if (wardTypeFilter !== 'all') {
+      filtered = filtered.filter((ward) => ward.wardType === wardTypeFilter);
+    }
+
+    // Filter by search query
+    if (wardSearchQuery) {
+      const query = wardSearchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (ward) =>
+          ward.name.toLowerCase().includes(query) ||
+          ward.code.toLowerCase().includes(query)
+      );
+    }
+
+    setFilteredWards(filtered);
+  }, [wards, wardSearchQuery, wardTypeFilter]);
+
+  // Filter beds based on search
+  const filteredBeds = availableBeds.filter((bed) => {
+    if (!bedSearchQuery) return true;
+    const query = bedSearchQuery.toLowerCase();
+    return (
+      bed.bedNumber.toLowerCase().includes(query) ||
+      bed.bedType.toLowerCase().includes(query)
+    );
+  });
+
   async function loadWards() {
     if (!orgId) return;
     try {
       const data = await bedManagementService.getWards(orgId, userId || undefined, {});
       setWards(data);
+      setFilteredWards(data);
     } catch (error) {
       console.error('Error loading wards:', error);
     }
@@ -125,29 +163,28 @@ export default function AdmitPatientPage() {
     }
 
     try {
-      // Use medplum to search patients (same as appointments)
       const bundle = await medplum.searchResources('Patient', {
         name: query,
         _count: 10,
-        _sort: '-_lastUpdated'
+        _sort: '-_lastUpdated',
       });
 
       const patientList: Patient[] = bundle.map((p: any) => {
-        // Extract MRN from identifier
-        const mrn = p.identifier?.find(
-          (id: any) => id.type?.coding?.some((c: any) => c.code === 'MR')
+        const mrn = p.identifier?.find((id: any) =>
+          id.type?.coding?.some((c: any) => c.code === 'MR')
         )?.value;
 
-        // Extract phone from telecom
         const phone = p.telecom?.find((t: any) => t.system === 'phone')?.value;
 
         return {
           id: p.id!,
-          name: p.name?.[0] ? `${p.name[0].given?.join(' ')} ${p.name[0].family}` : 'Unknown',
+          name: p.name?.[0]
+            ? `${p.name[0].given?.join(' ')} ${p.name[0].family}`
+            : 'Unknown',
           mrn,
           dateOfBirth: p.birthDate,
           gender: p.gender,
-          phone
+          phone,
         };
       });
 
@@ -185,6 +222,7 @@ export default function AdmitPatientPage() {
       // Filter for available beds
       const available = allBeds.filter((bed) => bed.status === 'available' && bed.active);
       setAvailableBeds(available);
+      setBedSearchQuery(''); // Reset bed search when changing ward
     } catch (error) {
       console.error('Error loading beds:', error);
       setAvailableBeds([]);
@@ -195,42 +233,46 @@ export default function AdmitPatientPage() {
     setSelectedWard(ward);
     setSelectedBed(null);
     loadAvailableBeds(ward.id);
-    setShowBedSelection(true);
   }
 
   async function handleCreatePatient() {
     try {
       setLoading(true);
 
-      // Split name into first and last name
       const nameParts = newPatientData.name.trim().split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      // Create FHIR Patient resource (same as appointments)
       const patientResource: any = {
         resourceType: 'Patient',
         active: true,
-        name: [{
-          use: 'official',
-          family: lastName || firstName,
-          given: lastName ? [firstName] : []
-        }],
+        name: [
+          {
+            use: 'official',
+            family: lastName || firstName,
+            given: lastName ? [firstName] : [],
+          },
+        ],
         gender: newPatientData.gender,
         birthDate: newPatientData.dateOfBirth,
-        telecom: newPatientData.phone ? [{
-          system: 'phone',
-          value: newPatientData.phone,
-          use: 'home'
-        }] : undefined,
-        managingOrganization: currentFacility?.id ? {
-          reference: `Organization/${currentFacility.id}`
-        } : undefined
+        telecom: newPatientData.phone
+          ? [
+              {
+                system: 'phone',
+                value: newPatientData.phone,
+                use: 'home',
+              },
+            ]
+          : undefined,
+        managingOrganization: currentFacility?.id
+          ? {
+              reference: `Organization/${currentFacility.id}`,
+            }
+          : undefined,
       };
 
       const createdPatient = await medplum.createResource(patientResource);
 
-      // Convert to our Patient interface
       const newPatient: Patient = {
         id: createdPatient.id!,
         name: newPatientData.name,
@@ -257,8 +299,6 @@ export default function AdmitPatientPage() {
       setLoading(true);
       setError(null);
 
-      // Use location from selected ward if available, otherwise use a placeholder
-      // The location_id should come from the ward's location
       const locationId = selectedWard?.locationId || currentFacility?.id || '';
 
       const admitRequest: Partial<AdmitPatientRequest> = {
@@ -387,11 +427,7 @@ export default function AdmitPatientPage() {
                         </div>
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedPatient(null)}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedPatient(null)}>
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
@@ -412,9 +448,7 @@ export default function AdmitPatientPage() {
                       id="admissionDate"
                       type="date"
                       value={formData.admissionDate}
-                      onChange={(e) =>
-                        setFormData({ ...formData, admissionDate: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, admissionDate: e.target.value })}
                       required
                     />
                   </div>
@@ -425,9 +459,7 @@ export default function AdmitPatientPage() {
                       id="admissionTime"
                       type="time"
                       value={formData.admissionTime}
-                      onChange={(e) =>
-                        setFormData({ ...formData, admissionTime: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, admissionTime: e.target.value })}
                       required
                     />
                   </div>
@@ -457,9 +489,7 @@ export default function AdmitPatientPage() {
                     <Label htmlFor="priority">Priority *</Label>
                     <Select
                       value={formData.priority}
-                      onValueChange={(value: any) =>
-                        setFormData({ ...formData, priority: value })
-                      }
+                      onValueChange={(value: any) => setFormData({ ...formData, priority: value })}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -478,9 +508,7 @@ export default function AdmitPatientPage() {
                   <Textarea
                     id="chiefComplaint"
                     value={formData.chiefComplaint}
-                    onChange={(e) =>
-                      setFormData({ ...formData, chiefComplaint: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, chiefComplaint: e.target.value })}
                     placeholder="Primary reason for admission"
                     rows={2}
                     required
@@ -492,9 +520,7 @@ export default function AdmitPatientPage() {
                   <Textarea
                     id="admissionReason"
                     value={formData.admissionReason}
-                    onChange={(e) =>
-                      setFormData({ ...formData, admissionReason: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, admissionReason: e.target.value })}
                     placeholder="Detailed reason for admission"
                     rows={3}
                     required
@@ -506,9 +532,7 @@ export default function AdmitPatientPage() {
                   <Input
                     id="primaryDiagnosis"
                     value={formData.primaryDiagnosis}
-                    onChange={(e) =>
-                      setFormData({ ...formData, primaryDiagnosis: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, primaryDiagnosis: e.target.value })}
                     placeholder="Initial diagnosis or working diagnosis"
                   />
                 </div>
@@ -532,7 +556,7 @@ export default function AdmitPatientPage() {
             </Card>
           </div>
 
-          {/* Right Column - Bed Selection */}
+          {/* Right Column - Ward & Bed Selection */}
           <div className="space-y-6">
             {/* Ward Selection Card */}
             <Card>
@@ -542,91 +566,150 @@ export default function AdmitPatientPage() {
                   Select Ward *
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {wards.map((ward) => (
-                  <div
-                    key={ward.id}
-                    className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                      selectedWard?.id === ward.id
-                        ? 'border-primary bg-primary/5'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => selectWard(ward)}
-                  >
+              <CardContent className="space-y-4">
+                {/* Ward Filters */}
+                <div className="space-y-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      placeholder="Search wards..."
+                      value={wardSearchQuery}
+                      onChange={(e) => setWardSearchQuery(e.target.value)}
+                      className="pl-9 h-9"
+                    />
+                  </div>
+                  <Select value={wardTypeFilter} onValueChange={setWardTypeFilter}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Filter by type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="icu">ICU</SelectItem>
+                      <SelectItem value="general">General</SelectItem>
+                      <SelectItem value="private">Private</SelectItem>
+                      <SelectItem value="emergency">Emergency</SelectItem>
+                      <SelectItem value="pediatric">Pediatric</SelectItem>
+                      <SelectItem value="maternity">Maternity</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Selected Ward Display */}
+                {selectedWard && (
+                  <div className="p-3 border-2 border-primary rounded-lg bg-primary/5">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="font-semibold">{ward.name}</div>
-                        <div className="text-xs text-muted-foreground mt-1">{ward.code}</div>
-                        <div className="mt-2">
-                          <Badge variant="outline" className="text-xs">
-                            {ward.wardType}
-                          </Badge>
+                        <div className="font-semibold">{selectedWard.name}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {selectedWard.code}
                         </div>
+                        <Badge variant="outline" className="text-xs mt-2">
+                          {selectedWard.wardType}
+                        </Badge>
                       </div>
-                      {selectedWard?.id === ward.id && (
-                        <Check className="h-5 w-5 text-primary" />
-                      )}
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-2">
-                      {ward.availableBeds || 0} beds available
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedWard(null);
+                          setSelectedBed(null);
+                          setAvailableBeds([]);
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                ))}
+                )}
+
+                {/* Ward List - Scrollable */}
+                {!selectedWard && (
+                  <div className="max-h-64 overflow-y-auto space-y-2 border rounded-lg p-2">
+                    {filteredWards.length === 0 ? (
+                      <div className="text-center py-4 text-sm text-muted-foreground">
+                        No wards found
+                      </div>
+                    ) : (
+                      filteredWards.map((ward) => (
+                        <div
+                          key={ward.id}
+                          className="p-3 border rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-all"
+                          onClick={() => selectWard(ward)}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="font-medium text-sm">{ward.name}</div>
+                              <div className="text-xs text-muted-foreground">{ward.code}</div>
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              {ward.wardType}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-2">
+                            {ward.availableBeds || 0} available
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* Bed Selection Card */}
-            {showBedSelection && selectedWard && (
+            {/* Bed Selection Card - Only show when ward is selected */}
+            {selectedWard && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BedIcon className="h-5 w-5" />
-                    Select Bed
+                    Select Bed (Optional)
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
+                  {/* Bed Search */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      placeholder="Search bed number..."
+                      value={bedSearchQuery}
+                      onChange={(e) => setBedSearchQuery(e.target.value)}
+                      className="pl-9 h-9"
+                    />
+                  </div>
+
+                  {/* Bed List - Scrollable, Compact */}
                   {availableBeds.length === 0 ? (
-                    <div className="text-center py-4 text-muted-foreground text-sm">
+                    <div className="text-center py-4 text-sm text-muted-foreground">
                       No available beds in this ward
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      {availableBeds.map((bed) => (
+                    <div className="max-h-64 overflow-y-auto space-y-2">
+                      {filteredBeds.map((bed) => (
                         <div
                           key={bed.id}
-                          className={`relative p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                          className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
                             selectedBed?.id === bed.id
-                              ? 'border-primary bg-primary text-white'
-                              : 'border-gray-200 hover:border-primary/50 bg-green-50'
+                              ? 'border-primary bg-primary/10'
+                              : 'border-gray-200 hover:border-primary/50'
                           }`}
                           onClick={() => setSelectedBed(bed)}
                         >
-                          <div className="flex flex-col items-center">
-                            <BedIcon
-                              className={`h-6 w-6 mb-1 ${
-                                selectedBed?.id === bed.id ? 'text-white' : 'text-green-600'
-                              }`}
-                            />
-                            <div
-                              className={`font-bold text-sm ${
-                                selectedBed?.id === bed.id ? 'text-white' : 'text-gray-900'
-                              }`}
-                            >
-                              {bed.bedNumber}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <BedIcon
+                                className={`h-5 w-5 ${
+                                  selectedBed?.id === bed.id ? 'text-primary' : 'text-green-600'
+                                }`}
+                              />
+                              <div>
+                                <div className="font-semibold">{bed.bedNumber}</div>
+                                <div className="text-xs text-muted-foreground">{bed.bedType}</div>
+                              </div>
                             </div>
-                            <div
-                              className={`text-xs ${
-                                selectedBed?.id === bed.id ? 'text-white/90' : 'text-gray-500'
-                              }`}
-                            >
-                              {bed.bedType}
-                            </div>
+                            {selectedBed?.id === bed.id && (
+                              <Check className="h-5 w-5 text-primary" />
+                            )}
                           </div>
-                          {selectedBed?.id === bed.id && (
-                            <div className="absolute top-1 right-1">
-                              <Check className="h-4 w-4 text-white" />
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>
@@ -684,9 +767,7 @@ export default function AdmitPatientPage() {
                 id="patientName"
                 placeholder="John Doe"
                 value={newPatientData.name}
-                onChange={(e) =>
-                  setNewPatientData({ ...newPatientData, name: e.target.value })
-                }
+                onChange={(e) => setNewPatientData({ ...newPatientData, name: e.target.value })}
               />
             </div>
             <div className="grid gap-2">
@@ -704,9 +785,7 @@ export default function AdmitPatientPage() {
               <Label htmlFor="gender">Gender *</Label>
               <Select
                 value={newPatientData.gender}
-                onValueChange={(value) =>
-                  setNewPatientData({ ...newPatientData, gender: value })
-                }
+                onValueChange={(value) => setNewPatientData({ ...newPatientData, gender: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select" />
@@ -725,14 +804,16 @@ export default function AdmitPatientPage() {
                 type="tel"
                 placeholder="+1-555-0000"
                 value={newPatientData.phone}
-                onChange={(e) =>
-                  setNewPatientData({ ...newPatientData, phone: e.target.value })
-                }
+                onChange={(e) => setNewPatientData({ ...newPatientData, phone: e.target.value })}
               />
             </div>
           </div>
           <div className="flex gap-3 mt-6">
-            <Button variant="outline" onClick={() => setIsPatientDrawerOpen(false)} className="flex-1">
+            <Button
+              variant="outline"
+              onClick={() => setIsPatientDrawerOpen(false)}
+              className="flex-1"
+            >
               Cancel
             </Button>
             <Button
