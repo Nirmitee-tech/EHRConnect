@@ -322,13 +322,13 @@ export function PatientHeader({
               <Shield className="h-4 w-4 text-green-600" />
             </div>
             <div>
-              <div className="text-gray-500 font-medium mb-0.5">Insurance</div>
+              <div className="text-gray-500 font-medium mb-0.5 text-xs">Insurance</div>
               {insurances.length > 0 ? (
-                <div className="text-gray-700 font-medium">
+                <div className="text-gray-900 font-semibold text-xs">
                   {insurances[0].payor?.[0]?.display || 'Unknown'} - Policy: {insurances[0].subscriberId || '-'}
                 </div>
               ) : (
-                <div className="text-gray-700 font-medium">No Insurance</div>
+                <div className="text-gray-700 font-medium text-xs">No Insurance</div>
               )}
             </div>
             <button
@@ -343,13 +343,6 @@ export function PatientHeader({
             >
               <Edit className="h-3.5 w-3.5 text-gray-400 hover:text-green-600" />
             </button>
-          </div>
-
-          {/* Status Badge */}
-          <div className="ml-auto">
-            <span className="px-3 py-1.5 bg-yellow-100 text-yellow-800 rounded-lg text-xs font-semibold shadow-sm border border-yellow-200">
-              On Hold
-            </span>
           </div>
         </div>
       </div>
