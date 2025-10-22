@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, memo } from 'react';
-import { User, Edit, Calendar, Pill, AlertCircle, Activity, FileText, Loader2 } from 'lucide-react';
+import { User, Edit, Calendar, Pill, AlertCircle, Activity, FileText, Loader2, Shield, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@nirmitee.io/design-system';
 import { useParams } from 'next/navigation';
 import { fhirService } from '@/lib/medplum';
@@ -23,6 +23,7 @@ import { DocumentsTab } from './components/tabs/DocumentsTab';
 import { VitalsDrawer } from './components/drawers/VitalsDrawer';
 import { ProblemDrawer } from './components/drawers/ProblemDrawer';
 import { MedicationDrawer } from './components/drawers/MedicationDrawer';
+import { InsuranceDrawer } from './components/drawers/InsuranceDrawer';
 import { MedicalInfoDrawer } from '@/components/encounters/medical-info-drawer';
 import { PatientDetails, VitalsFormData, ProblemFormData, MedicationFormData } from './components/types';
 
@@ -35,6 +36,7 @@ export default function PatientDetailPage() {
   const [selectedEncounter, setSelectedEncounter] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [patient, setPatient] = useState<PatientDetails | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Load all data upfront - browser-style tabs
   const [encounters, setEncounters] = useState<any[]>([]);
@@ -42,6 +44,7 @@ export default function PatientDetailPage() {
   const [medications, setMedications] = useState<any[]>([]);
   const [allergies, setAllergies] = useState<any[]>([]);
   const [observations, setObservations] = useState<any[]>([]);
+  const [insurances, setInsurances] = useState<any[]>([]);
 
   // Drawer states
   const [showEditDrawer, setShowEditDrawer] = useState(false);
@@ -51,6 +54,7 @@ export default function PatientDetailPage() {
   const [showMedicationDrawer, setShowMedicationDrawer] = useState(false);
   const [showAllergyDrawer, setShowAllergyDrawer] = useState(false);
   const [showMedicalInfoDrawer, setShowMedicalInfoDrawer] = useState(false);
+  const [showInsuranceDrawer, setShowInsuranceDrawer] = useState(false);
 
   // Load ALL data upfront in parallel - browser-style tabs
   const loadAllPatientData = async () => {
@@ -66,14 +70,16 @@ export default function PatientDetailPage() {
         conditionRes,
         medicationRes,
         allergyRes,
-        observationRes
+        observationRes,
+        coverageRes
       ] = await Promise.all([
         fhirService.read('Patient', patientId),
         fhirService.search('Encounter', { patient: patientId, _count: 10, _sort: '-date' }),
         fhirService.search('Condition', { patient: patientId, _count: 20 }),
         fhirService.search('MedicationRequest', { patient: patientId, _count: 20, status: 'active' }),
         fhirService.search('AllergyIntolerance', { patient: patientId, _count: 20 }),
-        fhirService.search('Observation', { patient: patientId, _count: 50, _sort: '-date', category: 'vital-signs' })
+        fhirService.search('Observation', { patient: patientId, _count: 50, _sort: '-date', category: 'vital-signs' }),
+        fhirService.search('Coverage', { patient: patientId, _count: 10 })
       ]);
 
       // Set patient data
@@ -104,6 +110,7 @@ export default function PatientDetailPage() {
       setMedications(medicationRes.entry?.map((e: any) => e.resource) || []);
       setAllergies(allergyRes.entry?.map((e: any) => e.resource) || []);
       setObservations(observationRes.entry?.map((e: any) => e.resource) || []);
+      setInsurances(coverageRes.entry?.map((e: any) => e.resource) || []);
 
     } catch (error) {
       console.error('Error loading patient data:', error);
@@ -377,6 +384,85 @@ export default function PatientDetailPage() {
     }
   };
 
+  const handleSaveInsurance = async (insuranceData: any) => {
+    if (!patientId) return;
+
+    try {
+      // Create FHIR Coverage resource
+      const coverageResource = {
+        resourceType: 'Coverage',
+        status: insuranceData.active ? 'active' : 'inactive',
+        type: {
+          coding: [{
+            system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+            code: insuranceData.insuranceOrder === 'primary' ? 'PUBLICPOL' : 'HEALTHPOL',
+            display: insuranceData.planName || insuranceData.insuranceOrder
+          }],
+          text: insuranceData.planName || insuranceData.insuranceProvider
+        },
+        policyHolder: {
+          display: insuranceData.subscriberName
+        },
+        subscriber: {
+          display: insuranceData.subscriberName
+        },
+        subscriberId: insuranceData.policyNumber,
+        beneficiary: {
+          reference: `Patient/${patientId}`,
+          display: patient?.name
+        },
+        relationship: {
+          coding: [{
+            system: 'http://terminology.hl7.org/CodeSystem/subscriber-relationship',
+            code: insuranceData.relationship,
+            display: insuranceData.relationship.charAt(0).toUpperCase() + insuranceData.relationship.slice(1)
+          }]
+        },
+        period: {
+          start: new Date().toISOString().split('T')[0]
+        },
+        payor: [{
+          display: insuranceData.insuranceProvider,
+          identifier: {
+            value: insuranceData.payerId
+          }
+        }],
+        class: [{
+          type: {
+            coding: [{
+              system: 'http://terminology.hl7.org/CodeSystem/coverage-class',
+              code: 'group',
+              display: 'Group'
+            }]
+          },
+          value: insuranceData.policyNumber,
+          name: insuranceData.planName
+        }],
+        order: insuranceData.insuranceOrder === 'primary' ? 1 : insuranceData.insuranceOrder === 'secondary' ? 2 : 3,
+        costToBeneficiary: insuranceData.copayAmount ? [{
+          type: {
+            coding: [{
+              system: 'http://terminology.hl7.org/CodeSystem/coverage-copay-type',
+              code: 'copay',
+              display: 'Copay'
+            }]
+          },
+          valueMoney: {
+            value: parseFloat(insuranceData.copayAmount),
+            currency: 'USD'
+          }
+        }] : undefined
+      };
+
+      await fhirService.create(coverageResource);
+      setShowInsuranceDrawer(false);
+      refreshData();
+    } catch (error) {
+      console.error('Error saving insurance:', error);
+      alert('Failed to save insurance. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -401,6 +487,7 @@ export default function PatientDetailPage() {
     { id: 'problems', label: 'Problems', icon: AlertCircle },
     { id: 'medications', label: 'Medications', icon: Pill },
     { id: 'allergies', label: 'Allergies', icon: AlertCircle },
+    { id: 'insurance', label: 'Insurance', icon: Shield },
     { id: 'documents', label: 'Documents', icon: FileText }
   ];
 
@@ -416,14 +503,35 @@ export default function PatientDetailPage() {
           onEncounterSelect={setSelectedEncounter}
           allergies={allergies}
           problems={problems}
+          insurances={insurances}
           onOpenMedicalInfo={() => setShowMedicalInfoDrawer(true)}
           onOpenAllergies={() => setShowAllergyDrawer(true)}
           onOpenProblems={() => setShowProblemDrawer(true)}
+          onOpenInsurance={() => setShowInsuranceDrawer(true)}
         />
 
         <div className="flex flex-1 overflow-hidden">
           {/* Left Sidebar Navigation */}
-          <div className="w-48 bg-white border-r border-gray-200 overflow-y-auto">
+          <div
+            className={`bg-white border-r border-gray-200 overflow-y-auto transition-all duration-300 ease-in-out ${
+              sidebarCollapsed ? 'w-14' : 'w-48'
+            }`}
+          >
+            {/* Toggle Button */}
+            <div className="p-2 border-b border-gray-200">
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="w-full flex items-center justify-center p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {sidebarCollapsed ? (
+                  <ChevronRight className="h-4 w-4" />
+                ) : (
+                  <ChevronLeft className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+
             <nav className="p-2">
               {sections.map((section) => {
                 const Icon = section.icon;
@@ -438,10 +546,12 @@ export default function PatientDetailPage() {
                         ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-700'
                         : 'text-gray-700 hover:bg-gray-50'
                       }
+                      ${sidebarCollapsed ? 'justify-center' : ''}
                     `}
+                    title={sidebarCollapsed ? section.label : ''}
                   >
                     <Icon className="h-4 w-4 flex-shrink-0" />
-                    <span>{section.label}</span>
+                    {!sidebarCollapsed && <span>{section.label}</span>}
                   </button>
                 );
               })}
@@ -449,7 +559,7 @@ export default function PatientDetailPage() {
           </div>
 
           {/* Main Content Area */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-2">
             {/* Browser-style tabs - all tabs rendered and cached, instant switching */}
             <div style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}>
               <DashboardTab
@@ -499,6 +609,82 @@ export default function PatientDetailPage() {
                 allergies={allergies}
                 onAddAllergy={() => setShowAllergyDrawer(true)}
               />
+            </div>
+            <div style={{ display: activeTab === 'insurance' ? 'block' : 'none' }}>
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Insurance Information</h2>
+                  <button
+                    onClick={() => setShowInsuranceDrawer(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Insurance
+                  </button>
+                </div>
+
+                {insurances.length > 0 ? (
+                  <div className="space-y-3">
+                    {insurances.map((insurance, idx) => {
+                      const payorName = insurance.payor?.[0]?.display || 'Unknown Provider';
+                      const policyNumber = insurance.subscriberId || '-';
+                      const planName = insurance.type?.text || insurance.class?.[0]?.name || '-';
+                      const orderBadge = insurance.order === 1 ? 'Primary' : insurance.order === 2 ? 'Secondary' : 'Tertiary';
+                      const orderColor = insurance.order === 1 ? 'bg-blue-100 text-blue-800' : insurance.order === 2 ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800';
+
+                      return (
+                        <div key={idx} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Shield className="h-5 w-5 text-green-600" />
+                                <h3 className="text-base font-semibold text-gray-900">{payorName}</h3>
+                                <span className={`px-2 py-0.5 text-xs font-medium rounded ${orderColor}`}>
+                                  {orderBadge}
+                                </span>
+                                <span className={`px-2 py-0.5 text-xs font-medium rounded ${insurance.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                  {insurance.status}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                <div>
+                                  <span className="text-gray-500">Policy Number:</span>
+                                  <span className="ml-2 text-gray-900 font-medium">{policyNumber}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Plan:</span>
+                                  <span className="ml-2 text-gray-900 font-medium">{planName}</span>
+                                </div>
+                                {insurance.subscriber?.display && (
+                                  <div>
+                                    <span className="text-gray-500">Subscriber:</span>
+                                    <span className="ml-2 text-gray-900 font-medium">{insurance.subscriber.display}</span>
+                                  </div>
+                                )}
+                                {insurance.relationship?.coding?.[0]?.display && (
+                                  <div>
+                                    <span className="text-gray-500">Relationship:</span>
+                                    <span className="ml-2 text-gray-900 font-medium">{insurance.relationship.coding[0].display}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <button className="p-2 hover:bg-gray-100 rounded transition-colors">
+                              <Edit className="h-4 w-4 text-gray-400" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                    <Shield className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-sm font-medium">No insurance information available</p>
+                    <p className="text-xs mt-1">Click "Add Insurance" to get started</p>
+                  </div>
+                )}
+              </div>
             </div>
             <div style={{ display: activeTab === 'documents' ? 'block' : 'none' }}>
               <DocumentsTab />
@@ -609,6 +795,14 @@ export default function PatientDetailPage() {
             setShowMedicalInfoDrawer(false);
             refreshData();
           }}
+        />
+
+        {/* Insurance Drawer */}
+        <InsuranceDrawer
+          open={showInsuranceDrawer}
+          onOpenChange={setShowInsuranceDrawer}
+          onSave={handleSaveInsurance}
+          patientId={patientId}
         />
       </div>
     </TabPageWrapper>

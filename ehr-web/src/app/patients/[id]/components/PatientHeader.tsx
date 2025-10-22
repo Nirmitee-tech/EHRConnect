@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Edit, Calendar, Plus, ChevronDown, AlertTriangle, Activity, Phone, Mail, Heart, Clock, PlusCircle, Edit2, Pencil } from 'lucide-react';
+import { User, Edit, Calendar, Plus, ChevronDown, AlertTriangle, Activity, Phone, Mail, Heart, Clock, PlusCircle, Edit2, Pencil, Shield } from 'lucide-react';
 import { Button, Badge } from '@nirmitee.io/design-system';
 import { PatientDetails } from './types';
 
@@ -30,9 +30,11 @@ interface PatientHeaderProps {
   onEncounterSelect?: (encounterId: string) => void;
   allergies?: any[];
   problems?: any[];
+  insurances?: any[];
   onOpenMedicalInfo?: () => void;
   onOpenAllergies?: () => void;
   onOpenProblems?: () => void;
+  onOpenInsurance?: () => void;
 }
 
 export function PatientHeader({
@@ -44,9 +46,11 @@ export function PatientHeader({
   onEncounterSelect,
   allergies = [],
   problems = [],
+  insurances = [],
   onOpenMedicalInfo,
   onOpenAllergies,
-  onOpenProblems
+  onOpenProblems,
+  onOpenInsurance
 }: PatientHeaderProps) {
   const [showEncounterDropdown, setShowEncounterDropdown] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
@@ -309,6 +313,35 @@ export function PatientHeader({
               className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100"
             >
               <Edit className="h-3.5 w-3.5 text-gray-400 hover:text-purple-600" />
+            </button>
+          </div>
+
+          {/* Insurance */}
+          <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm border border-green-200 hover:shadow-md transition-shadow group">
+            <div className="p-1.5 bg-green-50 rounded">
+              <Shield className="h-4 w-4 text-green-600" />
+            </div>
+            <div>
+              <div className="text-gray-500 font-medium mb-0.5">Insurance</div>
+              {insurances.length > 0 ? (
+                <div className="text-gray-700 font-medium">
+                  {insurances[0].payor?.[0]?.display || 'Unknown'} - Policy: {insurances[0].subscriberId || '-'}
+                </div>
+              ) : (
+                <div className="text-gray-700 font-medium">No Insurance</div>
+              )}
+            </div>
+            <button
+              onClick={onOpenInsurance}
+              className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100"
+            >
+              <Plus className="h-3.5 w-3.5 text-gray-400 hover:text-green-600" />
+            </button>
+            <button
+              onClick={onOpenInsurance}
+              className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100"
+            >
+              <Edit className="h-3.5 w-3.5 text-gray-400 hover:text-green-600" />
             </button>
           </div>
 

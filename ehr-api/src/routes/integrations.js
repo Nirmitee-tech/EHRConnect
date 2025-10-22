@@ -172,7 +172,7 @@ router.post('/cache/clear', extractOrgContext, (req, res) => {
   try {
     const { vendorId } = req.body;
     integrationOrchestrator.clearCache(req.orgId, vendorId);
-    
+
     res.json({
       success: true,
       message: 'Cache cleared',
@@ -182,6 +182,89 @@ router.post('/cache/clear', extractOrgContext, (req, res) => {
     res.status(500).json({
       error: 'Failed to clear cache',
       message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/integrations/claimmd/payers
+ * Get list of payers from Claim.MD with optional search
+ */
+router.get('/claimmd/payers', async (req, res) => {
+  try {
+    const axios = require('axios');
+    const apiKey = process.env.CLAIM_MD_ACCOUNT_KEY || '24995_*n0kREh@vAxWKyfeSHT4aWs6';
+    const searchTerm = req.query.search || '';
+
+    console.log('📋 Fetching payers from Claim.MD API...', { searchTerm });
+
+    const response = await axios.post(
+      'https://svc.claim.md/services/payerlist/',
+      `AccountKey=${encodeURIComponent(apiKey)}`,
+      {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        timeout: 60000,
+      }
+    );
+
+    console.log('📡 Claim.MD API response status:', response.status);
+    console.log('📄 Response data structure:', {
+      hasPayerList: !!response.data?.PayerList,
+      hasPayer: !!response.data?.payer,
+      keys: Object.keys(response.data || {})
+    });
+
+    // Parse and format payer data - handle different response formats
+    let rawPayers = response.data?.PayerList || response.data?.payer || [];
+
+    // If response.data is an array directly
+    if (Array.isArray(response.data)) {
+      rawPayers = response.data;
+    }
+
+    console.log(`✅ Found ${rawPayers.length} payers from Claim.MD`);
+
+    // If no payers found, throw error
+    if (rawPayers.length === 0) {
+      throw new Error('No payers returned from Claim.MD API. Please check API key and endpoint.');
+    }
+
+    // Format for easier consumption
+    const formattedPayers = rawPayers.map((payer) => ({
+      payerId: payer.PayerId || payer.payerid || payer.payer_id || '',
+      payerName: payer.PayerName || payer.payer_name || payer.name || '',
+      services: payer.Services || payer.services || [],
+      electronicPayerId: payer.ElectronicPayerId || payer.electronic_payer_id || '',
+      phone: payer.Phone || payer.phone || '',
+      address: payer.Address || payer.address || ''
+    }));
+
+    // Apply search filter if provided
+    let filteredPayers = formattedPayers;
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      filteredPayers = formattedPayers.filter(payer =>
+        payer.payerName.toLowerCase().includes(search) ||
+        payer.payerId.toLowerCase().includes(search)
+      );
+      console.log(`🔍 Filtered to ${filteredPayers.length} payers matching "${searchTerm}"`);
+    }
+
+    res.json({
+      success: true,
+      payers: filteredPayers,
+      total: filteredPayers.length
+    });
+  } catch (error) {
+    console.error('❌ Error fetching payers:', error.message);
+    console.error('Error details:', error.response?.data);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to fetch payers',
+      details: error.response?.data || null
     });
   }
 });
