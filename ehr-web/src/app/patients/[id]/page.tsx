@@ -23,6 +23,7 @@ import { DocumentsTab } from './components/tabs/DocumentsTab';
 import { VitalsDrawer } from './components/drawers/VitalsDrawer';
 import { ProblemDrawer } from './components/drawers/ProblemDrawer';
 import { MedicationDrawer } from './components/drawers/MedicationDrawer';
+import { MedicalInfoDrawer } from '@/components/encounters/medical-info-drawer';
 import { PatientDetails, VitalsFormData, ProblemFormData, MedicationFormData } from './components/types';
 
 export default function PatientDetailPage() {
@@ -49,6 +50,7 @@ export default function PatientDetailPage() {
   const [showProblemDrawer, setShowProblemDrawer] = useState(false);
   const [showMedicationDrawer, setShowMedicationDrawer] = useState(false);
   const [showAllergyDrawer, setShowAllergyDrawer] = useState(false);
+  const [showMedicalInfoDrawer, setShowMedicalInfoDrawer] = useState(false);
 
   // Load ALL data upfront in parallel - browser-style tabs
   const loadAllPatientData = async () => {
@@ -391,15 +393,15 @@ export default function PatientDetailPage() {
     );
   }
 
-  const tabs = [
+  const sections = [
     { id: 'dashboard', label: 'Dashboard', icon: Activity },
-    { id: 'history', label: 'History', icon: FileText },
-    { id: 'report', label: 'Report', icon: FileText },
-    { id: 'documents', label: 'Documents', icon: FileText },
-    { id: 'transactions', label: 'Transactions', icon: FileText },
-    { id: 'issues', label: 'Issues', icon: AlertCircle },
-    { id: 'ledger', label: 'Ledger', icon: FileText },
-    { id: 'external-data', label: 'External Data', icon: FileText }
+    { id: 'chart', label: 'Chart', icon: FileText },
+    { id: 'vitals', label: 'Vitals', icon: Activity },
+    { id: 'encounters', label: 'Encounters', icon: Calendar },
+    { id: 'problems', label: 'Problems', icon: AlertCircle },
+    { id: 'medications', label: 'Medications', icon: Pill },
+    { id: 'allergies', label: 'Allergies', icon: AlertCircle },
+    { id: 'documents', label: 'Documents', icon: FileText }
   ];
 
   return (
@@ -412,97 +414,95 @@ export default function PatientDetailPage() {
           encounters={encounters}
           selectedEncounter={selectedEncounter}
           onEncounterSelect={setSelectedEncounter}
+          allergies={allergies}
+          problems={problems}
+          onOpenMedicalInfo={() => setShowMedicalInfoDrawer(true)}
+          onOpenAllergies={() => setShowAllergyDrawer(true)}
+          onOpenProblems={() => setShowProblemDrawer(true)}
         />
 
-        <div className="bg-white border-b border-gray-200 px-6">
-          <div className="flex gap-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`
-                    flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors
-                    ${isActive
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-                    }
-                  `}
-                >
-                  <Icon className="h-4 w-4" />
-                  {tab.label}
-                  {tab.count !== undefined && (
-                    <span className={`
-                      px-1.5 py-0.5 rounded-full text-xs font-semibold
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left Sidebar Navigation */}
+          <div className="w-48 bg-white border-r border-gray-200 overflow-y-auto">
+            <nav className="p-2">
+              {sections.map((section) => {
+                const Icon = section.icon;
+                const isActive = activeTab === section.id;
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => setActiveTab(section.id)}
+                    className={`
+                      w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded transition-colors
                       ${isActive
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-100 text-gray-600'
+                        ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-700'
+                        : 'text-gray-700 hover:bg-gray-50'
                       }
-                    `}>
-                      {tab.count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+                    `}
+                  >
+                    <Icon className="h-4 w-4 flex-shrink-0" />
+                    <span>{section.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
           </div>
-        </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* Browser-style tabs - all tabs rendered and cached, instant switching */}
-          <div style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}>
-            <DashboardTab
-              patient={patient}
-              allergies={allergies}
-              problems={problems}
-              medications={medications}
-              encounters={encounters}
-              observations={observations}
-            />
-          </div>
-          <div style={{ display: activeTab === 'history' ? 'block' : 'none' }}>
-            <OverviewTab
-              encounters={encounters}
-              problems={problems}
-              medications={medications}
-              allergies={allergies}
-            />
-          </div>
-          <div style={{ display: activeTab === 'report' ? 'block' : 'none' }}>
-            <VitalsTab
-              observations={observations}
-              onRecordVitals={() => setShowVitalsDrawer(true)}
-            />
-          </div>
-          <div style={{ display: activeTab === 'documents' ? 'block' : 'none' }}>
-            <DocumentsTab />
-          </div>
-          <div style={{ display: activeTab === 'transactions' ? 'block' : 'none' }}>
-            <EncountersTab
-              encounters={encounters}
-              observations={observations}
-              onNewEncounter={() => setShowEncounterDrawer(true)}
-            />
-          </div>
-          <div style={{ display: activeTab === 'issues' ? 'block' : 'none' }}>
-            <ProblemsTab
-              problems={problems}
-              onAddProblem={() => setShowProblemDrawer(true)}
-            />
-          </div>
-          <div style={{ display: activeTab === 'ledger' ? 'block' : 'none' }}>
-            <MedicationsTab
-              medications={medications}
-              onPrescribe={() => setShowMedicationDrawer(true)}
-            />
-          </div>
-          <div style={{ display: activeTab === 'external-data' ? 'block' : 'none' }}>
-            <AllergiesTab
-              allergies={allergies}
-              onAddAllergy={() => setShowAllergyDrawer(true)}
-            />
+          {/* Main Content Area */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {/* Browser-style tabs - all tabs rendered and cached, instant switching */}
+            <div style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}>
+              <DashboardTab
+                patient={patient}
+                allergies={allergies}
+                problems={problems}
+                medications={medications}
+                encounters={encounters}
+                observations={observations}
+              />
+            </div>
+            <div style={{ display: activeTab === 'chart' ? 'block' : 'none' }}>
+              <OverviewTab
+                encounters={encounters}
+                problems={problems}
+                medications={medications}
+                allergies={allergies}
+              />
+            </div>
+            <div style={{ display: activeTab === 'vitals' ? 'block' : 'none' }}>
+              <VitalsTab
+                observations={observations}
+                onRecordVitals={() => setShowVitalsDrawer(true)}
+              />
+            </div>
+            <div style={{ display: activeTab === 'encounters' ? 'block' : 'none' }}>
+              <EncountersTab
+                encounters={encounters}
+                observations={observations}
+                onNewEncounter={() => setShowEncounterDrawer(true)}
+              />
+            </div>
+            <div style={{ display: activeTab === 'problems' ? 'block' : 'none' }}>
+              <ProblemsTab
+                problems={problems}
+                onAddProblem={() => setShowProblemDrawer(true)}
+              />
+            </div>
+            <div style={{ display: activeTab === 'medications' ? 'block' : 'none' }}>
+              <MedicationsTab
+                medications={medications}
+                onPrescribe={() => setShowMedicationDrawer(true)}
+              />
+            </div>
+            <div style={{ display: activeTab === 'allergies' ? 'block' : 'none' }}>
+              <AllergiesTab
+                allergies={allergies}
+                onAddAllergy={() => setShowAllergyDrawer(true)}
+              />
+            </div>
+            <div style={{ display: activeTab === 'documents' ? 'block' : 'none' }}>
+              <DocumentsTab />
+            </div>
           </div>
         </div>
 
@@ -595,6 +595,21 @@ export default function PatientDetailPage() {
             </div>
           </DrawerContent>
         </Drawer>
+
+        {/* Medical Info Drawer (History, Habits, Allergies) */}
+        <MedicalInfoDrawer
+          isOpen={showMedicalInfoDrawer}
+          onClose={() => setShowMedicalInfoDrawer(false)}
+          patientHistory=""
+          patientHabitsStructured={undefined}
+          patientAllergiesStructured={undefined}
+          onUpdate={(data) => {
+            // Update patient data with the new medical info
+            console.log('Medical info updated:', data);
+            setShowMedicalInfoDrawer(false);
+            refreshData();
+          }}
+        />
       </div>
     </TabPageWrapper>
   );
