@@ -9,6 +9,7 @@ const hundredMSHandler = require('./100ms.handler');
 const agoraHandler = require('./agora.handler');
 const vonageHandler = require('./vonage.handler');
 const customHL7Handler = require('./custom-hl7.handler');
+const claimMDHandler = require('./claimmd.handler');
 
 // Add more handlers as they are created:
 // const twilioHandler = require('./twilio.handler');
@@ -21,6 +22,9 @@ const customHL7Handler = require('./custom-hl7.handler');
  */
 function registerAllHandlers(integrationService) {
   console.log('📦 Registering integration handlers...');
+
+  // Medical Billing Clearinghouses
+  integrationService.registerHandler('claimmd', claimMDHandler);
 
   // EHR Systems
   integrationService.registerHandler('epic', epicHandler);
@@ -46,6 +50,7 @@ function registerAllHandlers(integrationService) {
 
 module.exports = {
   registerAllHandlers,
+  claimMDHandler,
   epicHandler,
   stripeHandler,
   hundredMSHandler,

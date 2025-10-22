@@ -3,11 +3,29 @@ import { User, Edit, Calendar, X, Plus, ChevronDown } from 'lucide-react';
 import { Button, Badge } from '@nirmitee.io/design-system';
 import { PatientDetails } from './types';
 
+interface EncounterClass {
+  code?: string;
+  display?: string;
+  system?: string;
+}
+
+interface Encounter {
+  id: string;
+  status: string;
+  class?: string | EncounterClass;
+  period?: {
+    start?: string;
+    end?: string;
+  };
+  startTime?: string;
+  practitionerName?: string;
+}
+
 interface PatientHeaderProps {
   patient: PatientDetails;
   onEdit: () => void;
   onNewVisit: () => void;
-  encounters?: any[];
+  encounters?: Encounter[];
   selectedEncounter?: string;
   onEncounterSelect?: (encounterId: string) => void;
 }
@@ -80,7 +98,7 @@ export function PatientHeader({
                 <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-auto">
                   <div className="p-2">
                     {activeEncounters.map((encounter) => {
-                      const encounterDate = new Date(encounter.period?.start || encounter.startTime);
+                      const encounterDate = new Date(encounter.period?.start || encounter.startTime || new Date());
                       const dateStr = encounterDate.toLocaleDateString();
                       const timeStr = encounterDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                       
@@ -98,7 +116,15 @@ export function PatientHeader({
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="font-semibold text-gray-900 text-sm">
-                                {encounter.class?.charAt(0).toUpperCase() + encounter.class?.slice(1) || 'Encounter'}
+                                {(() => {
+                                  // Handle FHIR Coding object or string
+                                  const classValue = typeof encounter?.class === 'string' 
+                                    ? encounter?.class 
+                                    : encounter?.class?.display || encounter?.class?.code || 'Encounter';
+                                  return typeof classValue === 'string' 
+                                    ? classValue?.charAt(0)?.toUpperCase() + classValue?.slice(1)
+                                    : 'Encounter';
+                                })()}
                               </div>
                               <div className="text-xs text-gray-600 mt-1">
                                 {dateStr} • {timeStr}
