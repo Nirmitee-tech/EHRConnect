@@ -25,6 +25,7 @@ export function InstructionsSection({
   const handleAddItem = () => {
     const newItem: Instruction = {
       id: `instruction-${Date.now()}`,
+      type: 'patient', // Default type for legacy component
       text: ''
     };
     setEditingItem(newItem);

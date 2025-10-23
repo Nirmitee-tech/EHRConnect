@@ -54,9 +54,33 @@ export interface Prescription {
 }
 
 // Instruction
+export type InstructionType = 'clinical' | 'patient';
+export type InstructionCategory = 'pre-procedure' | 'post-procedure' | 'general' | 'medication' | 'lifestyle' | 'follow-up' | 'emergency';
+
 export interface Instruction {
   id: string;
+  type: InstructionType; // Clinical (for providers) or Patient (for patients)
+  category?: InstructionCategory; // Category of instruction
   text: string;
+  priority?: 'high' | 'medium' | 'low';
+  isActive?: boolean;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  fhirId?: string; // FHIR Communication resource ID
+}
+
+// Clinical Note (following OpenEMR structure)
+export interface ClinicalNote {
+  id: string;
+  date: Date | string;
+  noteType: string; // Type of note (e.g., Progress Note, SOAP Note, etc.)
+  category: string; // Category (e.g., General, Follow-up, etc.)
+  narrative: string; // Main note content
+  createdBy?: string;
+  createdByName?: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  fhirId?: string; // FHIR DocumentReference or DiagnosticReport ID
 }
 
 // Package
@@ -233,12 +257,15 @@ export interface Encounter {
   investigationsText?: string; // Free text notes for investigations
   diagnoses?: Diagnosis[];
   diagnosesText?: string; // Free text notes for diagnoses
-  clinicalNotes?: string;
+  clinicalNotes?: string; // Legacy single clinical note field
+  clinicalNotesList?: ClinicalNote[]; // Structured list of clinical notes (OpenEMR style)
 
   // Treatment
   treatmentPlan?: TreatmentPlanItem[];
   prescriptions?: Prescription[];
-  instructions?: Instruction[];
+  clinicalInstructions?: Instruction[]; // Instructions for clinical staff
+  patientInstructions?: Instruction[]; // Instructions for patients
+  instructions?: Instruction[]; // Legacy field - kept for backward compatibility
   packages?: Package[];
 
   // Vitals

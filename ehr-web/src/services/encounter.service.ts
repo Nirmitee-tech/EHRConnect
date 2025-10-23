@@ -1,6 +1,7 @@
 import { medplum } from '@/lib/medplum';
-import { Encounter, EncounterStatus } from '@/types/encounter';
+import { Encounter, EncounterStatus, Instruction, InstructionType } from '@/types/encounter';
 import { Appointment } from '@/types/appointment';
+import { FHIRCommunication } from '@/types/fhir';
 
 // FHIR Encounter type
 interface FHIREncounter {
@@ -565,6 +566,128 @@ export class EncounterService {
       console.error('Error fetching all encounters:', error);
       return [];
     }
+  }
+
+  /**
+   * Create or Update Instruction as FHIR Communication
+   */
+  static async saveInstruction(
+    encounterId: string,
+    patientId: string,
+    instruction: Instruction
+  ): Promise<Instruction> {
+    try {
+      const category = instruction.type === 'clinical'
+        ? 'clinical-instruction'
+        : 'patient-instruction';
+
+      const communication: Partial<FHIRCommunication> = {
+        resourceType: 'Communication',
+        status: instruction.isActive === false ? 'stopped' : 'completed',
+        category: [{
+          coding: [{
+            system: 'http://terminology.hl7.org/CodeSystem/communication-category',
+            code: category,
+            display: instruction.type === 'clinical' ? 'Clinical Instruction' : 'Patient Instruction'
+          }],
+          text: instruction.category || 'general'
+        }],
+        priority: instruction.priority === 'high' ? 'stat' :
+                 instruction.priority === 'medium' ? 'urgent' : 'routine',
+        subject: {
+          reference: `Patient/${patientId}`
+        },
+        encounter: {
+          reference: `Encounter/${encounterId}`
+        },
+        sent: new Date().toISOString(),
+        payload: [{
+          contentString: instruction.text
+        }],
+        note: instruction.category ? [{
+          text: `Category: ${instruction.category}`,
+          time: new Date().toISOString()
+        }] : undefined
+      };
+
+      let savedCommunication: FHIRCommunication;
+
+      if (instruction.fhirId) {
+        // Update existing
+        savedCommunication = await medplum.updateResource({
+          ...communication,
+          id: instruction.fhirId
+        } as FHIRCommunication);
+      } else {
+        // Create new
+        savedCommunication = await medplum.createResource(communication as FHIRCommunication);
+      }
+
+      return this.transformFHIRCommunicationToInstruction(savedCommunication);
+    } catch (error) {
+      console.error('Error saving instruction:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get Instructions for an Encounter
+   */
+  static async getInstructions(encounterId: string, type?: InstructionType): Promise<Instruction[]> {
+    try {
+      const searchParams: any = {
+        encounter: `Encounter/${encounterId}`,
+        _sort: '-sent'
+      };
+
+      if (type) {
+        const categoryCode = type === 'clinical' ? 'clinical-instruction' : 'patient-instruction';
+        searchParams.category = categoryCode;
+      }
+
+      const communications = await medplum.searchResources('Communication', searchParams);
+
+      return communications.map((comm: FHIRCommunication) =>
+        this.transformFHIRCommunicationToInstruction(comm)
+      );
+    } catch (error) {
+      console.error('Error fetching instructions:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Delete Instruction
+   */
+  static async deleteInstruction(fhirId: string): Promise<void> {
+    try {
+      await medplum.deleteResource('Communication', fhirId);
+    } catch (error) {
+      console.error('Error deleting instruction:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Transform FHIR Communication to Instruction
+   */
+  private static transformFHIRCommunicationToInstruction(comm: FHIRCommunication): Instruction {
+    const categoryCode = comm.category?.[0]?.coding?.[0]?.code;
+    const type: InstructionType = categoryCode === 'clinical-instruction' ? 'clinical' : 'patient';
+    const categoryText = comm.category?.[0]?.text;
+
+    return {
+      id: comm.id || `comm-${Date.now()}`,
+      fhirId: comm.id,
+      type,
+      category: categoryText as any,
+      text: comm.payload?.[0]?.contentString || '',
+      priority: comm.priority === 'stat' ? 'high' :
+               comm.priority === 'urgent' ? 'medium' : 'low',
+      isActive: comm.status !== 'stopped',
+      createdAt: comm.sent || comm.meta?.lastUpdated,
+      updatedAt: comm.meta?.lastUpdated
+    };
   }
 
   /**

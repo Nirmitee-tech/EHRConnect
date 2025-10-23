@@ -25,6 +25,11 @@ import { ProblemDrawer } from './components/drawers/ProblemDrawer';
 import { MedicationDrawer } from './components/drawers/MedicationDrawer';
 import { InsuranceDrawer } from './components/drawers/InsuranceDrawer';
 import { MedicalInfoDrawer } from '@/components/encounters/medical-info-drawer';
+import AmcRequiresPopover from '@/components/encounters/AmcRequiresPopover';
+import { CarePlanForm } from '@/components/forms/care-plan-form';
+import { carePlanService, CarePlanFormData } from '@/services/careplan.service';
+import { ClinicalInstructionsSection } from '@/components/encounters/clinical-instructions-section';
+import { PatientInstructionsSection } from '@/components/encounters/patient-instructions-section';
 import { PatientDetails, VitalsFormData, ProblemFormData, MedicationFormData, SavedSection, TelecomItem, IdentifierItem, FHIRBundleEntry, EncounterFormData } from './components/types';
 
 export default function PatientDetailPage() {
@@ -133,6 +138,9 @@ export default function PatientDetailPage() {
   const [allergies, setAllergies] = useState<any[]>([]);
   const [observations, setObservations] = useState<any[]>([]);
   const [insurances, setInsurances] = useState<any[]>([]);
+  const [carePlans, setCarePlans] = useState<{ [encounterId: string]: any[] }>({});
+  const [editingCarePlanId, setEditingCarePlanId] = useState<{ [encounterId: string]: string | null }>({});
+  const [currentCarePlanData, setCurrentCarePlanData] = useState<{ [encounterId: string]: CarePlanFormData | null }>({});
 
   // Drawer states
   const [showEditDrawer, setShowEditDrawer] = useState(false);
@@ -143,6 +151,9 @@ export default function PatientDetailPage() {
   const [showAllergyDrawer, setShowAllergyDrawer] = useState(false);
   const [showMedicalInfoDrawer, setShowMedicalInfoDrawer] = useState(false);
   const [showInsuranceDrawer, setShowInsuranceDrawer] = useState(false);
+
+  // AMC Requires popover state - per encounter
+  const [showAmcPopover, setShowAmcPopover] = useState<{ [encounterId: string]: boolean }>({});
 
   // Load ALL data upfront in parallel - browser-style tabs
   const loadAllPatientData = useCallback(async () => {
@@ -213,14 +224,12 @@ export default function PatientDetailPage() {
 
   // Handle encounterId from query params - auto-select and open that encounter
   useEffect(() => {
-    if (encounterIdFromQuery && patient) {
+    if (encounterIdFromQuery && patient && !openEncounterTabs.includes(encounterIdFromQuery)) {
       // Switch to encounters tab
       setActiveTab('encounters');
 
-      // Open the encounter tab if not already open
-      if (!openEncounterTabs.includes(encounterIdFromQuery)) {
-        setOpenEncounterTabs(prev => [...prev, encounterIdFromQuery]);
-      }
+      // Open the encounter tab
+      setOpenEncounterTabs(prev => [...prev, encounterIdFromQuery]);
 
       // Set it as the selected encounter
       setSelectedEncounter(encounterIdFromQuery);
@@ -243,6 +252,29 @@ export default function PatientDetailPage() {
       const docs = docRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || [];
       const sections: SavedSection[] = [];
 
+      // Also load Care Plans for this encounter
+      try {
+        const carePlansList = await carePlanService.getCarePlansByEncounter(encounterId);
+        setCarePlans(prev => ({ ...prev, [encounterId]: carePlansList }));
+
+        // Add Care Plans as sections in the summary
+        carePlansList.forEach((carePlan: any) => {
+          const formData = carePlanService.convertToFormData(carePlan);
+          sections.push({
+            id: carePlan.id,
+            title: formData.title || 'Care Plan',
+            type: 'care-plan',
+            author: 'System',
+            date: carePlan.created || carePlan.meta?.lastUpdated || new Date().toISOString(),
+            data: formData,
+            signatures: []
+          });
+        });
+      } catch (carePlanError) {
+        console.error('Error loading care plans:', carePlanError);
+      }
+
+      // Add DocumentReference sections
       docs.forEach((doc: any) => {
         const content = doc.content?.[0];
         const category = doc.category?.[0]?.coding?.[0]?.code;
@@ -255,19 +287,25 @@ export default function PatientDetailPage() {
             ? JSON.parse(atob(content.attachment.data))
             : {};
 
-          sections.push({
-            id: doc.id,
-            title: doc.type?.text || category,
-            type: category,
-            author,
-            date,
-            data,
-            signatures: []
-          });
+          // Don't add care-plan from DocumentReference if we already loaded from CarePlan resources
+          if (category !== 'care-plan') {
+            sections.push({
+              id: doc.id,
+              title: doc.type?.text || category,
+              type: category,
+              author,
+              date,
+              data,
+              signatures: []
+            });
+          }
         } catch (e) {
           console.error('Error parsing document:', e);
         }
       });
+
+      // Sort sections by date (newest first)
+      sections.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
       // Load sections into state
       setEncounterSavedData(prev => ({
@@ -344,6 +382,13 @@ export default function PatientDetailPage() {
       throw error;
     }
   }, [patientId, loadEncounterDocumentation]);
+
+  // Load encounter documentation when selectedEncounter changes
+  useEffect(() => {
+    if (selectedEncounter && patient) {
+      loadEncounterDocumentation(selectedEncounter);
+    }
+  }, [selectedEncounter, patient, loadEncounterDocumentation]);
 
   const handleStartVisit = async (encounterData: EncounterFormData) => {
     if (!patientId) return;
@@ -981,7 +1026,7 @@ export default function PatientDetailPage() {
                   'Amendments', 'Letters'
                 ],
                 Clinical: [
-                  'Care Plan', 'Clinical Instructions', 'Clinical Notes', 'Eye Exam',
+                  'Care Plan', 'Clinical Instructions', 'Patient Instructions', 'Clinical Notes', 'Eye Exam',
                   'Functional and Cognitive Status', 'Observation', 'Review Of Systems',
                   'Review of Systems Checks', 'SOAP', 'Speech Dictation', 'Vitals'
                 ],
@@ -1053,9 +1098,23 @@ export default function PatientDetailPage() {
                         </div>
                       ))}
                       <div className="ml-auto flex items-center gap-2">
-                        <button className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700">
-                          AMC Requires
-                        </button>
+                        <div className="relative">
+                          <button
+                            onClick={() => setShowAmcPopover({ ...showAmcPopover, [encounterId]: !showAmcPopover[encounterId] })}
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+                          >
+                            AMC Requires
+                          </button>
+                          <AmcRequiresPopover
+                            isOpen={showAmcPopover[encounterId] || false}
+                            onClose={() => setShowAmcPopover({ ...showAmcPopover, [encounterId]: false })}
+                            encounterId={encounterId}
+                            onSave={(requirements) => {
+                              console.log('AMC Requirements saved for encounter:', encounterId, requirements);
+                              // You can save this to your state or backend here
+                            }}
+                          />
+                        </div>
                         <button className="px-2 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded">
                           Edit
                         </button>
@@ -1184,10 +1243,9 @@ export default function PatientDetailPage() {
                                           });
                                         }
                                       } else if (section.type === 'care-plan') {
-                                        setCarePlanForms({
-                                          ...carePlanForms,
-                                          [encounterId]: section.data as { goals: string; interventions: string; outcomes: string }
-                                        });
+                                        // Set editing care plan
+                                        setEditingCarePlanId({ ...editingCarePlanId, [encounterId]: section.id || null });
+                                        setCurrentCarePlanData({ ...currentCarePlanData, [encounterId]: section.data as CarePlanFormData });
                                         setActiveEncounterSubTab({ ...activeEncounterSubTab, [encounterId]: 'care-plan' });
                                         if (!openEncounterSubTabs[encounterId]?.includes('care-plan')) {
                                           setOpenEncounterSubTabs({
@@ -1245,14 +1303,30 @@ export default function PatientDetailPage() {
                                     eSign
                                   </button>
                                   <button
-                                    onClick={() => {
-                                      // Delete section
-                                      const currentData = encounterSavedData[encounterId] || [];
-                                      const newData = currentData.filter((_, i) => i !== idx);
-                                      setEncounterSavedData({
-                                        ...encounterSavedData,
-                                        [encounterId]: newData
-                                      });
+                                    onClick={async () => {
+                                      // Handle delete based on section type
+                                      if (section.type === 'care-plan' && section.id) {
+                                        // Delete from FHIR backend
+                                        if (confirm('Are you sure you want to delete this Care Plan?')) {
+                                          try {
+                                            await carePlanService.deleteCarePlan(section.id);
+                                            // Reload encounter documentation
+                                            await loadEncounterDocumentation(encounterId);
+                                            alert('Care Plan deleted successfully!');
+                                          } catch (error) {
+                                            console.error('Error deleting care plan:', error);
+                                            alert('Failed to delete Care Plan. Please try again.');
+                                          }
+                                        }
+                                      } else {
+                                        // Delete section from local state
+                                        const currentData = encounterSavedData[encounterId] || [];
+                                        const newData = currentData.filter((_, i) => i !== idx);
+                                        setEncounterSavedData({
+                                          ...encounterSavedData,
+                                          [encounterId]: newData
+                                        });
+                                      }
                                     }}
                                     className="px-2 py-1 text-xs text-red-600 hover:text-red-800"
                                   >
@@ -1316,7 +1390,58 @@ export default function PatientDetailPage() {
                                   )}
 
                                   {section.type === 'care-plan' && (
-                                    <div className="space-y-3 text-sm">
+                                    <div className="space-y-4 text-sm">
+                                      {/* Care Plan Metadata */}
+                                      {(section.data.status || section.data.intent || section.data.title) && (
+                                        <div className="grid grid-cols-3 gap-3 p-3 bg-blue-50 rounded border border-blue-200">
+                                          {section.data.status && (
+                                            <div><span className="font-medium text-blue-900">Status:</span> <span className="text-blue-700 capitalize">{section.data.status}</span></div>
+                                          )}
+                                          {section.data.intent && (
+                                            <div><span className="font-medium text-blue-900">Intent:</span> <span className="text-blue-700 capitalize">{section.data.intent}</span></div>
+                                          )}
+                                          {section.data.title && (
+                                            <div className="col-span-3"><span className="font-medium text-blue-900">Title:</span> <span className="text-blue-700">{section.data.title}</span></div>
+                                          )}
+                                          {section.data.description && (
+                                            <div className="col-span-3"><span className="font-medium text-blue-900">Description:</span> <span className="text-blue-700">{section.data.description}</span></div>
+                                          )}
+                                        </div>
+                                      )}
+                                      {/* Activities */}
+                                      {section.data.activities && section.data.activities.length > 0 && (
+                                        <div>
+                                          <p className="font-semibold text-gray-900 mb-2">Activities:</p>
+                                          <div className="space-y-3">
+                                            {section.data.activities.map((activity: any, i: number) => (
+                                              <div key={i} className="p-3 bg-gray-50 rounded border border-gray-200">
+                                                <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+                                                  <div><span className="font-medium">Code:</span> {activity.code}</div>
+                                                  <div><span className="font-medium">Scheduled:</span> {activity.date}</div>
+                                                  <div><span className="font-medium">Type:</span> {activity.type}</div>
+                                                  <div><span className="font-medium">Status:</span> <span className="capitalize">{activity.status?.replace(/-/g, ' ')}</span></div>
+                                                  <div className="col-span-2"><span className="font-medium">Description:</span> {activity.description}</div>
+                                                </div>
+                                                {/* Activity Reason */}
+                                                {activity.reason && (
+                                                  <div className="mt-2 pt-2 border-t border-gray-300">
+                                                    <p className="text-xs font-medium text-gray-700 mb-1">Reason:</p>
+                                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                                      <div><span className="font-medium">Code:</span> {activity.reason.reasonCode}</div>
+                                                      <div><span className="font-medium">Status:</span> <span className="capitalize">{activity.reason.reasonStatus?.replace(/-/g, ' ')}</span></div>
+                                                      <div><span className="font-medium">Start:</span> {activity.reason.reasonRecordingDate}</div>
+                                                      {activity.reason.reasonEndDate && (
+                                                        <div><span className="font-medium">End:</span> {activity.reason.reasonEndDate}</div>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {/* Legacy format support */}
                                       {section.data.goals && (
                                         <div>
                                           <p className="font-semibold text-gray-900">Goals:</p>
@@ -1399,133 +1524,156 @@ export default function PatientDetailPage() {
 
                     {/* Care Plan Section */}
                     {activeSubTab === 'care-plan' && (
-                      <div className="bg-white border border-gray-200 rounded p-4">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Care Plan</h3>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Goals</label>
-                            <textarea
-                              value={carePlanForms[encounterId]?.goals || ''}
-                              onChange={(e) => updateCarePlanForm(encounterId, 'goals', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded text-sm"
-                              rows={4}
-                              placeholder="Document patient care goals..."
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Interventions</label>
-                            <textarea
-                              value={carePlanForms[encounterId]?.interventions || ''}
-                              onChange={(e) => updateCarePlanForm(encounterId, 'interventions', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded text-sm"
-                              rows={4}
-                              placeholder="Document planned interventions..."
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Expected Outcomes</label>
-                            <textarea
-                              value={carePlanForms[encounterId]?.outcomes || ''}
-                              onChange={(e) => updateCarePlanForm(encounterId, 'outcomes', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded text-sm"
-                              rows={3}
-                              placeholder="Document expected outcomes..."
-                            />
-                          </div>
-                          <button
-                            onClick={async () => {
-                              const currentData = encounterSavedData[encounterId] || [];
-                              const carePlanData = carePlanForms[encounterId] || { goals: '', interventions: '', outcomes: '' };
-                              const editingIdx = editingSection[encounterId];
+                      <div className="space-y-4">
+                        {/* Show form if creating/editing */}
+                        {(currentCarePlanData[encounterId] || !carePlans[encounterId] || carePlans[encounterId].length === 0) && (
+                          <CarePlanForm
+                            encounterId={encounterId}
+                            patientId={patientId}
+                            initialData={currentCarePlanData[encounterId] || undefined}
+                            onSave={async (formData: CarePlanFormData) => {
+                              try {
+                                const editingId = editingCarePlanId[encounterId];
 
-                              const section = {
-                                title: 'Care Plan',
-                                type: 'care-plan',
-                                author: 'Billy Smith',
-                                date: new Date().toISOString(),
-                                data: carePlanData,
-                                signatures: []
-                              };
+                                // Create or update the FHIR CarePlan resource
+                                if (editingId) {
+                                  await carePlanService.updateCarePlan(editingId, patientId, encounterId, formData);
+                                } else {
+                                  await carePlanService.createCarePlan(patientId, encounterId, formData);
+                                }
 
-                              const documentId = editingIdx !== null && editingIdx !== undefined
-                                ? currentData[editingIdx]?.id
-                                : undefined;
+                                // Clear editing state
+                                setEditingCarePlanId({ ...editingCarePlanId, [encounterId]: null });
+                                setCurrentCarePlanData({ ...currentCarePlanData, [encounterId]: null });
 
-                              await saveDocumentReference(encounterId, section, documentId);
-                              setEditingSection({ ...editingSection, [encounterId]: null });
+                                // Reload encounter documentation (including care plans)
+                                await loadEncounterDocumentation(encounterId);
 
-                              setCarePlanForms({
-                                ...carePlanForms,
-                                [encounterId]: { goals: '', interventions: '', outcomes: '' }
-                              });
-                              setActiveEncounterSubTab({ ...activeEncounterSubTab, [encounterId]: 'summary' });
+                                alert(editingId ? 'Care Plan updated successfully!' : 'Care Plan created successfully!');
+                              } catch (error) {
+                                console.error('Error saving care plan:', error);
+                                alert('Failed to save Care Plan. Please try again.');
+                              }
                             }}
-                            className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700"
-                          >
-                            {editingSection[encounterId] !== null && editingSection[encounterId] !== undefined ? 'Update Care Plan' : 'Save Care Plan'}
-                          </button>
-                        </div>
+                            onCancel={() => {
+                              setEditingCarePlanId({ ...editingCarePlanId, [encounterId]: null });
+                              setCurrentCarePlanData({ ...currentCarePlanData, [encounterId]: null });
+                            }}
+                          />
+                        )}
+
+                        {/* Show existing care plans list */}
+                        {!currentCarePlanData[encounterId] && carePlans[encounterId] && carePlans[encounterId].length > 0 && (
+                          <div className="bg-white border border-gray-200 rounded-lg p-6">
+                            <div className="flex items-center justify-between mb-4">
+                              <h2 className="text-xl font-semibold text-gray-900">Existing Care Plans</h2>
+                              <button
+                                onClick={() => {
+                                  setCurrentCarePlanData({ ...currentCarePlanData, [encounterId]: {
+                                    status: 'active',
+                                    intent: 'plan',
+                                    activities: [{
+                                      code: '',
+                                      date: new Date().toISOString().split('T')[0],
+                                      type: 'Task',
+                                      description: '',
+                                      status: 'not-started'
+                                    }]
+                                  }});
+                                }}
+                                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700"
+                              >
+                                + Add New Care Plan
+                              </button>
+                            </div>
+
+                            <div className="space-y-4">
+                              {carePlans[encounterId].map((carePlan: any) => {
+                                const formData = carePlanService.convertToFormData(carePlan);
+                                return (
+                                  <div key={carePlan.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                    <div className="flex items-start justify-between mb-3">
+                                      <div>
+                                        <h3 className="text-lg font-semibold text-gray-900">
+                                          {formData.title || 'Care Plan'}
+                                        </h3>
+                                        <div className="flex gap-4 text-sm text-gray-600 mt-1">
+                                          <span>Status: <span className="font-medium capitalize">{formData.status}</span></span>
+                                          <span>Intent: <span className="font-medium capitalize">{formData.intent}</span></span>
+                                          <span>Activities: <span className="font-medium">{formData.activities.length}</span></span>
+                                        </div>
+                                        {formData.description && (
+                                          <p className="text-sm text-gray-600 mt-2">{formData.description}</p>
+                                        )}
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() => {
+                                            setEditingCarePlanId({ ...editingCarePlanId, [encounterId]: carePlan.id });
+                                            setCurrentCarePlanData({ ...currentCarePlanData, [encounterId]: formData });
+                                          }}
+                                          className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-white border border-blue-600 rounded hover:bg-blue-50"
+                                        >
+                                          Edit
+                                        </button>
+                                        <button
+                                          onClick={async () => {
+                                            if (confirm('Are you sure you want to delete this Care Plan?')) {
+                                              try {
+                                                await carePlanService.deleteCarePlan(carePlan.id);
+                                                await loadEncounterDocumentation(encounterId);
+                                                alert('Care Plan deleted successfully!');
+                                              } catch (error) {
+                                                console.error('Error deleting care plan:', error);
+                                                alert('Failed to delete Care Plan.');
+                                              }
+                                            }
+                                          }}
+                                          className="px-3 py-1.5 text-sm font-medium text-red-600 bg-white border border-red-600 rounded hover:bg-red-50"
+                                        >
+                                          Delete
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {/* Activities Summary */}
+                                    <div className="mt-3 space-y-2">
+                                      {formData.activities.map((activity, idx) => (
+                                        <div key={idx} className="text-sm bg-white p-3 rounded border border-gray-200">
+                                          <div className="flex justify-between">
+                                            <span className="font-medium">{activity.code}</span>
+                                            <span className="text-gray-600">{activity.type}</span>
+                                          </div>
+                                          <p className="text-gray-600 text-xs mt-1">{activity.description}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {/* Clinical Instructions Section */}
-                    {activeSubTab === 'clinical-instructions' && (
+                    {/* Clinical Instructions Section - FHIR Integrated */}
+                    {activeSubTab === 'clinical-instructions' && encounter && patient && (
                       <div className="bg-white border border-gray-200 rounded p-4">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Clinical Instructions</h3>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Patient Instructions</label>
-                            <textarea
-                              value={clinicalInstructionsForms[encounterId]?.patientInstructions || ''}
-                              onChange={(e) => updateClinicalInstructionsForm(encounterId, 'patientInstructions', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded text-sm"
-                              rows={6}
-                              placeholder="Enter instructions for the patient..."
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Follow-up Instructions</label>
-                            <textarea
-                              value={clinicalInstructionsForms[encounterId]?.followUpInstructions || ''}
-                              onChange={(e) => updateClinicalInstructionsForm(encounterId, 'followUpInstructions', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded text-sm"
-                              rows={4}
-                              placeholder="Enter follow-up instructions..."
-                            />
-                          </div>
-                          <button
-                            onClick={async () => {
-                              const currentData = encounterSavedData[encounterId] || [];
-                              const instructionsData = clinicalInstructionsForms[encounterId] || { patientInstructions: '', followUpInstructions: '' };
-                              const editingIdx = editingSection[encounterId];
+                        <ClinicalInstructionsSection
+                          encounterId={encounterId}
+                          patientId={patient.id}
+                        />
+                      </div>
+                    )}
 
-                              const section = {
-                                title: 'Clinical Instructions',
-                                type: 'clinical-instructions',
-                                author: 'Billy Smith',
-                                date: new Date().toISOString(),
-                                data: instructionsData,
-                                signatures: []
-                              };
-
-                              const documentId = editingIdx !== null && editingIdx !== undefined
-                                ? currentData[editingIdx]?.id
-                                : undefined;
-
-                              await saveDocumentReference(encounterId, section, documentId);
-                              setEditingSection({ ...editingSection, [encounterId]: null });
-
-                              setClinicalInstructionsForms({
-                                ...clinicalInstructionsForms,
-                                [encounterId]: { patientInstructions: '', followUpInstructions: '' }
-                              });
-                              setActiveEncounterSubTab({ ...activeEncounterSubTab, [encounterId]: 'summary' });
-                            }}
-                            className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700"
-                          >
-                            {editingSection[encounterId] !== null && editingSection[encounterId] !== undefined ? 'Update Instructions' : 'Save Instructions'}
-                          </button>
-                        </div>
+                    {/* Patient Instructions Section - FHIR Integrated */}
+                    {activeSubTab === 'patient-instructions' && encounter && patient && (
+                      <div className="bg-white border border-gray-200 rounded p-4">
+                        <PatientInstructionsSection
+                          encounterId={encounterId}
+                          patientId={patient.id}
+                        />
                       </div>
                     )}
 

@@ -12,20 +12,25 @@ import {
   Mail,
   MoreVertical,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 import { Encounter, AddressData, NoteData, InsuranceData, EncounterStatus } from '@/types/encounter';
 import { EncounterService } from '@/services/encounter.service';
 import { AddressService } from '@/services/address.service';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Tooltip } from '@/components/ui/tooltip';
 import { PatientSidebar } from '@/components/encounters/patient-sidebar';
 import { MedicalInfoDrawer } from '@/components/encounters/medical-info-drawer';
 import { MedicalHistoryDrawer } from '@/components/encounters/medical-history-drawer';
 import { ClinicalNoteSection } from '@/components/encounters/clinical-note-section';
 import { ClinicalNoteForm } from '@/components/encounters/clinical-note-form';
+import { ClinicalNotesListSection } from '@/components/encounters/clinical-notes-list-section';
 import { TreatmentPlanSection } from '@/components/encounters/treatment-plan-section';
 import { PrescriptionsSection } from '@/components/encounters/prescriptions-section';
 import { InstructionsSection } from '@/components/encounters/instructions-section';
+import { ClinicalInstructionsSection } from '@/components/encounters/clinical-instructions-section';
+import { PatientInstructionsSection } from '@/components/encounters/patient-instructions-section';
 import { PackageSection } from '@/components/encounters/package-section';
 
 export default function EncounterPage() {
@@ -43,9 +48,12 @@ export default function EncounterPage() {
   // Expanded sections for accordion
   const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({
     clinicalNote: false,
+    clinicalNotesList: false,
     treatmentPlan: false,
     prescriptions: false,
     instructions: false,
+    clinicalInstructions: false,
+    patientInstructions: false,
     packages: false
   });
 
@@ -733,6 +741,68 @@ export default function EncounterPage() {
                 </div>
               </div>
 
+              {/* Clinical Notes List Section (OpenEMR Style) */}
+              <div className="border-b border-gray-200">
+                <button
+                  onClick={() => toggleSection('clinicalNotesList')}
+                  className="w-full px-6 py-3 bg-gray-50 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <h3 className="font-semibold text-sm">CLINICAL NOTES</h3>
+                    {encounter.clinicalNotesList && encounter.clinicalNotesList.length > 0 && (
+                      <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                        {encounter.clinicalNotesList.length}
+                      </span>
+                    )}
+                  </div>
+                  {expandedSections.clinicalNotesList ? (
+                    <ChevronDown className="h-4 w-4 text-gray-600" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-gray-600" />
+                  )}
+                </button>
+                <div className="px-6 py-4">
+                  {encounter.clinicalNotesList && encounter.clinicalNotesList.length > 0 ? (
+                    <div className="space-y-2">
+                      {encounter.clinicalNotesList.slice(0, 2).map((note, idx) => (
+                        <div key={note.id} className="flex items-start gap-2 text-sm bg-gray-50 p-3 rounded">
+                          <div className="flex-shrink-0">
+                            <span className="font-semibold text-gray-700">{new Date(note.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded">{note.noteType}</span>
+                              <span className="px-2 py-0.5 bg-gray-200 text-gray-700 text-xs rounded">{note.category}</span>
+                            </div>
+                            <p className="text-gray-600 text-xs line-clamp-2">{note.narrative}</p>
+                          </div>
+                        </div>
+                      ))}
+                      {encounter.clinicalNotesList.length > 2 && (
+                        <p className="text-xs text-gray-500 italic">
+                          +{encounter.clinicalNotesList.length - 2} more notes
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No clinical notes added</p>
+                  )}
+
+                  {/* Expandable content */}
+                  {expandedSections.clinicalNotesList && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <ClinicalNotesListSection
+                        notes={encounter.clinicalNotesList || []}
+                        onUpdate={(notes) => updateEncounterField('clinicalNotesList', notes)}
+                        currentUserId={session?.fhirUser || session?.user?.email || 'unknown'}
+                        currentUserName={session?.user?.name || 'Unknown User'}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Instructions Section */}
               <div>
                 <button
@@ -765,6 +835,122 @@ export default function EncounterPage() {
                       <InstructionsSection
                         instructions={encounter.instructions}
                         onUpdate={(instructions) => updateEncounterField('instructions', instructions)}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Clinical Instructions Section */}
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                <button
+                  onClick={() => toggleSection('clinicalInstructions')}
+                  className="w-full flex items-center justify-between px-6 py-4 bg-gradient-to-r from-blue-50 to-white hover:from-blue-100 transition-colors"
+                >
+                  <h3 className="text-md font-semibold text-gray-900 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-blue-600" />
+                    Clinical Instructions
+                    <Tooltip
+                      content="Internal instructions for healthcare providers and clinical staff. These instructions guide clinical procedures, medication administration, monitoring requirements, and care protocols. Not shared with patients."
+                      position="right"
+                    />
+                    {encounter.clinicalInstructions && encounter.clinicalInstructions.length > 0 && (
+                      <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                        {encounter.clinicalInstructions.length}
+                      </span>
+                    )}
+                  </h3>
+                  {expandedSections.clinicalInstructions ? (
+                    <ChevronDown className="h-4 w-4 text-gray-600" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-gray-600" />
+                  )}
+                </button>
+                <div className="px-6 py-4">
+                  {encounter.clinicalInstructions && encounter.clinicalInstructions.length > 0 ? (
+                    <div className="space-y-2">
+                      {encounter.clinicalInstructions.slice(0, 2).map((instruction, idx) => (
+                        <div key={idx} className="flex items-start gap-2 text-sm">
+                          <span className="font-semibold text-gray-700">{idx + 1}.</span>
+                          <span className="text-gray-600">{instruction.text}</span>
+                        </div>
+                      ))}
+                      {encounter.clinicalInstructions.length > 2 && (
+                        <p className="text-xs text-gray-500 italic">
+                          +{encounter.clinicalInstructions.length - 2} more instructions
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No clinical instructions added</p>
+                  )}
+
+                  {/* Expandable content */}
+                  {expandedSections.clinicalInstructions && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <ClinicalInstructionsSection
+                        encounterId={encounter.id}
+                        patientId={encounter.patientId}
+                        instructions={encounter.clinicalInstructions}
+                        onUpdate={(instructions) => updateEncounterField('clinicalInstructions', instructions)}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Patient Instructions Section */}
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                <button
+                  onClick={() => toggleSection('patientInstructions')}
+                  className="w-full flex items-center justify-between px-6 py-4 bg-gradient-to-r from-purple-50 to-white hover:from-purple-100 transition-colors"
+                >
+                  <h3 className="text-md font-semibold text-gray-900 flex items-center gap-2">
+                    <User className="h-5 w-5 text-purple-600" />
+                    Patient Instructions
+                    <Tooltip
+                      content="Instructions and guidance provided to patients for their care at home. These include post-treatment care steps, medication instructions, lifestyle recommendations, warning signs to watch for, and follow-up appointment reminders. Written in patient-friendly language."
+                      position="right"
+                    />
+                    {encounter.patientInstructions && encounter.patientInstructions.length > 0 && (
+                      <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                        {encounter.patientInstructions.length}
+                      </span>
+                    )}
+                  </h3>
+                  {expandedSections.patientInstructions ? (
+                    <ChevronDown className="h-4 w-4 text-gray-600" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-gray-600" />
+                  )}
+                </button>
+                <div className="px-6 py-4">
+                  {encounter.patientInstructions && encounter.patientInstructions.length > 0 ? (
+                    <div className="space-y-2">
+                      {encounter.patientInstructions.slice(0, 2).map((instruction, idx) => (
+                        <div key={idx} className="flex items-start gap-2 text-sm">
+                          <span className="font-semibold text-gray-700">{idx + 1}.</span>
+                          <span className="text-gray-600">{instruction.text}</span>
+                        </div>
+                      ))}
+                      {encounter.patientInstructions.length > 2 && (
+                        <p className="text-xs text-gray-500 italic">
+                          +{encounter.patientInstructions.length - 2} more instructions
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No patient instructions added</p>
+                  )}
+
+                  {/* Expandable content */}
+                  {expandedSections.patientInstructions && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <PatientInstructionsSection
+                        encounterId={encounter.id}
+                        patientId={encounter.patientId}
+                        instructions={encounter.patientInstructions}
+                        onUpdate={(instructions) => updateEncounterField('patientInstructions', instructions)}
                       />
                     </div>
                   )}

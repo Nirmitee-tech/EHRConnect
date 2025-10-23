@@ -142,11 +142,11 @@ export function HealthcareSidebar() {
             </div>
           </div>
           <div className="pb-3">
-            <FacilityInfo
+            {/* <FacilityInfo
               facilityName={currentFacility?.name || 'Healthcare Clinic'}
               patientCount={patients}
               staffCount={staff}
-            />
+            /> */}
           </div>
         </>
       )}

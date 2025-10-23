@@ -207,3 +207,39 @@ export interface AuditLogEntry {
   timestamp: string;
   changes?: Record<string, unknown>;
 }
+
+// FHIR Communication Resource for Clinical and Patient Instructions
+export interface FHIRCommunication extends FHIRResource {
+  resourceType: 'Communication';
+  identifier?: FHIRIdentifier[];
+  status: 'preparation' | 'in-progress' | 'not-done' | 'on-hold' | 'stopped' | 'completed' | 'entered-in-error' | 'unknown';
+  category?: Array<{
+    coding?: Array<{
+      system?: string;
+      code?: string;
+      display?: string;
+    }>;
+    text?: string;
+  }>;
+  priority?: 'routine' | 'urgent' | 'asap' | 'stat';
+  subject?: FHIRReference; // Patient reference
+  encounter?: FHIRReference; // Encounter reference
+  sent?: string; // DateTime
+  received?: string; // DateTime
+  recipient?: FHIRReference[]; // Who the communication is for
+  sender?: FHIRReference; // Who sent the communication
+  payload?: Array<{
+    contentString?: string;
+    contentAttachment?: {
+      contentType?: string;
+      data?: string;
+      url?: string;
+      title?: string;
+    };
+  }>;
+  note?: Array<{
+    authorReference?: FHIRReference;
+    time?: string;
+    text: string;
+  }>;
+}
