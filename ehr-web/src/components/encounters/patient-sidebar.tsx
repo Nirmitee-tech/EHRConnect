@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft,
   Phone,
@@ -19,7 +20,8 @@ import {
   Plus,
   ChevronUp,
   ChevronDown,
-  Info
+  Info,
+  ExternalLink
 } from 'lucide-react';
 import { AddressDrawer } from './address-drawer';
 import { StickyNotesSection } from './sticky-notes-section';
@@ -89,6 +91,9 @@ export function PatientSidebar({
   onUpdateInsuranceCards,
   onUpdatePatientStatus
 }: PatientSidebarProps) {
+  const router = useRouter();
+  const params = useParams();
+  const encounterId = params.id as string;
   const [addressExpanded, setAddressExpanded] = useState(false);
   const [showAddressDrawer, setShowAddressDrawer] = useState(false);
   const [patientStatus, setPatientStatus] = useState<'active' | 'inactive'>(patientActive ? 'active' : 'inactive');
@@ -96,6 +101,11 @@ export function PatientSidebar({
 
   // Get primary address for quick display
   const primaryAddress = addresses.find(addr => addr.isPrimary && addr.isActive) || addresses.find(addr => addr.isActive);
+
+  // Navigate to patient details page with encounter ID as query param
+  const navigateToPatientDetails = () => {
+    router.push(`/patients/${patientId}?encounterId=${encounterId}`);
+  };
 
   return (
     <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-screen">
@@ -118,7 +128,16 @@ export function PatientSidebar({
               {patientName.substring(0, 2).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="font-semibold text-gray-900 text-sm truncate">{patientName}</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="font-semibold text-gray-900 text-sm truncate">{patientName}</h2>
+                <button
+                  onClick={navigateToPatientDetails}
+                  className="p-1 hover:bg-blue-50 rounded transition-colors group"
+                  title="View Patient Details"
+                >
+                  <ExternalLink className="h-3.5 w-3.5 text-blue-600 group-hover:text-blue-700" />
+                </button>
+              </div>
               <p className="text-xs text-gray-500">{patientGender} • #{patientId}</p>
             </div>
           </div>

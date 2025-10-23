@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { User, Edit, Calendar, Pill, AlertCircle, Activity, FileText, Loader2, Shield, ChevronLeft, ChevronRight, Plus, X, ChevronDown } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@nirmitee.io/design-system';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { fhirService } from '@/lib/medplum';
 import { PatientForm } from '@/components/forms/patient-form';
 import { EncounterForm } from '@/components/forms/encounter-form';
@@ -29,11 +29,15 @@ import { PatientDetails, VitalsFormData, ProblemFormData, MedicationFormData, Sa
 
 export default function PatientDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const patientId = params?.id as string;
   const { openPatientEditTab } = useTabNavigation();
 
+  // Get encounterId from query params if present
+  const encounterIdFromQuery = searchParams.get('encounterId');
+
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [selectedEncounter, setSelectedEncounter] = useState<string | undefined>(undefined);
+  const [selectedEncounter, setSelectedEncounter] = useState<string | undefined>(encounterIdFromQuery || undefined);
   const [openEncounterTabs, setOpenEncounterTabs] = useState<string[]>([]);
   const [openEncounterSubTabs, setOpenEncounterSubTabs] = useState<{ [encounterId: string]: string[] }>({});
   const [activeEncounterSubTab, setActiveEncounterSubTab] = useState<{ [encounterId: string]: string }>({});
@@ -206,6 +210,22 @@ export default function PatientDetailPage() {
   useEffect(() => {
     loadAllPatientData();
   }, [loadAllPatientData]);
+
+  // Handle encounterId from query params - auto-select and open that encounter
+  useEffect(() => {
+    if (encounterIdFromQuery && patient) {
+      // Switch to encounters tab
+      setActiveTab('encounters');
+
+      // Open the encounter tab if not already open
+      if (!openEncounterTabs.includes(encounterIdFromQuery)) {
+        setOpenEncounterTabs(prev => [...prev, encounterIdFromQuery]);
+      }
+
+      // Set it as the selected encounter
+      setSelectedEncounter(encounterIdFromQuery);
+    }
+  }, [encounterIdFromQuery, patient, openEncounterTabs]);
 
   const refreshData = () => {
     loadAllPatientData();
@@ -716,6 +736,7 @@ export default function PatientDetailPage() {
           onOpenAllergies={() => setShowAllergyDrawer(true)}
           onOpenProblems={() => setShowProblemDrawer(true)}
           onOpenInsurance={() => setShowInsuranceDrawer(true)}
+          encounterIdFromQuery={encounterIdFromQuery}
         />
 
         <div className="flex flex-1 overflow-hidden">
@@ -843,6 +864,7 @@ export default function PatientDetailPage() {
                 encounters={encounters}
                 observations={observations}
                 onNewEncounter={() => setShowEncounterDrawer(true)}
+                selectedEncounterId={selectedEncounter}
               />
             </div>
             <div style={{ display: activeTab === 'problems' ? 'block' : 'none' }}>

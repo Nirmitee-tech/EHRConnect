@@ -1,7 +1,8 @@
 import React from 'react';
-import { User, Edit, Calendar, Plus, ChevronDown, AlertTriangle, Activity, Phone, Mail, Heart, Clock, PlusCircle, Edit2, Pencil, Shield } from 'lucide-react';
+import { User, Edit, Calendar, Plus, ChevronDown, AlertTriangle, Activity, Phone, Mail, Heart, Clock, PlusCircle, Edit2, Pencil, Shield, ArrowLeft } from 'lucide-react';
 import { Button, Badge } from '@nirmitee.io/design-system';
 import { PatientDetails } from './types';
+import { useRouter } from 'next/navigation';
 
 interface EncounterClass {
   code?: string;
@@ -35,6 +36,7 @@ interface PatientHeaderProps {
   onOpenAllergies?: () => void;
   onOpenProblems?: () => void;
   onOpenInsurance?: () => void;
+  encounterIdFromQuery?: string | null;
 }
 
 export function PatientHeader({
@@ -50,8 +52,10 @@ export function PatientHeader({
   onOpenMedicalInfo,
   onOpenAllergies,
   onOpenProblems,
-  onOpenInsurance
+  onOpenInsurance,
+  encounterIdFromQuery
 }: PatientHeaderProps) {
+  const router = useRouter();
   const [showEncounterDropdown, setShowEncounterDropdown] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
@@ -154,6 +158,12 @@ export function PatientHeader({
                         <button
                           key={encounter.id}
                           onClick={() => {
+                            // Update URL with encounter ID as query param
+                            const url = new URL(window.location.href);
+                            url.searchParams.set('encounterId', encounter.id);
+                            router.push(url.pathname + url.search);
+
+                            // Call the original handler
                             onEncounterSelect?.(encounter.id);
                             setShowEncounterDropdown(false);
                           }}
