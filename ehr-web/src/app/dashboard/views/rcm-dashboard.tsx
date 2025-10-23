@@ -55,7 +55,15 @@ const payerPerformance = [
   { payer: 'BCBS', claims: 224, approved: 210, denied: 14, avgDays: 38, collectRate: 95.3 },
 ]
 
-export default function RCMDashboard() {
+interface RCMDashboardProps {
+  filters?: {
+    dateRange: string;
+    location: string;
+    department: string;
+  };
+}
+
+export default function RCMDashboard({ filters }: RCMDashboardProps = {}) {
   return (
     <div className="space-y-4">
       {/* RCM KPI Cards - Extended to 8 */}

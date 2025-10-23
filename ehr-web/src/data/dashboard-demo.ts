@@ -306,9 +306,9 @@ const demoSnapshots: Record<string, DashboardSnapshotPayload> = {
             { key: 'owner', label: 'Owner' }
           ],
           rows: [
-            { theme: 'Access', metric: 'New patient wait time', status: '12 days', owner: 'Scheduling' },
-            { theme: 'Quality', metric: 'HEDIS bundle adherence', status: '88%', owner: 'Quality' },
-            { theme: 'Financial', metric: 'Cash collections', status: '$182K', owner: 'RCM' }
+            { theme: 'Access', metric: 'New patient wait time', status: '12 days', owner: 'Scheduling' } as any,
+            { theme: 'Quality', metric: 'HEDIS bundle adherence', status: '88%', owner: 'Quality' } as any,
+            { theme: 'Financial', metric: 'Cash collections', status: '$182K', owner: 'RCM' } as any
           ]
         }
       },

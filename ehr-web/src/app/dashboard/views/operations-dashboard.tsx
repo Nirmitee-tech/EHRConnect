@@ -49,7 +49,15 @@ const patientFlowData = [
   { hour: '3 PM', checkIn: 18, inExam: 15, checkout: 19 },
 ]
 
-export default function OperationsDashboard() {
+interface OperationsDashboardProps {
+  filters?: {
+    dateRange: string;
+    location: string;
+    department: string;
+  };
+}
+
+export default function OperationsDashboard({ filters }: OperationsDashboardProps = {}) {
   return (
     <div className="space-y-4">
       {/* Operations KPI Cards - Extended to 8 */}

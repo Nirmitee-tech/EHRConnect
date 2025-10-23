@@ -107,7 +107,7 @@ export function PatientForm({ patient, isEditing = false, onSubmit, onCancel }: 
         <PersonalDetailsSection
           formData={formData}
           errors={errors}
-          onUpdateField={updateField}
+          onUpdateField={updateField as any}
           photoPreview={photoPreview}
           onPhotoChange={handlePhotoChange}
         />
@@ -115,8 +115,8 @@ export function PatientForm({ patient, isEditing = false, onSubmit, onCancel }: 
         <ContactDetailsSection
           formData={formData}
           errors={errors}
-          onUpdateField={updateField}
-          onUpdateAddress={updateAddress}
+          onUpdateField={updateField as any}
+          onUpdateAddress={updateAddress as any}
         />
 
         {(errors.submit || errors.facility) && (

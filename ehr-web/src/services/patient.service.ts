@@ -166,7 +166,7 @@ export class PatientService {
         userId,
         facilityId: request.facilityId,
         timestamp: new Date().toISOString(),
-        changes: request
+        changes: request as unknown as Record<string, unknown>
       });
 
       return createdPatient;
@@ -200,7 +200,7 @@ export class PatientService {
         userId,
         facilityId: request.facilityId || this.extractFacilityId(existingPatient),
         timestamp: new Date().toISOString(),
-        changes: request
+        changes: request as unknown as Record<string, unknown>
       });
 
       return result;
@@ -343,10 +343,10 @@ export class PatientService {
             system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
             code: 'MR',
             display: 'Medical Record Number'
-          }]
+          }] as any
         },
         value: request.mrn
-      });
+      } as any);
     }
 
     const telecom = [];

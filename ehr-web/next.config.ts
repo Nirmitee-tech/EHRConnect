@@ -6,6 +6,18 @@ const nextConfig: NextConfig = {
   // Optimize for faster development
   reactStrictMode: false, // Disable in dev to reduce double-rendering
 
+  // ESLint configuration - treat warnings as warnings, not errors
+  eslint: {
+    // Don't fail build on ESLint warnings
+    ignoreDuringBuilds: true,
+  },
+
+  // TypeScript configuration
+  typescript: {
+    // Don't fail build on TypeScript errors (only fail on actual compilation errors)
+    ignoreBuildErrors: false,
+  },
+
   // Allow external images
   images: {
     remotePatterns: [

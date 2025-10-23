@@ -48,22 +48,24 @@ export function InsuranceCard({ insuranceCards = [], onUpdate }: InsuranceCardPr
           <input
             type="text"
             placeholder="Provider Name"
-            value={primaryCard?.provider || ''}
+            value={primaryCard?.insuranceName || ''}
             onChange={(e) => {
               const updated = cards.map(card =>
-                card.isPrimary ? { ...card, provider: e.target.value } : card
+                card.isPrimary ? { ...card, insuranceName: e.target.value } : card
               );
               if (updated.length === 0) {
                 updated.push({
                   id: Date.now().toString(),
-                  provider: e.target.value,
-                  policyNumber: '',
+                  type: 'primary',
+                  insuranceName: e.target.value,
+                  planType: '',
+                  memberId: '',
                   subscriberName: '',
                   subscriberId: '',
                   relationship: 'self',
                   isPrimary: true,
                   isActive: true
-                });
+                } as any);
               }
               setCards(updated);
             }}
@@ -72,22 +74,24 @@ export function InsuranceCard({ insuranceCards = [], onUpdate }: InsuranceCardPr
           <input
             type="text"
             placeholder="Policy Number"
-            value={primaryCard?.policyNumber || ''}
+            value={primaryCard?.memberId || ''}
             onChange={(e) => {
               const updated = cards.map(card =>
-                card.isPrimary ? { ...card, policyNumber: e.target.value } : card
+                card.isPrimary ? { ...card, memberId: e.target.value } : card
               );
               if (updated.length === 0) {
                 updated.push({
                   id: Date.now().toString(),
-                  provider: '',
-                  policyNumber: e.target.value,
+                  type: 'primary',
+                  insuranceName: '',
+                  planType: '',
+                  memberId: e.target.value,
                   subscriberName: '',
                   subscriberId: '',
                   relationship: 'self',
                   isPrimary: true,
                   isActive: true
-                });
+                } as any);
               }
               setCards(updated);
             }}
@@ -104,14 +108,16 @@ export function InsuranceCard({ insuranceCards = [], onUpdate }: InsuranceCardPr
               if (updated.length === 0) {
                 updated.push({
                   id: Date.now().toString(),
-                  provider: '',
-                  policyNumber: '',
+                  type: 'primary',
+                  insuranceName: '',
+                  planType: '',
+                  memberId: '',
                   subscriberName: e.target.value,
                   subscriberId: '',
                   relationship: 'self',
                   isPrimary: true,
                   isActive: true
-                });
+                } as any);
               }
               setCards(updated);
             }}
@@ -176,18 +182,18 @@ export function InsuranceCard({ insuranceCards = [], onUpdate }: InsuranceCardPr
         <div className="space-y-2.5">
           <div>
             <div className="text-xs text-blue-200 mb-0.5">Provider</div>
-            <div className="font-semibold text-sm">{primaryCard.provider}</div>
+            <div className="font-semibold text-sm">{primaryCard.insuranceName}</div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <div className="text-xs text-blue-200 mb-0.5">Policy #</div>
-              <div className="font-mono text-xs font-semibold">{primaryCard.policyNumber}</div>
+              <div className="font-mono text-xs font-semibold">{primaryCard.memberId}</div>
             </div>
-            {primaryCard.groupNumber && (
+            {primaryCard.groupId && (
               <div>
                 <div className="text-xs text-blue-200 mb-0.5">Group #</div>
-                <div className="font-mono text-xs font-semibold">{primaryCard.groupNumber}</div>
+                <div className="font-mono text-xs font-semibold">{primaryCard.groupId}</div>
               </div>
             )}
           </div>
@@ -198,11 +204,11 @@ export function InsuranceCard({ insuranceCards = [], onUpdate }: InsuranceCardPr
             <div className="text-xs text-blue-200 capitalize">({primaryCard.relationship})</div>
           </div>
 
-          {primaryCard.expiryDate && (
+          {primaryCard.effectiveEndDate && (
             <div>
               <div className="text-xs text-blue-200 mb-0.5">Valid Until</div>
               <div className="text-xs font-medium">
-                {new Date(primaryCard.expiryDate).toLocaleDateString('en-GB', {
+                {new Date(primaryCard.effectiveEndDate).toLocaleDateString('en-GB', {
                   day: '2-digit',
                   month: 'short',
                   year: 'numeric'

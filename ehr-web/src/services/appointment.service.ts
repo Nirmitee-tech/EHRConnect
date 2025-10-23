@@ -103,7 +103,7 @@ export class AppointmentService {
       const allPractitionerIds = allPractitioners.map((p: any) => p.id).filter(Boolean);
 
       // Fetch all unique practitioners to get their colors
-      const practitionerIds = [...new Set(appointments.map(apt => apt.practitionerId).filter(Boolean))];
+      const practitionerIds = [...new Set(appointments.map(apt => apt.practitionerId).filter((id): id is string => Boolean(id)))];
 
       let allAppointments = [...appointments];
 
@@ -417,7 +417,7 @@ export class AppointmentService {
         )
       );
 
-      practitioners.forEach((practitioner) => {
+      practitioners.forEach((practitioner: any) => {
         if (practitioner) {
           // Extract color from extension
           const colorExtension = practitioner.extension?.find(
@@ -454,7 +454,7 @@ export class AppointmentService {
         )
       );
 
-      practitioners.forEach((practitioner) => {
+      practitioners.forEach((practitioner: any) => {
         if (!practitioner) return;
 
         // Extract vacation/leave data from extension
@@ -565,8 +565,8 @@ export class AppointmentService {
       const fhirAppointment: Partial<FHIRAppointment> = {
         resourceType: 'Appointment',
         status: AppointmentService.mapStatusToFHIR(appointmentData.status || 'scheduled'),
-        start: appointmentData.startTime?.toISOString(),
-        end: appointmentData.endTime?.toISOString(),
+        start: appointmentData.startTime ? new Date(appointmentData.startTime).toISOString() : undefined,
+        end: appointmentData.endTime ? new Date(appointmentData.endTime).toISOString() : undefined,
         minutesDuration: appointmentData.duration,
         comment: appointmentData.reason,
         participant: [
@@ -601,7 +601,7 @@ export class AppointmentService {
   static async updateAppointment(id: string, updates: Partial<Appointment>): Promise<Appointment> {
     try {
       // Build PATCH operations array dynamically based on what's being updated
-      const patchOps: Array<{op: string; path: string; value: any}> = [];
+      const patchOps: any[] = [];
 
       if (updates.status) {
         patchOps.push({
@@ -704,7 +704,8 @@ export class AppointmentService {
       'completed': 'fulfilled',
       'cancelled': 'cancelled',
       'no-show': 'noshow',
-      'rescheduled': 'booked'
+      'rescheduled': 'booked',
+      'waitlist': 'waitlist'
     };
     return statusMap[status] || 'booked';
   }

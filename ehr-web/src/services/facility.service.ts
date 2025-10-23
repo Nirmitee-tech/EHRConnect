@@ -131,7 +131,7 @@ export class FacilityService {
         userId,
         facilityId: createdFacility.id!,
         timestamp: new Date().toISOString(),
-        changes: request as Record<string, unknown>
+        changes: request as unknown as Record<string, unknown>
       });
 
       return createdFacility;
@@ -165,7 +165,7 @@ export class FacilityService {
         userId,
         facilityId: request.id,
         timestamp: new Date().toISOString(),
-        changes: request as Record<string, unknown>
+        changes: request as unknown as Record<string, unknown>
       });
 
       return result;

@@ -22,7 +22,8 @@ export default function AppointmentTypesPage() {
     defaultDuration: 30,
     slotDuration: 60,
     workingHours: { start: '09:00', end: '17:00' },
-    allowedDurations: [15, 30, 45, 60, 90, 120]
+    allowedDurations: [15, 30, 45, 60, 90, 120],
+    autoNavigateToEncounter: true
   });
   const [savingSettings, setSavingSettings] = useState(false);
 

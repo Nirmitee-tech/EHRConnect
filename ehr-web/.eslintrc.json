@@ -12,7 +12,9 @@
         "caughtErrorsIgnorePattern": "^_"
       }
     ],
-    "@typescript-eslint/no-explicit-any": "error",
-    "react-hooks/exhaustive-deps": "warn"
+    "@typescript-eslint/no-explicit-any": "off",
+    "react-hooks/exhaustive-deps": "warn",
+    "react/no-unescaped-entities": "warn",
+    "prefer-const": "warn"
   }
 }

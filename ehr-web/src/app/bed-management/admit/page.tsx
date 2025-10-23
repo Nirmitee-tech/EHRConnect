@@ -303,8 +303,6 @@ export default function AdmitPatientPage() {
 
       const admitRequest: Partial<AdmitPatientRequest> = {
         patientId: selectedPatient.id,
-        patientName: selectedPatient.name,
-        patientMrn: selectedPatient.mrn,
         locationId: locationId,
         admissionDate: `${formData.admissionDate}T${formData.admissionTime}`,
         admissionType: formData.admissionType,

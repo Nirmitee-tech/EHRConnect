@@ -110,8 +110,7 @@ export function MonthView({
                     <div key={apt.id} className="min-h-[60px]">
                       <DetailedAppointmentCard
                         appointment={apt}
-                        onClick={(e) => {
-                          e?.stopPropagation();
+                        onClick={() => {
                           onAppointmentClick?.(apt);
                         }}
                         className="text-[10px]"

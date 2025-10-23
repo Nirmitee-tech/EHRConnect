@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { User, Edit, Calendar, Pill, AlertCircle, Activity, FileText, Loader2, Shield, ChevronLeft, ChevronRight, Plus, X, ChevronDown } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@nirmitee.io/design-system';
 import { useParams } from 'next/navigation';
@@ -25,7 +25,7 @@ import { ProblemDrawer } from './components/drawers/ProblemDrawer';
 import { MedicationDrawer } from './components/drawers/MedicationDrawer';
 import { InsuranceDrawer } from './components/drawers/InsuranceDrawer';
 import { MedicalInfoDrawer } from '@/components/encounters/medical-info-drawer';
-import { PatientDetails, VitalsFormData, ProblemFormData, MedicationFormData } from './components/types';
+import { PatientDetails, VitalsFormData, ProblemFormData, MedicationFormData, SavedSection, TelecomItem, IdentifierItem, FHIRBundleEntry, EncounterFormData } from './components/types';
 
 export default function PatientDetailPage() {
   const params = useParams();
@@ -35,10 +35,9 @@ export default function PatientDetailPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedEncounter, setSelectedEncounter] = useState<string | undefined>(undefined);
   const [openEncounterTabs, setOpenEncounterTabs] = useState<string[]>([]);
-  const [encounterSections, setEncounterSections] = useState<{ [encounterId: string]: string }>({});
   const [openEncounterSubTabs, setOpenEncounterSubTabs] = useState<{ [encounterId: string]: string[] }>({});
   const [activeEncounterSubTab, setActiveEncounterSubTab] = useState<{ [encounterId: string]: string }>({});
-  const [encounterSavedData, setEncounterSavedData] = useState<{ [encounterId: string]: any[] }>({});
+  const [encounterSavedData, setEncounterSavedData] = useState<{ [encounterId: string]: SavedSection[] }>({});
   const [loading, setLoading] = useState(true);
   const [patient, setPatient] = useState<PatientDetails | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -55,6 +54,73 @@ export default function PatientDetailPage() {
 
   // Track which section is being edited (encounterId-sectionIndex)
   const [editingSection, setEditingSection] = useState<{ [encounterId: string]: number | null }>({});
+
+  // Optimized form update helpers - memoized with useCallback
+  const updateSoapForm = useCallback((encounterId: string, field: 'subjective' | 'objective' | 'assessment' | 'plan', value: string) => {
+    setSoapForms(prev => {
+      const current = prev[encounterId] || { subjective: '', objective: '', assessment: '', plan: '' };
+      if (current[field] === value) return prev; // Skip if no change
+      return {
+        ...prev,
+        [encounterId]: {
+          ...current,
+          [field]: value
+        }
+      };
+    });
+  }, []);
+
+  const updateCarePlanForm = useCallback((encounterId: string, field: 'goals' | 'interventions' | 'outcomes', value: string) => {
+    setCarePlanForms(prev => {
+      const current = prev[encounterId] || { goals: '', interventions: '', outcomes: '' };
+      if (current[field] === value) return prev;
+      return {
+        ...prev,
+        [encounterId]: {
+          ...current,
+          [field]: value
+        }
+      };
+    });
+  }, []);
+
+  const updateClinicalInstructionsForm = useCallback((encounterId: string, field: 'patientInstructions' | 'followUpInstructions', value: string) => {
+    setClinicalInstructionsForms(prev => {
+      const current = prev[encounterId] || { patientInstructions: '', followUpInstructions: '' };
+      if (current[field] === value) return prev;
+      return {
+        ...prev,
+        [encounterId]: {
+          ...current,
+          [field]: value
+        }
+      };
+    });
+  }, []);
+
+  const updateClinicalNotesForm = useCallback((encounterId: string, value: string) => {
+    setClinicalNotesForms(prev => {
+      if (prev[encounterId]?.notes === value) return prev;
+      return {
+        ...prev,
+        [encounterId]: { notes: value }
+      };
+    });
+  }, []);
+
+  const updateRosForm = useCallback((encounterId: string, system: string, value: string) => {
+    setRosForms(prev => {
+      const current = prev[encounterId] || {};
+      if (current[system] === value) return prev;
+      return {
+        ...prev,
+        [encounterId]: {
+          ...current,
+          [system]: value
+        }
+      };
+    });
+  }, []);
 
   // Load all data upfront - browser-style tabs
   const [encounters, setEncounters] = useState<any[]>([]);
@@ -75,7 +141,7 @@ export default function PatientDetailPage() {
   const [showInsuranceDrawer, setShowInsuranceDrawer] = useState(false);
 
   // Load ALL data upfront in parallel - browser-style tabs
-  const loadAllPatientData = async () => {
+  const loadAllPatientData = useCallback(async () => {
     if (!patientId) return;
 
     try {
@@ -90,7 +156,7 @@ export default function PatientDetailPage() {
         allergyRes,
         observationRes,
         coverageRes
-      ] = await Promise.all([
+      ] = (await Promise.all([
         fhirService.read('Patient', patientId),
         fhirService.search('Encounter', { patient: patientId, _count: 10, _sort: '-date' }),
         fhirService.search('Condition', { patient: patientId, _count: 20 }),
@@ -98,14 +164,14 @@ export default function PatientDetailPage() {
         fhirService.search('AllergyIntolerance', { patient: patientId, _count: 20 }),
         fhirService.search('Observation', { patient: patientId, _count: 50, _sort: '-date', category: 'vital-signs' }),
         fhirService.search('Coverage', { patient: patientId, _count: 10 })
-      ]);
+      ])) as [any, any, any, any, any, any, any];
 
       // Set patient data
       const name = patientResource.name?.[0];
       const fullName = `${name?.given?.join(' ') || ''} ${name?.family || ''}`.trim();
-      const phone = patientResource.telecom?.find((t: any) => t.system === 'phone')?.value || '-';
-      const email = patientResource.telecom?.find((t: any) => t.system === 'email')?.value || '-';
-      const mrn = patientResource.identifier?.find((id: any) => id.type?.coding?.some((c: any) => c.code === 'MR'))?.value || '-';
+      const phone = patientResource.telecom?.find((t: TelecomItem) => t.system === 'phone')?.value || '-';
+      const email = patientResource.telecom?.find((t: TelecomItem) => t.system === 'email')?.value || '-';
+      const mrn = patientResource.identifier?.find((id: IdentifierItem) => id.type?.coding?.some((c) => c.code === 'MR'))?.value || '-';
 
       const age = patientResource.birthDate
         ? Math.floor((Date.now() - new Date(patientResource.birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
@@ -123,29 +189,143 @@ export default function PatientDetailPage() {
       });
 
       // Set all data - everything is ready
-      setEncounters(encounterRes.entry?.map((e: any) => e.resource) || []);
-      setProblems(conditionRes.entry?.map((e: any) => e.resource) || []);
-      setMedications(medicationRes.entry?.map((e: any) => e.resource) || []);
-      setAllergies(allergyRes.entry?.map((e: any) => e.resource) || []);
-      setObservations(observationRes.entry?.map((e: any) => e.resource) || []);
-      setInsurances(coverageRes.entry?.map((e: any) => e.resource) || []);
+      setEncounters(encounterRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || []);
+      setProblems(conditionRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || []);
+      setMedications(medicationRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || []);
+      setAllergies(allergyRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || []);
+      setObservations(observationRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || []);
+      setInsurances(coverageRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || []);
 
     } catch (error) {
       console.error('Error loading patient data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [patientId]);
 
   useEffect(() => {
     loadAllPatientData();
-  }, [patientId]);
+  }, [loadAllPatientData]);
 
   const refreshData = () => {
     loadAllPatientData();
   };
 
-  const handleStartVisit = async (encounterData: any) => {
+  // Load encounter documentation (DocumentReference resources)
+  const loadEncounterDocumentation = useCallback(async (encounterId: string) => {
+    try {
+      // Search for DocumentReference resources related to this encounter
+      const docRes = await fhirService.search('DocumentReference', {
+        encounter: encounterId,
+        _sort: '-date'
+      });
+
+      const docs = docRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || [];
+      const sections: SavedSection[] = [];
+
+      docs.forEach((doc: any) => {
+        const content = doc.content?.[0];
+        const category = doc.category?.[0]?.coding?.[0]?.code;
+        const author = doc.author?.[0]?.display || 'Unknown';
+        const date = doc.date || new Date().toISOString();
+
+        try {
+          // Parse the data from attachment
+          const data = content?.attachment?.data
+            ? JSON.parse(atob(content.attachment.data))
+            : {};
+
+          sections.push({
+            id: doc.id,
+            title: doc.type?.text || category,
+            type: category,
+            author,
+            date,
+            data,
+            signatures: []
+          });
+        } catch (e) {
+          console.error('Error parsing document:', e);
+        }
+      });
+
+      // Load sections into state
+      setEncounterSavedData(prev => ({
+        ...prev,
+        [encounterId]: sections
+      }));
+    } catch (error) {
+      console.error('Error loading encounter documentation:', error);
+    }
+  }, []);
+
+  // Save section as FHIR DocumentReference
+  const saveDocumentReference = useCallback(async (encounterId: string, section: SavedSection, documentId?: string) => {
+    try {
+      const dataString = JSON.stringify(section.data);
+      const base64Data = btoa(dataString);
+
+      const docResource: Record<string, any> = {
+        resourceType: 'DocumentReference',
+        status: 'current',
+        type: {
+          coding: [{
+            system: 'http://loinc.org',
+            code: section.type === 'soap' ? '34133-9' :
+                  section.type === 'care-plan' ? '18776-5' :
+                  section.type === 'clinical-notes' ? '11506-3' :
+                  section.type === 'clinical-instructions' ? '51847-2' :
+                  section.type === 'review-of-systems' ? '10187-3' : '11506-3',
+            display: section.title
+          }],
+          text: section.title
+        },
+        category: [{
+          coding: [{
+            system: 'http://hl7.org/fhir/us/core/CodeSystem/us-core-documentreference-category',
+            code: section.type,
+            display: section.title
+          }]
+        }],
+        subject: {
+          reference: `Patient/${patientId}`
+        },
+        date: new Date().toISOString(),
+        author: [{
+          display: section.author
+        }],
+        content: [{
+          attachment: {
+            contentType: 'application/json',
+            data: base64Data,
+            title: section.title
+          }
+        }],
+        context: {
+          encounter: [{
+            reference: `Encounter/${encounterId}`
+          }]
+        }
+      };
+
+      if (documentId) {
+        // Update existing document
+        docResource.id = documentId;
+        await fhirService.update({ ...docResource, resourceType: 'DocumentReference', id: documentId });
+      } else {
+        // Create new document
+        await fhirService.create(docResource);
+      }
+
+      // Reload documentation
+      await loadEncounterDocumentation(encounterId);
+    } catch (error) {
+      console.error('Error saving document:', error);
+      throw error;
+    }
+  }, [patientId, loadEncounterDocumentation]);
+
+  const handleStartVisit = async (encounterData: EncounterFormData) => {
     if (!patientId) return;
 
     try {
@@ -518,7 +698,7 @@ export default function PatientDetailPage() {
           onNewVisit={() => setShowEncounterDrawer(true)}
           encounters={encounters}
           selectedEncounter={selectedEncounter}
-          onEncounterSelect={(encounterId) => {
+          onEncounterSelect={async (encounterId) => {
             setSelectedEncounter(encounterId);
             // Add encounter tab if not already open
             if (!openEncounterTabs.includes(encounterId)) {
@@ -526,6 +706,8 @@ export default function PatientDetailPage() {
             }
             // Switch to the encounter tab
             setActiveTab(`encounter-${encounterId}`);
+            // Load encounter documentation
+            await loadEncounterDocumentation(encounterId);
           }}
           allergies={allergies}
           problems={problems}
@@ -969,7 +1151,7 @@ export default function PatientDetailPage() {
                                       if (section.type === 'soap') {
                                         setSoapForms({
                                           ...soapForms,
-                                          [encounterId]: section.data
+                                          [encounterId]: section.data as { subjective: string; objective: string; assessment: string; plan: string }
                                         });
                                         setActiveEncounterSubTab({ ...activeEncounterSubTab, [encounterId]: 'soap' });
                                         // Add tab if not already open
@@ -982,7 +1164,7 @@ export default function PatientDetailPage() {
                                       } else if (section.type === 'care-plan') {
                                         setCarePlanForms({
                                           ...carePlanForms,
-                                          [encounterId]: section.data
+                                          [encounterId]: section.data as { goals: string; interventions: string; outcomes: string }
                                         });
                                         setActiveEncounterSubTab({ ...activeEncounterSubTab, [encounterId]: 'care-plan' });
                                         if (!openEncounterSubTabs[encounterId]?.includes('care-plan')) {
@@ -994,7 +1176,7 @@ export default function PatientDetailPage() {
                                       } else if (section.type === 'clinical-instructions') {
                                         setClinicalInstructionsForms({
                                           ...clinicalInstructionsForms,
-                                          [encounterId]: section.data
+                                          [encounterId]: section.data as { patientInstructions: string; followUpInstructions: string }
                                         });
                                         setActiveEncounterSubTab({ ...activeEncounterSubTab, [encounterId]: 'clinical-instructions' });
                                         if (!openEncounterSubTabs[encounterId]?.includes('clinical-instructions')) {
@@ -1006,7 +1188,7 @@ export default function PatientDetailPage() {
                                       } else if (section.type === 'clinical-notes') {
                                         setClinicalNotesForms({
                                           ...clinicalNotesForms,
-                                          [encounterId]: { notes: section.data }
+                                          [encounterId]: { notes: typeof section.data === 'string' ? section.data : section.data.notes || '' }
                                         });
                                         setActiveEncounterSubTab({ ...activeEncounterSubTab, [encounterId]: 'clinical-notes' });
                                         if (!openEncounterSubTabs[encounterId]?.includes('clinical-notes')) {
@@ -1153,7 +1335,7 @@ export default function PatientDetailPage() {
 
                                   {section.type === 'clinical-notes' && (
                                     <div className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-                                      {section.data}
+                                      {typeof section.data === 'string' ? section.data : section.data.notes || JSON.stringify(section.data, null, 2)}
                                     </div>
                                   )}
 
@@ -1202,10 +1384,7 @@ export default function PatientDetailPage() {
                             <label className="block text-sm font-medium text-gray-700 mb-2">Goals</label>
                             <textarea
                               value={carePlanForms[encounterId]?.goals || ''}
-                              onChange={(e) => setCarePlanForms({
-                                ...carePlanForms,
-                                [encounterId]: { ...(carePlanForms[encounterId] || {}), goals: e.target.value, interventions: carePlanForms[encounterId]?.interventions || '', outcomes: carePlanForms[encounterId]?.outcomes || '' }
-                              })}
+                              onChange={(e) => updateCarePlanForm(encounterId, 'goals', e.target.value)}
                               className="w-full p-3 border border-gray-300 rounded text-sm"
                               rows={4}
                               placeholder="Document patient care goals..."
@@ -1215,10 +1394,7 @@ export default function PatientDetailPage() {
                             <label className="block text-sm font-medium text-gray-700 mb-2">Interventions</label>
                             <textarea
                               value={carePlanForms[encounterId]?.interventions || ''}
-                              onChange={(e) => setCarePlanForms({
-                                ...carePlanForms,
-                                [encounterId]: { ...(carePlanForms[encounterId] || {}), interventions: e.target.value, goals: carePlanForms[encounterId]?.goals || '', outcomes: carePlanForms[encounterId]?.outcomes || '' }
-                              })}
+                              onChange={(e) => updateCarePlanForm(encounterId, 'interventions', e.target.value)}
                               className="w-full p-3 border border-gray-300 rounded text-sm"
                               rows={4}
                               placeholder="Document planned interventions..."
@@ -1228,47 +1404,33 @@ export default function PatientDetailPage() {
                             <label className="block text-sm font-medium text-gray-700 mb-2">Expected Outcomes</label>
                             <textarea
                               value={carePlanForms[encounterId]?.outcomes || ''}
-                              onChange={(e) => setCarePlanForms({
-                                ...carePlanForms,
-                                [encounterId]: { ...(carePlanForms[encounterId] || {}), outcomes: e.target.value, goals: carePlanForms[encounterId]?.goals || '', interventions: carePlanForms[encounterId]?.interventions || '' }
-                              })}
+                              onChange={(e) => updateCarePlanForm(encounterId, 'outcomes', e.target.value)}
                               className="w-full p-3 border border-gray-300 rounded text-sm"
                               rows={3}
                               placeholder="Document expected outcomes..."
                             />
                           </div>
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               const currentData = encounterSavedData[encounterId] || [];
                               const carePlanData = carePlanForms[encounterId] || { goals: '', interventions: '', outcomes: '' };
                               const editingIdx = editingSection[encounterId];
 
-                              if (editingIdx !== null && editingIdx !== undefined) {
-                                const updatedData = [...currentData];
-                                updatedData[editingIdx] = {
-                                  ...updatedData[editingIdx],
-                                  data: carePlanData,
-                                  date: new Date().toISOString()
-                                };
-                                setEncounterSavedData({
-                                  ...encounterSavedData,
-                                  [encounterId]: updatedData
-                                });
-                                setEditingSection({ ...editingSection, [encounterId]: null });
-                              } else {
-                                const newSection = {
-                                  title: 'Care Plan',
-                                  type: 'care-plan',
-                                  author: 'Billy Smith',
-                                  date: new Date().toISOString(),
-                                  data: carePlanData,
-                                  signatures: []
-                                };
-                                setEncounterSavedData({
-                                  ...encounterSavedData,
-                                  [encounterId]: [...currentData, newSection]
-                                });
-                              }
+                              const section = {
+                                title: 'Care Plan',
+                                type: 'care-plan',
+                                author: 'Billy Smith',
+                                date: new Date().toISOString(),
+                                data: carePlanData,
+                                signatures: []
+                              };
+
+                              const documentId = editingIdx !== null && editingIdx !== undefined
+                                ? currentData[editingIdx]?.id
+                                : undefined;
+
+                              await saveDocumentReference(encounterId, section, documentId);
+                              setEditingSection({ ...editingSection, [encounterId]: null });
 
                               setCarePlanForms({
                                 ...carePlanForms,
@@ -1293,10 +1455,7 @@ export default function PatientDetailPage() {
                             <label className="block text-sm font-medium text-gray-700 mb-2">Patient Instructions</label>
                             <textarea
                               value={clinicalInstructionsForms[encounterId]?.patientInstructions || ''}
-                              onChange={(e) => setClinicalInstructionsForms({
-                                ...clinicalInstructionsForms,
-                                [encounterId]: { ...(clinicalInstructionsForms[encounterId] || {}), patientInstructions: e.target.value, followUpInstructions: clinicalInstructionsForms[encounterId]?.followUpInstructions || '' }
-                              })}
+                              onChange={(e) => updateClinicalInstructionsForm(encounterId, 'patientInstructions', e.target.value)}
                               className="w-full p-3 border border-gray-300 rounded text-sm"
                               rows={6}
                               placeholder="Enter instructions for the patient..."
@@ -1306,20 +1465,19 @@ export default function PatientDetailPage() {
                             <label className="block text-sm font-medium text-gray-700 mb-2">Follow-up Instructions</label>
                             <textarea
                               value={clinicalInstructionsForms[encounterId]?.followUpInstructions || ''}
-                              onChange={(e) => setClinicalInstructionsForms({
-                                ...clinicalInstructionsForms,
-                                [encounterId]: { ...(clinicalInstructionsForms[encounterId] || {}), followUpInstructions: e.target.value, patientInstructions: clinicalInstructionsForms[encounterId]?.patientInstructions || '' }
-                              })}
+                              onChange={(e) => updateClinicalInstructionsForm(encounterId, 'followUpInstructions', e.target.value)}
                               className="w-full p-3 border border-gray-300 rounded text-sm"
                               rows={4}
                               placeholder="Enter follow-up instructions..."
                             />
                           </div>
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               const currentData = encounterSavedData[encounterId] || [];
                               const instructionsData = clinicalInstructionsForms[encounterId] || { patientInstructions: '', followUpInstructions: '' };
-                              const newSection = {
+                              const editingIdx = editingSection[encounterId];
+
+                              const section = {
                                 title: 'Clinical Instructions',
                                 type: 'clinical-instructions',
                                 author: 'Billy Smith',
@@ -1328,10 +1486,12 @@ export default function PatientDetailPage() {
                                 signatures: []
                               };
 
-                              setEncounterSavedData({
-                                ...encounterSavedData,
-                                [encounterId]: [...currentData, newSection]
-                              });
+                              const documentId = editingIdx !== null && editingIdx !== undefined
+                                ? currentData[editingIdx]?.id
+                                : undefined;
+
+                              await saveDocumentReference(encounterId, section, documentId);
+                              setEditingSection({ ...editingSection, [encounterId]: null });
 
                               setClinicalInstructionsForms({
                                 ...clinicalInstructionsForms,
@@ -1341,7 +1501,7 @@ export default function PatientDetailPage() {
                             }}
                             className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700"
                           >
-                            Save Instructions
+                            {editingSection[encounterId] !== null && editingSection[encounterId] !== undefined ? 'Update Instructions' : 'Save Instructions'}
                           </button>
                         </div>
                       </div>
@@ -1356,10 +1516,7 @@ export default function PatientDetailPage() {
                             <label className="block text-sm font-medium text-gray-700 mb-2">Progress Notes</label>
                             <textarea
                               value={clinicalNotesForms[encounterId]?.notes || ''}
-                              onChange={(e) => setClinicalNotesForms({
-                                ...clinicalNotesForms,
-                                [encounterId]: { notes: e.target.value }
-                              })}
+                              onChange={(e) => updateClinicalNotesForm(encounterId, e.target.value)}
                               className="w-full p-3 border border-gray-300 rounded text-sm font-mono"
                               rows={12}
                               placeholder="Enter clinical notes..."
@@ -1367,22 +1524,26 @@ export default function PatientDetailPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => {
+                              onClick={async () => {
                                 const currentData = encounterSavedData[encounterId] || [];
                                 const notesData = clinicalNotesForms[encounterId] || { notes: '' };
-                                const newSection = {
+                                const editingIdx = editingSection[encounterId];
+
+                                const section: SavedSection = {
                                   title: 'Clinical Notes',
                                   type: 'clinical-notes',
                                   author: 'Billy Smith',
                                   date: new Date().toISOString(),
-                                  data: notesData.notes,
+                                  data: { notes: notesData.notes },
                                   signatures: []
                                 };
 
-                                setEncounterSavedData({
-                                  ...encounterSavedData,
-                                  [encounterId]: [...currentData, newSection]
-                                });
+                                const documentId = editingIdx !== null && editingIdx !== undefined
+                                  ? currentData[editingIdx]?.id
+                                  : undefined;
+
+                                await saveDocumentReference(encounterId, section, documentId);
+                                setEditingSection({ ...editingSection, [encounterId]: null });
 
                                 setClinicalNotesForms({
                                   ...clinicalNotesForms,
@@ -1392,7 +1553,7 @@ export default function PatientDetailPage() {
                               }}
                               className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700"
                             >
-                              Save Notes
+                              {editingSection[encounterId] !== null && editingSection[encounterId] !== undefined ? 'Update Notes' : 'Save Notes'}
                             </button>
                             <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded text-sm font-medium hover:bg-gray-50">
                               Add Template
@@ -1420,10 +1581,7 @@ export default function PatientDetailPage() {
                               </label>
                               <textarea
                                 value={rosForms[encounterId]?.[system] || ''}
-                                onChange={(e) => setRosForms({
-                                  ...rosForms,
-                                  [encounterId]: { ...(rosForms[encounterId] || {}), [system]: e.target.value }
-                                })}
+                                onChange={(e) => updateRosForm(encounterId, system, e.target.value)}
                                 className="w-full p-2 border border-gray-300 rounded text-xs"
                                 rows={2}
                                 placeholder="Details..."
@@ -1432,14 +1590,15 @@ export default function PatientDetailPage() {
                           ))}
                         </div>
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             const currentData = encounterSavedData[encounterId] || [];
                             const rosData = rosForms[encounterId] || {};
+                            const editingIdx = editingSection[encounterId];
                             const systems = Object.entries(rosData)
-                              .filter(([_, findings]) => findings)
+                              .filter(([, findings]) => findings)
                               .map(([name, findings]) => ({ name, findings }));
 
-                            const newSection = {
+                            const section: SavedSection = {
                               title: 'Review Of Systems',
                               type: 'review-of-systems',
                               author: 'Billy Smith',
@@ -1448,10 +1607,12 @@ export default function PatientDetailPage() {
                               signatures: []
                             };
 
-                            setEncounterSavedData({
-                              ...encounterSavedData,
-                              [encounterId]: [...currentData, newSection]
-                            });
+                            const documentId = editingIdx !== null && editingIdx !== undefined
+                              ? currentData[editingIdx]?.id
+                              : undefined;
+
+                            await saveDocumentReference(encounterId, section, documentId);
+                            setEditingSection({ ...editingSection, [encounterId]: null });
 
                             setRosForms({
                               ...rosForms,
@@ -1461,7 +1622,7 @@ export default function PatientDetailPage() {
                           }}
                           className="mt-4 px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700"
                         >
-                          Save ROS
+                          {editingSection[encounterId] !== null && editingSection[encounterId] !== undefined ? 'Update ROS' : 'Save ROS'}
                         </button>
                       </div>
                     )}
@@ -1475,10 +1636,7 @@ export default function PatientDetailPage() {
                             <label className="block text-sm font-semibold text-gray-900 mb-2">Subjective</label>
                             <textarea
                               value={soapForms[encounterId]?.subjective || ''}
-                              onChange={(e) => setSoapForms({
-                                ...soapForms,
-                                [encounterId]: { ...(soapForms[encounterId] || {}), subjective: e.target.value, objective: soapForms[encounterId]?.objective || '', assessment: soapForms[encounterId]?.assessment || '', plan: soapForms[encounterId]?.plan || '' }
-                              })}
+                              onChange={(e) => updateSoapForm(encounterId, 'subjective', e.target.value)}
                               className="w-full p-3 border border-gray-300 rounded text-sm"
                               rows={4}
                               placeholder="Patient's subjective complaints and history..."
@@ -1488,10 +1646,7 @@ export default function PatientDetailPage() {
                             <label className="block text-sm font-semibold text-gray-900 mb-2">Objective</label>
                             <textarea
                               value={soapForms[encounterId]?.objective || ''}
-                              onChange={(e) => setSoapForms({
-                                ...soapForms,
-                                [encounterId]: { ...(soapForms[encounterId] || {}), objective: e.target.value, subjective: soapForms[encounterId]?.subjective || '', assessment: soapForms[encounterId]?.assessment || '', plan: soapForms[encounterId]?.plan || '' }
-                              })}
+                              onChange={(e) => updateSoapForm(encounterId, 'objective', e.target.value)}
                               className="w-full p-3 border border-gray-300 rounded text-sm"
                               rows={4}
                               placeholder="Clinical findings, vitals, exam results..."
@@ -1501,10 +1656,7 @@ export default function PatientDetailPage() {
                             <label className="block text-sm font-semibold text-gray-900 mb-2">Assessment</label>
                             <textarea
                               value={soapForms[encounterId]?.assessment || ''}
-                              onChange={(e) => setSoapForms({
-                                ...soapForms,
-                                [encounterId]: { ...(soapForms[encounterId] || {}), assessment: e.target.value, subjective: soapForms[encounterId]?.subjective || '', objective: soapForms[encounterId]?.objective || '', plan: soapForms[encounterId]?.plan || '' }
-                              })}
+                              onChange={(e) => updateSoapForm(encounterId, 'assessment', e.target.value)}
                               className="w-full p-3 border border-gray-300 rounded text-sm"
                               rows={4}
                               placeholder="Clinical assessment and diagnosis..."
@@ -1514,49 +1666,36 @@ export default function PatientDetailPage() {
                             <label className="block text-sm font-semibold text-gray-900 mb-2">Plan</label>
                             <textarea
                               value={soapForms[encounterId]?.plan || ''}
-                              onChange={(e) => setSoapForms({
-                                ...soapForms,
-                                [encounterId]: { ...(soapForms[encounterId] || {}), plan: e.target.value, subjective: soapForms[encounterId]?.subjective || '', objective: soapForms[encounterId]?.objective || '', assessment: soapForms[encounterId]?.assessment || '' }
-                              })}
+                              onChange={(e) => updateSoapForm(encounterId, 'plan', e.target.value)}
                               className="w-full p-3 border border-gray-300 rounded text-sm"
                               rows={4}
                               placeholder="Treatment plan and follow-up..."
                             />
                           </div>
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               const currentData = encounterSavedData[encounterId] || [];
                               const soapData = soapForms[encounterId] || { subjective: '', objective: '', assessment: '', plan: '' };
                               const editingIdx = editingSection[encounterId];
 
-                              if (editingIdx !== null && editingIdx !== undefined) {
-                                // Update existing section
-                                const updatedData = [...currentData];
-                                updatedData[editingIdx] = {
-                                  ...updatedData[editingIdx],
-                                  data: soapData,
-                                  date: new Date().toISOString()
-                                };
-                                setEncounterSavedData({
-                                  ...encounterSavedData,
-                                  [encounterId]: updatedData
-                                });
-                                setEditingSection({ ...editingSection, [encounterId]: null });
-                              } else {
-                                // Create new section
-                                const newSection = {
-                                  title: 'SOAP',
-                                  type: 'soap',
-                                  author: 'Billy Smith',
-                                  date: new Date().toISOString(),
-                                  data: soapData,
-                                  signatures: []
-                                };
-                                setEncounterSavedData({
-                                  ...encounterSavedData,
-                                  [encounterId]: [...currentData, newSection]
-                                });
-                              }
+                              const section = {
+                                title: 'SOAP',
+                                type: 'soap',
+                                author: 'Billy Smith',
+                                date: new Date().toISOString(),
+                                data: soapData,
+                                signatures: []
+                              };
+
+                              const documentId = editingIdx !== null && editingIdx !== undefined
+                                ? currentData[editingIdx]?.id
+                                : undefined;
+
+                              // Save to FHIR server
+                              await saveDocumentReference(encounterId, section, documentId);
+
+                              // Clear editing state
+                              setEditingSection({ ...editingSection, [encounterId]: null });
 
                               // Clear form and switch to summary
                               setSoapForms({
@@ -1843,14 +1982,7 @@ export default function PatientDetailPage() {
             <div className="mt-6">
               {patient && (
                 <PatientForm
-                  initialData={{
-                    firstName: patient.name.split(' ')[0] || '',
-                    lastName: patient.name.split(' ').slice(1).join(' ') || '',
-                    dateOfBirth: patient.dob,
-                    gender: patient.gender,
-                    phone: patient.phone !== '-' ? patient.phone : '',
-                    email: patient.email !== '-' ? patient.email : ''
-                  }}
+                  isEditing={true}
                   onSubmit={handleEditPatient}
                   onCancel={() => setShowEditDrawer(false)}
                 />

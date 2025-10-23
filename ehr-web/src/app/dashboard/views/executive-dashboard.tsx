@@ -11,6 +11,14 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ComposedChart
 } from 'recharts'
 
+interface ExecutiveDashboardProps {
+  filters?: {
+    dateRange: string;
+    location: string;
+    department: string;
+  };
+}
+
 const COLORS = {
   primary: '#2563EB',
   success: '#059669',
@@ -52,7 +60,7 @@ const cashFlowData = [
   { week: 'Week 4', inflow: 192000, outflow: 110000 },
 ]
 
-export default function ExecutiveDashboard() {
+export default function ExecutiveDashboard({ filters }: ExecutiveDashboardProps = {}) {
   return (
     <div className="space-y-4">
       {/* KPI Cards with Theme Colors - Extended to 8 */}

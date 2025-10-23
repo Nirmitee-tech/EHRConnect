@@ -132,7 +132,7 @@ export default function ReportsPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary?.totalAdmissions || 0}</div>
+            <div className="text-2xl font-bold">{summary?.total || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">All time</p>
           </CardContent>
         </Card>
@@ -291,7 +291,7 @@ export default function ReportsPage() {
             <div className="space-y-4">
               {wardOccupancy.map((ward) => {
                 const wardRate = ward.totalBeds
-                  ? ((ward.occupiedBeds || 0) / ward.totalBeds) * 100
+                  ? ((ward.occupied || 0) / ward.totalBeds) * 100
                   : 0;
                 return (
                   <div key={ward.wardId} className="space-y-2">
@@ -299,7 +299,7 @@ export default function ReportsPage() {
                       <div>
                         <h4 className="font-semibold">{ward.wardName}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {ward.occupiedBeds || 0} / {ward.totalBeds} beds occupied
+                          {ward.occupied || 0} / {ward.totalBeds} beds occupied
                         </p>
                       </div>
                       <Badge
@@ -346,7 +346,7 @@ export default function ReportsPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between py-2 border-b">
                 <span className="text-sm font-medium">Total Admissions</span>
-                <span className="text-lg font-bold">{summary?.totalAdmissions || 0}</span>
+                <span className="text-lg font-bold">{summary?.total || 0}</span>
               </div>
               <div className="flex items-center justify-between py-2 border-b">
                 <span className="text-sm font-medium">Currently Admitted</span>
@@ -372,7 +372,7 @@ export default function ReportsPage() {
               <div className="flex items-center justify-between py-2 border-b">
                 <span className="text-sm font-medium">Cancelled</span>
                 <span className="text-lg font-bold text-gray-600">
-                  {summary?.cancelled || 0}
+                  N/A
                 </span>
               </div>
               <div className="flex items-center justify-between py-2 border-b">

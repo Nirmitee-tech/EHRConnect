@@ -48,3 +48,37 @@ export interface TabConfig {
   icon: any;
   count?: number;
 }
+
+export interface SavedSection {
+  id?: string;
+  title: string;
+  type: string;
+  author: string;
+  date: string;
+  data: Record<string, any>;
+  signatures: string[];
+}
+
+export interface TelecomItem {
+  system: string;
+  value?: string;
+}
+
+export interface IdentifierItem {
+  type?: {
+    coding?: Array<{
+      code?: string;
+    }>;
+  };
+  value?: string;
+}
+
+export interface FHIRBundleEntry<T> {
+  resource: T;
+}
+
+export interface EncounterFormData {
+  encounterClass: string;
+  practitioner?: string;
+  location?: string;
+}

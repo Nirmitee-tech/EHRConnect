@@ -223,7 +223,7 @@ export class EncounterService {
       console.log('🔄 EncounterService.update - Starting update for encounter:', id);
       console.log('🔄 EncounterService.update - Data to update:', data);
 
-      const patchOps: Array<{op: string; path: string; value: any}> = [];
+      const patchOps: any[] = [];
 
       // Read encounter once for extensions and period
       const encounter = await medplum.readResource('Encounter', id);

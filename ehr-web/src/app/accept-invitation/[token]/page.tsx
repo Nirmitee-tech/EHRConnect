@@ -19,11 +19,12 @@ interface Invitation {
   expires_at: string;
 }
 
-export default function AcceptInvitationPage({ params }: { params: { token: string } }) {
+export default function AcceptInvitationPage({ params }: { params: Promise<{ token: string }> }) {
   const router = useRouter();
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [token, setToken] = useState<string>('');
   const [formData, setFormData] = useState({
     name: '',
     password: '',
@@ -31,12 +32,15 @@ export default function AcceptInvitationPage({ params }: { params: { token: stri
   });
 
   useEffect(() => {
-    loadInvitation();
-  }, []);
+    params.then((p) => {
+      setToken(p.token);
+      loadInvitation(p.token);
+    });
+  }, [params]);
 
-  const loadInvitation = async () => {
+  const loadInvitation = async (tokenValue: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/invitations/${params.token}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/invitations/${tokenValue}`);
       
       if (!response.ok) {
         const data = await response.json();
@@ -66,7 +70,7 @@ export default function AcceptInvitationPage({ params }: { params: { token: stri
     }
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/invitations/${params.token}/accept`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/invitations/${token}/accept`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

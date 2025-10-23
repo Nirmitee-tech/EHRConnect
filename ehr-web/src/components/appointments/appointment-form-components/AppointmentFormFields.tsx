@@ -312,7 +312,7 @@ export function AppointmentFormFields({
                 <span className="font-medium">Working Days: </span>
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
                   .map((day, idx) => {
-                    const schedule = selectedPractitioner.officeHours.find((h: any) => h.dayOfWeek === idx);
+                    const schedule = selectedPractitioner.officeHours?.find((h: any) => h.dayOfWeek === idx);
                     return schedule?.isWorking ? day : null;
                   })
                   .filter(Boolean)
@@ -328,7 +328,7 @@ export function AppointmentFormFields({
                     {new Date(vac.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     {' - '}
                     {new Date(vac.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    {idx < Math.min(selectedPractitioner.vacations.length, 2) - 1 && ', '}
+                    {idx < Math.min(selectedPractitioner.vacations?.length || 0, 2) - 1 && ', '}
                   </span>
                 ))}
               </div>

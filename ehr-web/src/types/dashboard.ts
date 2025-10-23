@@ -1,5 +1,20 @@
 export type DashboardDataMode = 'actual' | 'demo';
 
+export interface DashboardChart {
+  type: 'line' | 'bar' | 'pie' | 'area' | 'doughnut';
+  data: {
+    labels: string[];
+    datasets: {
+      label: string;
+      data: number[];
+      borderColor?: string | string[];
+      backgroundColor?: string | string[];
+      [key: string]: any;
+    }[];
+  };
+  options?: any;
+}
+
 export interface DashboardSummaryMetric {
   id: string;
   title: string;

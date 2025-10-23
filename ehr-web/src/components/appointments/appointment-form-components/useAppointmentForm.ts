@@ -146,12 +146,12 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
     const startDate = new Date(appointment.startTime);
     setFormData({
       centerId: '',
-      doctorId: appointment.practitionerId,
+      doctorId: appointment.practitionerId || '',
       doctorName: appointment.practitionerName,
-      patientId: appointment.patientId,
+      patientId: appointment.patientId || '',
       patientName: appointment.patientName,
       operatory: '',
-      treatmentCategory: appointment.appointmentType,
+      treatmentCategory: appointment.appointmentType || '',
       date: startDate.toISOString().split('T')[0],
       time: startDate.toTimeString().substring(0, 5),
       durationHours: Math.floor(appointment.duration / 60),

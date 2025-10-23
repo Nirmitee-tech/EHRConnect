@@ -48,7 +48,15 @@ const providerProductivity = [
   { name: 'Dr. Davis', patients: 725, visits: 215, rvu: 2980 },
 ]
 
-export default function ClinicalDashboard() {
+interface ClinicalDashboardProps {
+  filters?: {
+    dateRange: string;
+    location: string;
+    department: string;
+  };
+}
+
+export default function ClinicalDashboard({ filters }: ClinicalDashboardProps = {}) {
   return (
     <div className="space-y-4">
       {/* Clinical KPI Cards - Extended to 8 */}

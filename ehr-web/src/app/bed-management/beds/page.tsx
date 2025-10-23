@@ -201,7 +201,9 @@ export default function BedsPage() {
 
     try {
       if (editingBed) {
-        await bedManagementService.updateBed(orgId, userId || undefined, editingBed.id, formData);
+        // TODO: Implement updateBed in bed-management service
+        alert('Update bed functionality not yet implemented');
+        // await bedManagementService.updateBed(orgId, userId || undefined, editingBed.id, formData);
       } else {
         await bedManagementService.createBed(
           orgId,
@@ -222,8 +224,10 @@ export default function BedsPage() {
     if (!confirm('Are you sure you want to delete this bed?')) return;
 
     try {
-      await bedManagementService.deleteBed(orgId, userId || undefined, bedId);
-      loadBeds();
+      // TODO: Implement deleteBed in bed-management service
+      alert('Delete bed functionality not yet implemented');
+      // await bedManagementService.deleteBed(orgId, userId || undefined, bedId);
+      // loadBeds();
     } catch (error: any) {
       console.error('Error deleting bed:', error);
       alert(error.message || 'Failed to delete bed');

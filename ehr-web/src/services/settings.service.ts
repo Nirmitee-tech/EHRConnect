@@ -140,7 +140,10 @@ export class SettingsService {
       },
       allowedDurations: getArrayValue('allowedDurations').length > 0
         ? getArrayValue('allowedDurations')
-        : DEFAULT_APPOINTMENT_SETTINGS.allowedDurations
+        : DEFAULT_APPOINTMENT_SETTINGS.allowedDurations,
+      autoNavigateToEncounter: getValue('autoNavigateToEncounter') !== undefined
+        ? getValue('autoNavigateToEncounter') === 'true' || getValue('autoNavigateToEncounter') === true
+        : DEFAULT_APPOINTMENT_SETTINGS.autoNavigateToEncounter
     };
   }
 

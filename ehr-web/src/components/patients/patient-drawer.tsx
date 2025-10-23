@@ -65,7 +65,7 @@ export function PatientDrawer({
 
           setCreatedPatient({
             id: patientId,
-            name: updateData.firstName,
+            name: updateData.firstName || '',
             age,
             gender: updateData.gender,
             mrn: updateData.mrn || undefined,

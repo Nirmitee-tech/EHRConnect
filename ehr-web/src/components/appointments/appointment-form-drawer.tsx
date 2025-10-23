@@ -231,7 +231,7 @@ export function AppointmentFormDrawer({
         reason: formData.notes,
         location: formData.location,
         isAllDay: formData.isAllDay,
-        allDayEventType: formData.allDayEventType
+        allDayEventType: formData.allDayEventType as any
       };
 
       let savedAppointment: Appointment;

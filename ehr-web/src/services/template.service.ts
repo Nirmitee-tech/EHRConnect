@@ -1,4 +1,55 @@
+// @ts-check
 import { medplum } from '@/lib/medplum';
+
+// FHIR Questionnaire interfaces
+interface QuestionnaireExtension {
+  url: string;
+  valueString?: string;
+  valueInteger?: number;
+}
+
+interface QuestionnaireTag {
+  system: string;
+  code: string;
+  display: string;
+}
+
+interface QuestionnaireUseContext {
+  code: {
+    system: string;
+    code: string;
+    display: string;
+  };
+  valueCodeableConcept?: {
+    text: string;
+  };
+}
+
+interface QuestionnaireMeta {
+  lastUpdated?: string;
+  tag?: QuestionnaireTag[];
+}
+
+// Patch operation types
+type PatchValue = string | number | boolean | QuestionnaireTag[] | QuestionnaireUseContext[] | QuestionnaireExtension[];
+
+interface PatchOperation {
+  op: 'add' | 'remove' | 'replace' | 'copy' | 'move' | 'test';
+  path: string;
+  value: PatchValue;
+}
+
+interface FHIRQuestionnaire {
+  id?: string;
+  resourceType: 'Questionnaire';
+  status: string;
+  title?: string;
+  description?: string;
+  date?: string;
+  extension?: QuestionnaireExtension[];
+  useContext?: QuestionnaireUseContext[];
+  meta?: QuestionnaireMeta;
+}
 
 export interface ClinicalTemplate {
   id: string;
@@ -31,13 +82,13 @@ export class TemplateService {
       console.log(`📋 Found ${questionnaires.length} total questionnaires`);
 
       // Filter by category using extension (more reliable than tags)
-      const filtered = questionnaires.filter((q: any) => {
-        const categoryExt = q.extension?.find((ext: any) => ext.url === 'category');
+      const filtered = questionnaires.filter((q: FHIRQuestionnaire) => {
+        const categoryExt = q.extension?.find((ext: QuestionnaireExtension) => ext.url === 'category');
         const templateCategory = categoryExt?.valueString;
 
         // Also check meta tags as fallback
         const tags = q.meta?.tag || [];
-        const hasMatchingTag = tags.some((tag: any) => tag.code === `template-${category}`);
+        const hasMatchingTag = tags.some((tag: QuestionnaireTag) => tag.code === `template-${category}`);
 
         const matches = templateCategory === category || hasMatchingTag;
 
@@ -50,13 +101,13 @@ export class TemplateService {
 
       console.log(`📋 After filtering: ${filtered.length} templates match category: ${category}`);
 
-      return filtered.map((q: any) => ({
-        id: q.id,
+      return filtered.map((q: FHIRQuestionnaire) => ({
+        id: q.id!,
         name: q.title || 'Untitled Template',
         category: category,
         content: q.description || '',
-        tags: q.useContext?.map((uc: any) => uc.valueCodeableConcept?.text).filter(Boolean) || [],
-        usageCount: q.extension?.find((ext: any) => ext.url === 'usageCount')?.valueInteger || 0,
+        tags: q.useContext?.map((uc: QuestionnaireUseContext) => uc.valueCodeableConcept?.text).filter((text): text is string => Boolean(text)) || [],
+        usageCount: q.extension?.find((ext: QuestionnaireExtension) => ext.url === 'usageCount')?.valueInteger || 0,
         createdAt: new Date(q.meta?.lastUpdated || q.date || new Date()),
         updatedAt: new Date(q.meta?.lastUpdated || new Date())
       }));
@@ -105,12 +156,12 @@ export class TemplateService {
         date: new Date().toISOString()
       };
 
-      const created = await medplum.createResource(questionnaire as any);
+      const created = await medplum.createResource(questionnaire as FHIRQuestionnaire);
       console.log(`✅ Template created with ID: ${created.id}`);
 
       // Now add the tag using PATCH
       try {
-        const patchOps = [
+        const patchOps: PatchOperation[] = [
           {
             op: 'add',
             path: '/meta',
@@ -152,19 +203,19 @@ export class TemplateService {
    */
   static async updateTemplate(id: string, updates: Partial<ClinicalTemplate>): Promise<void> {
     try {
-      const patchOps = [];
+      const patchOps: PatchOperation[] = [];
 
       if (updates.name) {
-        patchOps.push({ op: 'replace', path: '/title', value: updates.name });
+        patchOps.push({ op: 'replace' as const, path: '/title', value: updates.name });
       }
 
       if (updates.content !== undefined) {
-        patchOps.push({ op: 'replace', path: '/description', value: updates.content });
+        patchOps.push({ op: 'replace' as const, path: '/description', value: updates.content });
       }
 
       if (updates.tags) {
         patchOps.push({
-          op: 'replace',
+          op: 'replace' as const,
           path: '/useContext',
           value: updates.tags.map(tag => ({
             code: {
@@ -206,10 +257,10 @@ export class TemplateService {
   static async incrementUsageCount(id: string): Promise<void> {
     try {
       const template = await medplum.readResource('Questionnaire', id);
-      const currentCount = (template as any).extension?.find((ext: any) => ext.url === 'usageCount')?.valueInteger || 0;
+      const currentCount = (template as FHIRQuestionnaire).extension?.find((ext: QuestionnaireExtension) => ext.url === 'usageCount')?.valueInteger || 0;
 
-      const extensions = (template as any).extension || [];
-      const usageCountIndex = extensions.findIndex((ext: any) => ext.url === 'usageCount');
+      const extensions = (template as FHIRQuestionnaire).extension || [];
+      const usageCountIndex = extensions.findIndex((ext: QuestionnaireExtension) => ext.url === 'usageCount');
 
       if (usageCountIndex >= 0) {
         extensions[usageCountIndex].valueInteger = currentCount + 1;
@@ -218,7 +269,7 @@ export class TemplateService {
       }
 
       await medplum.patchResource('Questionnaire', id, [
-        { op: 'replace', path: '/extension', value: extensions }
+        { op: 'replace' as const, path: '/extension', value: extensions }
       ]);
 
       console.log(`✅ Incremented usage count for template ${id}: ${currentCount + 1}`);
