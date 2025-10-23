@@ -148,21 +148,21 @@ export function ClinicalInstructionsSection({
 
   const getPriorityColor = (priority?: string) => {
     switch (priority) {
-      case 'high': return 'text-red-600 bg-red-100';
-      case 'medium': return 'text-yellow-600 bg-yellow-100';
-      case 'low': return 'text-green-600 bg-green-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'high': return 'text-red-700 bg-red-50 border border-red-200';
+      case 'medium': return 'text-orange-700 bg-orange-50 border border-orange-200';
+      case 'low': return 'text-blue-700 bg-blue-50 border border-blue-200';
+      default: return 'text-gray-700 bg-gray-50 border border-gray-200';
     }
   };
 
   const getCategoryColor = (category?: string) => {
     switch (category) {
-      case 'pre-procedure': return 'bg-blue-100 text-blue-800';
-      case 'post-procedure': return 'bg-purple-100 text-purple-800';
-      case 'medication': return 'bg-pink-100 text-pink-800';
-      case 'emergency': return 'bg-red-100 text-red-800';
-      case 'follow-up': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pre-procedure': return 'bg-blue-50 text-blue-700 border border-blue-200';
+      case 'post-procedure': return 'bg-indigo-50 text-indigo-700 border border-indigo-200';
+      case 'medication': return 'bg-purple-50 text-purple-700 border border-purple-200';
+      case 'emergency': return 'bg-red-50 text-red-700 border border-red-200';
+      case 'follow-up': return 'bg-teal-50 text-teal-700 border border-teal-200';
+      default: return 'bg-gray-50 text-gray-700 border border-gray-200';
     }
   };
 
@@ -217,10 +217,10 @@ export function ClinicalInstructionsSection({
 
         {items.map((item, index) => (
           editingItem?.id === item.id && !isAddingItem ? (
-            <div key={item.id} className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 space-y-3">
+            <div key={item.id} className="bg-white border-2 border-gray-300 rounded-lg p-4 space-y-3 shadow-sm">
               <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-blue-600" />
-                <span className="text-sm font-semibold text-blue-900">Editing Clinical Instruction #{index + 1}</span>
+                <FileText className="h-5 w-5 text-gray-600" />
+                <span className="text-sm font-semibold text-gray-900">Editing Clinical Instruction #{index + 1}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -285,7 +285,7 @@ export function ClinicalInstructionsSection({
                     <button
                       key={idx}
                       onClick={() => handleUseTemplate(template)}
-                      className="text-xs px-3 py-2 bg-white border border-gray-300 rounded hover:bg-blue-50 hover:border-blue-300 transition-colors text-left"
+                      className="text-xs px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 hover:border-gray-400 transition-colors text-left"
                     >
                       <span className={`inline-block px-2 py-0.5 rounded text-xs mb-1 ${getCategoryColor(template.category)}`}>
                         {template.category}
@@ -296,22 +296,22 @@ export function ClinicalInstructionsSection({
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-blue-200">
-                <button
-                  onClick={handleSaveItem}
-                  disabled={loading}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-1.5 font-medium transition-colors disabled:opacity-50"
-                >
-                  <Save className="h-4 w-4" />
-                  {loading ? 'Saving...' : 'Save'}
-                </button>
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
                 <button
                   onClick={handleCancelEdit}
                   disabled={loading}
-                  className="px-4 py-2 bg-gray-400 text-white rounded-lg text-sm hover:bg-gray-500 flex items-center gap-1.5 font-medium transition-colors"
+                  className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 flex items-center gap-1.5 transition-colors"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                   Cancel
+                </button>
+                <button
+                  onClick={handleSaveItem}
+                  disabled={loading}
+                  className="px-3 py-1.5 bg-gray-900 text-white rounded text-sm hover:bg-gray-800 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  {loading ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </div>
@@ -364,10 +364,10 @@ export function ClinicalInstructionsSection({
 
         {/* Add new item form */}
         {isAddingItem && editingItem && (
-          <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4 space-y-3">
+          <div className="bg-white border-2 border-gray-300 rounded-lg p-4 space-y-3 shadow-sm">
             <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-green-600" />
-              <span className="text-sm font-semibold text-green-900">New Clinical Instruction</span>
+              <FileText className="h-5 w-5 text-gray-600" />
+              <span className="text-sm font-semibold text-gray-900">New Clinical Instruction</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -380,7 +380,7 @@ export function ClinicalInstructionsSection({
                 <select
                   value={editingItem.category || 'general'}
                   onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value as InstructionCategory })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                 >
                   <option value="general">General</option>
                   <option value="pre-procedure">Pre-Procedure</option>
@@ -400,7 +400,7 @@ export function ClinicalInstructionsSection({
                 <select
                   value={editingItem.priority || 'medium'}
                   onChange={(e) => setEditingItem({ ...editingItem, priority: e.target.value as 'high' | 'medium' | 'low' })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                 >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
@@ -433,7 +433,7 @@ export function ClinicalInstructionsSection({
                   <button
                     key={idx}
                     onClick={() => handleUseTemplate(template)}
-                    className="text-xs px-3 py-2 bg-white border border-gray-300 rounded hover:bg-green-50 hover:border-green-300 transition-colors text-left"
+                    className="text-xs px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 hover:border-gray-400 transition-colors text-left"
                   >
                     <span className={`inline-block px-2 py-0.5 rounded text-xs mb-1 ${getCategoryColor(template.category)}`}>
                       {template.category}
@@ -444,22 +444,22 @@ export function ClinicalInstructionsSection({
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-green-200">
-              <button
-                onClick={handleSaveItem}
-                disabled={loading}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-1.5 font-medium transition-colors disabled:opacity-50"
-              >
-                <Save className="h-4 w-4" />
-                {loading ? 'Saving...' : 'Save'}
-              </button>
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
               <button
                 onClick={handleCancelEdit}
                 disabled={loading}
-                className="px-4 py-2 bg-gray-400 text-white rounded-lg text-sm hover:bg-gray-500 flex items-center gap-1.5 font-medium transition-colors"
+                className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 flex items-center gap-1.5 transition-colors"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5" />
                 Cancel
+              </button>
+              <button
+                onClick={handleSaveItem}
+                disabled={loading}
+                className="px-3 py-1.5 bg-gray-900 text-white rounded text-sm hover:bg-gray-800 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              >
+                <Save className="h-3.5 w-3.5" />
+                {loading ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>
@@ -468,11 +468,11 @@ export function ClinicalInstructionsSection({
 
       {/* Summary */}
       {items.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-900">
+              <FileText className="h-4 w-4 text-gray-600" />
+              <span className="text-sm font-medium text-gray-900">
                 Total Clinical Instructions: <span className="text-lg font-bold">{items.length}</span>
               </span>
             </div>

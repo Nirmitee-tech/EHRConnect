@@ -257,8 +257,8 @@ export class EncounterService {
         });
       }
 
-      // Handle vitals, clinical notes, findings, investigation, diagnosis in extensions
-      if (data.vitals || data.clinicalNotes !== undefined || data.findingsText !== undefined || data.investigationsText !== undefined || data.diagnosesText !== undefined) {
+      // Handle vitals, clinical notes, findings, investigation, diagnosis, clinical notes list in extensions
+      if (data.vitals || data.clinicalNotes !== undefined || data.clinicalNotesList !== undefined || data.findingsText !== undefined || data.investigationsText !== undefined || data.diagnosesText !== undefined) {
         const extensions = (encounter as any).extension || [];
 
         // Update or add vitals extension
@@ -341,6 +341,22 @@ export class EncounterService {
             extensions[diagnosisExtIndex] = diagnosisExt;
           } else {
             extensions.push(diagnosisExt);
+          }
+        }
+
+        // Update or add clinical notes list extension
+        if (data.clinicalNotesList !== undefined) {
+          console.log('📋 EncounterService.update - Saving clinical notes list:', data.clinicalNotesList);
+          const notesListExtIndex = extensions.findIndex((ext: any) => ext.url === 'clinicalNotesList');
+          const notesListExt = {
+            url: 'clinicalNotesList',
+            valueString: JSON.stringify(data.clinicalNotesList)
+          };
+
+          if (notesListExtIndex >= 0) {
+            extensions[notesListExtIndex] = notesListExt;
+          } else {
+            extensions.push(notesListExt);
           }
         }
 
@@ -718,6 +734,10 @@ export class EncounterService {
     const diagnosesExt = (fhir as any).extension?.find((ext: any) => ext.url === 'diagnoses');
     const diagnosesText = diagnosesExt?.valueString;
 
+    // Extract clinical notes list from extensions
+    const notesListExt = (fhir as any).extension?.find((ext: any) => ext.url === 'clinicalNotesList');
+    const clinicalNotesList = notesListExt?.valueString ? JSON.parse(notesListExt.valueString) : undefined;
+
     return {
       id: fhir.id!,
       appointmentId: appointmentRef?.split('/')[1],
@@ -737,6 +757,7 @@ export class EncounterService {
       location: fhir.location?.[0]?.location?.display,
       vitals,
       clinicalNotes,
+      clinicalNotesList,
       findingsText,
       investigationsText,
       diagnosesText,

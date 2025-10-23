@@ -38,8 +38,9 @@ export default function PatientDetailPage() {
   const patientId = params?.id as string;
   const { openPatientEditTab } = useTabNavigation();
 
-  // Get encounterId from query params if present
+  // Get encounterId and tab from query params if present
   const encounterIdFromQuery = searchParams.get('encounterId');
+  const tabFromQuery = searchParams.get('tab'); // e.g., ?tab=care-plan
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedEncounter, setSelectedEncounter] = useState<string | undefined>(encounterIdFromQuery || undefined);
@@ -222,7 +223,7 @@ export default function PatientDetailPage() {
     loadAllPatientData();
   }, [loadAllPatientData]);
 
-  // Handle encounterId from query params - auto-select and open that encounter
+  // Handle encounterId and tab from query params - auto-select and open that encounter and tab
   useEffect(() => {
     if (encounterIdFromQuery && patient && !openEncounterTabs.includes(encounterIdFromQuery)) {
       // Switch to encounters tab
@@ -233,8 +234,23 @@ export default function PatientDetailPage() {
 
       // Set it as the selected encounter
       setSelectedEncounter(encounterIdFromQuery);
+
+      // If a specific tab is requested, open and activate it
+      if (tabFromQuery) {
+        // Open the sub-tab if not already open
+        setOpenEncounterSubTabs(prev => ({
+          ...prev,
+          [encounterIdFromQuery]: [...(prev[encounterIdFromQuery] || []), tabFromQuery]
+        }));
+
+        // Set it as the active sub-tab
+        setActiveEncounterSubTab(prev => ({
+          ...prev,
+          [encounterIdFromQuery]: tabFromQuery
+        }));
+      }
     }
-  }, [encounterIdFromQuery, patient, openEncounterTabs]);
+  }, [encounterIdFromQuery, tabFromQuery, patient, openEncounterTabs]);
 
   const refreshData = () => {
     loadAllPatientData();

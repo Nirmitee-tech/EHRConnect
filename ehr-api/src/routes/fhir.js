@@ -6,6 +6,7 @@ const router = express.Router();
 const patientController = require('../controllers/patient');
 const organizationController = require('../controllers/organization');
 const practitionerController = require('../controllers/practitioner');
+const appointmentController = require('../controllers/appointment');
 
 // Helper function to validate FHIR JSON structure
 function validateFHIRResource(resourceType, resource) {
@@ -183,6 +184,7 @@ function createResourceRoutes(resourceType, controller) {
 createResourceRoutes('Patient', patientController);
 createResourceRoutes('Organization', organizationController);
 createResourceRoutes('Practitioner', practitionerController);
+createResourceRoutes('Appointment', appointmentController);
 
 // Generic resource operations for any resource type
 router.get('/:resourceType', async (req, res) => {

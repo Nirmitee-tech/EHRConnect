@@ -6,8 +6,11 @@ import {
   CheckCircle,
   XCircle,
   Loader,
-  ExternalLink
+  ExternalLink,
+  Phone,
+  ArrowRight
 } from 'lucide-react';
+import Link from 'next/link';
 import {
   IntegrationCategory,
   IntegrationVendor,
@@ -190,6 +193,33 @@ export default function IntegrationsPage() {
                 <span className="font-semibold text-gray-900">{activeIntegrationsCount}</span> active
               </div>
             )}
+          </div>
+
+          {/* VAPI Integration Banner */}
+          <div className="mb-6">
+            <Link href="/integrations/vapi-docs">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 hover:shadow-md transition-all cursor-pointer group">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-blue-600 rounded-lg p-3 group-hover:scale-110 transition-transform">
+                      <Phone className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                        Voice Assistant / VAPI Integration
+                        <span className="text-xs font-normal bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                          No Auth Required
+                        </span>
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Complete API documentation for voice-based appointment booking. Get curl examples, test workflows, and integration guides.
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </Link>
           </div>
 
           {/* Search and Filter */}

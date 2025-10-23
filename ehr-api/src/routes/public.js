@@ -1,0 +1,1192 @@
+const express = require('express');
+const { v4: uuidv4 } = require('uuid');
+const router = express.Router();
+
+// Controllers
+const patientController = require('../controllers/patient');
+const appointmentController = require('../controllers/appointment');
+const practitionerController = require('../controllers/practitioner');
+
+// Helper function to create FHIR OperationOutcome for errors
+function createOperationOutcome(severity, code, message) {
+  return {
+    resourceType: 'OperationOutcome',
+    issue: [{
+      severity,
+      code,
+      details: { text: message }
+    }]
+  };
+}
+
+// Middleware to extract and validate org_id
+function extractOrgId(req, res, next) {
+  const orgId = req.query.org_id || req.body.org_id || req.headers['x-org-id'];
+
+  if (!orgId) {
+    return res.status(400).json({
+      success: false,
+      error: 'org_id is required. Please provide org_id as a query parameter, in the request body, or as x-org-id header.',
+      example: '/api/public/v2/practitioners?org_id=YOUR_ORG_ID'
+    });
+  }
+
+  req.orgId = orgId;
+  next();
+}
+
+// Helper to filter resources by org
+async function filterByOrg(db, resourceType, orgId) {
+  const sql = `
+    SELECT resource_data
+    FROM fhir_resources
+    WHERE resource_type = $1
+      AND deleted = FALSE
+      AND (
+        resource_data->'managingOrganization'->>'reference' = $2
+        OR resource_data->'managingOrganization'->>'reference' = $3
+      )
+    ORDER BY last_updated DESC
+    LIMIT 100
+  `;
+
+  const { rows } = await db.query(sql, [resourceType, `Organization/${orgId}`, orgId]);
+  return rows.map(row => row.resource_data);
+}
+
+// Helper to calculate slots for a single practitioner
+async function calculatePractitionerSlots(db, practitioner, date) {
+  // Parse office hours from extension
+  const officeHoursExt = practitioner.extension?.find(e => e.url?.includes('office-hours'));
+  let officeHours = [];
+  if (officeHoursExt && officeHoursExt.valueString) {
+    try {
+      officeHours = JSON.parse(officeHoursExt.valueString);
+    } catch (e) {
+      console.error('Error parsing office hours:', e);
+    }
+  }
+
+  // Get day of week for the requested date
+  const requestDate = new Date(date);
+  const dayOfWeek = requestDate.getDay();
+  const daySchedule = officeHours.find(h => h.dayOfWeek === dayOfWeek);
+
+  if (!daySchedule || !daySchedule.isWorking) {
+    return {
+      practitionerId: practitioner.id,
+      practitionerName: practitioner.name?.[0] ?
+        `${practitioner.name[0].given?.join(' ') || ''} ${practitioner.name[0].family || ''}`.trim() : 'Unknown',
+      availableSlots: [],
+      isWorking: false
+    };
+  }
+
+  // Get existing appointments for this practitioner on this date
+  const existingAppointments = await db.query(`
+    SELECT resource_data
+    FROM fhir_resources
+    WHERE resource_type = 'Appointment'
+      AND deleted = FALSE
+      AND DATE(resource_data->>'start') = $1
+      AND resource_data->'participant' @> $2::jsonb
+      AND resource_data->>'status' NOT IN ('cancelled', 'noshow')
+  `, [date, JSON.stringify([{ actor: { reference: `Practitioner/${practitioner.id}` } }])]);
+
+  const bookedSlots = existingAppointments.rows.map(row => ({
+    start: new Date(row.resource_data.start),
+    end: new Date(row.resource_data.end || new Date(row.resource_data.start).getTime() + 30 * 60000)
+  }));
+
+  // Generate available slots (30-minute intervals)
+  const availableSlots = [];
+  const [startHour, startMin] = daySchedule.startTime.split(':').map(Number);
+  const [endHour, endMin] = daySchedule.endTime.split(':').map(Number);
+
+  const startTime = new Date(date);
+  startTime.setHours(startHour, startMin, 0, 0);
+
+  const endTime = new Date(date);
+  endTime.setHours(endHour, endMin, 0, 0);
+
+  let currentSlot = new Date(startTime);
+  const slotDuration = 30; // minutes
+
+  while (currentSlot < endTime) {
+    const slotEnd = new Date(currentSlot.getTime() + slotDuration * 60000);
+
+    // Check if this slot overlaps with any booked appointments
+    const isBooked = bookedSlots.some(booked =>
+      (currentSlot >= booked.start && currentSlot < booked.end) ||
+      (slotEnd > booked.start && slotEnd <= booked.end) ||
+      (currentSlot <= booked.start && slotEnd >= booked.end)
+    );
+
+    if (!isBooked) {
+      availableSlots.push({
+        start: currentSlot.toISOString(),
+        end: slotEnd.toISOString(),
+        duration: slotDuration
+      });
+    }
+
+    currentSlot = slotEnd;
+  }
+
+  return {
+    practitionerId: practitioner.id,
+    practitionerName: practitioner.name?.[0] ?
+      `${practitioner.name[0].given?.join(' ') || ''} ${practitioner.name[0].family || ''}`.trim() : 'Unknown',
+    specialty: practitioner.qualification?.[0]?.code?.coding?.[0]?.display,
+    phone: practitioner.telecom?.find(t => t.system === 'phone')?.value,
+    workingHours: {
+      start: daySchedule.startTime,
+      end: daySchedule.endTime
+    },
+    availableSlots: availableSlots,
+    totalSlots: availableSlots.length,
+    isWorking: true
+  };
+}
+
+// Helper to get slots for all practitioners
+async function getAllPractitionersSlots(req, res, date) {
+  try {
+    // Get all active practitioners
+    const sql = `
+      SELECT resource_data
+      FROM fhir_resources
+      WHERE resource_type = 'Practitioner'
+        AND deleted = FALSE
+        AND (resource_data->>'active' = 'true' OR resource_data->>'active' IS NULL)
+      ORDER BY last_updated DESC
+      LIMIT 100
+    `;
+    const { rows } = await req.db.query(sql);
+    const practitioners = rows.map(row => row.resource_data);
+
+    // Calculate slots for each practitioner
+    const practitionerSlots = await Promise.all(
+      practitioners.map(practitioner => calculatePractitionerSlots(req.db, practitioner, date))
+    );
+
+    // Filter to only practitioners who are working and have slots
+    const workingPractitioners = practitionerSlots.filter(p => p.isWorking && p.totalSlots > 0);
+
+    // Calculate total slots across all practitioners
+    const totalSlots = workingPractitioners.reduce((sum, p) => sum + p.totalSlots, 0);
+
+    res.json({
+      success: true,
+      orgId: req.orgId,
+      date: date,
+      totalPractitioners: practitioners.length,
+      workingPractitioners: workingPractitioners.length,
+      totalAvailableSlots: totalSlots,
+      practitioners: workingPractitioners
+    });
+  } catch (error) {
+    console.error('Error fetching slots for all practitioners:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+// ==================== PATIENT ENDPOINTS ====================
+
+// Create a new patient
+// POST /api/public/patients
+router.post('/patients', async (req, res) => {
+  try {
+    const patient = await patientController.create(req.db, req.body);
+    res.status(201).json({
+      success: true,
+      data: patient
+    });
+  } catch (error) {
+    console.error('Error creating patient:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message,
+      operationOutcome: createOperationOutcome('error', 'invalid', error.message)
+    });
+  }
+});
+
+// Get all patients (with optional search)
+// GET /api/public/patients?family=Smith&given=John
+router.get('/patients', async (req, res) => {
+  try {
+    const patients = await patientController.search(req.db, req.query);
+    res.json({
+      success: true,
+      count: patients.length,
+      data: patients
+    });
+  } catch (error) {
+    console.error('Error searching patients:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get a specific patient by ID
+// GET /api/public/patients/:id
+router.get('/patients/:id', async (req, res) => {
+  try {
+    const patient = await patientController.read(req.db, req.params.id);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient not found',
+        operationOutcome: createOperationOutcome('error', 'not-found', `Patient with id ${req.params.id} not found`)
+      });
+    }
+    res.json({
+      success: true,
+      data: patient
+    });
+  } catch (error) {
+    console.error('Error reading patient:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Update a patient
+// PUT /api/public/patients/:id
+router.put('/patients/:id', async (req, res) => {
+  try {
+    const updatedPatient = await patientController.update(req.db, req.params.id, req.body);
+    res.json({
+      success: true,
+      data: updatedPatient
+    });
+  } catch (error) {
+    console.error('Error updating patient:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ==================== APPOINTMENT ENDPOINTS ====================
+
+// Create a new appointment
+// POST /api/public/appointments
+router.post('/appointments', async (req, res) => {
+  try {
+    const appointment = await appointmentController.create(req.db, req.body);
+    res.status(201).json({
+      success: true,
+      data: appointment
+    });
+  } catch (error) {
+    console.error('Error creating appointment:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message,
+      operationOutcome: createOperationOutcome('error', 'invalid', error.message)
+    });
+  }
+});
+
+// Get all appointments (with optional search)
+// GET /api/public/appointments?patient=patient-id&status=booked&date=2024-01-15
+router.get('/appointments', async (req, res) => {
+  try {
+    const appointments = await appointmentController.search(req.db, req.query);
+    res.json({
+      success: true,
+      count: appointments.length,
+      data: appointments
+    });
+  } catch (error) {
+    console.error('Error searching appointments:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get a specific appointment by ID
+// GET /api/public/appointments/:id
+router.get('/appointments/:id', async (req, res) => {
+  try {
+    const appointment = await appointmentController.read(req.db, req.params.id);
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Appointment not found',
+        operationOutcome: createOperationOutcome('error', 'not-found', `Appointment with id ${req.params.id} not found`)
+      });
+    }
+    res.json({
+      success: true,
+      data: appointment
+    });
+  } catch (error) {
+    console.error('Error reading appointment:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Update an appointment
+// PUT /api/public/appointments/:id
+router.put('/appointments/:id', async (req, res) => {
+  try {
+    const updatedAppointment = await appointmentController.update(req.db, req.params.id, req.body);
+    res.json({
+      success: true,
+      data: updatedAppointment
+    });
+  } catch (error) {
+    console.error('Error updating appointment:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Cancel an appointment (update status to cancelled)
+// POST /api/public/appointments/:id/cancel
+router.post('/appointments/:id/cancel', async (req, res) => {
+  try {
+    const appointment = await appointmentController.read(req.db, req.params.id);
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Appointment not found'
+      });
+    }
+
+    const updatedAppointment = {
+      ...appointment,
+      status: 'cancelled',
+      cancelationReason: req.body.reason || { text: 'Cancelled' }
+    };
+
+    const result = await appointmentController.update(req.db, req.params.id, updatedAppointment);
+    res.json({
+      success: true,
+      message: 'Appointment cancelled successfully',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error cancelling appointment:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ==================== SIMPLIFIED APPOINTMENT BOOKING ====================
+
+// Simple appointment booking endpoint for VAPI/voice assistants
+// POST /api/public/book-appointment
+router.post('/book-appointment', async (req, res) => {
+  try {
+    const { patientId, practitionerId, startTime, endTime, appointmentType, reason } = req.body;
+
+    // Validate required fields
+    if (!patientId || !startTime) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: patientId and startTime are required'
+      });
+    }
+
+    // Create appointment resource
+    const appointment = {
+      resourceType: 'Appointment',
+      status: 'booked',
+      appointmentType: appointmentType ? {
+        coding: [{
+          system: 'http://terminology.hl7.org/CodeSystem/v2-0276',
+          code: appointmentType,
+          display: appointmentType
+        }]
+      } : undefined,
+      reasonCode: reason ? [{
+        text: reason
+      }] : undefined,
+      start: startTime,
+      end: endTime || new Date(new Date(startTime).getTime() + 30 * 60000).toISOString(), // Default 30 min
+      participant: [
+        {
+          actor: {
+            reference: `Patient/${patientId}`,
+            display: 'Patient'
+          },
+          required: 'required',
+          status: 'accepted'
+        }
+      ]
+    };
+
+    // Add practitioner if provided
+    if (practitionerId) {
+      appointment.participant.push({
+        actor: {
+          reference: `Practitioner/${practitionerId}`,
+          display: 'Practitioner'
+        },
+        required: 'required',
+        status: 'accepted'
+      });
+    }
+
+    const createdAppointment = await appointmentController.create(req.db, appointment);
+
+    res.status(201).json({
+      success: true,
+      message: 'Appointment booked successfully',
+      appointmentId: createdAppointment.id,
+      data: createdAppointment
+    });
+  } catch (error) {
+    console.error('Error booking appointment:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Health check for public API
+router.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      v1: {
+        patients: {
+          create: 'POST /api/public/patients',
+          list: 'GET /api/public/patients',
+          get: 'GET /api/public/patients/:id',
+          update: 'PUT /api/public/patients/:id'
+        },
+        appointments: {
+          create: 'POST /api/public/appointments',
+          list: 'GET /api/public/appointments',
+          get: 'GET /api/public/appointments/:id',
+          update: 'PUT /api/public/appointments/:id',
+          cancel: 'POST /api/public/appointments/:id/cancel',
+          book: 'POST /api/public/book-appointment'
+        }
+      },
+      v2: {
+        note: 'V2 endpoints require org_id parameter',
+        practitioners: 'GET /api/public/v2/practitioners?org_id=xxx',
+        patients: 'GET /api/public/v2/patients?org_id=xxx',
+        appointments: 'GET /api/public/v2/appointments?org_id=xxx',
+        availableSlots: 'GET /api/public/v2/available-slots?org_id=xxx&practitioner_id=xxx&date=YYYY-MM-DD',
+        checkPatient: 'GET /api/public/v2/check-patient?org_id=xxx&phone=xxx or &email=xxx',
+        bookAppointment: 'POST /api/public/v2/book-appointment (with org_id in body)'
+      }
+    }
+  });
+});
+
+// ==================== V2 ORG-BASED ENDPOINTS ====================
+
+// Get all practitioners for an organization
+// GET /api/public/v2/practitioners?org_id=xxx
+// Note: Practitioners are available to all orgs (they can work across multiple organizations)
+router.get('/v2/practitioners', extractOrgId, async (req, res) => {
+  try {
+    // Get all active practitioners (they're not org-specific in this system)
+    const sql = `
+      SELECT resource_data
+      FROM fhir_resources
+      WHERE resource_type = 'Practitioner'
+        AND deleted = FALSE
+        AND (resource_data->>'active' = 'true' OR resource_data->>'active' IS NULL)
+      ORDER BY last_updated DESC
+      LIMIT 100
+    `;
+    const { rows } = await req.db.query(sql);
+    const practitioners = rows.map(row => row.resource_data);
+
+    // Extract simplified data for VAPI
+    const simplifiedPractitioners = practitioners.map(p => ({
+      id: p.id,
+      name: p.name?.[0] ? `${p.name[0].given?.join(' ') || ''} ${p.name[0].family || ''}`.trim() : 'Unknown',
+      phone: p.telecom?.find(t => t.system === 'phone')?.value,
+      email: p.telecom?.find(t => t.system === 'email')?.value,
+      active: p.active !== false,
+      specialty: p.qualification?.[0]?.code?.coding?.[0]?.display,
+      // Extract office hours from extension
+      officeHours: p.extension?.find(e => e.url?.includes('office-hours'))?.valueString,
+      fullResource: p
+    }));
+
+    res.json({
+      success: true,
+      orgId: req.orgId,
+      count: simplifiedPractitioners.length,
+      practitioners: simplifiedPractitioners
+    });
+  } catch (error) {
+    console.error('Error fetching practitioners:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get all patients for an organization
+// GET /api/public/v2/patients?org_id=xxx&phone=xxx or &email=xxx
+router.get('/v2/patients', extractOrgId, async (req, res) => {
+  try {
+    let patients = await filterByOrg(req.db, 'Patient', req.orgId);
+
+    // Filter by phone or email if provided
+    const { phone, email } = req.query;
+    if (phone || email) {
+      patients = patients.filter(p => {
+        if (phone && p.telecom?.some(t => t.system === 'phone' && t.value?.includes(phone))) {
+          return true;
+        }
+        if (email && p.telecom?.some(t => t.system === 'email' && t.value?.toLowerCase() === email.toLowerCase())) {
+          return true;
+        }
+        return false;
+      });
+    }
+
+    const simplifiedPatients = patients.map(p => ({
+      id: p.id,
+      name: p.name?.[0] ? `${p.name[0].given?.join(' ') || ''} ${p.name[0].family || ''}`.trim() : 'Unknown',
+      phone: p.telecom?.find(t => t.system === 'phone')?.value,
+      email: p.telecom?.find(t => t.system === 'email')?.value,
+      birthDate: p.birthDate,
+      gender: p.gender,
+      fullResource: p
+    }));
+
+    res.json({
+      success: true,
+      orgId: req.orgId,
+      count: simplifiedPatients.length,
+      patients: simplifiedPatients
+    });
+  } catch (error) {
+    console.error('Error fetching patients:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Check if patient exists by multiple criteria
+// GET /api/public/v2/check-patient?org_id=xxx&phone=xxx
+// GET /api/public/v2/check-patient?org_id=xxx&email=xxx
+// GET /api/public/v2/check-patient?org_id=xxx&name=John+Smith
+// GET /api/public/v2/check-patient?org_id=xxx&birthdate=1990-01-15
+// GET /api/public/v2/check-patient?org_id=xxx&phone=555-1234&name=John
+router.get('/v2/check-patient', extractOrgId, async (req, res) => {
+  try {
+    const { phone, email, name, family, given, birthdate, identifier } = req.query;
+
+    // Check if at least one search criteria is provided
+    if (!phone && !email && !name && !family && !given && !birthdate && !identifier) {
+      return res.status(400).json({
+        success: false,
+        error: 'At least one search parameter must be provided',
+        supportedParams: {
+          phone: 'Patient phone number (partial match)',
+          email: 'Patient email (exact match)',
+          name: 'Full name search (partial match)',
+          family: 'Family/last name (partial match)',
+          given: 'Given/first name (partial match)',
+          birthdate: 'Birth date (YYYY-MM-DD)',
+          identifier: 'Patient identifier/MRN'
+        }
+      });
+    }
+
+    let patients = await filterByOrg(req.db, 'Patient', req.orgId);
+
+    // Apply filters
+    patients = patients.filter(p => {
+      let matches = true;
+
+      // Phone filter (partial match)
+      if (phone) {
+        const hasPhone = p.telecom?.some(t =>
+          t.system === 'phone' &&
+          t.value?.replace(/\D/g, '').includes(phone.replace(/\D/g, ''))
+        );
+        if (!hasPhone) matches = false;
+      }
+
+      // Email filter (exact match, case insensitive)
+      if (email) {
+        const hasEmail = p.telecom?.some(t =>
+          t.system === 'email' &&
+          t.value?.toLowerCase() === email.toLowerCase()
+        );
+        if (!hasEmail) matches = false;
+      }
+
+      // Full name filter (partial match)
+      if (name) {
+        const fullName = p.name?.[0] ?
+          `${p.name[0].given?.join(' ') || ''} ${p.name[0].family || ''}`.toLowerCase() : '';
+        if (!fullName.includes(name.toLowerCase())) matches = false;
+      }
+
+      // Family name filter (partial match)
+      if (family) {
+        const familyName = p.name?.[0]?.family?.toLowerCase() || '';
+        if (!familyName.includes(family.toLowerCase())) matches = false;
+      }
+
+      // Given name filter (partial match)
+      if (given) {
+        const givenNames = p.name?.[0]?.given?.map(n => n.toLowerCase()).join(' ') || '';
+        if (!givenNames.includes(given.toLowerCase())) matches = false;
+      }
+
+      // Birth date filter (exact match)
+      if (birthdate) {
+        if (p.birthDate !== birthdate) matches = false;
+      }
+
+      // Identifier filter (partial match)
+      if (identifier) {
+        const hasIdentifier = p.identifier?.some(id =>
+          id.value?.toLowerCase().includes(identifier.toLowerCase())
+        );
+        if (!hasIdentifier) matches = false;
+      }
+
+      return matches;
+    });
+
+    if (patients.length > 0) {
+      // Return all matches (could be multiple)
+      const matchedPatients = patients.map(patient => ({
+        id: patient.id,
+        name: patient.name?.[0] ?
+          `${patient.name[0].given?.join(' ') || ''} ${patient.name[0].family || ''}`.trim() : 'Unknown',
+        phone: patient.telecom?.find(t => t.system === 'phone')?.value,
+        email: patient.telecom?.find(t => t.system === 'email')?.value,
+        birthDate: patient.birthDate,
+        gender: patient.gender,
+        identifier: patient.identifier?.[0]?.value,
+        address: patient.address?.[0] ? {
+          line: patient.address[0].line?.join(', '),
+          city: patient.address[0].city,
+          state: patient.address[0].state,
+          postalCode: patient.address[0].postalCode
+        } : null
+      }));
+
+      res.json({
+        success: true,
+        exists: true,
+        count: matchedPatients.length,
+        patients: matchedPatients,
+        // For backwards compatibility, also return single patient
+        patient: matchedPatients[0]
+      });
+    } else {
+      res.json({
+        success: true,
+        exists: false,
+        count: 0,
+        message: 'No patients found matching the criteria. You may create a new patient.',
+        searchCriteria: { phone, email, name, family, given, birthdate, identifier }
+      });
+    }
+  } catch (error) {
+    console.error('Error checking patient:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get appointments for an organization
+// GET /api/public/v2/appointments?org_id=xxx&patient_id=xxx&date=YYYY-MM-DD&status=booked
+router.get('/v2/appointments', extractOrgId, async (req, res) => {
+  try {
+    let whereClause = 'WHERE resource_type = $1 AND deleted = FALSE';
+    let queryParams = ['Appointment'];
+    let paramIndex = 2;
+
+    // Filter appointments that have patients or practitioners from this org
+    // We'll get all appointments and filter them
+    const { patient_id, practitioner_id, date, status } = req.query;
+
+    if (patient_id) {
+      whereClause += ` AND resource_data->'participant' @> $${paramIndex}::jsonb`;
+      queryParams.push(JSON.stringify([{ actor: { reference: `Patient/${patient_id}` } }]));
+      paramIndex++;
+    }
+
+    if (practitioner_id) {
+      whereClause += ` AND resource_data->'participant' @> $${paramIndex}::jsonb`;
+      queryParams.push(JSON.stringify([{ actor: { reference: `Practitioner/${practitioner_id}` } }]));
+      paramIndex++;
+    }
+
+    if (date) {
+      whereClause += ` AND DATE(resource_data->>'start') = $${paramIndex}`;
+      queryParams.push(date);
+      paramIndex++;
+    }
+
+    if (status) {
+      whereClause += ` AND resource_data->>'status' = $${paramIndex}`;
+      queryParams.push(status);
+      paramIndex++;
+    }
+
+    const limit = parseInt(req.query._count) || 100;
+    const offset = parseInt(req.query._offset) || 0;
+
+    const sql = `
+      SELECT resource_data
+      FROM fhir_resources
+      ${whereClause}
+      ORDER BY resource_data->>'start' DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+
+    queryParams.push(limit, offset);
+    const { rows } = await req.db.query(sql, queryParams);
+    const appointments = rows.map(row => row.resource_data);
+
+    const simplifiedAppointments = appointments.map(a => ({
+      id: a.id,
+      status: a.status,
+      start: a.start,
+      end: a.end,
+      duration: a.minutesDuration,
+      reason: a.reasonCode?.[0]?.text || a.comment,
+      patient: a.participant?.find(p => p.actor?.reference?.startsWith('Patient/'))?.actor,
+      practitioner: a.participant?.find(p => p.actor?.reference?.startsWith('Practitioner/'))?.actor,
+      fullResource: a
+    }));
+
+    res.json({
+      success: true,
+      orgId: req.orgId,
+      count: simplifiedAppointments.length,
+      appointments: simplifiedAppointments
+    });
+  } catch (error) {
+    console.error('Error fetching appointments:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get available time slots for a practitioner (or all practitioners)
+// GET /api/public/v2/available-slots?org_id=xxx&practitioner_id=xxx&date=YYYY-MM-DD
+// GET /api/public/v2/available-slots?org_id=xxx&date=YYYY-MM-DD (all practitioners)
+router.get('/v2/available-slots', extractOrgId, async (req, res) => {
+  try {
+    const { practitioner_id, date } = req.query;
+
+    if (!date) {
+      return res.status(400).json({
+        success: false,
+        error: 'date is required (format: YYYY-MM-DD)'
+      });
+    }
+
+    // If no practitioner_id, get slots for all practitioners
+    if (!practitioner_id) {
+      return await getAllPractitionersSlots(req, res, date);
+    }
+
+    // Get specific practitioner's office hours
+    const practitioner = await practitionerController.read(req.db, practitioner_id);
+    if (!practitioner) {
+      return res.status(404).json({
+        success: false,
+        error: 'Practitioner not found'
+      });
+    }
+
+    // Parse office hours from extension
+    const officeHoursExt = practitioner.extension?.find(e => e.url?.includes('office-hours'));
+    let officeHours = [];
+    if (officeHoursExt && officeHoursExt.valueString) {
+      try {
+        officeHours = JSON.parse(officeHoursExt.valueString);
+      } catch (e) {
+        console.error('Error parsing office hours:', e);
+      }
+    }
+
+    // Get day of week for the requested date
+    const requestDate = new Date(date);
+    const dayOfWeek = requestDate.getDay();
+    const daySchedule = officeHours.find(h => h.dayOfWeek === dayOfWeek);
+
+    if (!daySchedule || !daySchedule.isWorking) {
+      return res.json({
+        success: true,
+        orgId: req.orgId,
+        practitionerId: practitioner_id,
+        date: date,
+        availableSlots: [],
+        message: 'Practitioner is not working on this day'
+      });
+    }
+
+    // Get existing appointments for this practitioner on this date
+    const existingAppointments = await req.db.query(`
+      SELECT resource_data
+      FROM fhir_resources
+      WHERE resource_type = 'Appointment'
+        AND deleted = FALSE
+        AND DATE(resource_data->>'start') = $1
+        AND resource_data->'participant' @> $2::jsonb
+        AND resource_data->>'status' NOT IN ('cancelled', 'noshow')
+    `, [date, JSON.stringify([{ actor: { reference: `Practitioner/${practitioner_id}` } }])]);
+
+    const bookedSlots = existingAppointments.rows.map(row => ({
+      start: new Date(row.resource_data.start),
+      end: new Date(row.resource_data.end || new Date(row.resource_data.start).getTime() + 30 * 60000)
+    }));
+
+    // Generate available slots (30-minute intervals)
+    const availableSlots = [];
+    const [startHour, startMin] = daySchedule.startTime.split(':').map(Number);
+    const [endHour, endMin] = daySchedule.endTime.split(':').map(Number);
+
+    const startTime = new Date(date);
+    startTime.setHours(startHour, startMin, 0, 0);
+
+    const endTime = new Date(date);
+    endTime.setHours(endHour, endMin, 0, 0);
+
+    let currentSlot = new Date(startTime);
+    const slotDuration = 30; // minutes
+
+    while (currentSlot < endTime) {
+      const slotEnd = new Date(currentSlot.getTime() + slotDuration * 60000);
+
+      // Check if this slot overlaps with any booked appointments
+      const isBooked = bookedSlots.some(booked =>
+        (currentSlot >= booked.start && currentSlot < booked.end) ||
+        (slotEnd > booked.start && slotEnd <= booked.end) ||
+        (currentSlot <= booked.start && slotEnd >= booked.end)
+      );
+
+      if (!isBooked) {
+        availableSlots.push({
+          start: currentSlot.toISOString(),
+          end: slotEnd.toISOString(),
+          duration: slotDuration
+        });
+      }
+
+      currentSlot = slotEnd;
+    }
+
+    res.json({
+      success: true,
+      orgId: req.orgId,
+      practitionerId: practitioner_id,
+      practitionerName: practitioner.name?.[0] ?
+        `${practitioner.name[0].given?.join(' ') || ''} ${practitioner.name[0].family || ''}`.trim() : 'Unknown',
+      date: date,
+      workingHours: {
+        start: daySchedule.startTime,
+        end: daySchedule.endTime
+      },
+      totalSlots: availableSlots.length,
+      availableSlots: availableSlots
+    });
+  } catch (error) {
+    console.error('Error fetching available slots:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Book appointment (V2 - org-aware)
+// POST /api/public/v2/book-appointment
+router.post('/v2/book-appointment', extractOrgId, async (req, res) => {
+  try {
+    const { patientId, practitionerId, startTime, endTime, appointmentType, reason } = req.body;
+
+    if (!patientId || !startTime) {
+      return res.status(400).json({
+        success: false,
+        error: 'patientId and startTime are required'
+      });
+    }
+
+    // Verify patient belongs to this org
+    const patient = await patientController.read(req.db, patientId);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient not found'
+      });
+    }
+
+    const patientOrgRef = patient.managingOrganization?.reference;
+    if (patientOrgRef !== `Organization/${req.orgId}` && patientOrgRef !== req.orgId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Patient does not belong to this organization'
+      });
+    }
+
+    // If practitioner specified, verify they belong to this org
+    if (practitionerId) {
+      const practitioner = await practitionerController.read(req.db, practitionerId);
+      if (!practitioner) {
+        return res.status(404).json({
+          success: false,
+          error: 'Practitioner not found'
+        });
+      }
+    }
+
+    // Create appointment with organization reference
+    const appointment = {
+      resourceType: 'Appointment',
+      status: 'booked',
+      appointmentType: appointmentType ? {
+        coding: [{
+          system: 'http://terminology.hl7.org/CodeSystem/v2-0276',
+          code: appointmentType,
+          display: appointmentType
+        }]
+      } : undefined,
+      reasonCode: reason ? [{
+        text: reason
+      }] : undefined,
+      start: startTime,
+      end: endTime || new Date(new Date(startTime).getTime() + 30 * 60000).toISOString(),
+      // Link appointment to organization via extension
+      extension: [{
+        url: 'http://ehrconnect.io/fhir/StructureDefinition/appointment-organization',
+        valueReference: {
+          reference: `Organization/${req.orgId}`
+        }
+      }],
+      // Also add organization via serviceType for better filtering
+      serviceType: [{
+        coding: [{
+          system: 'http://ehrconnect.io/fhir/CodeSystem/organization',
+          code: req.orgId,
+          display: 'Organization Reference'
+        }]
+      }],
+      participant: [
+        {
+          actor: {
+            reference: `Patient/${patientId}`,
+            display: patient.name?.[0] ?
+              `${patient.name[0].given?.join(' ') || ''} ${patient.name[0].family || ''}`.trim() : 'Patient'
+          },
+          required: 'required',
+          status: 'accepted'
+        }
+      ]
+    };
+
+    if (practitionerId) {
+      const practitioner = await practitionerController.read(req.db, practitionerId);
+      appointment.participant.push({
+        actor: {
+          reference: `Practitioner/${practitionerId}`,
+          display: practitioner.name?.[0] ?
+            `${practitioner.name[0].given?.join(' ') || ''} ${practitioner.name[0].family || ''}`.trim() : 'Practitioner'
+        },
+        required: 'required',
+        status: 'accepted'
+      });
+    }
+
+    const createdAppointment = await appointmentController.create(req.db, appointment);
+
+    res.status(201).json({
+      success: true,
+      message: 'Appointment booked successfully',
+      orgId: req.orgId,
+      appointmentId: createdAppointment.id,
+      appointment: {
+        id: createdAppointment.id,
+        status: createdAppointment.status,
+        start: createdAppointment.start,
+        end: createdAppointment.end,
+        patient: createdAppointment.participant?.find(p => p.actor?.reference?.startsWith('Patient/')),
+        practitioner: createdAppointment.participant?.find(p => p.actor?.reference?.startsWith('Practitioner/'))
+      },
+      fullResource: createdAppointment
+    });
+  } catch (error) {
+    console.error('Error booking appointment:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Create patient (V2 - org-aware) - STREAMLINED for VAPI
+// POST /api/public/v2/patients
+// Accepts simple fields and builds FHIR structure automatically
+// Required: firstName, lastName, phone
+// Optional: email, birthDate, gender, address (street, city, state, zip)
+router.post('/v2/patients', extractOrgId, async (req, res) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      phone,
+      email,
+      birthDate,
+      gender,
+      street,
+      city,
+      state,
+      zip,
+      country = 'USA'
+    } = req.body;
+
+    // Validate required fields
+    if (!firstName && !lastName) {
+      return res.status(400).json({
+        success: false,
+        error: 'Either firstName or lastName is required',
+        example: {
+          firstName: 'John',
+          lastName: 'Smith',
+          phone: '555-123-4567',
+          email: 'john@example.com',
+          birthDate: '1990-01-15',
+          gender: 'male',
+          street: '123 Main St',
+          city: 'Springfield',
+          state: 'IL',
+          zip: '62701'
+        }
+      });
+    }
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'Phone number is required',
+        example: {
+          firstName: 'John',
+          lastName: 'Smith',
+          phone: '555-123-4567'
+        }
+      });
+    }
+
+    // Build FHIR-compliant patient resource automatically
+    const patientData = {
+      resourceType: 'Patient',
+      name: [{
+        use: 'official',
+        family: lastName,
+        given: firstName ? [firstName] : []
+      }],
+      telecom: [
+        {
+          system: 'phone',
+          value: phone,
+          use: 'mobile'
+        }
+      ],
+      managingOrganization: {
+        reference: `Organization/${req.orgId}`
+      }
+    };
+
+    // Add optional fields if provided
+    if (email) {
+      patientData.telecom.push({
+        system: 'email',
+        value: email,
+        use: 'home'
+      });
+    }
+
+    if (birthDate) {
+      patientData.birthDate = birthDate;
+    }
+
+    if (gender) {
+      patientData.gender = gender.toLowerCase();
+    }
+
+    // Add address if any address field is provided
+    if (street || city || state || zip) {
+      patientData.address = [{
+        use: 'home',
+        type: 'both',
+        line: street ? [street] : [],
+        city: city || '',
+        state: state || '',
+        postalCode: zip || '',
+        country: country
+      }];
+    }
+
+    const patient = await patientController.create(req.db, patientData);
+
+    res.status(201).json({
+      success: true,
+      orgId: req.orgId,
+      patient: {
+        id: patient.id,
+        name: patient.name?.[0] ? `${patient.name[0].given?.join(' ') || ''} ${patient.name[0].family || ''}`.trim() : 'Unknown',
+        phone: patient.telecom?.find(t => t.system === 'phone')?.value,
+        email: patient.telecom?.find(t => t.system === 'email')?.value,
+        birthDate: patient.birthDate,
+        gender: patient.gender,
+        address: patient.address?.[0] ? {
+          street: patient.address[0].line?.join(', '),
+          city: patient.address[0].city,
+          state: patient.address[0].state,
+          zip: patient.address[0].postalCode
+        } : null
+      },
+      fullResource: patient
+    });
+  } catch (error) {
+    console.error('Error creating patient:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+module.exports = router;
