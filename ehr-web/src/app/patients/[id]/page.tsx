@@ -15,6 +15,8 @@ import { PatientHeader } from './components/PatientHeader';
 import { DashboardTab } from './components/tabs/DashboardTab';
 import { OverviewTab } from './components/tabs/OverviewTab';
 import { VitalsTab } from './components/tabs/VitalsTab';
+import { VitalsCards } from './components/tabs/VitalsTab/VitalsCards';
+import { VitalsTable } from './components/tabs/VitalsTab/VitalsTable';
 import { EncountersTab } from './components/tabs/EncountersTab';
 import { ProblemsTab } from './components/tabs/ProblemsTab';
 import { MedicationsTab } from './components/tabs/MedicationsTab';
@@ -1900,41 +1902,39 @@ export default function PatientDetailPage() {
 
                     {/* Vitals Section */}
                     {activeSubTab === 'vitals' && (
-                      <div className="bg-white border border-gray-200 rounded p-4">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold text-gray-900">Vital Signs</h3>
-                          <button
-                            onClick={() => setShowVitalsDrawer(true)}
-                            className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700"
-                          >
-                            Record Vitals
-                          </button>
-                        </div>
-
-                        {/* Display recent vitals */}
-                        <div className="grid grid-cols-3 gap-4">
-                          {observations.slice(0, 6).map((obs, idx) => {
-                            const value = obs.valueQuantity?.value || obs.component?.[0]?.valueQuantity?.value;
-                            const unit = obs.valueQuantity?.unit || obs.component?.[0]?.valueQuantity?.unit;
-                            const display = obs.code?.text || obs.code?.coding?.[0]?.display;
-
-                            return (
-                              <div key={idx} className="border border-gray-200 rounded p-3">
-                                <p className="text-xs text-gray-600 mb-1">{display}</p>
-                                <p className="text-lg font-semibold text-gray-900">{value} {unit}</p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  {new Date(obs.effectiveDateTime).toLocaleDateString()}
-                                </p>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {observations.length === 0 && (
-                          <div className="text-center py-8 text-gray-500 bg-gray-50 rounded border border-gray-200">
-                            <p className="text-sm">No vitals recorded for this encounter</p>
+                      <div className="space-y-6">
+                        <div className="bg-white border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900">Vital Signs</h3>
+                              <p className="text-xs text-gray-500 mt-1">Latest measurements with intelligent alerts and trends</p>
+                            </div>
+                            <button
+                              onClick={() => setShowVitalsDrawer(true)}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                            >
+                              Record Vitals
+                            </button>
                           </div>
-                        )}
+
+                          {observations.length > 0 ? (
+                            <>
+                              {/* Enhanced Vitals Cards */}
+                              <div className="mb-6">
+                                <VitalsCards observations={observations} />
+                              </div>
+
+                              {/* Enhanced Vitals Table */}
+                              <VitalsTable observations={observations} />
+                            </>
+                          ) : (
+                            <div className="text-center py-12 text-gray-500 bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg border-2 border-dashed border-gray-300">
+                              <Activity className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                              <p className="text-sm font-medium">No vitals recorded for this encounter</p>
+                              <p className="text-xs mt-2">Click &ldquo;Record Vitals&rdquo; to add measurements</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
 

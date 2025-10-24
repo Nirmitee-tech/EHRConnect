@@ -14,7 +14,7 @@ export const medplum = new MedplumClient({
 })
 
 // FHIR Resource Types commonly used in EHR
-export type FHIRResourceType = 
+export type FHIRResourceType =
   | 'Patient'
   | 'Practitioner'
   | 'Organization'
@@ -31,6 +31,7 @@ export type FHIRResourceType =
   | 'ServiceRequest'
   | 'Coverage'
   | 'Binary'
+  | 'CarePlan'
 
 // Generic FHIR search parameters
 export interface FHIRSearchParams {

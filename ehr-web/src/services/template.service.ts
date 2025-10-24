@@ -31,7 +31,7 @@ interface QuestionnaireMeta {
 }
 
 // Patch operation types
-type PatchValue = string | number | boolean | QuestionnaireTag[] | QuestionnaireUseContext[] | QuestionnaireExtension[];
+type PatchValue = string | number | boolean | QuestionnaireTag[] | QuestionnaireUseContext[] | QuestionnaireExtension[] | QuestionnaireMeta;
 
 interface PatchOperation {
   op: 'add' | 'remove' | 'replace' | 'copy' | 'move' | 'test';

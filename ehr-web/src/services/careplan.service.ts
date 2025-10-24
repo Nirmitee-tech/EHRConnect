@@ -154,7 +154,7 @@ class CarePlanService {
       })
     };
 
-    return await fhirService.update('CarePlan', carePlanId, carePlan);
+    return await fhirService.update(carePlan);
   }
 
   /**
