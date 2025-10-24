@@ -17,6 +17,8 @@ import { OverviewTab } from './components/tabs/OverviewTab';
 import { VitalsTab } from './components/tabs/VitalsTab';
 import { VitalsCards } from './components/tabs/VitalsTab/VitalsCards';
 import { VitalsTable } from './components/tabs/VitalsTab/VitalsTable';
+import { ClinicalNotesTab } from './components/tabs/ClinicalNotesTab';
+import { ClinicalNoteEditor } from './components/tabs/ClinicalNotesTab/ClinicalNoteEditor';
 import { EncountersTab } from './components/tabs/EncountersTab';
 import { ProblemsTab } from './components/tabs/ProblemsTab';
 import { MedicationsTab } from './components/tabs/MedicationsTab';
@@ -60,6 +62,24 @@ export default function PatientDetailPage() {
   const [clinicalInstructionsForms, setClinicalInstructionsForms] = useState<{ [encounterId: string]: { patientInstructions: string; followUpInstructions: string } }>({});
   const [clinicalNotesForms, setClinicalNotesForms] = useState<{ [encounterId: string]: { notes: string } }>({});
   const [rosForms, setRosForms] = useState<{ [encounterId: string]: { [system: string]: string } }>({});
+
+  // Clinical Notes enhanced state
+  interface ClinicalNote {
+    id: string;
+    date: Date | string;
+    noteType: string;
+    category: string;
+    narrative: string;
+    createdBy?: string;
+    createdByName?: string;
+    isFavorite?: boolean;
+    tags?: string[];
+  }
+  const [clinicalNotes, setClinicalNotes] = useState<{ [encounterId: string]: ClinicalNote[] }>({});
+  const [showClinicalNoteEditor, setShowClinicalNoteEditor] = useState(false);
+  const [editingClinicalNote, setEditingClinicalNote] = useState<ClinicalNote | null>(null);
+  const [clinicalNoteMode, setClinicalNoteMode] = useState<'create' | 'edit'>('create');
+  const [currentEditingEncounterId, setCurrentEditingEncounterId] = useState<string>('');
 
   // Track which saved sections are expanded in the summary
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
@@ -1697,58 +1717,35 @@ export default function PatientDetailPage() {
 
                     {/* Clinical Notes Section */}
                     {activeSubTab === 'clinical-notes' && (
-                      <div className="bg-white border border-gray-200 rounded p-4">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Clinical Notes</h3>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Progress Notes</label>
-                            <textarea
-                              value={clinicalNotesForms[encounterId]?.notes || ''}
-                              onChange={(e) => updateClinicalNotesForm(encounterId, e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded text-sm font-mono"
-                              rows={12}
-                              placeholder="Enter clinical notes..."
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={async () => {
-                                const currentData = encounterSavedData[encounterId] || [];
-                                const notesData = clinicalNotesForms[encounterId] || { notes: '' };
-                                const editingIdx = editingSection[encounterId];
-
-                                const section: SavedSection = {
-                                  title: 'Clinical Notes',
-                                  type: 'clinical-notes',
-                                  author: 'Billy Smith',
-                                  date: new Date().toISOString(),
-                                  data: { notes: notesData.notes },
-                                  signatures: []
-                                };
-
-                                const documentId = editingIdx !== null && editingIdx !== undefined
-                                  ? currentData[editingIdx]?.id
-                                  : undefined;
-
-                                await saveDocumentReference(encounterId, section, documentId);
-                                setEditingSection({ ...editingSection, [encounterId]: null });
-
-                                setClinicalNotesForms({
-                                  ...clinicalNotesForms,
-                                  [encounterId]: { notes: '' }
-                                });
-                                setActiveEncounterSubTab({ ...activeEncounterSubTab, [encounterId]: 'summary' });
-                              }}
-                              className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700"
-                            >
-                              {editingSection[encounterId] !== null && editingSection[encounterId] !== undefined ? 'Update Notes' : 'Save Notes'}
-                            </button>
-                            <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded text-sm font-medium hover:bg-gray-50">
-                              Add Template
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                      <ClinicalNotesTab
+                        notes={clinicalNotes[encounterId] || []}
+                        onAddNote={() => {
+                          setEditingClinicalNote(null);
+                          setClinicalNoteMode('create');
+                          setCurrentEditingEncounterId(encounterId);
+                          setShowClinicalNoteEditor(true);
+                        }}
+                        onEditNote={(note) => {
+                          setEditingClinicalNote(note);
+                          setClinicalNoteMode('edit');
+                          setCurrentEditingEncounterId(encounterId);
+                          setShowClinicalNoteEditor(true);
+                        }}
+                        onDeleteNote={(noteId) => {
+                          setClinicalNotes({
+                            ...clinicalNotes,
+                            [encounterId]: (clinicalNotes[encounterId] || []).filter(n => n.id !== noteId)
+                          });
+                        }}
+                        onToggleFavorite={(noteId) => {
+                          setClinicalNotes({
+                            ...clinicalNotes,
+                            [encounterId]: (clinicalNotes[encounterId] || []).map(n =>
+                              n.id === noteId ? { ...n, isFavorite: !n.isFavorite } : n
+                            )
+                          });
+                        }}
+                      />
                     )}
 
                     {/* Review of Systems Section */}
@@ -2263,6 +2260,38 @@ export default function PatientDetailPage() {
           onOpenChange={setShowInsuranceDrawer}
           onSave={handleSaveInsurance}
           patientId={patientId}
+        />
+
+        {/* Clinical Note Editor Drawer */}
+        <ClinicalNoteEditor
+          open={showClinicalNoteEditor}
+          onOpenChange={setShowClinicalNoteEditor}
+          onSave={async (note) => {
+            if (clinicalNoteMode === 'create') {
+              // Create new note
+              const newNote = {
+                ...note,
+                id: `note-${Date.now()}`,
+                createdBy: 'practitioner-123',
+                createdByName: 'Dr. Smith',
+              };
+              setClinicalNotes({
+                ...clinicalNotes,
+                [currentEditingEncounterId]: [...(clinicalNotes[currentEditingEncounterId] || []), newNote]
+              });
+            } else {
+              // Update existing note
+              setClinicalNotes({
+                ...clinicalNotes,
+                [currentEditingEncounterId]: (clinicalNotes[currentEditingEncounterId] || []).map(n =>
+                  n.id === note.id ? note : n
+                )
+              });
+            }
+            setShowClinicalNoteEditor(false);
+          }}
+          note={editingClinicalNote}
+          mode={clinicalNoteMode}
         />
       </div>
     </TabPageWrapper>
