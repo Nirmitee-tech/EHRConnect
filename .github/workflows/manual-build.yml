@@ -1,0 +1,120 @@
+name: Manual Build and Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to build'
+        required: true
+        type: choice
+        options:
+          - api
+          - web
+          - both
+      environment:
+        description: 'Environment tag'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+          - latest
+      deploy:
+        description: 'Trigger deployment after build?'
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  build-api:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.service == 'api' || github.event.inputs.service == 'both' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push API
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ehr-api
+          file: ./ehr-api/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/ehr-api:${{ github.event.inputs.environment }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/ehr-api:manual-${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/ehr-api:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/ehr-api:buildcache,mode=max
+          platforms: linux/amd64,linux/arm64
+
+  build-web:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.service == 'web' || github.event.inputs.service == 'both' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Web
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ehr-web
+          file: ./ehr-web/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/ehr-web:${{ github.event.inputs.environment }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/ehr-web:manual-${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/ehr-web:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/ehr-web:buildcache,mode=max
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            NEXT_PUBLIC_API_URL=__RUNTIME_PLACEHOLDER__
+            NEXT_PUBLIC_KEYCLOAK_URL=__RUNTIME_PLACEHOLDER__
+            NEXT_PUBLIC_KEYCLOAK_REALM=__RUNTIME_PLACEHOLDER__
+            NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=__RUNTIME_PLACEHOLDER__
+
+  trigger-deploy:
+    runs-on: ubuntu-latest
+    needs: [build-api, build-web]
+    if: ${{ always() && github.event.inputs.deploy == 'true' }}
+
+    steps:
+      - name: Trigger deployment
+        run: |
+          ENV="${{ github.event.inputs.environment }}"
+
+          if [ "$ENV" == "dev" ]; then
+            WEBHOOK="${{ secrets.DOKPLOY_WEBHOOK_DEV }}"
+          elif [ "$ENV" == "staging" ]; then
+            WEBHOOK="${{ secrets.DOKPLOY_WEBHOOK_STAGING }}"
+          elif [ "$ENV" == "prod" ] || [ "$ENV" == "latest" ]; then
+            WEBHOOK="${{ secrets.DOKPLOY_WEBHOOK_PROD }}"
+          fi
+
+          if [ -n "$WEBHOOK" ]; then
+            curl -X POST "$WEBHOOK" \
+              -H "Content-Type: application/json" \
+              -d '{"ref": "manual", "sha": "${{ github.sha }}"}'
+            echo "✅ Deployment triggered for $ENV"
+          else
+            echo "⚠️ No webhook configured for $ENV"
+          fi

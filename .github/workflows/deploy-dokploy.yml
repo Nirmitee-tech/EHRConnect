@@ -1,0 +1,112 @@
+name: Deploy to Dokploy
+
+on:
+  workflow_run:
+    workflows: ["Build and Push EHR API", "Build and Push EHR Web"]
+    types:
+      - completed
+    branches:
+      - main
+      - develop
+      - staging
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+jobs:
+  trigger-deployment:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: Determine environment
+        id: env
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "environment=prod" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/staging" ]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger Dokploy Webhook - Development
+        if: steps.env.outputs.environment == 'dev'
+        run: |
+          curl -X POST "${{ secrets.DOKPLOY_WEBHOOK_DEV }}" \
+            -H "Content-Type: application/json" \
+            -d '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
+
+      - name: Trigger Dokploy Webhook - Staging
+        if: steps.env.outputs.environment == 'staging'
+        run: |
+          curl -X POST "${{ secrets.DOKPLOY_WEBHOOK_STAGING }}" \
+            -H "Content-Type: application/json" \
+            -d '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
+
+      - name: Trigger Dokploy Webhook - Production
+        if: steps.env.outputs.environment == 'prod'
+        run: |
+          curl -X POST "${{ secrets.DOKPLOY_WEBHOOK_PROD }}" \
+            -H "Content-Type: application/json" \
+            -d '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
+
+      - name: Wait for deployment
+        run: |
+          echo "⏳ Waiting for Dokploy to pull and deploy new images..."
+          sleep 30
+
+      - name: Deployment notification
+        run: |
+          echo "✅ Deployment triggered for ${{ steps.env.outputs.environment }} environment"
+          echo "🔗 Check Dokploy dashboard for deployment status"
+
+  notify-slack:
+    runs-on: ubuntu-latest
+    needs: trigger-deployment
+    if: always() && secrets.SLACK_WEBHOOK_URL != ''
+
+    steps:
+      - name: Notify Slack
+        run: |
+          curl -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "text": "🚀 Deployment Status",
+              "attachments": [{
+                "color": "${{ needs.trigger-deployment.result == 'success' && 'good' || 'danger' }}",
+                "fields": [
+                  {
+                    "title": "Environment",
+                    "value": "${{ needs.trigger-deployment.outputs.environment }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Status",
+                    "value": "${{ needs.trigger-deployment.result }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Commit",
+                    "value": "${{ github.sha }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Branch",
+                    "value": "${{ github.ref_name }}",
+                    "short": true
+                  }
+                ]
+              }]
+            }'

@@ -22,7 +22,7 @@ import {
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@nirmitee.io/design-system';
 
 interface ClinicalNote {
-  id?: string;
+  id: string;
   date: Date | string;
   noteType: string;
   category: string;
@@ -107,6 +107,7 @@ export function ClinicalNoteEditor({
 }: ClinicalNoteEditorProps) {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<ClinicalNote>({
+    id: '',
     date: new Date().toISOString().slice(0, 16),
     noteType: 'Progress Note',
     category: 'General',
@@ -127,6 +128,7 @@ export function ClinicalNoteEditor({
     } else if (!open) {
       // Reset form when drawer closes
       setFormData({
+        id: '',
         date: new Date().toISOString().slice(0, 16),
         noteType: 'Progress Note',
         category: 'General',
