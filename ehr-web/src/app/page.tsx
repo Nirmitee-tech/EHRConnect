@@ -17,18 +17,18 @@ export default function Home() {
     }
   }, [status, session, router]);
 
-  // Handle sign in with optional session cleanup
+  // Handle sign in - automatically uses the configured provider
   const handleSignIn = async () => {
     // Only clear session if there's actually a session present
     if (session) {
       await signOut({ redirect: false });
       // Small delay to ensure cleanup completes before signing in
       setTimeout(() => {
-        signIn('keycloak');
+        signIn(); // Let NextAuth use the configured provider
       }, 100);
     } else {
       // No session to clear, sign in directly
-      signIn('keycloak');
+      signIn(); // Let NextAuth use the configured provider
     }
   };
 

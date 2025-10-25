@@ -1,7 +1,107 @@
 const express = require('express');
 const router = express.Router();
 const authService = require('../services/auth.service');
+const postgresAuthService = require('../services/postgres-auth.service');
 const { query } = require('../database/connection');
+
+// Get AUTH_PROVIDER from environment (defaults to 'keycloak')
+const AUTH_PROVIDER = process.env.AUTH_PROVIDER || 'keycloak';
+
+/**
+ * POST /api/auth/login
+ * Login with email/password (Postgres auth only)
+ */
+router.post('/login', async (req, res) => {
+  try {
+    if (AUTH_PROVIDER !== 'postgres') {
+      return res.status(400).json({
+        error: 'Postgres authentication not enabled',
+        message: 'Set AUTH_PROVIDER=postgres to use email/password login'
+      });
+    }
+
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const result = await postgresAuthService.login(email, password);
+    res.json(result);
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(401).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/auth/register
+ * Register new user with password (Postgres auth only)
+ */
+router.post('/register', async (req, res) => {
+  try {
+    if (AUTH_PROVIDER !== 'postgres') {
+      return res.status(400).json({
+        error: 'Postgres authentication not enabled',
+        message: 'Set AUTH_PROVIDER=postgres to use registration'
+      });
+    }
+
+    const { email, password, name, organization } = req.body;
+
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: 'Email, password, and name are required' });
+    }
+
+    const result = await postgresAuthService.register(email, password, name, organization);
+    res.json(result);
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/auth/change-password
+ * Change user password (Postgres auth only)
+ */
+router.post('/change-password', async (req, res) => {
+  try {
+    if (AUTH_PROVIDER !== 'postgres') {
+      return res.status(400).json({
+        error: 'Postgres authentication not enabled'
+      });
+    }
+
+    const userId = req.headers['x-user-id'];
+    const { oldPassword, newPassword } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ error: 'Old and new passwords are required' });
+    }
+
+    const result = await postgresAuthService.changePassword(userId, oldPassword, newPassword);
+    res.json(result);
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/auth/provider
+ * Get current authentication provider
+ */
+router.get('/provider', (req, res) => {
+  res.json({
+    provider: AUTH_PROVIDER,
+    supportsPasswordAuth: AUTH_PROVIDER === 'postgres'
+  });
+});
 
 /**
  * POST /api/auth/password-reset/request

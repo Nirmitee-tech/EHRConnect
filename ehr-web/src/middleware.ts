@@ -79,22 +79,37 @@ export async function middleware(request: NextRequest) {
 
   // Create response with org context headers for API/database isolation
   const response = NextResponse.next();
-  
+
+  // Set user ID header (from id or sub field)
+  const tokenUserId = (token.id || token.sub) as string | undefined;
+  if (tokenUserId) {
+    response.headers.set('x-user-id', tokenUserId);
+  }
+
+  // Set org context headers
   if (tokenOrgId) {
     response.headers.set('x-org-id', tokenOrgId);
   }
   if (tokenOrgSlug) {
     response.headers.set('x-org-slug', tokenOrgSlug);
   }
-  
+
+  // Set location IDs
   const tokenLocationIds = token.location_ids as string[] | undefined;
   if (tokenLocationIds) {
     response.headers.set('x-location-ids', JSON.stringify(tokenLocationIds));
   }
-  
+
+  // Set user roles
   const tokenRoles = token.roles as string[] | undefined;
   if (tokenRoles) {
     response.headers.set('x-user-roles', JSON.stringify(tokenRoles));
+  }
+
+  // Set user permissions
+  const tokenPermissions = token.permissions as string[] | undefined;
+  if (tokenPermissions) {
+    response.headers.set('x-user-permissions', JSON.stringify(tokenPermissions));
   }
 
   return response;

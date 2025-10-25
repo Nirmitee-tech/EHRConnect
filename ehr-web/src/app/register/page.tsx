@@ -305,20 +305,29 @@ export default function RegisterPage() {
     setError('');
 
     try {
-      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/api/orgs', {
+      // Generate org slug from org name
+      const slug = formData.org_name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+
+      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          org_name: formData.org_name,
-          owner_email: formData.owner_email,
-          owner_name: formData.owner_name,
-          owner_password: formData.owner_password,
-          legal_name: formData.legal_name || formData.org_name,
-          contact_phone: formData.contact_phone,
-          address: formData.address,
-          timezone: formData.timezone,
-          terms_accepted: formData.terms_accepted,
-          baa_accepted: formData.baa_accepted,
+          email: formData.owner_email,
+          password: formData.owner_password,
+          name: formData.owner_name,
+          organization: {
+            name: formData.org_name,
+            slug: slug,
+            legal_name: formData.legal_name || formData.org_name,
+            contact_phone: formData.contact_phone,
+            address: formData.address,
+            timezone: formData.timezone,
+            terms_accepted: formData.terms_accepted,
+            baa_accepted: formData.baa_accepted,
+          },
         }),
       });
 
@@ -329,8 +338,9 @@ export default function RegisterPage() {
 
       const result = await response.json();
 
-      // Show success and redirect
-      window.location.href = '/onboarding?registered=true&slug=' + result.organization.slug;
+      // Show success message and redirect to sign in
+      alert('Registration successful! Please sign in with your credentials.');
+      window.location.href = '/auth/signin';
     } catch (err) {
       const error = err as Error;
       setError(error.message);
