@@ -13,6 +13,9 @@ declare module 'next-auth' {
     org_id?: string
     org_slug?: string
     org_name?: string
+    org_type?: string
+    org_logo?: string
+    org_specialties?: string[]
     onboarding_completed?: boolean
     location_ids?: string[]
     scope?: string
@@ -50,6 +53,9 @@ declare module 'next-auth' {
     org_id?: string
     org_slug?: string
     org_name?: string
+    org_type?: string
+    org_logo?: string
+    org_specialties?: string[]
     onboarding_completed?: boolean
     location_ids?: string[]
     scope?: string
@@ -71,6 +77,9 @@ declare module 'next-auth/jwt' {
     org_id?: string
     org_slug?: string
     org_name?: string
+    org_type?: string
+    org_logo?: string
+    org_specialties?: string[]
     onboarding_completed?: boolean
     location_ids?: string[]
     scope?: string

@@ -15,7 +15,8 @@ class PostgresAuthService {
     const userResult = await query(
       `SELECT
         u.id, u.email, u.name, u.password_hash, u.status,
-        ra.org_id, o.name as org_name, o.slug as org_slug,
+        ra.org_id, o.name as org_name, o.slug as org_slug, o.org_type,
+        o.logo_url, o.specialties,
         o.onboarding_completed,
         ra.scope,
         ARRAY_AGG(DISTINCT ra.location_id) FILTER (WHERE ra.location_id IS NOT NULL) as location_ids,
@@ -27,7 +28,7 @@ class PostgresAuthService {
       LEFT JOIN roles r ON ra.role_id = r.id
       WHERE u.email = $1 AND u.status = 'active'
       GROUP BY u.id, u.email, u.name, u.password_hash, u.status,
-               ra.org_id, o.name, o.slug, o.onboarding_completed, ra.scope
+               ra.org_id, o.name, o.slug, o.org_type, o.logo_url, o.specialties, o.onboarding_completed, ra.scope
       LIMIT 1`,
       [email]
     );
@@ -83,6 +84,9 @@ class PostgresAuthService {
         org_id: user.org_id,
         org_name: user.org_name,
         org_slug: user.org_slug,
+        org_type: user.org_type,
+        org_logo: user.logo_url,
+        org_specialties: user.specialties || [],
         onboarding_completed: user.onboarding_completed,
         scope: user.scope,
         location_ids: user.location_ids || [],
@@ -127,9 +131,9 @@ class PostgresAuthService {
         const orgResult = await client.query(
           `INSERT INTO organizations (
             name, slug, legal_name, contact_email, contact_phone,
-            address, timezone, status, created_by, onboarding_completed, metadata
+            address, timezone, org_type, logo_url, specialties, status, created_by, onboarding_completed, metadata
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', uuid_generate_v4(), false, $8)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'active', uuid_generate_v4(), false, $11)
           RETURNING id`,
           [
             orgData.name,
@@ -139,6 +143,9 @@ class PostgresAuthService {
             orgData.contact_phone || null,
             orgData.address ? JSON.stringify(orgData.address) : null,
             orgData.timezone || 'Asia/Kolkata',
+            orgData.org_type || null,
+            orgData.logo_url || null,
+            orgData.specialties || [],
             JSON.stringify({
               terms_accepted: orgData.terms_accepted || false,
               baa_accepted: orgData.baa_accepted || false,
@@ -242,6 +249,9 @@ class PostgresAuthService {
       name: user.name,
       org_id: user.org_id,
       org_slug: user.org_slug,
+      org_type: user.org_type,
+      org_logo: user.logo_url || user.org_logo,
+      org_specialties: user.specialties || user.org_specialties || [],
       location_ids: user.location_ids || [],
       roles: user.role_keys || [],
       permissions: user.permissions || []

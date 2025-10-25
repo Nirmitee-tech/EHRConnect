@@ -96,6 +96,9 @@ if (AUTH_PROVIDER === 'keycloak') {
             org_id: data.user.org_id,
             org_slug: data.user.org_slug,
             org_name: data.user.org_name,
+            org_type: data.user.org_type,
+            org_logo: data.user.org_logo,
+            org_specialties: data.user.org_specialties,
             onboarding_completed: data.user.onboarding_completed,
             scope: data.user.scope,
             location_ids: data.user.location_ids,
@@ -139,6 +142,9 @@ export const authOptions: NextAuthOptions = {
           token.org_id = profileWithClaims.org_id as string
           token.org_slug = profileWithClaims.org_slug as string
           token.org_name = profileWithClaims.org_name as string
+          token.org_type = profileWithClaims.org_type as string
+          token.org_logo = profileWithClaims.org_logo as string
+          token.org_specialties = profileWithClaims.org_specialties as string[]
           token.onboarding_completed = profileWithClaims.onboarding_completed as boolean
           token.location_ids = profileWithClaims.location_ids as string[]
           token.permissions = profileWithClaims.permissions as string[]
@@ -160,6 +166,9 @@ export const authOptions: NextAuthOptions = {
         token.org_id = user.org_id
         token.org_slug = user.org_slug
         token.org_name = user.org_name
+        token.org_type = user.org_type
+        token.org_logo = user.org_logo
+        token.org_specialties = user.org_specialties
         token.onboarding_completed = user.onboarding_completed
         token.scope = user.scope
         token.location_ids = user.location_ids
@@ -191,6 +200,9 @@ export const authOptions: NextAuthOptions = {
       session.org_id = token.org_id as string
       session.org_slug = token.org_slug as string
       session.org_name = token.org_name as string
+      session.org_type = token.org_type as string
+      session.org_logo = token.org_logo as string
+      session.org_specialties = token.org_specialties as string[]
       session.onboarding_completed = token.onboarding_completed as boolean
       session.location_ids = token.location_ids as string[]
       session.scope = token.scope as string
