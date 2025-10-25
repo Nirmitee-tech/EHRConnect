@@ -232,7 +232,7 @@ SELECT
       },
       {
         "id": "clinical-worklist",
-        "title": "Today\'s Worklist",
+        "title": "Today's Worklist",
         "type": "worklist",
         "items": [
           { "title": "3 patients with unread lab results", "due": "Today", "impact": "Clinical Quality", "owner": "You" },

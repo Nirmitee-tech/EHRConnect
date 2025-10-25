@@ -116,7 +116,7 @@ Your Docker Hub credentials:
    Port: 5432
    Database: ehrconnect
    Username: ehruser
-   Password: <password-you-generated>
+   Password: <password-you-generated> 
 
    Connection String:
    postgresql://ehruser:<password>@ehr-postgres-dev:5432/ehrconnect
@@ -167,19 +167,19 @@ Your Docker Hub credentials:
    KEYCLOAK_HOSTNAME=auth-dev.nirmitee.io
 
    # Generate these secrets! (run: openssl rand -base64 32)
-   NEXTAUTH_SECRET=<run-openssl-rand-base64-32>
-   JWT_SECRET=<run-openssl-rand-base64-32>
+NEXTAUTH_SECRET=<run-openssl-rand-base64-32>
+JWT_SECRET=<run-openssl-rand-base64-32>
 
    # Application URLs
-   NEXT_PUBLIC_API_URL=https://api-dev.nirmitee.io
-   NEXT_PUBLIC_KEYCLOAK_URL=https://auth-dev.nirmitee.io
-   NEXT_PUBLIC_KEYCLOAK_REALM=ehr-realm
-   NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=ehr-web-client
-   ALLOWED_ORIGINS=https://ehr-dev.nirmitee.io
-   NEXTAUTH_URL=https://ehr-dev.nirmitee.io
+NEXT_PUBLIC_API_URL=https://api-dev.nirmitee.io
+NEXT_PUBLIC_KEYCLOAK_URL=https://auth-dev.nirmitee.io
+NEXT_PUBLIC_KEYCLOAK_REALM=ehr-realm
+NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=ehr-web-client
+ALLOWED_ORIGINS=https://ehr-dev.nirmitee.io
+NEXTAUTH_URL=https://ehr-dev.nirmitee.io
 
    # External APIs
-   CLAIMMD_API_URL=https://api.claim.md/v1
+CLAIMMD_API_URL=https://api.claim.md/v1
    ```
 
 4. **Deploy!**
@@ -236,7 +236,7 @@ Once services are running, configure domains for SSL:
 **Option 2: Via SSH**
 ```bash
 ssh your-server
-docker exec -it ehr-api-dev npm run migrate
+docker exec -it 6f528ffff7f2 npm run migrate
 docker exec -it ehr-api-dev npm run seed:roles
 docker exec -it ehr-api-dev npm run seed:providers
 docker exec -it ehr-api-dev npm run seed:inventory
