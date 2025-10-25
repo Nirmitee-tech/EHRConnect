@@ -22,6 +22,7 @@ interface FormData {
   };
   timezone: string;
   specialties: string[];
+  custom_services: string[];
   logo_file: File | null;
   logo_preview: string;
   terms_accepted: boolean;
@@ -102,12 +103,14 @@ export default function RegisterPage() {
     },
     timezone: 'America/New_York',
     specialties: [],
+    custom_services: [],
     logo_file: null,
     logo_preview: '',
     terms_accepted: false,
     baa_accepted: false,
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [customServiceInput, setCustomServiceInput] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -163,6 +166,23 @@ export default function RegisterPage() {
     }));
   };
 
+  const addCustomService = () => {
+    if (customServiceInput.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        custom_services: [...prev.custom_services, customServiceInput.trim()]
+      }));
+      setCustomServiceInput('');
+    }
+  };
+
+  const removeCustomService = (service: string) => {
+    setFormData(prev => ({
+      ...prev,
+      custom_services: prev.custom_services.filter(s => s !== service)
+    }));
+  };
+
   const nextStep = () => {
     if (step < 5) setStep(step + 1);
   };
@@ -208,7 +228,7 @@ export default function RegisterPage() {
             contact_phone: formData.contact_phone,
             address: formData.address,
             timezone: formData.timezone,
-            specialties: formData.specialties,
+            specialties: [...formData.specialties, ...formData.custom_services],
             logo_url: logoDataUrl,
             terms_accepted: formData.terms_accepted,
             baa_accepted: formData.baa_accepted,
@@ -221,7 +241,7 @@ export default function RegisterPage() {
         throw new Error(data.error || 'Registration failed');
       }
 
-      alert('🎉 Your clinic has been created successfully! Please sign in with your credentials.');
+      alert(`🎉 Your ${getOrgTypeLabel().toLowerCase()} has been created successfully! Please sign in with your credentials.`);
       window.location.href = '/auth/signin';
     } catch (err) {
       const error = err as Error;
@@ -262,17 +282,54 @@ export default function RegisterPage() {
     <div className="fixed inset-0 flex overflow-hidden">
       {/* Left Side - Live Preview Card */}
       <div className="hidden lg:flex lg:flex-1 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 items-center justify-center p-12 relative overflow-hidden">
-        {/* Animated Background */}
-        <div className="absolute inset-0 opacity-10">
+        {/* Animated Background Blobs - Even Lighter */}
+        <div className="absolute inset-0 opacity-[0.06] z-0">
           <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl translate-x-1/2 translate-y-1/2 animate-pulse" style={{ animationDelay: '1s' }}></div>
         </div>
 
-        {/* Grid Pattern */}
-        <div className="absolute inset-0 opacity-5" style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)',
-          backgroundSize: '50px 50px'
-        }}></div>
+        {/* Medical Cross Pattern - Meaningful Design */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+          {/* Cross pattern in corners - representing healthcare */}
+          <div className="absolute top-[15%] right-[10%] opacity-[0.04]">
+            <div className="relative w-16 h-16">
+              <div className="absolute top-1/2 left-0 w-16 h-4 bg-white -translate-y-1/2"></div>
+              <div className="absolute left-1/2 top-0 w-4 h-16 bg-white -translate-x-1/2"></div>
+            </div>
+          </div>
+
+          <div className="absolute bottom-[20%] left-[8%] opacity-[0.04]">
+            <div className="relative w-12 h-12">
+              <div className="absolute top-1/2 left-0 w-12 h-3 bg-white -translate-y-1/2"></div>
+              <div className="absolute left-1/2 top-0 w-3 h-12 bg-white -translate-x-1/2"></div>
+            </div>
+          </div>
+
+          {/* Heartbeat line pattern */}
+          <svg className="absolute top-[40%] left-[5%] w-32 h-16 opacity-[0.05]" viewBox="0 0 128 64">
+            <path d="M0,32 L20,32 L25,20 L30,44 L35,28 L40,32 L128,32" stroke="white" strokeWidth="2" fill="none" />
+          </svg>
+
+          <svg className="absolute bottom-[35%] right-[12%] w-24 h-12 opacity-[0.05]" viewBox="0 0 96 48">
+            <path d="M0,24 L15,24 L18,15 L22,33 L26,21 L30,24 L96,24" stroke="white" strokeWidth="2" fill="none" />
+          </svg>
+
+          {/* Subtle floating circles - organized pattern */}
+          <div className="absolute top-[25%] left-[15%] w-20 h-20 border border-white border-opacity-[0.03] rounded-full animate-float-slow"></div>
+          <div className="absolute top-[60%] right-[18%] w-24 h-24 border border-white border-opacity-[0.03] rounded-full animate-float-slow" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute bottom-[25%] left-[20%] w-16 h-16 border border-white border-opacity-[0.03] rounded-full animate-float-slow" style={{ animationDelay: '2s' }}></div>
+
+          {/* DNA helix inspired dots - connected pattern */}
+          <div className="absolute top-[30%] right-[25%]">
+            <div className="relative w-2 h-32 opacity-[0.04]">
+              <div className="absolute top-0 left-0 w-2 h-2 bg-white rounded-full"></div>
+              <div className="absolute top-[25%] right-0 w-2 h-2 bg-white rounded-full"></div>
+              <div className="absolute top-[50%] left-0 w-2 h-2 bg-white rounded-full"></div>
+              <div className="absolute top-[75%] right-0 w-2 h-2 bg-white rounded-full"></div>
+              <div className="absolute bottom-0 left-0 w-2 h-2 bg-white rounded-full"></div>
+            </div>
+          </div>
+        </div>
 
         <div className="relative z-10 max-w-lg w-full">
           <div className="mb-8">
@@ -321,7 +378,7 @@ export default function RegisterPage() {
             )}
 
             {/* Specialties Preview */}
-            {formData.specialties.length > 0 && (
+            {(formData.specialties.length > 0 || formData.custom_services.length > 0) && (
               <div className="space-y-2">
                 <p className="text-sm font-semibold text-gray-700">Services Offered</p>
                 <div className="flex flex-wrap gap-2">
@@ -337,6 +394,15 @@ export default function RegisterPage() {
                       </span>
                     );
                   })}
+                  {formData.custom_services.map(service => (
+                    <span
+                      key={service}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm font-medium"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      {service}
+                    </span>
+                  ))}
                 </div>
               </div>
             )}
@@ -689,9 +755,56 @@ export default function RegisterPage() {
                   })}
                 </div>
 
-                {formData.specialties.length === 0 && (
+                {/* Custom Services Input */}
+                <div className="pt-3 border-t border-gray-200">
+                  <label className="block text-base font-medium text-gray-700 mb-2">
+                    Add Custom Service <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={customServiceInput}
+                      onChange={(e) => setCustomServiceInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomService())}
+                      placeholder="e.g., Home Visits, Telemedicine"
+                      className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={addCustomService}
+                      disabled={!customServiceInput.trim()}
+                      className="px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Add
+                    </button>
+                  </div>
+
+                  {/* Display custom services */}
+                  {formData.custom_services.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {formData.custom_services.map((service, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm font-medium"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          {service}
+                          <button
+                            type="button"
+                            onClick={() => removeCustomService(service)}
+                            className="hover:bg-green-200 rounded-full p-0.5 transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {(formData.specialties.length === 0 && formData.custom_services.length === 0) && (
                   <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-                    Please select at least one specialty to continue
+                    Please select at least one service or add a custom one to continue
                   </p>
                 )}
 
@@ -706,7 +819,7 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={nextStep}
-                    disabled={formData.specialties.length === 0}
+                    disabled={formData.specialties.length === 0 && formData.custom_services.length === 0}
                     className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 rounded-lg transition-all text-base shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Continue
@@ -920,7 +1033,7 @@ export default function RegisterPage() {
                     disabled={loading}
                     className="flex-1 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-md hover:shadow-lg"
                   >
-                    {loading ? 'Creating Your Clinic...' : 'Create Clinic'}
+                    {loading ? `Creating Your ${getOrgTypeLabel()}...` : `Create ${getOrgTypeLabel()}`}
                   </button>
                 </div>
               </div>
@@ -941,7 +1054,7 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* CSS Animation */}
+        {/* CSS Animations */}
         <style jsx>{`
           @keyframes float {
             0%, 100% {
@@ -957,8 +1070,70 @@ export default function RegisterPage() {
               transform: translateY(-20px) translateX(5px);
             }
           }
+
+          @keyframes float-slow {
+            0%, 100% {
+              transform: translateY(0) translateX(0) scale(1);
+            }
+            25% {
+              transform: translateY(-30px) translateX(20px) scale(1.05);
+            }
+            50% {
+              transform: translateY(-60px) translateX(-20px) scale(0.95);
+            }
+            75% {
+              transform: translateY(-30px) translateX(10px) scale(1.02);
+            }
+          }
+
+          @keyframes float-medium {
+            0%, 100% {
+              transform: translateY(0) translateX(0) scale(1);
+            }
+            33% {
+              transform: translateY(-25px) translateX(15px) scale(1.1);
+            }
+            66% {
+              transform: translateY(-50px) translateX(-15px) scale(0.9);
+            }
+          }
+
+          @keyframes float-fast {
+            0%, 100% {
+              transform: translateY(0) translateX(0);
+            }
+            50% {
+              transform: translateY(-40px) translateX(-20px);
+            }
+          }
+
+          @keyframes spin-slow {
+            from {
+              transform: rotate(0deg);
+            }
+            to {
+              transform: rotate(360deg);
+            }
+          }
+
           .animate-float {
             animation: float linear infinite;
+          }
+
+          .animate-float-slow {
+            animation: float-slow 20s ease-in-out infinite;
+          }
+
+          .animate-float-medium {
+            animation: float-medium 15s ease-in-out infinite;
+          }
+
+          .animate-float-fast {
+            animation: float-fast 10s ease-in-out infinite;
+          }
+
+          .animate-spin-slow {
+            animation: spin-slow 30s linear infinite;
           }
         `}</style>
       </div>
