@@ -17,38 +17,38 @@ services:
       retries: 5
     restart: unless-stopped
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.0
-    container_name: ehr-keycloak-dev
-    environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-      KC_DB: postgres
-      KC_DB_URL: ${KC_DB_URL}
-      KC_DB_USERNAME: ${DB_USER}
-      KC_DB_PASSWORD: ${DB_PASSWORD}
-      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME}
-      KC_HOSTNAME_STRICT: "false"
-      KC_HOSTNAME_STRICT_HTTPS: "false"
-      KC_PROXY: edge
-      KC_HTTP_ENABLED: "true"
-      KC_HEALTH_ENABLED: "true"
-      KC_METRICS_ENABLED: "true"
-    networks:
-      - ehr-network
-    command:
-      - start
-      - --import-realm
-    volumes:
-      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
-      - ./keycloak/themes:/opt/keycloak/providers/
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-    restart: unless-stopped
+  # keycloak:
+  #   image: quay.io/keycloak/keycloak:26.0
+  #   container_name: ehr-keycloak-dev
+  #   environment:
+  #     KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
+  #     KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+  #     KC_DB: postgres
+  #     KC_DB_URL: ${KC_DB_URL}
+  #     KC_DB_USERNAME: ${DB_USER}
+  #     KC_DB_PASSWORD: ${DB_PASSWORD}
+  #     KC_HOSTNAME: ${KEYCLOAK_HOSTNAME}
+  #     KC_HOSTNAME_STRICT: "false"
+  #     KC_HOSTNAME_STRICT_HTTPS: "false"
+  #     KC_PROXY: edge
+  #     KC_HTTP_ENABLED: "true"
+  #     KC_HEALTH_ENABLED: "true"
+  #     KC_METRICS_ENABLED: "true"
+  #   networks:
+  #     - ehr-network
+  #   command:
+  #     - start
+  #     - --import-realm
+  #   volumes:
+  #     - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+  #     - ./keycloak/themes:/opt/keycloak/providers/
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #     start_period: 60s
+  #   restart: unless-stopped
 
   ehr-api:
     image: ${DOCKERHUB_USERNAME:-jitendratech}/ehr-api:${API_IMAGE_TAG:-dev}
@@ -74,8 +74,6 @@ services:
       CLAIMMD_API_URL: ${CLAIMMD_API_URL:-https://api.claim.md/v1}
     depends_on:
       redis:
-        condition: service_healthy
-      keycloak:
         condition: service_healthy
     networks:
       - ehr-network
