@@ -109,7 +109,7 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen flex overflow-hidden">
+    <div className="fixed inset-0 flex overflow-hidden">
       {/* Left Side - Blue Gradient with Graphics */}
       <div className="hidden lg:flex lg:flex-1 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 items-center justify-center p-12 relative overflow-hidden">
         {/* Animated Background Patterns */}
@@ -319,41 +319,41 @@ export default function SignInPage() {
           <div className="absolute top-[50%] right-[30%] w-2 h-2 bg-purple-400 rounded-full animate-ping" style={{ animationDuration: '3.5s', animationDelay: '2s' }}></div>
         </div>
 
-        <div className="mx-auto w-full max-w-sm relative z-10">
-          {/* Logo */}
+        <div className="mx-auto w-full max-w-md relative z-10">
+          {/* Logo - Larger */}
           <div className="mb-10">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center shadow-md">
-                <Activity className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                <Activity className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-semibold text-gray-900">EHR Connect</span>
+              <span className="text-2xl font-semibold text-gray-900">EHR Connect</span>
             </div>
           </div>
 
-          {/* Heading */}
+          {/* Heading - Larger */}
           <div className="mb-8">
-            <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">
+            <h1 className="text-3xl font-semibold text-gray-900 tracking-tight mb-3">
               Log in to your account
             </h1>
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="text-base text-gray-600">
               Welcome back! Please enter your details.
             </p>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg px-4 py-3.5 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-red-800">{error}</p>
             </div>
           )}
 
           {/* Postgres Auth Form */}
           {authProvider === 'postgres' && (
-            <form onSubmit={handleCredentialsSignIn} className="space-y-5">
+            <form onSubmit={handleCredentialsSignIn} className="space-y-6">
               {/* Email Field */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label htmlFor="email" className="block text-base font-medium text-gray-700 mb-2">
                   Email
                 </label>
                 <input
@@ -363,13 +363,13 @@ export default function SignInPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-sm"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-sm"
                 />
               </div>
 
               {/* Password Field */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label htmlFor="password" className="block text-base font-medium text-gray-700 mb-2">
                   Password
                 </label>
                 <div className="relative">
@@ -380,17 +380,17 @@ export default function SignInPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                     required
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-sm"
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-sm"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     {showPassword ? (
-                      <EyeOff className="w-4 h-4" />
+                      <EyeOff className="w-5 h-5" />
                     ) : (
-                      <Eye className="w-4 h-4" />
+                      <Eye className="w-5 h-5" />
                     )}
                   </button>
                 </div>
@@ -398,28 +398,28 @@ export default function SignInPage() {
 
               {/* Remember Me & Forgot Password */}
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2.5 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
                   />
-                  <span className="text-sm text-gray-700">Remember for 30 days</span>
+                  <span className="text-base text-gray-700">Remember for 30 days</span>
                 </label>
                 <a
                   href="/auth/forgot-password"
-                  className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                  className="text-base font-medium text-blue-600 hover:text-blue-700 transition-colors"
                 >
                   Forgot password?
                 </a>
               </div>
 
-              {/* Submit Button */}
+              {/* Submit Button - Larger */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium py-2.5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-md hover:shadow-lg"
+                className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-md hover:shadow-lg"
               >
                 {loading ? 'Signing in...' : 'Sign in'}
               </button>
@@ -431,40 +431,31 @@ export default function SignInPage() {
             <div className="space-y-4">
               <button
                 onClick={handleKeycloakSignIn}
-                className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium py-2.5 rounded-lg transition-all text-sm shadow-md hover:shadow-lg"
+                className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 rounded-lg transition-all text-base shadow-md hover:shadow-lg"
               >
                 Sign in with Keycloak
               </button>
-              <p className="text-center text-xs text-gray-500">
+              <p className="text-center text-sm text-gray-500">
                 You will be redirected to Keycloak for authentication
               </p>
             </div>
           )}
 
-          {/* Divider */}
-          <div className="mt-8">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="px-2 bg-white text-gray-500">OR</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Sign Up Link */}
-          <div className="mt-8">
-            <button
-              onClick={() => window.location.href = '/register'}
-              className="w-full border border-gray-300 hover:bg-gray-50 active:bg-gray-100 text-gray-700 font-medium py-2.5 rounded-lg transition-all text-sm hover:shadow-sm"
-            >
-              Create an account
-            </button>
+          {/* Sign Up Link - Microsoft Style */}
+          <div className="mt-8 text-center">
+            <p className="text-base text-gray-600">
+              Don't have an account?{' '}
+              <a
+                href="/register"
+                className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
+              >
+                Sign up
+              </a>
+            </p>
           </div>
 
           {/* Footer Text */}
-          <p className="mt-8 text-xs text-center text-gray-500">
+          <p className="mt-8 text-sm text-center text-gray-500">
             By continuing, you agree to our{' '}
             <a href="/terms" className="text-gray-700 hover:text-gray-900 underline">
               Terms of Service
