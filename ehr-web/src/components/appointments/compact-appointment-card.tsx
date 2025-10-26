@@ -9,7 +9,7 @@ import { useCalendarSettings } from '@/hooks/useCalendarSettings';
 interface CompactAppointmentCardProps {
   appointment: Appointment;
   onClick?: () => void;
-  onDragStart?: (appointment: Appointment) => void;
+  onDragStart?: (appointment: Appointment, offsetY?: number) => void;
   onDragEnd?: () => void;
   className?: string;
   onStatusChange?: (appointmentId: string, newStatus: string) => void;
@@ -166,7 +166,10 @@ export function CompactAppointmentCard({
         }
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('application/json', JSON.stringify(appointment));
-        onDragStart?.(appointment);
+        // Calculate where on the appointment card the user grabbed it
+        const rect = e.currentTarget.getBoundingClientRect();
+        const offsetY = e.clientY - rect.top;
+        onDragStart?.(appointment, offsetY);
       }}
       onDragEnd={onDragEnd}
       onClick={onClick}

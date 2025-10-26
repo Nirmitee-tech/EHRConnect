@@ -27,6 +27,7 @@ export function WeekViewDraggable({
   onStartEncounter
 }: WeekViewDraggableProps) {
   const [draggedAppointment, setDraggedAppointment] = useState<Appointment | null>(null);
+  const [dragOffset, setDragOffset] = useState<number>(0); // Track where on the card the user grabbed
   const [dragOver, setDragOver] = useState<{date: Date; hour: number} | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [createStart, setCreateStart] = useState<{date: Date; hour: number} | null>(null);
@@ -65,9 +66,16 @@ export function WeekViewDraggable({
       const gridRect = gridContainerRef.current.getBoundingClientRect();
       const relativeY = e.clientY - gridRect.top;
 
-      // Calculate which hour and minute we're at (60px per hour)
-      const totalMinutes = Math.max(0, Math.min(1440, (relativeY / 60) * 60)); // 0-1440 minutes (24 hours)
-      const snappedMinutes = Math.round(totalMinutes / 15) * 15; // Snap to 15-minute intervals
+      // Calculate total grid height and pixels per minute
+      const totalGridHeight = timeSlots.length * 60;
+      const totalMinutesInDay = 24 * 60;
+      const pixelsPerMinute = totalGridHeight / totalMinutesInDay;
+
+      // Calculate exact minute from midnight based on Y position
+      const totalMinutes = Math.max(0, Math.min(1440, relativeY / pixelsPerMinute));
+
+      // Snap to slot duration intervals (e.g., 15, 30, 60 minutes based on org settings)
+      const snappedMinutes = Math.round(totalMinutes / slotDuration) * slotDuration;
 
       const hours = Math.floor(snappedMinutes / 60);
       const minutes = snappedMinutes % 60;
@@ -81,7 +89,7 @@ export function WeekViewDraggable({
         // Dragging top edge - change start time
         const currentEndTime = resizePreview?.newEnd || aptEnd;
         const maxStart = new Date(currentEndTime);
-        maxStart.setMinutes(maxStart.getMinutes() - 15);
+        maxStart.setMinutes(maxStart.getMinutes() - slotDuration);
 
         if (newTime.getTime() <= maxStart.getTime()) {
           setResizePreview({ newStart: newTime, newEnd: currentEndTime });
@@ -90,7 +98,7 @@ export function WeekViewDraggable({
         // Dragging bottom edge - change end time
         const currentStartTime = resizePreview?.newStart || aptStart;
         const minEnd = new Date(currentStartTime);
-        minEnd.setMinutes(minEnd.getMinutes() + 15);
+        minEnd.setMinutes(minEnd.getMinutes() + slotDuration);
 
         if (newTime.getTime() >= minEnd.getTime()) {
           setResizePreview({ newStart: currentStartTime, newEnd: newTime });
@@ -279,12 +287,15 @@ export function WeekViewDraggable({
     return layoutMap;
   };
 
-  const handleDragStart = (appointment: Appointment) => {
+  const handleDragStart = (appointment: Appointment, offsetY?: number) => {
     setDraggedAppointment(appointment);
+    // Store the offset in pixels from the top of the appointment card
+    setDragOffset(offsetY || 0);
   };
 
   const handleDragEnd = () => {
     setDraggedAppointment(null);
+    setDragOffset(0);
     setDragOver(null);
   };
 
@@ -298,9 +309,9 @@ export function WeekViewDraggable({
     const rect = target.getBoundingClientRect();
     const relativeY = e.clientY - rect.top;
     const percentInCell = relativeY / rect.height;
-    const minutesInSlot = Math.floor(percentInCell * 60);
+    const minutesInSlot = Math.floor(percentInCell * slotDuration);
     const totalMinutes = minutes + minutesInSlot;
-    const snappedMinutes = Math.round(totalMinutes / 15) * 15;
+    const snappedMinutes = Math.round(totalMinutes / slotDuration) * slotDuration;
 
     // Calculate the snapped hour for visual feedback
     const snappedHour = hour + Math.floor(snappedMinutes / 60);
@@ -328,22 +339,52 @@ export function WeekViewDraggable({
   const handleDrop = (e: React.DragEvent, date: Date, hour: number, minutes: number = 0) => {
     e.preventDefault();
 
-    if (draggedAppointment) {
-      // Calculate precise drop position within the cell
-      const target = e.currentTarget as HTMLElement;
-      const rect = target.getBoundingClientRect();
-      const relativeY = e.clientY - rect.top;
+    if (draggedAppointment && gridContainerRef.current) {
+      // Calculate precise drop position based on the entire grid for accuracy
+      const gridRect = gridContainerRef.current.getBoundingClientRect();
+      const relativeY = e.clientY - gridRect.top;
 
-      // Each cell is 60px tall, calculate the minute offset within this cell
-      const percentInCell = relativeY / rect.height;
-      const minutesInSlot = Math.floor(percentInCell * 60); // 60 minutes per hour slot
+      // Subtract the drag offset to account for where the user grabbed the appointment
+      // This prevents the appointment from jumping when dropped
+      const adjustedY = relativeY - dragOffset;
 
-      // Snap to 15-minute intervals for cleaner scheduling
-      const totalMinutes = minutes + minutesInSlot;
-      const snappedMinutes = Math.round(totalMinutes / 15) * 15;
+      // Calculate total grid height and pixels per minute
+      const totalGridHeight = timeSlots.length * 60;
+      const totalMinutesInDay = 24 * 60;
+      const pixelsPerMinute = totalGridHeight / totalMinutesInDay;
+
+      // Calculate exact minute from midnight based on Y position
+      const totalMinutesFromMidnight = adjustedY / pixelsPerMinute;
+
+      // Snap to slot duration intervals (e.g., 15, 30, 60 minutes based on org settings)
+      const snappedMinutes = Math.round(totalMinutesFromMidnight / slotDuration) * slotDuration;
 
       // Convert to decimal hour format (e.g., 9.5 for 9:30, 9.25 for 9:15)
-      const hourWithMinutes = hour + (snappedMinutes / 60);
+      const hourWithMinutes = snappedMinutes / 60;
+
+      // Check for overlapping appointments
+      const aptDuration = new Date(draggedAppointment.endTime).getTime() - new Date(draggedAppointment.startTime).getTime();
+      const aptDurationMinutes = aptDuration / (1000 * 60);
+      const newStart = new Date(date);
+      newStart.setHours(0, snappedMinutes, 0, 0);
+      const newEnd = new Date(newStart);
+      newEnd.setMinutes(newEnd.getMinutes() + aptDurationMinutes);
+
+      // Find overlapping appointments on the same date
+      const overlapping = appointments.filter(apt => {
+        if (apt.id === draggedAppointment.id) return false; // Skip the dragged appointment itself
+        const aptStart = new Date(apt.startTime);
+        if (aptStart.toDateString() !== date.toDateString()) return false; // Different date
+
+        const aptEnd = new Date(apt.endTime);
+        // Check if times overlap
+        return (newStart < aptEnd && newEnd > aptStart);
+      });
+
+      if (overlapping.length > 0) {
+        console.log(`⚠️ Drop will overlap with ${overlapping.length} appointment(s):`, overlapping.map(a => a.patientName));
+        // Allow the drop - layout will handle displaying overlapping appointments side-by-side
+      }
 
       onAppointmentDrop?.(draggedAppointment, date, hourWithMinutes);
     }
@@ -374,9 +415,9 @@ export function WeekViewDraggable({
     const percentInCell = relativeY / rect.height;
     const minutesInSlot = Math.floor(percentInCell * slotDuration);
 
-    // Snap to 15-minute intervals
+    // Snap to slot duration intervals (e.g., 15, 30, 60 minutes based on org settings)
     const totalMinutes = minutes + minutesInSlot;
-    const snappedMinutes = Math.round(totalMinutes / 15) * 15;
+    const snappedMinutes = Math.round(totalMinutes / slotDuration) * slotDuration;
 
     const newTime = new Date(date);
     newTime.setHours(hour, snappedMinutes, 0, 0);
@@ -386,9 +427,9 @@ export function WeekViewDraggable({
       // Use the current preview end time if available, otherwise use original end time
       const currentEndTime = resizePreview?.newEnd || aptEnd;
 
-      // Don't allow start to go past end minus 15 minutes
+      // Don't allow start to go past end minus minimum slot duration
       const maxStart = new Date(currentEndTime);
-      maxStart.setMinutes(maxStart.getMinutes() - 15);
+      maxStart.setMinutes(maxStart.getMinutes() - slotDuration);
 
       if (newTime.getTime() <= maxStart.getTime()) {
         setResizePreview({ newStart: newTime, newEnd: currentEndTime });
@@ -398,9 +439,9 @@ export function WeekViewDraggable({
       // Use the current preview start time if available, otherwise use original start time
       const currentStartTime = resizePreview?.newStart || aptStart;
 
-      // Don't allow end to go before start plus 15 minutes
+      // Don't allow end to go before start plus minimum slot duration
       const minEnd = new Date(currentStartTime);
-      minEnd.setMinutes(minEnd.getMinutes() + 15);
+      minEnd.setMinutes(minEnd.getMinutes() + slotDuration);
 
       if (newTime.getTime() >= minEnd.getTime()) {
         setResizePreview({ newStart: currentStartTime, newEnd: newTime });
@@ -723,7 +764,10 @@ export function WeekViewDraggable({
                           }
                           e.dataTransfer.effectAllowed = 'move';
                           e.dataTransfer.setData('application/json', JSON.stringify(apt));
-                          handleDragStart(apt);
+                          // Calculate where on the appointment card the user grabbed it
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const offsetY = e.clientY - rect.top;
+                          handleDragStart(apt, offsetY);
                         }}
                         onDragEnd={handleDragEnd}
                       >
@@ -923,10 +967,13 @@ export function WeekViewDraggable({
 
                   if (!layoutInfo) {
                     // Single appointment, no overlap - tighter spacing
+                    // When ANY appointment is being dragged, make all OTHER appointments transparent to pointer events
+                    const shouldAllowDragThrough = draggedAppointment && !isDragging;
+
                     return (
                       <div
                         key={apt.id}
-                        className={`absolute pointer-events-auto transition-all duration-200 ease-in-out ${isBeingResized ? 'opacity-70 ring-2 ring-blue-400' : ''}`}
+                        className={`absolute transition-all duration-200 ease-in-out ${isBeingResized ? 'opacity-70 ring-2 ring-blue-400' : ''}`}
                         style={{
                           top: `${style.top}px`,
                           height: `${style.height}px`,
@@ -934,7 +981,9 @@ export function WeekViewDraggable({
                           right: '1px',
                           zIndex: isDragging || isBeingResized ? 1000 : isHovered ? 100 : 10,
                           // When dragging, make element invisible and non-interactive
-                          visibility: isDragging ? 'hidden' : 'visible'
+                          visibility: isDragging ? 'hidden' : 'visible',
+                          // Allow drag-through when another appointment is being dragged
+                          pointerEvents: shouldAllowDragThrough ? 'none' : 'auto'
                         }}
                       >
                         {appointmentElement}
@@ -946,10 +995,13 @@ export function WeekViewDraggable({
                   const columnWidth = 100 / layoutInfo.totalColumns;
                   const leftPercent = (layoutInfo.column * 100) / layoutInfo.totalColumns;
 
+                  // When ANY appointment is being dragged, make all OTHER appointments transparent to pointer events
+                  const shouldAllowDragThrough = draggedAppointment && !isDragging;
+
                   return (
                     <div
                       key={apt.id}
-                      className={`absolute pointer-events-auto transition-all duration-200 ease-in-out ${isBeingResized ? 'opacity-70 ring-2 ring-blue-400' : ''}`}
+                      className={`absolute transition-all duration-200 ease-in-out ${isBeingResized ? 'opacity-70 ring-2 ring-blue-400' : ''}`}
                       style={{
                         top: `${style.top}px`,
                         height: `${style.height}px`,
@@ -957,7 +1009,9 @@ export function WeekViewDraggable({
                         width: `calc(${columnWidth}% - 1px)`,
                         zIndex: isDragging || isBeingResized ? 1000 : isHovered ? 100 : 10 + layoutInfo.column,
                         // When dragging, make element invisible and non-interactive
-                        visibility: isDragging ? 'hidden' : 'visible'
+                        visibility: isDragging ? 'hidden' : 'visible',
+                        // Allow drag-through when another appointment is being dragged
+                        pointerEvents: shouldAllowDragThrough ? 'none' : 'auto'
                       }}
                     >
                       {appointmentElement}
