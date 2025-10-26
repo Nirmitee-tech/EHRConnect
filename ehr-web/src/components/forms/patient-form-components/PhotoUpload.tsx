@@ -12,6 +12,7 @@ export function PhotoUpload({ photoPreview, onPhotoChange }: PhotoUploadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isVideoReady, setIsVideoReady] = useState(false);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -37,20 +38,14 @@ export function PhotoUpload({ photoPreview, onPhotoChange }: PhotoUploadProps) {
 
   const startCamera = async () => {
     try {
+      setIsVideoReady(false);
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: 1280, height: 720 },
         audio: false
       });
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play().catch(err => console.error('Error playing video:', err));
-        };
-      }
-      
-      setStream(mediaStream);
       setIsCameraOn(true);
+      setStream(mediaStream);
     } catch (err) {
       console.error('Error accessing camera:', err);
       alert('Unable to access camera. Please check permissions.');
@@ -66,24 +61,78 @@ export function PhotoUpload({ photoPreview, onPhotoChange }: PhotoUploadProps) {
     }
     setStream(null);
     setIsCameraOn(false);
+    setIsVideoReady(false);
   };
 
-  const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!stream || !videoEl || !isCameraOn) {
+      return;
+    }
 
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+    videoEl.srcObject = stream;
 
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(video, 0, 0);
-        const imageData = canvas.toDataURL('image/jpeg', 0.8);
-        console.log('Photo captured from camera, size:', imageData.length, 'bytes');
-        onPhotoChange(imageData);
-        stopCamera();
+    const handleReadyState = () => {
+      if (!videoEl) {
+        return;
       }
+
+      videoEl
+        .play()
+        .then(() => setIsVideoReady(true))
+        .catch(err => {
+          console.error('Error playing video:', err);
+          setIsVideoReady(false);
+        });
+    };
+
+    if (videoEl.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      handleReadyState();
+    } else {
+      videoEl.onloadeddata = handleReadyState;
+      videoEl.onloadedmetadata = handleReadyState;
+    }
+
+    return () => {
+      if (videoEl) {
+        videoEl.onloadeddata = null;
+        videoEl.onloadedmetadata = null;
+      }
+    };
+  }, [stream, isCameraOn]);
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) {
+      return;
+    }
+
+    if (!isVideoReady) {
+      alert('Camera is still initializing. Please try again in a moment.');
+      return;
+    }
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+
+    const width = video.videoWidth || video.clientWidth;
+    const height = video.videoHeight || video.clientHeight;
+
+    if (!width || !height) {
+      console.warn('Camera frame not ready yet — unable to capture.');
+      alert('Unable to capture photo. Please try again.');
+      return;
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, width, height);
+      const imageData = canvas.toDataURL('image/jpeg', 0.8);
+      console.log('Photo captured from camera, size:', imageData.length, 'bytes');
+      onPhotoChange(imageData);
+      stopCamera();
     }
   };
 
