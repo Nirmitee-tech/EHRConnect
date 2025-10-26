@@ -8,6 +8,16 @@ import { HealthcareHeader } from './healthcare-header';
 import { UserProfile } from './user-profile';
 import { TabProvider } from '@/contexts/tab-context';
 import { TabBar } from './tab-bar';
+import { cn } from '@/lib/utils';
+
+const MAIN_CONTENT_PADDING = {
+  default: 'p-6',
+  overrides: [
+    { prefix: '/appointments', padding: 'p-0' },
+    { prefix: '/apga', padding: 'p-0' },
+    { prefix: '/feature', padding: 'p-0' }
+  ]
+} as const;
 
 export function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -16,6 +26,9 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
   // Routes that should not show the sidebar
   const noSidebarRoutes = ['/onboarding', '/register', '/accept-invitation', '/widget'];
   const shouldShowSidebar = !noSidebarRoutes.some(route => pathname?.startsWith(route));
+  const mainContentPaddingClass =
+    MAIN_CONTENT_PADDING.overrides.find(({ prefix }) => pathname?.startsWith(prefix))?.padding ??
+    MAIN_CONTENT_PADDING.default;
 
   // Show loading state
   if (status === 'loading') {
@@ -82,7 +95,7 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
           <TabBar />
 
           {/* Main Content */}
-          <main className="flex-1 overflow-auto bg-gray-50 p-3">
+          <main className={cn('flex-1 overflow-auto bg-gray-50', mainContentPaddingClass)}>
             {children}
           </main>
         </div>

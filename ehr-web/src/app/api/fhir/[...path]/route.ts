@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 const FHIR_BASE_URL = process.env.FHIR_BASE_URL || 'http://localhost:8000';
 
@@ -51,16 +53,25 @@ async function handleFHIRRequest(
     const path = pathSegments.join('/');
     const url = new URL(request.url);
     const queryParams = url.searchParams.toString();
-    
+
     const fhirUrl = `${FHIR_BASE_URL}/fhir/R4/${path}${queryParams ? `?${queryParams}` : ''}`;
-    
+
     console.log(`[FHIR Proxy] ${method} ${fhirUrl}`);
-    
-    // Simple pass-through to our FHIR backend (no authentication needed for now)
+
+    // Get session to include org_id
+    const session = await getServerSession(authOptions);
+
+    // Simple pass-through to our FHIR backend with org_id header
     const headers: HeadersInit = {
       'Content-Type': 'application/fhir+json',
       'Accept': 'application/fhir+json',
     };
+
+    // Add org_id header from session
+    if (session?.org_id) {
+      headers['x-org-id'] = session.org_id as string;
+      console.log(`[FHIR Proxy] Including org_id: ${session.org_id}`);
+    }
 
     const requestOptions: RequestInit = {
       method,

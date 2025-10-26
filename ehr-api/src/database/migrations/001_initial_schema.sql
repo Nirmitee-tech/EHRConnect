@@ -693,3 +693,98 @@ CREATE INDEX IF NOT EXISTS idx_dashboard_snapshots_org_role_mode
 CREATE INDEX IF NOT EXISTS idx_dashboard_snapshots_role_mode
   ON dashboard_snapshots(role_level, data_mode, period_end DESC);
 
+-- =====================================================
+-- FHIR RESOURCES (Core clinical data storage)
+-- =====================================================
+-- FHIR Resources base table
+CREATE TABLE IF NOT EXISTS fhir_resources (
+  id VARCHAR(64) PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  resource_type VARCHAR(64) NOT NULL,
+  version_id VARCHAR(64) NOT NULL DEFAULT '1',
+  last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  resource_data JSONB NOT NULL,
+  deleted BOOLEAN DEFAULT FALSE,
+  org_id VARCHAR(64), -- For multi-tenant data isolation
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+  -- Add constraint for unique resource version
+  CONSTRAINT unique_resource_version UNIQUE (id, version_id)
+);
+
+-- Indexes for FHIR resource queries
+CREATE INDEX IF NOT EXISTS idx_fhir_resources_type ON fhir_resources(resource_type);
+CREATE INDEX IF NOT EXISTS idx_fhir_resources_last_updated ON fhir_resources(last_updated);
+CREATE INDEX IF NOT EXISTS idx_fhir_resources_deleted ON fhir_resources(deleted);
+CREATE INDEX IF NOT EXISTS idx_fhir_resources_data_gin ON fhir_resources USING GIN (resource_data);
+CREATE INDEX IF NOT EXISTS idx_fhir_resources_org_id ON fhir_resources(org_id);
+CREATE INDEX IF NOT EXISTS idx_fhir_resources_org_type ON fhir_resources(org_id, resource_type);
+
+-- Patient-specific indexes for common searches
+CREATE INDEX IF NOT EXISTS idx_patient_family_name
+ON fhir_resources USING GIN ((resource_data->'name'->0->'family'))
+WHERE resource_type = 'Patient';
+
+CREATE INDEX IF NOT EXISTS idx_patient_given_name
+ON fhir_resources USING GIN ((resource_data->'name'->0->'given'))
+WHERE resource_type = 'Patient';
+
+CREATE INDEX IF NOT EXISTS idx_patient_identifier
+ON fhir_resources USING GIN ((resource_data->'identifier'))
+WHERE resource_type = 'Patient';
+
+CREATE INDEX IF NOT EXISTS idx_patient_birthdate
+ON fhir_resources ((resource_data->>'birthDate'))
+WHERE resource_type = 'Patient';
+
+CREATE INDEX IF NOT EXISTS idx_patient_gender
+ON fhir_resources ((resource_data->>'gender'))
+WHERE resource_type = 'Patient';
+
+-- Organization-specific indexes
+CREATE INDEX IF NOT EXISTS idx_org_name
+ON fhir_resources USING GIN ((resource_data->'name'))
+WHERE resource_type = 'Organization';
+
+CREATE INDEX IF NOT EXISTS idx_org_identifier
+ON fhir_resources USING GIN ((resource_data->'identifier'))
+WHERE resource_type = 'Organization';
+
+-- Practitioner-specific indexes
+CREATE INDEX IF NOT EXISTS idx_practitioner_name
+ON fhir_resources USING GIN ((resource_data->'name'))
+WHERE resource_type = 'Practitioner';
+
+CREATE INDEX IF NOT EXISTS idx_practitioner_identifier
+ON fhir_resources USING GIN ((resource_data->'identifier'))
+WHERE resource_type = 'Practitioner';
+
+-- Appointment-specific indexes
+CREATE INDEX IF NOT EXISTS idx_appointment_date
+ON fhir_resources ((resource_data->>'start'))
+WHERE resource_type = 'Appointment';
+
+CREATE INDEX IF NOT EXISTS idx_appointment_status
+ON fhir_resources ((resource_data->>'status'))
+WHERE resource_type = 'Appointment';
+
+-- History table for versioning
+CREATE TABLE IF NOT EXISTS fhir_resource_history (
+  id VARCHAR(64),
+  version_id VARCHAR(64),
+  resource_type VARCHAR(64) NOT NULL,
+  last_updated TIMESTAMP WITH TIME ZONE NOT NULL,
+  resource_data JSONB NOT NULL,
+  method VARCHAR(10) NOT NULL, -- CREATE, UPDATE, DELETE
+  org_id VARCHAR(64),
+
+  PRIMARY KEY (id, version_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_fhir_history_type ON fhir_resource_history(resource_type);
+CREATE INDEX IF NOT EXISTS idx_fhir_history_updated ON fhir_resource_history(last_updated);
+CREATE INDEX IF NOT EXISTS idx_fhir_history_org_id ON fhir_resource_history(org_id);
+
+COMMENT ON TABLE fhir_resources IS 'Core FHIR R4 resource storage for all clinical data (Patient, Practitioner, Appointment, etc.)';
+COMMENT ON TABLE fhir_resource_history IS 'Version history for FHIR resources';
+COMMENT ON COLUMN fhir_resources.org_id IS 'Organization ID for multi-tenant data isolation. All resources must be scoped to an organization.';
+

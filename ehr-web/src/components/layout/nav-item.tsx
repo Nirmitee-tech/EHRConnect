@@ -79,7 +79,7 @@ export function NavItem({
                   : 'text-[#B0B7D0] group-hover:text-white'
               )}
             />
-            <span className="flex-1 transition-colors duration-200">
+            <span className="flex-1 transition-colors duration-200 text-left">
               {name}
             </span>
             {isExpanded ? (
