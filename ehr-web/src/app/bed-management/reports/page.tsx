@@ -16,10 +16,40 @@ import {
   Download,
   Filter,
   RefreshCw,
+  FileText,
+  PieChart,
+  ArrowUpRight,
+  ArrowDownRight,
+  Building2,
+  Percent,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart as RechartsPie,
+  Pie,
+  Cell,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 import * as bedManagementService from '@/services/bed-management';
 import type {
   BedOccupancyStats,
@@ -27,6 +57,44 @@ import type {
   HospitalizationSummary,
 } from '@/types/bed-management';
 import { useFacility } from '@/contexts/facility-context';
+
+// Mock data for charts
+const occupancyTrendData = [
+  { date: 'Jan 1', occupancy: 78, available: 22, target: 85 },
+  { date: 'Jan 8', occupancy: 82, available: 18, target: 85 },
+  { date: 'Jan 15', occupancy: 85, available: 15, target: 85 },
+  { date: 'Jan 22', occupancy: 88, available: 12, target: 85 },
+  { date: 'Jan 29', occupancy: 86, available: 14, target: 85 },
+  { date: 'Feb 5', occupancy: 90, available: 10, target: 85 },
+  { date: 'Feb 12', occupancy: 87, available: 13, target: 85 },
+];
+
+const admissionDischargeData = [
+  { day: 'Mon', admissions: 12, discharges: 8, transfers: 3 },
+  { day: 'Tue', admissions: 15, discharges: 10, transfers: 5 },
+  { day: 'Wed', admissions: 18, discharges: 14, transfers: 4 },
+  { day: 'Thu', admissions: 14, discharges: 12, transfers: 6 },
+  { day: 'Fri', admissions: 16, discharges: 15, transfers: 2 },
+  { day: 'Sat', admissions: 10, discharges: 8, transfers: 3 },
+  { day: 'Sun', admissions: 8, discharges: 6, transfers: 2 },
+];
+
+const bedStatusPieData = [
+  { name: 'Occupied', value: 68, color: '#DC2626' },
+  { name: 'Available', value: 18, color: '#059669' },
+  { name: 'Reserved', value: 8, color: '#F59E0B' },
+  { name: 'Maintenance', value: 6, color: '#6B7280' },
+];
+
+const lengthOfStayData = [
+  { range: '0-2 days', count: 45, avg: 1.5 },
+  { range: '3-5 days', count: 68, avg: 4.2 },
+  { range: '6-10 days', count: 42, avg: 7.8 },
+  { range: '11-20 days', count: 28, avg: 14.5 },
+  { range: '20+ days', count: 12, avg: 28.3 },
+];
+
+const COLORS = ['#DC2626', '#059669', '#F59E0B', '#6B7280'];
 
 export default function ReportsPage() {
   const router = useRouter();
@@ -39,6 +107,8 @@ export default function ReportsPage() {
   const [wardOccupancy, setWardOccupancy] = useState<WardOccupancyData[]>([]);
   const [summary, setSummary] = useState<HospitalizationSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState('30d');
+  const [reportType, setReportType] = useState('overview');
 
   // Get auth from session
   useEffect(() => {
@@ -77,12 +147,6 @@ export default function ReportsPage() {
     ? parseFloat(occupancyStats.occupancyRate.toString())
     : 0;
 
-  const getOccupancyColor = (rate: number) => {
-    if (rate >= 90) return 'text-red-600';
-    if (rate >= 75) return 'text-orange-600';
-    return 'text-green-600';
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-200px)]">
@@ -95,133 +159,322 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-xl">
-        <div className="p-6 max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50 -m-6">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 bg-[#0F1E56] text-white shadow-lg">
+        <div className="px-6 py-3">
+          <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => router.back()}
+                onClick={() => router.push('/bed-management')}
                 className="text-white hover:bg-white/20"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
               </Button>
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>
-                <p className="text-blue-100 mt-1">Comprehensive bed management insights and statistics</p>
+                <h1 className="text-lg font-semibold">Bed Management Reports & Analytics</h1>
+                <p className="text-xs text-blue-200 mt-0.5">
+                  Comprehensive insights and data-driven reports
+                </p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={loadData}
-                className="text-white hover:bg-white/20"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-white hover:bg-white/20"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
+
+            <div className="flex items-center gap-4">
+              {/* Filters */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-blue-300" />
+                  <Select value={dateRange} onValueChange={setDateRange}>
+                    <SelectTrigger className="w-[140px] h-8 bg-white/10 border-white/20 text-white text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7d">Last 7 Days</SelectItem>
+                      <SelectItem value="30d">Last 30 Days</SelectItem>
+                      <SelectItem value="90d">Last 90 Days</SelectItem>
+                      <SelectItem value="ytd">Year to Date</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-blue-300" />
+                  <Select value={reportType} onValueChange={setReportType}>
+                    <SelectTrigger className="w-[160px] h-8 bg-white/10 border-white/20 text-white text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="overview">Overview</SelectItem>
+                      <SelectItem value="occupancy">Occupancy Analysis</SelectItem>
+                      <SelectItem value="flow">Patient Flow</SelectItem>
+                      <SelectItem value="los">Length of Stay</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={loadData}
+                  className="text-white hover:bg-white/20"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-white/20"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
-        {/* Key Metrics - Enhanced */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-l-4 border-l-blue-500 shadow-lg hover:shadow-xl transition-all">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Occupancy Rate</CardTitle>
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Activity className="h-4 w-4 text-blue-600" />
+      <div className="p-6 space-y-6">
+        {/* KPI Cards - Gradient Style like main dashboard */}
+        <div className="grid gap-3 grid-cols-8">
+          <Card className="bg-gradient-to-br from-blue-600 to-blue-700 border-0 shadow-md hover:shadow-lg transition-all">
+            <CardContent className="p-3 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <Activity className="h-5 w-5 opacity-90" />
+                <div className="flex items-center gap-1 text-xs font-medium bg-white/20 px-2 py-0.5 rounded">
+                  <ArrowUpRight className="h-3 w-3" />
+                  {occupancyRate >= 85 ? '+5.2%' : '+2.1%'}
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className={`text-3xl font-bold ${getOccupancyColor(occupancyRate)}`}>
-                {occupancyRate.toFixed(1)}%
-              </div>
-              <p className="text-xs text-gray-600 mt-2 flex items-center gap-1">
-                <Bed className="h-3 w-3" />
-                {occupancyStats?.occupiedBeds || 0} of {occupancyStats?.totalBeds || 0} beds
-              </p>
-              <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full transition-all ${
-                    occupancyRate >= 90 ? 'bg-red-500' :
-                    occupancyRate >= 75 ? 'bg-orange-500' :
-                    'bg-green-500'
-                  }`}
-                  style={{ width: `${Math.min(occupancyRate, 100)}%` }}
-                />
-              </div>
+              <div className="text-2xl font-bold">{occupancyRate.toFixed(1)}%</div>
+              <div className="text-xs opacity-90 mt-0.5">Occupancy Rate</div>
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-purple-500 shadow-lg hover:shadow-xl transition-all">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Total Admissions</CardTitle>
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Users className="h-4 w-4 text-purple-600" />
+          <Card className="bg-gradient-to-br from-emerald-600 to-emerald-700 border-0 shadow-md hover:shadow-lg transition-all">
+            <CardContent className="p-3 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <Bed className="h-5 w-5 opacity-90" />
+                <div className="flex items-center gap-1 text-xs font-medium bg-white/20 px-2 py-0.5 rounded">
+                  <ArrowUpRight className="h-3 w-3" />
+                  8.3%
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900">{summary?.total || 0}</div>
-              <p className="text-xs text-gray-600 mt-2">All time</p>
-              <div className="mt-3 flex items-center text-xs text-green-600">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                <span className="font-medium">Active tracking</span>
-              </div>
+              <div className="text-2xl font-bold">{occupancyStats?.totalBeds || 0}</div>
+              <div className="text-xs opacity-90 mt-0.5">Total Beds</div>
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-green-500 shadow-lg hover:shadow-xl transition-all">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Current Inpatients</CardTitle>
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Bed className="h-4 w-4 text-green-600" />
+          <Card className="bg-gradient-to-br from-violet-600 to-violet-700 border-0 shadow-md hover:shadow-lg transition-all">
+            <CardContent className="p-3 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <Users className="h-5 w-5 opacity-90" />
+                <div className="flex items-center gap-1 text-xs font-medium bg-white/20 px-2 py-0.5 rounded">
+                  <ArrowUpRight className="h-3 w-3" />
+                  12.5%
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900">{summary?.admitted || 0}</div>
-              <p className="text-xs text-gray-600 mt-2">
-                {summary?.preAdmit || 0} scheduled
-              </p>
-              <div className="mt-3 flex items-center gap-2">
-                <Badge className="bg-blue-100 text-blue-700 text-xs">Active</Badge>
-              </div>
+              <div className="text-2xl font-bold">{summary?.total || 0}</div>
+              <div className="text-xs opacity-90 mt-0.5">Total Admissions</div>
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-orange-500 shadow-lg hover:shadow-xl transition-all">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Avg Length of Stay</CardTitle>
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Clock className="h-4 w-4 text-orange-600" />
+          <Card className="bg-gradient-to-br from-amber-600 to-amber-700 border-0 shadow-md hover:shadow-lg transition-all">
+            <CardContent className="p-3 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <TrendingUp className="h-5 w-5 opacity-90" />
+                <div className="flex items-center gap-1 text-xs font-medium bg-white/20 px-2 py-0.5 rounded">
+                  <ArrowUpRight className="h-3 w-3" />
+                  4.2%
+                </div>
               </div>
+              <div className="text-2xl font-bold">{summary?.admitted || 0}</div>
+              <div className="text-xs opacity-90 mt-0.5">Current Inpatients</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-cyan-600 to-cyan-700 border-0 shadow-md hover:shadow-lg transition-all">
+            <CardContent className="p-3 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <Clock className="h-5 w-5 opacity-90" />
+                <div className="flex items-center gap-1 text-xs font-medium bg-white/20 px-2 py-0.5 rounded">
+                  <ArrowDownRight className="h-3 w-3" />
+                  3.1%
+                </div>
+              </div>
+              <div className="text-2xl font-bold">
+                {summary?.averageLos ? parseFloat(summary.averageLos.toString()).toFixed(1) : '0.0'}
+              </div>
+              <div className="text-xs opacity-90 mt-0.5">Avg Length of Stay</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-rose-600 to-rose-700 border-0 shadow-md hover:shadow-lg transition-all">
+            <CardContent className="p-3 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <TrendingDown className="h-5 w-5 opacity-90" />
+                <div className="flex items-center gap-1 text-xs font-medium bg-white/20 px-2 py-0.5 rounded">
+                  <ArrowUpRight className="h-3 w-3" />
+                  6.8%
+                </div>
+              </div>
+              <div className="text-2xl font-bold">{summary?.discharged || 0}</div>
+              <div className="text-xs opacity-90 mt-0.5">Discharges</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-600 to-purple-700 border-0 shadow-md hover:shadow-lg transition-all">
+            <CardContent className="p-3 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <Calendar className="h-5 w-5 opacity-90" />
+                <div className="flex items-center gap-1 text-xs font-medium bg-white/20 px-2 py-0.5 rounded">
+                  <ArrowUpRight className="h-3 w-3" />
+                  5.5%
+                </div>
+              </div>
+              <div className="text-2xl font-bold">{summary?.preAdmit || 0}</div>
+              <div className="text-xs opacity-90 mt-0.5">Scheduled</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-indigo-600 to-indigo-700 border-0 shadow-md hover:shadow-lg transition-all">
+            <CardContent className="p-3 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <Building2 className="h-5 w-5 opacity-90" />
+                <div className="flex items-center gap-1 text-xs font-medium bg-white/20 px-2 py-0.5 rounded">
+                  <ArrowUpRight className="h-3 w-3" />
+                  2.1hr
+                </div>
+              </div>
+              <div className="text-2xl font-bold">{wardOccupancy.length}</div>
+              <div className="text-xs opacity-90 mt-0.5">Active Wards</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts Section - Occupancy Trend */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card className="shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b">
+              <CardTitle className="flex items-center gap-2 text-gray-900">
+                <TrendingUp className="h-5 w-5 text-blue-600" />
+                Occupancy Trend - Last 7 Days
+              </CardTitle>
+              <CardDescription className="text-gray-600">Daily occupancy percentage with target line</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900">
-                {summary?.averageLos
-                  ? parseFloat(summary.averageLos.toString()).toFixed(1)
-                  : '0.0'}
-              </div>
-              <p className="text-xs text-gray-600 mt-2">Days average</p>
-              <div className="mt-3 flex items-center text-xs text-gray-600">
-                <Calendar className="h-3 w-3 mr-1" />
-                <span>Last 30 days</span>
-              </div>
+            <CardContent className="pt-6">
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={occupancyTrendData}>
+                  <defs>
+                    <linearGradient id="colorOccupancy" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="date" stroke="#6b7280" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="#6b7280" style={{ fontSize: '12px' }} />
+                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }} />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Area
+                    type="monotone"
+                    dataKey="occupancy"
+                    stroke="#3b82f6"
+                    fillOpacity={1}
+                    fill="url(#colorOccupancy)"
+                    strokeWidth={2}
+                    name="Occupancy %"
+                  />
+                  <Line type="monotone" dataKey="target" stroke="#f59e0b" strokeDasharray="5 5" strokeWidth={2} name="Target" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b">
+              <CardTitle className="flex items-center gap-2 text-gray-900">
+                <PieChart className="h-5 w-5 text-purple-600" />
+                Bed Status Distribution
+              </CardTitle>
+              <CardDescription className="text-gray-600">Current status breakdown of all beds</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <ResponsiveContainer width="100%" height={300}>
+                <RechartsPie>
+                  <Pie
+                    data={bedStatusPieData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={(entry: any) => `${entry.name}: ${((entry.percent || 0) * 100).toFixed(0)}%`}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {bedStatusPieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }} />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                </RechartsPie>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts Section Row 2 */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card className="shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b">
+              <CardTitle className="flex items-center gap-2 text-gray-900">
+                <Activity className="h-5 w-5 text-green-600" />
+                Admissions vs Discharges - Weekly
+              </CardTitle>
+              <CardDescription className="text-gray-600">Patient flow patterns by day of week</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={admissionDischargeData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="day" stroke="#6b7280" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="#6b7280" style={{ fontSize: '12px' }} />
+                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }} />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Bar dataKey="admissions" fill="#059669" name="Admissions" />
+                  <Bar dataKey="discharges" fill="#dc2626" name="Discharges" />
+                  <Bar dataKey="transfers" fill="#f59e0b" name="Transfers" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b">
+              <CardTitle className="flex items-center gap-2 text-gray-900">
+                <Clock className="h-5 w-5 text-orange-600" />
+                Length of Stay Distribution
+              </CardTitle>
+              <CardDescription className="text-gray-600">Patient distribution by length of stay</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={lengthOfStayData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis type="number" stroke="#6b7280" style={{ fontSize: '12px' }} />
+                  <YAxis dataKey="range" type="category" stroke="#6b7280" style={{ fontSize: '12px' }} width={100} />
+                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }} />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Bar dataKey="count" fill="#6366f1" name="Number of Patients" />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>
