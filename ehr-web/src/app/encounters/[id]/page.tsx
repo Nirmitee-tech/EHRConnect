@@ -89,7 +89,7 @@ export default function EncounterPage() {
 
           // Also get patient resource to check active status
           try {
-            const patientResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/fhir/R4/Patient/${data.patientId}`, {
+            const patientResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/fhir/R4/Patient/${data.patientId}`, {
               credentials: 'include',
             });
             if (patientResponse.ok) {

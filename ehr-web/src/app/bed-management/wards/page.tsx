@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+
 import { useSession } from 'next-auth/react';
 import { Plus, Edit, Trash2, Bed, MapPin, Users, Building2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +29,8 @@ import * as bedManagementService from '@/services/bed-management';
 import type { Ward, CreateWardRequest } from '@/types/bed-management';
 import { useFacility } from '@/contexts/facility-context';
 import { CreateLocationSidebar } from '@/components/location/create-location-sidebar';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function WardsPage() {
   const { data: session } = useSession();
@@ -90,7 +93,7 @@ export default function WardsPage() {
     try {
       // Fetch locations from the inventory masters API (it has locations)
       const response = await fetch(
-        `http://localhost:8000/api/inventory/masters/locations?org_id=${orgId}&active=true`,
+        `${API_URL}/api/inventory/masters/locations?org_id=${orgId}&active=true`,
         {
           headers: {
             'x-org-id': orgId,

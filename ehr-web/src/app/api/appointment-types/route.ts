@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AppointmentType } from '@/types/staff';
 
-const FHIR_BASE_URL = process.env.FHIR_BASE_URL || 'http://localhost:8000';
+const FHIR_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Store appointment types as FHIR Basic resources
 // In a production system, you might use a database or extend FHIR ValueSet

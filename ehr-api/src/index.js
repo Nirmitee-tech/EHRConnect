@@ -45,19 +45,62 @@ dbPool.connect()
 
 // Middleware
 app.use(helmet());
+
+// CORS configuration - Allow specific origins with credentials
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://ehr-dev.nirmitee.io',
+  'https://api-dev.nirmitee.io',
+  'https://ehr-staging.nirmitee.io',
+  'https://api-staging.nirmitee.io',
+  'https://ehr.nirmitee.io',
+  'https://api.nirmitee.io',
+  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
+];
+
 app.use(cors({
-  origin: '*', // Allow all origins for VAPI integration
-  credentials: false, // Must be false when origin is '*'
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, Postman, or server-to-server)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true, // Allow credentials (cookies, authorization headers)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
     'Content-Type',
     'Authorization',
+    'Accept',
+    'Origin',
+    'X-Requested-With',
+    'User-Agent',
+    'Referer',
+    // Custom app headers
     'x-org-id',
     'x-user-id',
     'x-user-roles',
     'x-location-ids',
     'x-request-id',
-  ]
+    'x-practitioner-id',
+    'x-patient-id',
+    // Medplum specific headers
+    'x-medplum',
+    'x-trace-id',
+    'x-correlation-id',
+    'cache-control',
+    'if-match',
+    'if-none-match',
+    'if-modified-since',
+    'if-none-exist',
+    'prefer',
+  ],
+  exposedHeaders: ['Content-Range', 'X-Content-Range', 'ETag', 'Last-Modified', 'Location']
 }));
 app.use(express.json({
   limit: '10mb',
