@@ -97,6 +97,31 @@ function createResourceRoutes(resourceType, controller) {
     try {
       validateFHIRResource(resourceType, req.body);
       const createdResource = await controller.create(req.db, req.body);
+
+      // Broadcast real-time update for Appointments
+      if (resourceType === 'Appointment') {
+        const socketService = require('../services/socket.service');
+        const orgExtension = createdResource.extension?.find(ext =>
+          ext.url === 'http://ehrconnect.io/fhir/StructureDefinition/appointment-organization'
+        );
+        const orgId = orgExtension?.valueReference?.reference?.replace('Organization/', '');
+
+        if (orgId) {
+          const practitionerParticipant = createdResource.participant?.find(p =>
+            p.actor?.reference?.startsWith('Practitioner/')
+          );
+          const practitionerId = practitionerParticipant?.actor?.reference?.replace('Practitioner/', '');
+
+          socketService.notifyAppointmentCreated(orgId, {
+            appointmentId: createdResource.id,
+            practitionerId: practitionerId,
+            start: createdResource.start,
+            end: createdResource.end,
+            date: createdResource.start?.split('T')[0]
+          });
+        }
+      }
+
       res.setHeader('Content-Type', 'application/fhir+json');
       res.status(201).json(createdResource);
     } catch (error) {
@@ -117,6 +142,37 @@ function createResourceRoutes(resourceType, controller) {
     try {
       validateFHIRResource(resourceType, req.body);
       const updatedResource = await controller.update(req.db, req.params.id, req.body);
+
+      // Broadcast real-time update for Appointments
+      if (resourceType === 'Appointment') {
+        const socketService = require('../services/socket.service');
+        const orgExtension = updatedResource.extension?.find(ext =>
+          ext.url === 'http://ehrconnect.io/fhir/StructureDefinition/appointment-organization'
+        );
+        const orgId = orgExtension?.valueReference?.reference?.replace('Organization/', '');
+
+        if (orgId) {
+          const practitionerParticipant = updatedResource.participant?.find(p =>
+            p.actor?.reference?.startsWith('Practitioner/')
+          );
+          const practitionerId = practitionerParticipant?.actor?.reference?.replace('Practitioner/', '');
+
+          // Determine if this was a cancellation
+          const eventType = updatedResource.status === 'cancelled'
+            ? 'notifyAppointmentCancelled'
+            : 'notifyAppointmentUpdated';
+
+          socketService[eventType](orgId, {
+            appointmentId: updatedResource.id,
+            practitionerId: practitionerId,
+            start: updatedResource.start,
+            end: updatedResource.end,
+            status: updatedResource.status,
+            date: updatedResource.start?.split('T')[0]
+          });
+        }
+      }
+
       res.setHeader('Content-Type', 'application/fhir+json');
       res.json(updatedResource);
     } catch (error) {
@@ -135,7 +191,38 @@ function createResourceRoutes(resourceType, controller) {
   // Delete resource: DELETE /{ResourceType}/{id}
   router.delete(`/${resourceType}/:id`, async (req, res) => {
     try {
+      // For appointments, read the resource first to get org and date info for real-time update
+      let appointmentData = null;
+      if (resourceType === 'Appointment') {
+        appointmentData = await controller.read(req.db, req.params.id);
+      }
+
       await controller.delete(req.db, req.params.id);
+
+      // Broadcast real-time update for Appointments
+      if (resourceType === 'Appointment' && appointmentData) {
+        const socketService = require('../services/socket.service');
+        const orgExtension = appointmentData.extension?.find(ext =>
+          ext.url === 'http://ehrconnect.io/fhir/StructureDefinition/appointment-organization'
+        );
+        const orgId = orgExtension?.valueReference?.reference?.replace('Organization/', '');
+
+        if (orgId) {
+          const practitionerParticipant = appointmentData.participant?.find(p =>
+            p.actor?.reference?.startsWith('Practitioner/')
+          );
+          const practitionerId = practitionerParticipant?.actor?.reference?.replace('Practitioner/', '');
+
+          socketService.notifyAppointmentCancelled(orgId, {
+            appointmentId: appointmentData.id,
+            practitionerId: practitionerId,
+            start: appointmentData.start,
+            end: appointmentData.end,
+            date: appointmentData.start?.split('T')[0]
+          });
+        }
+      }
+
       res.status(204).send();
     } catch (error) {
       console.error(`Error deleting ${resourceType}:`, error);

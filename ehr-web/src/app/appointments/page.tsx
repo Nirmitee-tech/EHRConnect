@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { CalendarView, Appointment, AppointmentStats } from '@/types/appointment';
 import { CalendarToolbar } from '@/components/appointments/calendar-toolbar';
@@ -19,6 +19,8 @@ import { Button } from '@/components/ui/button';
 import { PrintAppointments } from '@/components/appointments/print-appointments';
 import { useFacility } from '@/contexts/facility-context';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { io, Socket } from 'socket.io-client';
+import { getSession } from '@/lib/auth';
 
 // Medical appointment categories
 const medicalCategories: EventCategory[] = [
@@ -32,6 +34,10 @@ const medicalCategories: EventCategory[] = [
 export default function AppointmentsPage() {
   const router = useRouter();
   const { currentFacility } = useFacility();
+
+  // Socket.IO connection
+  const socketRef = useRef<Socket | null>(null);
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>('week');
   const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
@@ -236,6 +242,85 @@ export default function AppointmentsPage() {
   useEffect(() => {
     calculateStats(allAppointments);
   }, [activeTab]);
+
+  // Initialize Socket.IO for real-time updates
+  useEffect(() => {
+    const initSocket = async () => {
+      try {
+        const session = await getSession();
+        if (!session?.token || !session?.orgId) {
+          console.log('No session available for Socket.IO');
+          return;
+        }
+
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const socket = io(API_URL, {
+          auth: {
+            token: session.token,
+            orgId: session.orgId
+          },
+          transports: ['websocket', 'polling'],
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionAttempts: 5
+        });
+
+        socketRef.current = socket;
+
+        socket.on('connect', () => {
+          console.log('✅ Connected to real-time appointment service');
+        });
+
+        socket.on('connected', (data: any) => {
+          console.log('Real-time service ready:', data.message);
+        });
+
+        socket.on('disconnect', () => {
+          console.log('❌ Disconnected from real-time service');
+        });
+
+        socket.on('connect_error', (error: any) => {
+          console.error('Socket connection error:', error.message);
+        });
+
+        // Listen for appointment events
+        socket.on('appointment:created', (data: any) => {
+          console.log('📅 Appointment created:', data);
+          loadAppointments();
+          loadStats();
+        });
+
+        socket.on('appointment:updated', (data: any) => {
+          console.log('✏️ Appointment updated:', data);
+          loadAppointments();
+          loadStats();
+        });
+
+        socket.on('appointment:cancelled', (data: any) => {
+          console.log('❌ Appointment cancelled:', data);
+          loadAppointments();
+          loadStats();
+        });
+
+        socket.on('slots:changed', (data: any) => {
+          console.log('🔄 Slots changed:', data);
+          loadAppointments();
+        });
+      } catch (error) {
+        console.error('Failed to initialize Socket.IO:', error);
+      }
+    };
+
+    initSocket();
+
+    // Cleanup on unmount
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, []);
 
   const loadAppointments = async () => {
     setLoading(true);

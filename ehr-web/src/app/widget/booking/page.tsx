@@ -83,9 +83,10 @@
  * - Date/time handling uses user's local timezone
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Calendar, Clock, MapPin, User, Phone, Mail, ArrowRight, CheckCircle2, ChevronRight, AlertCircle, Loader2, Info, Download, Shield } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
+import { io, Socket } from 'socket.io-client';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -172,6 +173,9 @@ export default function BookingWidget() {
   // ========================================
   // STATE MANAGEMENT
   // ========================================
+
+  // Socket.IO connection
+  const socketRef = useRef<Socket | null>(null);
 
   // URL Parameters
   const orgSlug = searchParams.get('org');
@@ -490,6 +494,101 @@ export default function BookingWidget() {
       fetchProvidersWithSlots();
     }
   }, [step, orgInfo, currentMonth, currentYear, selectedDate]);
+
+  /**
+   * Initialize Socket.IO connection for real-time updates
+   */
+  useEffect(() => {
+    if (!orgInfo?.id) return;
+
+    // Initialize socket connection
+    const socket = io(API_URL, {
+      auth: {
+        publicWidget: true,
+        orgId: orgInfo.id
+      },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
+    });
+
+    socketRef.current = socket;
+
+    // Connection event handlers
+    socket.on('connect', () => {
+      console.log('✅ Connected to real-time service');
+    });
+
+    socket.on('connected', (data: any) => {
+      console.log('Real-time service ready:', data.message);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('❌ Disconnected from real-time service');
+    });
+
+    socket.on('connect_error', (error: any) => {
+      console.error('Socket connection error:', error.message);
+    });
+
+    // Appointment event handlers
+    socket.on('appointment:created', (data: any) => {
+      console.log('📅 New appointment created:', data);
+      // Refresh slots if we're on step 2 and the date matches
+      if (step === 2 && data.appointment?.date) {
+        const currentDateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
+        if (data.appointment.date === currentDateStr) {
+          console.log('🔄 Refreshing slots for current date');
+          fetchProvidersWithSlots();
+        }
+      }
+    });
+
+    socket.on('appointment:updated', (data: any) => {
+      console.log('✏️ Appointment updated:', data);
+      // Refresh slots if we're on step 2 and the date matches
+      if (step === 2 && data.appointment?.date) {
+        const currentDateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
+        if (data.appointment.date === currentDateStr) {
+          console.log('🔄 Refreshing slots after update');
+          fetchProvidersWithSlots();
+        }
+      }
+    });
+
+    socket.on('appointment:cancelled', (data: any) => {
+      console.log('❌ Appointment cancelled:', data);
+      // Refresh slots if we're on step 2 and the date matches
+      if (step === 2 && data.appointment?.date) {
+        const currentDateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
+        if (data.appointment.date === currentDateStr) {
+          console.log('🔄 Refreshing slots after cancellation');
+          fetchProvidersWithSlots();
+        }
+      }
+    });
+
+    socket.on('slots:changed', (data: any) => {
+      console.log('🔄 Slots changed:', data);
+      // Refresh slots if we're on step 2 and the date matches
+      if (step === 2 && data.date) {
+        const currentDateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
+        if (data.date === currentDateStr) {
+          console.log('🔄 Refreshing slots for current date');
+          fetchProvidersWithSlots();
+        }
+      }
+    });
+
+    // Cleanup on unmount
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [orgInfo?.id, step, currentMonth, currentYear, selectedDate]);
 
   // ========================================
   // EVENT HANDLERS

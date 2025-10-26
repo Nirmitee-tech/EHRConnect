@@ -169,15 +169,23 @@ export function WeekViewDraggable({
     const aptStart = new Date(appointment.startTime);
     const aptEnd = new Date(appointment.endTime);
 
-    // Calculate start position in pixels from midnight (1px per minute)
+    // Calculate total grid height: each slot is 60px
+    const totalGridHeight = timeSlots.length * 60;
+    const totalMinutesInDay = 24 * 60; // 1440 minutes
+
+    // Calculate pixels per minute based on actual grid structure
+    const pixelsPerMinute = totalGridHeight / totalMinutesInDay;
+
+    // Calculate start position in pixels from midnight
     const startHour = aptStart.getHours();
     const startMinutes = aptStart.getMinutes();
-    const startPosition = (startHour * 60 + startMinutes); // 1px per minute
+    const startTotalMinutes = startHour * 60 + startMinutes;
+    const startPosition = startTotalMinutes * pixelsPerMinute;
 
-    // Calculate duration in pixels (1px per minute)
+    // Calculate duration in pixels
     const durationMs = aptEnd.getTime() - aptStart.getTime();
     const durationMinutes = durationMs / (1000 * 60);
-    const height = durationMinutes; // 1px per minute
+    const height = durationMinutes * pixelsPerMinute;
 
     return {
       top: startPosition,
@@ -519,9 +527,14 @@ export function WeekViewDraggable({
           const currentHour = now.getHours();
           const currentMinutes = now.getMinutes();
 
-          // Calculate the position: each hour slot is 60px tall (min-h-[60px])
+          // Calculate total grid height: each slot is 60px
+          const totalGridHeight = timeSlots.length * 60;
+          const totalMinutesInDay = 24 * 60; // 1440 minutes
+          const pixelsPerMinute = totalGridHeight / totalMinutesInDay;
+
+          // Calculate the position in pixels from midnight
           const totalMinutesFromMidnight = currentHour * 60 + currentMinutes;
-          const pixelPosition = (totalMinutesFromMidnight / 60) * 60; // Convert to pixels
+          const pixelPosition = totalMinutesFromMidnight * pixelsPerMinute;
 
           // Get container height to calculate offset
           const containerHeight = scrollContainerRef.current.clientHeight;
@@ -566,8 +579,17 @@ export function WeekViewDraggable({
   const getCurrentTimePosition = () => {
     const hours = currentTime.getHours();
     const minutes = currentTime.getMinutes();
-    // Each hour slot is 60px tall
-    return hours * 60 + (minutes / 60) * 60;
+
+    // Calculate total grid height: each slot is 60px
+    const totalGridHeight = timeSlots.length * 60;
+    const totalMinutesInDay = 24 * 60; // 1440 minutes
+
+    // Calculate pixels per minute based on actual grid structure
+    const pixelsPerMinute = totalGridHeight / totalMinutesInDay;
+
+    // Calculate position in pixels from midnight
+    const totalMinutes = hours * 60 + minutes;
+    return totalMinutes * pixelsPerMinute;
   };
 
   const isCurrentTimeVisible = () => {
@@ -586,8 +608,13 @@ export function WeekViewDraggable({
       const currentHour = now.getHours();
       const currentMinutes = now.getMinutes();
 
+      // Calculate total grid height: each slot is 60px
+      const totalGridHeight = timeSlots.length * 60;
+      const totalMinutesInDay = 24 * 60; // 1440 minutes
+      const pixelsPerMinute = totalGridHeight / totalMinutesInDay;
+
       const totalMinutesFromMidnight = currentHour * 60 + currentMinutes;
-      const pixelPosition = (totalMinutesFromMidnight / 60) * 60;
+      const pixelPosition = totalMinutesFromMidnight * pixelsPerMinute;
 
       const containerHeight = scrollContainerRef.current.clientHeight;
       const offset = Math.min(200, containerHeight / 3);

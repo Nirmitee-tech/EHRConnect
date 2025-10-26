@@ -347,6 +347,31 @@ router.get('/appointments/:id', async (req, res) => {
 router.put('/appointments/:id', async (req, res) => {
   try {
     const updatedAppointment = await appointmentController.update(req.db, req.params.id, req.body);
+
+    // Extract org_id from the appointment extension
+    const orgExtension = updatedAppointment.extension?.find(ext =>
+      ext.url === 'http://ehrconnect.io/fhir/StructureDefinition/appointment-organization'
+    );
+    const orgId = orgExtension?.valueReference?.reference?.replace('Organization/', '');
+
+    // Broadcast real-time update
+    if (orgId) {
+      const socketService = require('../services/socket.service');
+      const practitionerParticipant = updatedAppointment.participant?.find(p =>
+        p.actor?.reference?.startsWith('Practitioner/')
+      );
+      const practitionerId = practitionerParticipant?.actor?.reference?.replace('Practitioner/', '');
+
+      socketService.notifyAppointmentUpdated(orgId, {
+        appointmentId: updatedAppointment.id,
+        practitionerId: practitionerId,
+        start: updatedAppointment.start,
+        end: updatedAppointment.end,
+        status: updatedAppointment.status,
+        date: updatedAppointment.start?.split('T')[0]
+      });
+    }
+
     res.json({
       success: true,
       data: updatedAppointment
@@ -379,6 +404,30 @@ router.post('/appointments/:id/cancel', async (req, res) => {
     };
 
     const result = await appointmentController.update(req.db, req.params.id, updatedAppointment);
+
+    // Extract org_id from the appointment extension
+    const orgExtension = result.extension?.find(ext =>
+      ext.url === 'http://ehrconnect.io/fhir/StructureDefinition/appointment-organization'
+    );
+    const orgId = orgExtension?.valueReference?.reference?.replace('Organization/', '');
+
+    // Broadcast real-time update
+    if (orgId) {
+      const socketService = require('../services/socket.service');
+      const practitionerParticipant = result.participant?.find(p =>
+        p.actor?.reference?.startsWith('Practitioner/')
+      );
+      const practitionerId = practitionerParticipant?.actor?.reference?.replace('Practitioner/', '');
+
+      socketService.notifyAppointmentCancelled(orgId, {
+        appointmentId: result.id,
+        practitionerId: practitionerId,
+        start: result.start,
+        end: result.end,
+        date: result.start?.split('T')[0]
+      });
+    }
+
     res.json({
       success: true,
       message: 'Appointment cancelled successfully',
@@ -1352,6 +1401,16 @@ router.post('/v2/book-appointment', extractOrgId, async (req, res) => {
 
     // CRITICAL: Pass org_id for multi-tenant data isolation
     const createdAppointment = await appointmentController.create(req.db, appointment, req.orgId);
+
+    // Broadcast real-time update to booking widgets
+    const socketService = require('../services/socket.service');
+    socketService.notifyAppointmentCreated(req.orgId, {
+      appointmentId: createdAppointment.id,
+      practitionerId: practitionerId,
+      start: createdAppointment.start,
+      end: createdAppointment.end,
+      date: createdAppointment.start.split('T')[0] // Extract date for slot refresh
+    });
 
     res.status(201).json({
       success: true,
