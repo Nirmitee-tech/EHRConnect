@@ -14,16 +14,25 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
 
   // Routes that should not show the sidebar
-  const noSidebarRoutes = ['/onboarding', '/register', '/accept-invitation'];
+  const noSidebarRoutes = ['/onboarding', '/register', '/accept-invitation', '/widget'];
   const shouldShowSidebar = !noSidebarRoutes.some(route => pathname?.startsWith(route));
 
   // Show loading state
   if (status === 'loading') {
+    // For widget routes, show minimal loading
+    if (pathname?.startsWith('/widget')) {
+      return <>{children}</>;
+    }
     return <LoadingState message="Loading..." />;
   }
 
   // Show login screen if not authenticated
   if (status === 'unauthenticated' || !session) {
+    // For widget routes, render without any header/layout
+    if (pathname?.startsWith('/widget')) {
+      return <>{children}</>;
+    }
+
     return (
       <div className="flex h-screen bg-gray-50">
         <div className="flex-1 flex flex-col">

@@ -106,14 +106,28 @@ async function handleFHIRRequest(
     
   } catch (error) {
     console.error('[FHIR Proxy] Error:', error);
-    
+
+    // Provide helpful error message
+    let diagnostics = 'Unknown error occurred';
+    if (error instanceof Error) {
+      diagnostics = error.message;
+
+      // Provide more helpful message for common errors
+      if (error.message.includes('ECONNREFUSED') || error.message === 'fetch failed') {
+        diagnostics = `Cannot connect to backend API at ${FHIR_BASE_URL}. Please ensure:
+1. Backend server is running (npm run dev in ehr-api folder)
+2. Backend is accessible at ${FHIR_BASE_URL}
+3. NEXT_PUBLIC_API_URL environment variable is set correctly`;
+      }
+    }
+
     const errorResponse = {
       resourceType: 'OperationOutcome',
       issue: [
         {
           severity: 'error',
           code: 'exception',
-          diagnostics: error instanceof Error ? error.message : 'Unknown error occurred'
+          diagnostics: diagnostics
         }
       ]
     };

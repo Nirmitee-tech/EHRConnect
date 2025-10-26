@@ -393,23 +393,30 @@ router.post('/appointments/:id/cancel', async (req, res) => {
   }
 });
 
-// ==================== SIMPLIFIED APPOINTMENT BOOKING ====================
+// ==================== DEPRECATED V1 ENDPOINTS ====================
+// WARNING: These v1 endpoints lack multi-tenant org_id security
+// Use v2 endpoints instead: /api/public/v2/*
 
 // Simple appointment booking endpoint for VAPI/voice assistants
 // POST /api/public/book-appointment
+// DEPRECATED: Use POST /api/public/v2/book-appointment instead
 router.post('/book-appointment', async (req, res) => {
   try {
+    console.warn('[SECURITY WARNING] Deprecated v1 endpoint called: POST /api/public/book-appointment');
+
     const { patientId, practitionerId, startTime, endTime, appointmentType, reason } = req.body;
 
     // Validate required fields
     if (!patientId || !startTime) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: patientId and startTime are required'
+        error: 'Missing required fields: patientId and startTime are required',
+        deprecated: true,
+        message: 'This endpoint is deprecated and lacks multi-tenant security. Use POST /api/public/v2/book-appointment'
       });
     }
 
-    // Create appointment resource
+    // WARNING: Create appointment resource WITHOUT org_id (SECURITY RISK!)
     const appointment = {
       resourceType: 'Appointment',
       status: 'booked',
@@ -502,6 +509,366 @@ router.get('/health', (req, res) => {
 });
 
 // ==================== V2 ORG-BASED ENDPOINTS ====================
+
+// ==================== WIDGET BOOKING ENDPOINTS ====================
+// These endpoints support the public booking widget
+
+// Get organization details by slug (for booking widget header/branding)
+// GET /api/public/v2/widget/organization/:slug
+router.get('/v2/widget/organization/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    // Query organization by slug from organizations table
+    const sql = `
+      SELECT id, name, slug, org_type, logo_url, specialties, settings
+      FROM organizations
+      WHERE slug = $1 AND status = 'active'
+      LIMIT 1
+    `;
+
+    const { rows } = await req.db.query(sql, [slug]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Organization not found',
+        slug: slug
+      });
+    }
+
+    const org = rows[0];
+
+    // Return simplified organization data for widget
+    res.json({
+      success: true,
+      organization: {
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        type: org.org_type,
+        logo_url: org.logo_url,
+        specialties: org.specialties || [],
+        // Widget-specific settings (if configured)
+        booking_settings: org.settings?.booking_settings || {
+          enabled: true,
+          require_reason: true,
+          default_duration: 30,
+          min_advance_hours: 2,
+          max_advance_days: 90
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching organization:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get appointment types for an organization
+// GET /api/public/v2/widget/appointment-types?org_id=xxx
+router.get('/v2/widget/appointment-types', extractOrgId, async (req, res) => {
+  try {
+    // Query organization-specific appointment types from settings or defaults
+    const sql = `
+      SELECT id, name, settings
+      FROM organizations
+      WHERE id = $1 AND status = 'active'
+      LIMIT 1
+    `;
+
+    const { rows } = await req.db.query(sql, [req.orgId]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Organization not found'
+      });
+    }
+
+    const org = rows[0];
+
+    // Get appointment types from org settings or use defaults
+    const appointmentTypes = org.settings?.appointment_types || [
+      { code: 'follow-up', display: 'Follow-up Visit', duration: 30, description: 'Follow-up appointment with your provider' },
+      { code: 'new-patient', display: 'New Patient Visit', duration: 60, description: 'Comprehensive initial visit for new patients' },
+      { code: 'annual-physical', display: 'Annual Physical', duration: 45, description: 'Yearly health checkup and physical examination' },
+      { code: 'consultation', display: 'Consultation', duration: 30, description: 'General consultation with healthcare provider' },
+      { code: 'urgent-care', display: 'Urgent Care', duration: 30, description: 'Same-day urgent medical care' }
+    ];
+
+    res.json({
+      success: true,
+      orgId: req.orgId,
+      count: appointmentTypes.length,
+      appointmentTypes: appointmentTypes
+    });
+  } catch (error) {
+    console.error('Error fetching appointment types:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get locations for an organization
+// GET /api/public/v2/widget/locations?org_id=xxx
+router.get('/v2/widget/locations', extractOrgId, async (req, res) => {
+  try {
+    // Query FHIR Location resources for this organization
+    const sql = `
+      SELECT resource_data
+      FROM fhir_resources
+      WHERE resource_type = 'Location'
+        AND deleted = FALSE
+        AND resource_data->>'status' = 'active'
+        AND (
+          resource_data->'managingOrganization'->>'reference' = $1
+          OR resource_data->'managingOrganization'->>'reference' = $2
+        )
+      ORDER BY resource_data->>'name' ASC
+      LIMIT 50
+    `;
+
+    const { rows } = await req.db.query(sql, [`Organization/${req.orgId}`, req.orgId]);
+
+    const locations = rows.map(row => {
+      const loc = row.resource_data;
+      return {
+        id: loc.id,
+        name: loc.name,
+        description: loc.description,
+        address: loc.address ? {
+          line: loc.address.line?.join(', '),
+          city: loc.address.city,
+          state: loc.address.state,
+          postalCode: loc.address.postalCode,
+          country: loc.address.country
+        } : null,
+        phone: loc.telecom?.find(t => t.system === 'phone')?.value,
+        type: loc.type?.[0]?.coding?.[0]?.display || 'Healthcare Facility'
+      };
+    });
+
+    // If no locations found, return default
+    if (locations.length === 0) {
+      locations.push({
+        id: 'default',
+        name: 'Main Location',
+        description: 'Primary healthcare facility',
+        address: null,
+        phone: null,
+        type: 'Healthcare Facility'
+      });
+    }
+
+    res.json({
+      success: true,
+      orgId: req.orgId,
+      count: locations.length,
+      locations: locations
+    });
+  } catch (error) {
+    console.error('Error fetching locations:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get practitioners for booking widget (optionally filtered by provider slug)
+// GET /api/public/v2/widget/practitioners?org_id=xxx&provider=dr-john-smith
+// This is different from v2/practitioners as it's optimized for the booking widget
+router.get('/v2/widget/practitioners', extractOrgId, async (req, res) => {
+  try {
+    const { provider } = req.query;
+
+    let sql = `
+      SELECT resource_data
+      FROM fhir_resources
+      WHERE resource_type = 'Practitioner'
+        AND deleted = FALSE
+        AND (resource_data->>'active' = 'true' OR resource_data->>'active' IS NULL)
+    `;
+
+    const queryParams = [];
+
+    // If provider slug is specified, filter to that specific practitioner
+    if (provider) {
+      sql += ` AND resource_data->>'identifier' @> $1`;
+      queryParams.push(JSON.stringify([{ system: 'slug', value: provider }]));
+    }
+
+    sql += ` ORDER BY last_updated DESC LIMIT 100`;
+
+    const { rows } = await req.db.query(sql, queryParams);
+    const practitioners = rows.map(row => row.resource_data);
+
+    // Format for booking widget
+    const formattedPractitioners = practitioners.map(p => ({
+      id: p.id,
+      name: p.name?.[0] ? `${p.name[0].given?.join(' ') || ''} ${p.name[0].family || ''}`.trim() : 'Unknown',
+      firstName: p.name?.[0]?.given?.join(' '),
+      lastName: p.name?.[0]?.family,
+      qualification: p.qualification?.[0]?.code?.coding?.[0]?.display || 'Healthcare Provider',
+      specialty: p.qualification?.[0]?.code?.coding?.[0]?.display,
+      photo: p.photo?.[0]?.url,
+      active: p.active !== false,
+      // Generate initials for avatar
+      initials: (() => {
+        const firstName = p.name?.[0]?.given?.[0] || '';
+        const lastName = p.name?.[0]?.family || '';
+        return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || 'P';
+      })()
+    }));
+
+    res.json({
+      success: true,
+      orgId: req.orgId,
+      provider: provider || null,
+      count: formattedPractitioners.length,
+      practitioners: formattedPractitioners
+    });
+  } catch (error) {
+    console.error('Error fetching practitioners for widget:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get available slots for booking widget (with provider slots count)
+// GET /api/public/v2/widget/slots?org_id=xxx&date=YYYY-MM-DD&provider=xxx (optional)
+router.get('/v2/widget/slots', extractOrgId, async (req, res) => {
+  try {
+    const { date, provider: practitionerId } = req.query;
+
+    if (!date) {
+      return res.status(400).json({
+        success: false,
+        error: 'date parameter is required (format: YYYY-MM-DD)',
+        example: '/api/public/v2/widget/slots?org_id=xxx&date=2025-10-27'
+      });
+    }
+
+    // Reuse the existing slots logic
+    if (!practitionerId) {
+      return await getAllPractitionersSlots(req, res, date);
+    }
+
+    // Get specific practitioner's slots
+    const result = await calculatePractitionerSlots(req.db,
+      await practitionerController.read(req.db, practitionerId),
+      date
+    );
+
+    res.json({
+      success: true,
+      orgId: req.orgId,
+      date: date,
+      practitioner: result
+    });
+  } catch (error) {
+    console.error('Error fetching slots:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Create or find patient for booking widget
+// POST /api/public/v2/widget/check-or-create-patient
+router.post('/v2/widget/check-or-create-patient', extractOrgId, async (req, res) => {
+  try {
+    const { name, email, phone, dob } = req.body;
+
+    if (!name || !email || !phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'name, email, and phone are required'
+      });
+    }
+
+    // Check if patient exists by email or phone
+    const existingPatients = await filterByOrg(req.db, 'Patient', req.orgId);
+    const matchedPatient = existingPatients.find(p => {
+      const hasEmail = p.telecom?.some(t =>
+        t.system === 'email' && t.value?.toLowerCase() === email.toLowerCase()
+      );
+      const hasPhone = p.telecom?.some(t =>
+        t.system === 'phone' && t.value?.replace(/\D/g, '').includes(phone.replace(/\D/g, ''))
+      );
+      return hasEmail || hasPhone;
+    });
+
+    if (matchedPatient) {
+      return res.json({
+        success: true,
+        exists: true,
+        patient: {
+          id: matchedPatient.id,
+          name: matchedPatient.name?.[0] ?
+            `${matchedPatient.name[0].given?.join(' ') || ''} ${matchedPatient.name[0].family || ''}`.trim() : 'Unknown',
+          email: matchedPatient.telecom?.find(t => t.system === 'email')?.value,
+          phone: matchedPatient.telecom?.find(t => t.system === 'phone')?.value,
+          birthDate: matchedPatient.birthDate
+        }
+      });
+    }
+
+    // Create new patient
+    const [firstName, ...lastNameParts] = name.trim().split(' ');
+    const lastName = lastNameParts.join(' ') || firstName;
+
+    const patientData = {
+      resourceType: 'Patient',
+      name: [{
+        use: 'official',
+        family: lastName,
+        given: [firstName]
+      }],
+      telecom: [
+        { system: 'phone', value: phone, use: 'mobile' },
+        { system: 'email', value: email, use: 'home' }
+      ],
+      birthDate: dob,
+      managingOrganization: {
+        reference: `Organization/${req.orgId}`
+      }
+    };
+
+    const newPatient = await patientController.create(req.db, patientData);
+
+    res.status(201).json({
+      success: true,
+      exists: false,
+      created: true,
+      patient: {
+        id: newPatient.id,
+        name: newPatient.name?.[0] ?
+          `${newPatient.name[0].given?.join(' ') || ''} ${newPatient.name[0].family || ''}`.trim() : 'Unknown',
+        email: newPatient.telecom?.find(t => t.system === 'email')?.value,
+        phone: newPatient.telecom?.find(t => t.system === 'phone')?.value,
+        birthDate: newPatient.birthDate
+      }
+    });
+  } catch (error) {
+    console.error('Error checking/creating patient:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ==================== END WIDGET ENDPOINTS ====================
 
 // Get all practitioners for an organization
 // GET /api/public/v2/practitioners?org_id=xxx
@@ -729,52 +1096,20 @@ router.get('/v2/check-patient', extractOrgId, async (req, res) => {
 // GET /api/public/v2/appointments?org_id=xxx&patient_id=xxx&date=YYYY-MM-DD&status=booked
 router.get('/v2/appointments', extractOrgId, async (req, res) => {
   try {
-    let whereClause = 'WHERE resource_type = $1 AND deleted = FALSE';
-    let queryParams = ['Appointment'];
-    let paramIndex = 2;
+    // CRITICAL: Use appointment controller with org_id for multi-tenant data isolation
+    const { patient_id, practitioner_id, date, status, _count, _offset } = req.query;
 
-    // Filter appointments that have patients or practitioners from this org
-    // We'll get all appointments and filter them
-    const { patient_id, practitioner_id, date, status } = req.query;
+    const query = {
+      patient: patient_id,
+      practitioner: practitioner_id,
+      date,
+      status,
+      _count: _count || '100',
+      _offset: _offset || '0'
+    };
 
-    if (patient_id) {
-      whereClause += ` AND resource_data->'participant' @> $${paramIndex}::jsonb`;
-      queryParams.push(JSON.stringify([{ actor: { reference: `Patient/${patient_id}` } }]));
-      paramIndex++;
-    }
-
-    if (practitioner_id) {
-      whereClause += ` AND resource_data->'participant' @> $${paramIndex}::jsonb`;
-      queryParams.push(JSON.stringify([{ actor: { reference: `Practitioner/${practitioner_id}` } }]));
-      paramIndex++;
-    }
-
-    if (date) {
-      whereClause += ` AND DATE(resource_data->>'start') = $${paramIndex}`;
-      queryParams.push(date);
-      paramIndex++;
-    }
-
-    if (status) {
-      whereClause += ` AND resource_data->>'status' = $${paramIndex}`;
-      queryParams.push(status);
-      paramIndex++;
-    }
-
-    const limit = parseInt(req.query._count) || 100;
-    const offset = parseInt(req.query._offset) || 0;
-
-    const sql = `
-      SELECT resource_data
-      FROM fhir_resources
-      ${whereClause}
-      ORDER BY resource_data->>'start' DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-    `;
-
-    queryParams.push(limit, offset);
-    const { rows } = await req.db.query(sql, queryParams);
-    const appointments = rows.map(row => row.resource_data);
+    // Use controller with org_id filtering
+    const appointments = await appointmentController.search(req.db, query, req.orgId);
 
     const simplifiedAppointments = appointments.map(a => ({
       id: a.id,
@@ -973,7 +1308,7 @@ router.post('/v2/book-appointment', extractOrgId, async (req, res) => {
       }
     }
 
-    // Create appointment with organization reference
+    // Create appointment (org_id will be added by controller)
     const appointment = {
       resourceType: 'Appointment',
       status: 'booked',
@@ -989,21 +1324,6 @@ router.post('/v2/book-appointment', extractOrgId, async (req, res) => {
       }] : undefined,
       start: startTime,
       end: endTime || new Date(new Date(startTime).getTime() + 30 * 60000).toISOString(),
-      // Link appointment to organization via extension
-      extension: [{
-        url: 'http://ehrconnect.io/fhir/StructureDefinition/appointment-organization',
-        valueReference: {
-          reference: `Organization/${req.orgId}`
-        }
-      }],
-      // Also add organization via serviceType for better filtering
-      serviceType: [{
-        coding: [{
-          system: 'http://ehrconnect.io/fhir/CodeSystem/organization',
-          code: req.orgId,
-          display: 'Organization Reference'
-        }]
-      }],
       participant: [
         {
           actor: {
@@ -1030,7 +1350,8 @@ router.post('/v2/book-appointment', extractOrgId, async (req, res) => {
       });
     }
 
-    const createdAppointment = await appointmentController.create(req.db, appointment);
+    // CRITICAL: Pass org_id for multi-tenant data isolation
+    const createdAppointment = await appointmentController.create(req.db, appointment, req.orgId);
 
     res.status(201).json({
       success: true,

@@ -197,6 +197,121 @@ router.get('/user-context', async (req, res) => {
 });
 
 /**
+ * GET /api/auth/me
+ * Get full user profile with all permissions, roles, and organization data
+ *
+ * This endpoint returns complete user data that's not stored in the NextAuth session
+ * to prevent "431 Request Header Fields Too Large" errors.
+ *
+ * Returns:
+ * - All user permissions (not limited)
+ * - All user roles (not limited)
+ * - All location IDs (not limited)
+ * - Organization logo and complete data
+ * - All org specialties
+ */
+router.get('/me', async (req, res) => {
+  try {
+    // Extract user and org ID from headers (set by NextAuth middleware)
+    const userId = req.headers['x-user-id'] || req.headers['authorization']?.split(' ')[1];
+    const orgId = req.headers['x-org-id'];
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized - No user ID provided'
+      });
+    }
+
+    // Fetch user with all related data
+    const userQuery = `
+      SELECT
+        u.id,
+        u.email,
+        u.name,
+        u.org_id,
+        u.onboarding_completed,
+        u.location_ids,
+        u.scope,
+        o.name as org_name,
+        o.slug as org_slug,
+        o.type as org_type,
+        o.logo_url as org_logo,
+        o.specialties as org_specialties,
+        COALESCE(
+          json_agg(
+            DISTINCT jsonb_build_object(
+              'id', r.id,
+              'name', r.name,
+              'description', r.description
+            )
+          ) FILTER (WHERE r.id IS NOT NULL),
+          '[]'
+        ) as roles,
+        COALESCE(
+          json_agg(
+            DISTINCT p.name
+          ) FILTER (WHERE p.name IS NOT NULL),
+          '[]'
+        ) as permissions
+      FROM users u
+      LEFT JOIN organizations o ON u.org_id = o.id
+      LEFT JOIN user_roles ur ON u.id = ur.user_id
+      LEFT JOIN roles r ON ur.role_id = r.id
+      LEFT JOIN role_permissions rp ON r.id = rp.role_id
+      LEFT JOIN permissions p ON rp.permission_id = p.id
+      WHERE u.id = $1
+      GROUP BY u.id, u.email, u.name, u.org_id, u.onboarding_completed,
+               u.location_ids, u.scope, o.name, o.slug, o.type, o.logo_url, o.specialties
+    `;
+
+    const result = await query(userQuery, [userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const user = result.rows[0];
+
+    // Format response
+    const profile = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      org_id: user.org_id,
+      org_slug: user.org_slug,
+      org_name: user.org_name,
+      org_type: user.org_type,
+      org_logo: user.org_logo,
+      org_specialties: user.org_specialties || [],
+      onboarding_completed: user.onboarding_completed,
+      location_ids: user.location_ids || [],
+      scope: user.scope,
+      roles: user.roles || [],
+      permissions: user.permissions || [],
+      // Additional metadata
+      total_roles: (user.roles || []).length,
+      total_permissions: (user.permissions || []).length,
+      total_locations: (user.location_ids || []).length,
+    };
+
+    res.json({
+      success: true,
+      profile: profile
+    });
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to fetch user profile'
+    });
+  }
+});
+
+/**
  * POST /api/auth/logout
  * Log logout event
  */
@@ -212,7 +327,7 @@ router.post('/logout', async (req, res) => {
           org_id, actor_user_id, action, target_type, target_id,
           target_name, status, metadata, ip_address, user_agent
         )
-        VALUES ($1, $2, 'AUTH.LOGOUT', 'User', $2, 
+        VALUES ($1, $2, 'AUTH.LOGOUT', 'User', $2,
                 (SELECT email FROM users WHERE id = $2),
                 'success', $3, $4, $5)`,
         [

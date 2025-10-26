@@ -1,8 +1,9 @@
 'use client';
 
-import { User, Settings, LogOut, LogIn } from 'lucide-react';
+import { User, Settings, LogOut, LogIn, Calendar } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
+import Link from 'next/link';
 
 export function UserProfile() {
   const { data: session, status } = useSession();
@@ -36,11 +37,11 @@ export function UserProfile() {
       await signOut({ redirect: false });
       // Small delay to ensure cleanup completes before signing in
       setTimeout(() => {
-        signIn('keycloak');
+        signIn();
       }, 100);
     } else {
       // No session to clear, sign in directly
-      signIn('keycloak');
+      signIn();
     }
   };
 
@@ -116,17 +117,29 @@ export function UserProfile() {
               </div>
             )}
           </div>
-          
-          <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-all flex items-center gap-3">
-            <User className="h-4 w-4 text-gray-400" />
-            <span>Profile</span>
-          </button>
-          
-          <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-all flex items-center gap-3">
-            <Settings className="h-4 w-4 text-gray-400" />
-            <span>Settings</span>
-          </button>
-          
+
+          <Link
+            href={`/widget/booking?org=${(session as any)?.org_slug || ''}`}
+            target="_blank"
+            className="w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 transition-all flex items-center gap-3 font-semibold"
+            onClick={() => setIsOpen(false)}
+          >
+            <Calendar className="h-4 w-4 text-blue-600" />
+            <span>Book Appointment (Public Widget)</span>
+          </Link>
+
+          <div className="border-t border-gray-100 mt-1 pt-1">
+            <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-all flex items-center gap-3">
+              <User className="h-4 w-4 text-gray-400" />
+              <span>Profile</span>
+            </button>
+
+            <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-all flex items-center gap-3">
+              <Settings className="h-4 w-4 text-gray-400" />
+              <span>Settings</span>
+            </button>
+          </div>
+
           <div className="border-t border-gray-100 mt-1 pt-1">
             <button
               onClick={() => signOut({ callbackUrl: '/' })}

@@ -13,6 +13,7 @@ const rbacRoutes = require('./routes/rbac');
 const rbacEnhancedRoutes = require('./routes/rbac.enhanced');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
+const userDataRoutes = require('./routes/user-data');
 const onboardingRoutes = require('./routes/onboarding');
 const billingRoutes = require('./routes/billing');
 const inventoryRoutes = require('./routes/inventory');
@@ -163,6 +164,7 @@ app.use('/api/invitations', invitationRoutes);
 app.use('/api/rbac', rbacRoutes);
 app.use('/api/rbac/v2', rbacEnhancedRoutes); // Enhanced RBAC with permission matrix
 app.use('/api/auth', authRoutes);
+app.use('/api/user', userDataRoutes); // Separate endpoints for user data with Redis caching
 app.use('/api/billing', billingRoutes);
 app.use('/api/inventory/masters', inventoryMastersRoutes);
 app.use('/api/inventory', inventoryRoutes);

@@ -2,11 +2,18 @@ const { v4: uuidv4 } = require('uuid');
 
 class AppointmentController {
   // Search appointments
-  async search(db, query) {
+  async search(db, query, orgId = null) {
     try {
       let whereClause = 'WHERE resource_type = $1 AND deleted = FALSE';
       let queryParams = ['Appointment'];
       let paramIndex = 2;
+
+      // CRITICAL: Always filter by org_id for multi-tenant data isolation
+      if (orgId) {
+        whereClause += ` AND org_id = $${paramIndex}`;
+        queryParams.push(orgId);
+        paramIndex++;
+      }
 
       // Handle search parameters
       if (query.patient) {
@@ -95,12 +102,18 @@ class AppointmentController {
   }
 
   // Read single appointment
-  async read(db, id) {
+  async read(db, id, orgId = null) {
     try {
-      const { rows } = await db.query(
-        'SELECT resource_data FROM fhir_resources WHERE id = $1 AND resource_type = $2 AND deleted = FALSE',
-        [id, 'Appointment']
-      );
+      let query = 'SELECT resource_data FROM fhir_resources WHERE id = $1 AND resource_type = $2 AND deleted = FALSE';
+      let params = [id, 'Appointment'];
+
+      // CRITICAL: Filter by org_id for multi-tenant data isolation
+      if (orgId) {
+        query += ' AND org_id = $3';
+        params.push(orgId);
+      }
+
+      const { rows } = await db.query(query, params);
       return rows.length > 0 ? rows[0].resource_data : null;
     } catch (error) {
       throw new Error(`Failed to read appointment: ${error.message}`);
@@ -108,8 +121,13 @@ class AppointmentController {
   }
 
   // Create new appointment
-  async create(db, resourceData) {
+  async create(db, resourceData, orgId = null) {
     try {
+      // CRITICAL: Require org_id for multi-tenant data isolation
+      if (!orgId) {
+        throw new Error('org_id is required for creating appointments');
+      }
+
       const id = resourceData.id || uuidv4();
       const now = new Date().toISOString();
 
@@ -138,9 +156,20 @@ class AppointmentController {
         throw new Error('Appointment must have a start time');
       }
 
+      // Add organization reference to appointment data for FHIR compliance
+      if (!appointment.extension) {
+        appointment.extension = [];
+      }
+      appointment.extension.push({
+        url: 'http://ehrconnect.io/fhir/StructureDefinition/appointment-organization',
+        valueReference: {
+          reference: `Organization/${orgId}`
+        }
+      });
+
       const query = `
-        INSERT INTO fhir_resources (id, resource_type, resource_data, version_id, last_updated)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO fhir_resources (id, resource_type, resource_data, version_id, last_updated, org_id)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *
       `;
 
@@ -149,7 +178,8 @@ class AppointmentController {
         'Appointment',
         JSON.stringify(appointment),
         1,
-        now
+        now,
+        orgId
       ]);
 
       return appointment;
@@ -159,12 +189,12 @@ class AppointmentController {
   }
 
   // Update appointment
-  async update(db, id, resourceData) {
+  async update(db, id, resourceData, orgId = null) {
     try {
-      // Check if appointment exists
-      const existing = await this.read(db, id);
+      // Check if appointment exists and belongs to this org
+      const existing = await this.read(db, id, orgId);
       if (!existing) {
-        throw new Error('Appointment not found');
+        throw new Error('Appointment not found or access denied');
       }
 
       const now = new Date().toISOString();
@@ -181,23 +211,31 @@ class AppointmentController {
         }
       };
 
-      const query = `
+      let query = `
         UPDATE fhir_resources
         SET resource_data = $1, version_id = $2, last_updated = $3
         WHERE id = $4 AND resource_type = $5 AND deleted = FALSE
-        RETURNING *
       `;
-
-      const { rows } = await db.query(query, [
+      let params = [
         JSON.stringify(updatedAppointment),
         newVersion,
         now,
         id,
         'Appointment'
-      ]);
+      ];
+
+      // CRITICAL: Filter by org_id for multi-tenant data isolation
+      if (orgId) {
+        query += ' AND org_id = $6';
+        params.push(orgId);
+      }
+
+      query += ' RETURNING *';
+
+      const { rows } = await db.query(query, params);
 
       if (rows.length === 0) {
-        throw new Error('Failed to update appointment');
+        throw new Error('Failed to update appointment or access denied');
       }
 
       return updatedAppointment;
@@ -207,23 +245,31 @@ class AppointmentController {
   }
 
   // Delete appointment (soft delete)
-  async delete(db, id) {
+  async delete(db, id, orgId = null) {
     try {
-      const query = `
+      let query = `
         UPDATE fhir_resources
         SET deleted = TRUE, last_updated = $1
         WHERE id = $2 AND resource_type = $3 AND deleted = FALSE
-        RETURNING id
       `;
-
-      const { rows } = await db.query(query, [
+      let params = [
         new Date().toISOString(),
         id,
         'Appointment'
-      ]);
+      ];
+
+      // CRITICAL: Filter by org_id for multi-tenant data isolation
+      if (orgId) {
+        query += ' AND org_id = $4';
+        params.push(orgId);
+      }
+
+      query += ' RETURNING id';
+
+      const { rows } = await db.query(query, params);
 
       if (rows.length === 0) {
-        throw new Error('Appointment not found');
+        throw new Error('Appointment not found or access denied');
       }
 
       return true;

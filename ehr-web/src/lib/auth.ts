@@ -124,9 +124,9 @@ export const authOptions: NextAuthOptions = {
       if (AUTH_PROVIDER === 'keycloak') {
         if (account) {
           token.accessToken = account.access_token
-          token.refreshToken = account.refresh_token
+          // NOTE: Removed refreshToken and idToken from JWT to reduce cookie size
+          // These should be managed server-side or in secure httpOnly cookies
           token.expiresAt = account.expires_at
-          token.idToken = account.id_token
         }
 
         if (profile) {
@@ -134,7 +134,12 @@ export const authOptions: NextAuthOptions = {
           token.id = profile.sub || token.sub
           token.name = profile.name || profile.preferred_username || profile.given_name
           token.email = profile.email
-          token.roles = profile.realm_access?.roles || []
+
+          // Limit roles to prevent large JWT
+          const roles = profile.realm_access?.roles || []
+          token.roles = roles.slice(0, 10) // Limit to first 10 roles
+          token.totalRoles = roles.length
+
           token.fhirUser = profile.fhir_user
 
           // Map multi-tenant claims from Keycloak (custom claims via client mappers)
@@ -143,11 +148,23 @@ export const authOptions: NextAuthOptions = {
           token.org_slug = profileWithClaims.org_slug as string
           token.org_name = profileWithClaims.org_name as string
           token.org_type = profileWithClaims.org_type as string
-          token.org_logo = profileWithClaims.org_logo as string
-          token.org_specialties = profileWithClaims.org_specialties as string[]
+          // NOTE: Removed org_logo to reduce JWT size - fetch from API when needed
+
+          // Limit arrays to prevent JWT from becoming too large
+          const specialties = profileWithClaims.org_specialties as string[] || []
+          token.org_specialties = specialties.slice(0, 5)
+
           token.onboarding_completed = profileWithClaims.onboarding_completed as boolean
-          token.location_ids = profileWithClaims.location_ids as string[]
-          token.permissions = profileWithClaims.permissions as string[]
+
+          // Limit location_ids to prevent large JWT
+          const locationIds = profileWithClaims.location_ids as string[] || []
+          token.location_ids = locationIds.slice(0, 10)
+
+          // Limit permissions to prevent large JWT
+          const permissions = profileWithClaims.permissions as string[] || []
+          token.permissions = permissions.slice(0, 20)
+          token.totalPermissions = permissions.length
+
           token.scope = profileWithClaims.scope as string
         }
 
@@ -167,13 +184,25 @@ export const authOptions: NextAuthOptions = {
         token.org_slug = user.org_slug
         token.org_name = user.org_name
         token.org_type = user.org_type
-        token.org_logo = user.org_logo
-        token.org_specialties = user.org_specialties
+        // NOTE: Removed org_logo to reduce JWT size
+
+        // Limit arrays to prevent JWT from becoming too large
+        const specialties = user.org_specialties || []
+        token.org_specialties = Array.isArray(specialties) ? specialties.slice(0, 5) : []
+
         token.onboarding_completed = user.onboarding_completed
         token.scope = user.scope
-        token.location_ids = user.location_ids
-        token.roles = user.roles
-        token.permissions = user.permissions
+
+        const locationIds = user.location_ids || []
+        token.location_ids = Array.isArray(locationIds) ? locationIds.slice(0, 10) : []
+
+        const roles = user.roles || []
+        token.roles = Array.isArray(roles) ? roles.slice(0, 10) : []
+        token.totalRoles = Array.isArray(roles) ? roles.length : 0
+
+        const permissions = user.permissions || []
+        token.permissions = Array.isArray(permissions) ? permissions.slice(0, 20) : []
+        token.totalPermissions = Array.isArray(permissions) ? permissions.length : 0
       }
 
       return token
@@ -186,26 +215,33 @@ export const authOptions: NextAuthOptions = {
         session.user.email = token.email as string
       }
 
-      // Map authentication tokens
+      // Map ONLY essential authentication data
+      // NOTE: We limit what goes into session to prevent "431 Request Header Fields Too Large" error
+      // Large arrays (permissions, roles, location_ids, specialties) should be fetched from API when needed
       session.accessToken = token.accessToken as string
-      session.refreshToken = token.refreshToken as string
-      session.idToken = token.idToken as string
 
-      // Map roles and permissions
-      session.roles = token.roles as string[]
-      session.fhirUser = token.fhirUser as string
-      session.permissions = token.permissions as string[]
+      // Store only a few critical roles (first 3) to avoid large cookies
+      const roles = token.roles as string[] || []
+      session.roles = roles.slice(0, 3)
+      session.hasMoreRoles = roles.length > 3
 
-      // Map multi-tenant claims to session
+      // Store ONLY essential org data
       session.org_id = token.org_id as string
       session.org_slug = token.org_slug as string
       session.org_name = token.org_name as string
-      session.org_type = token.org_type as string
-      session.org_logo = token.org_logo as string
-      session.org_specialties = token.org_specialties as string[]
       session.onboarding_completed = token.onboarding_completed as boolean
-      session.location_ids = token.location_ids as string[]
+
+      // Store scope for basic permission checking
       session.scope = token.scope as string
+
+      // NOTE: The following are NOT stored in session to reduce cookie size:
+      // - permissions (fetch from /api/auth/me or use accessToken to call backend)
+      // - location_ids (fetch when needed)
+      // - org_specialties (fetch when needed)
+      // - org_logo (fetch when needed)
+      // - refreshToken (kept in JWT only, not in session)
+      // - idToken (kept in JWT only)
+      // - full roles list (only first 3 stored)
 
       return session
     },
@@ -282,6 +318,13 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  pages: {
+    signIn: '/auth/signin',
   },
 }
 
