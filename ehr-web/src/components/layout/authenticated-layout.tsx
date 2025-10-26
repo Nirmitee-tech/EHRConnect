@@ -82,7 +82,7 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
           <TabBar />
 
           {/* Main Content */}
-          <main className="flex-1 overflow-auto bg-gray-50 p-6">
+          <main className="flex-1 overflow-auto bg-gray-50 p-1">
             {children}
           </main>
         </div>

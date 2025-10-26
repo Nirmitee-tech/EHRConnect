@@ -526,49 +526,51 @@ export function WeekViewDraggable({
   // Auto-scroll to current time on mount and when week changes
   useEffect(() => {
     const scrollToCurrentTime = () => {
-      if (scrollContainerRef.current) {
-        // Check if today is in current week view
-        const todayInView = weekDates.some(date => date.toDateString() === today.toDateString());
+      if (!scrollContainerRef.current) return;
 
-        if (todayInView) {
-          const now = new Date();
-          const currentHour = now.getHours();
-          const currentMinutes = now.getMinutes();
+      // Check if today is in current week view
+      const todayInView = weekDates.some(date => date.toDateString() === today.toDateString());
 
-          // Calculate total grid height: each slot is 60px
-          const totalGridHeight = timeSlots.length * 60;
-          const totalMinutesInDay = 24 * 60; // 1440 minutes
-          const pixelsPerMinute = totalGridHeight / totalMinutesInDay;
+      if (todayInView) {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinutes = now.getMinutes();
 
-          // Calculate the position in pixels from midnight
-          const totalMinutesFromMidnight = currentHour * 60 + currentMinutes;
-          const pixelPosition = totalMinutesFromMidnight * pixelsPerMinute;
+        // Calculate total grid height: each slot is 60px
+        const totalGridHeight = timeSlots.length * 60;
+        const totalMinutesInDay = 24 * 60; // 1440 minutes
+        const pixelsPerMinute = totalGridHeight / totalMinutesInDay;
 
-          // Get container height to calculate offset
-          const containerHeight = scrollContainerRef.current.clientHeight;
+        // Calculate the position in pixels from midnight
+        const totalMinutesFromMidnight = currentHour * 60 + currentMinutes;
+        const pixelPosition = totalMinutesFromMidnight * pixelsPerMinute;
 
-          // Center the current time in the view, or show 2 hours above if not enough space
-          const offset = Math.min(200, containerHeight / 3);
-          const scrollPosition = Math.max(0, pixelPosition - offset);
+        // Get container height to calculate offset
+        const containerHeight = scrollContainerRef.current.clientHeight;
 
-          // Use requestAnimationFrame for smooth scrolling after render
+        // Center the current time in the view, or show 2 hours above if not enough space
+        const offset = Math.min(200, containerHeight / 3);
+        const scrollPosition = Math.max(0, pixelPosition - offset);
+
+        // Use multiple animation frames to ensure DOM is ready
+        requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             if (scrollContainerRef.current) {
               scrollContainerRef.current.scrollTo({
                 top: scrollPosition,
-                behavior: 'smooth'
+                behavior: 'auto'  // Instant scroll, no animation
               });
             }
           });
-        }
+        });
       }
     };
 
-    // Delay to ensure DOM is fully rendered
-    const timer = setTimeout(scrollToCurrentTime, 150);
+    // Delay to ensure DOM is fully rendered - increased delay
+    const timer = setTimeout(scrollToCurrentTime, 300);
 
     return () => clearTimeout(timer);
-  }, [currentDate]); // Re-scroll when date changes to different week
+  }, [currentDate, weekDates, timeSlots]); // Re-scroll when date changes to different week
 
   // Filter all-day events
   const allDayEvents = appointments.filter(apt => {
@@ -630,7 +632,7 @@ export function WeekViewDraggable({
 
       scrollContainerRef.current.scrollTo({
         top: scrollPosition,
-        behavior: 'smooth'
+        behavior: 'auto'  // Instant scroll
       });
     }
   };
@@ -712,11 +714,14 @@ export function WeekViewDraggable({
                     const useCustomColor = eventType === 'appointment' && apt.practitionerColor;
                     const bgColor = useCustomColor ? (isHexColor ? null : apt.practitionerColor) : null;
 
+                    // Don't open sidebar for leave/vacation - just show info
+                    const shouldOpenSidebar = eventType !== 'leave' && eventType !== 'vacation';
+
                     return (
                       <div
                         key={apt.id}
-                        onClick={() => onAppointmentClick?.(apt)}
-                        className={`${isDraggable ? 'cursor-pointer' : 'cursor-not-allowed'} rounded px-1.5 py-1 text-[10px] font-medium shadow-sm hover:shadow transition-all border-l-3 ${
+                        onClick={() => shouldOpenSidebar && onAppointmentClick?.(apt)}
+                        className={`${isDraggable && shouldOpenSidebar ? 'cursor-pointer' : 'cursor-default'} rounded px-1.5 py-1 text-[10px] font-medium shadow-sm hover:shadow transition-all border-l-3 ${
                           useCustomColor && !isHexColor ? bgColor : style.bg
                         } ${style.text} ${style.border}`}
                         style={useCustomColor && isHexColor ? {
@@ -787,9 +792,9 @@ export function WeekViewDraggable({
               <React.Fragment key={timeIdx}>
                 {/* Time label - Compact */}
                 <div
-                  className="border-b border-r border-gray-200 bg-gray-50/80 py-1 px-2 text-right h-[60px] flex items-start justify-end"
+                  className="border-b border-r border-gray-200 bg-gray-100 py-1 px-2 text-right h-[60px] flex items-start justify-end"
                 >
-                  <span className="text-[10px] font-semibold text-gray-500">{formattedTime}</span>
+                  <span className="text-[10px] font-semibold text-gray-600">{formattedTime}</span>
                 </div>
 
                 {/* Day columns - empty cells for grid */}
@@ -801,11 +806,11 @@ export function WeekViewDraggable({
                   return (
                     <div
                       key={dateIdx}
-                      className={`relative h-[60px] border-b border-r border-gray-100 last:border-r-0 transition-colors duration-100 ease-out ${
-                        isToday ? 'bg-blue-50/20' : 'bg-white'
+                      className={`relative h-[60px] border-b border-r border-gray-200 last:border-r-0 transition-colors duration-100 ease-out ${
+                        isToday ? 'bg-blue-50/30' : 'bg-gray-50/50'
                       } ${isDraggedOver ? 'bg-blue-100/70 ring-1 ring-inset ring-blue-400' : ''} ${
                         inCreateRange ? 'bg-green-50 ring-2 ring-inset ring-green-400' : ''
-                      } hover:bg-gray-50/60`}
+                      } hover:bg-gray-100/60`}
                       onDragOver={(e) => handleDragOver(e, date, hour, minutes)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, date, hour, minutes)}
@@ -883,16 +888,17 @@ export function WeekViewDraggable({
                       {/* Main appointment card */}
                       <div
                         className="h-full"
-                        onClick={() => {
-                          // Only trigger click if not resizing
-                          if (!resizingAppointment) {
-                            onAppointmentClick?.(apt);
-                          }
-                        }}
                       >
                         <CompactAppointmentCard
                           appointment={apt}
-                          onClick={() => onAppointmentClick?.(apt)}
+                          onClick={() => {
+                            // Only trigger click if not resizing and not leave/vacation
+                            const eventType = apt.allDayEventType || 'appointment';
+                            const shouldOpenSidebar = eventType !== 'leave' && eventType !== 'vacation';
+                            if (!resizingAppointment && shouldOpenSidebar) {
+                              onAppointmentClick?.(apt);
+                            }
+                          }}
                           onDragStart={handleDragStart}
                           onDragEnd={handleDragEnd}
                           className="h-full"

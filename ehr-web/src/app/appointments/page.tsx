@@ -701,7 +701,7 @@ export default function AppointmentsPage() {
         </div>
       )}
 
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
+      <div className="flex items-center justify-between px-6 py-2.5 bg-white border-b border-gray-200">
         <CalendarToolbar
           currentDate={currentDate}
           view={view}
@@ -717,12 +717,13 @@ export default function AppointmentsPage() {
             }
           }}
         />
-        <PrintAppointments
+        {/* Print button hidden - not needed for daily use */}
+        {/* <PrintAppointments
           appointments={filteredAppointments}
           date={currentDate}
           view={view}
           facilityName={currentFacility?.name}
-        />
+        /> */}
       </div>
 
       <div className="flex flex-1 overflow-hidden">
