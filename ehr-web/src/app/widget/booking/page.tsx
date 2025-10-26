@@ -84,7 +84,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, User, Phone, Mail, ArrowRight, CheckCircle2, ChevronRight, AlertCircle, Loader2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, User, Phone, Mail, ArrowRight, CheckCircle2, ChevronRight, AlertCircle, Loader2, Info, Download, Shield } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
 // ============================================================================
@@ -218,6 +218,10 @@ export default function BookingWidget() {
   const [error, setError] = useState<string | null>(null);
   const [loadingSlots, setLoadingSlots] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
+
+  // Success State
+  const [bookingSuccess, setBookingSuccess] = useState<boolean>(false);
+  const [bookingDetails, setBookingDetails] = useState<any>(null);
 
   // ========================================
   // API CALLS
@@ -432,11 +436,18 @@ export default function BookingWidget() {
         throw new Error(data.error || 'Failed to create appointment');
       }
 
-      // Success! Show confirmation
-      alert(`✅ Appointment booked successfully!\n\nAppointment ID: ${data.appointmentId}\n\nYou will receive a confirmation email shortly.`);
-
-      // Reset form
-      window.location.href = `/widget/booking?org=${orgSlug}`;
+      // Success! Show confirmation screen
+      setBookingDetails({
+        appointmentId: data.appointmentId,
+        patientName: patientInfo.name,
+        patientEmail: patientInfo.email,
+        providerName: providers.find(p => p.id === selectedProvider)?.name,
+        date: new Date(currentYear, currentMonth, selectedDate),
+        time: selectedSlot,
+        location: locations.find(l => l.id === preferences.location)?.name,
+        duration: preferences.duration
+      });
+      setBookingSuccess(true);
     } catch (err: any) {
       setError(err.message || 'Failed to create appointment');
     } finally {
@@ -603,16 +614,52 @@ export default function BookingWidget() {
     });
   };
 
+  // Generate .ics calendar file for download
+  const generateCalendarFile = () => {
+    if (!bookingDetails) return;
+
+    const startDate = new Date(bookingDetails.time);
+    const endDate = new Date(startDate.getTime() + parseInt(bookingDetails.duration) * 60000);
+
+    const formatICSDate = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    };
+
+    const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//EHRConnect//Booking Widget//EN
+BEGIN:VEVENT
+UID:${bookingDetails.appointmentId}@ehrconnect.com
+DTSTAMP:${formatICSDate(new Date())}
+DTSTART:${formatICSDate(startDate)}
+DTEND:${formatICSDate(endDate)}
+SUMMARY:Medical Appointment with ${bookingDetails.providerName}
+DESCRIPTION:Appointment with ${bookingDetails.providerName} at ${orgInfo?.name}
+LOCATION:${bookingDetails.location}
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR`;
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.setAttribute('download', `appointment-${bookingDetails.appointmentId}.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // ========================================
   // LOADING & ERROR STATES
   // ========================================
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading booking widget...</p>
+          <p className="text-base text-gray-700 font-semibold">Loading booking widget...</p>
+          <p className="text-sm text-gray-500 mt-1">Please wait a moment</p>
         </div>
       </div>
     );
@@ -620,12 +667,12 @@ export default function BookingWidget() {
 
   if (error && !orgInfo) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-8 max-w-md">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="bg-white border border-red-200 rounded-xl p-8 max-w-md shadow-sm">
           <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-red-900 mb-2 text-center">Error Loading Widget</h2>
-          <p className="text-red-700 text-center">{error}</p>
-          <p className="text-sm text-red-600 mt-4 text-center">
+          <h2 className="text-xl font-bold text-gray-900 mb-2 text-center">Error Loading Widget</h2>
+          <p className="text-sm text-gray-700 text-center">{error}</p>
+          <p className="text-sm text-gray-600 mt-4 text-center">
             Please check your booking URL or contact the organization.
           </p>
         </div>
@@ -637,36 +684,140 @@ export default function BookingWidget() {
   // MAIN RENDER
   // ========================================
 
+  // Success Screen
+  if (bookingSuccess && bookingDetails) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="max-w-2xl w-full">
+          {/* Success Card */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+            {/* Success Icon */}
+            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="w-10 h-10 text-white" />
+            </div>
+
+            {/* Success Message */}
+            <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
+              Appointment Confirmed
+            </h2>
+            <p className="text-sm text-gray-600 text-center mb-8">
+              We've sent a confirmation email to <span className="font-semibold text-gray-900">{bookingDetails.patientEmail}</span>
+            </p>
+
+            {/* Appointment Details */}
+            <div className="bg-gray-50 rounded-xl p-6 mb-6 border border-gray-200">
+              <div className="flex items-center gap-4 mb-5 pb-5 border-b border-gray-200">
+                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+                  <User className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">Patient</p>
+                  <p className="text-base font-bold text-gray-900">{bookingDetails.patientName}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <User className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">Provider</p>
+                    <p className="text-sm font-bold text-gray-900 mt-0.5">{bookingDetails.providerName}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Calendar className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">Date & Time</p>
+                    <p className="text-sm font-bold text-gray-900 mt-0.5">
+                      {bookingDetails.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                    </p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {formatTimeSlot(bookingDetails.time)} ({bookingDetails.duration} minutes)
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">Location</p>
+                    <p className="text-sm font-bold text-gray-900 mt-0.5">{bookingDetails.location}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="space-y-3">
+              <button
+                onClick={generateCalendarFile}
+                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+              >
+                <Download className="w-5 h-5" />
+                Add to Calendar
+              </button>
+
+              <button
+                onClick={() => window.location.href = `/widget/booking?org=${orgSlug}`}
+                className="w-full px-6 py-3 border border-gray-300 rounded-lg font-semibold text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all"
+              >
+                Book Another Appointment
+              </button>
+            </div>
+
+            {/* Appointment ID */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-xs text-gray-600 font-medium uppercase tracking-wide mb-1">Confirmation Number</p>
+              <p className="text-sm font-mono font-bold text-gray-900">{bookingDetails.appointmentId}</p>
+            </div>
+
+            {/* HIPAA Notice */}
+            <div className="mt-6 flex items-start gap-2 text-xs text-gray-600">
+              <Shield className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+              <p>
+                Your health information is protected under HIPAA. We will only use your data for healthcare purposes.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen">
-      {/* Compact Header */}
-      <div className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-gray-50">
+      {/* Modern Header with Trust Signals */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
             {orgInfo?.logo_url ? (
               <img
                 src={orgInfo.logo_url}
                 alt={orgInfo.name}
-                className="w-9 h-9 rounded-lg object-cover shadow-lg"
+                className="w-12 h-12 rounded-xl object-cover shadow-lg ring-2 ring-blue-100"
               />
             ) : (
-              <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-sm">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-lg">
                   {orgInfo?.name.substring(0, 2).toUpperCase()}
                 </span>
               </div>
             )}
             <div>
-              <h1 className="text-xl font-bold text-gray-900">{orgInfo?.name}</h1>
-              <p className="text-xs text-gray-500">Book your appointment</p>
+              <h1 className="text-2xl font-bold text-gray-900">{orgInfo?.name}</h1>
+              <p className="text-sm text-gray-600 flex items-center gap-2">
+                <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                </svg>
+                Secure Online Booking
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {[1, 2, 3].map((s) => (
               <div
                 key={s}
-                className={`w-8 h-1 rounded-full transition-all ${
-                  s === step ? 'bg-blue-600 w-12' : s < step ? 'bg-green-500' : 'bg-gray-200'
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  s === step ? 'bg-blue-600 w-16 shadow-md' : s < step ? 'bg-green-500 w-10' : 'bg-gray-200 w-10'
                 }`}
               />
             ))}
@@ -677,11 +828,11 @@ export default function BookingWidget() {
       {/* Error Banner */}
       {error && orgInfo && (
         <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-start gap-3">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-red-900">Error</p>
-              <p className="text-sm text-red-700">{error}</p>
+              <p className="font-bold text-sm text-red-900">Error</p>
+              <p className="text-sm text-red-700 mt-0.5">{error}</p>
             </div>
           </div>
         </div>
@@ -691,64 +842,88 @@ export default function BookingWidget() {
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Step 1: Patient Info & Preferences Combined */}
         {step === 1 && (
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 gap-6">
             {/* Left: Patient Info */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Information</h2>
-              <p className="text-sm text-gray-600 mb-6">We'll use this to find or create your record</p>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-gray-900 mb-1">Your Information</h2>
+              <p className="text-sm text-gray-600 mb-6">We need this to find or create your medical record</p>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                     Full Name <span className="text-red-500">*</span>
+                    <div className="group relative">
+                      <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                      <div className="hidden group-hover:block absolute left-0 top-6 z-10 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg">
+                        Required to identify you in our system and for insurance purposes
+                      </div>
+                    </div>
                   </label>
                   <input
                     type="text"
                     value={patientInfo.name}
                     onChange={(e) => setPatientInfo({ ...patientInfo, name: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all text-sm"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
                     placeholder="John Smith"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                     Email Address <span className="text-red-500">*</span>
+                    <div className="group relative">
+                      <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                      <div className="hidden group-hover:block absolute left-0 top-6 z-10 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg">
+                        We'll send appointment confirmations and reminders to this email
+                      </div>
+                    </div>
                   </label>
                   <input
                     type="email"
                     value={patientInfo.email}
                     onChange={(e) => setPatientInfo({ ...patientInfo, email: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all text-sm"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
                     placeholder="john.smith@email.com"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                     Phone Number <span className="text-red-500">*</span>
+                    <div className="group relative">
+                      <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                      <div className="hidden group-hover:block absolute left-0 top-6 z-10 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg">
+                        For appointment reminders and urgent communications from your provider
+                      </div>
+                    </div>
                   </label>
                   <input
                     type="tel"
                     value={patientInfo.phone}
                     onChange={(e) => setPatientInfo({ ...patientInfo, phone: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all text-sm"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
                     placeholder="+1 (555) 000-0000"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                     Date of Birth <span className="text-red-500">*</span>
+                    <div className="group relative">
+                      <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                      <div className="hidden group-hover:block absolute left-0 top-6 z-10 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg">
+                        Required for patient identification and age-appropriate care
+                      </div>
+                    </div>
                   </label>
                   <input
                     type="date"
                     value={patientInfo.dob}
                     onChange={(e) => setPatientInfo({ ...patientInfo, dob: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all text-sm"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
                     required
                   />
                 </div>
@@ -756,19 +931,19 @@ export default function BookingWidget() {
             </div>
 
             {/* Right: Appointment Preferences */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Appointment Details</h2>
-              <p className="text-sm text-gray-600 mb-6">Select your preferences</p>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-gray-900 mb-1">Appointment Details</h2>
+              <p className="text-sm text-gray-600 mb-6">Select your appointment preferences</p>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
                     Appointment Type <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={preferences.appointmentType}
                     onChange={(e) => handleAppointmentTypeChange(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all text-sm"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
                     required
                   >
                     <option value="">Select type</option>
@@ -779,7 +954,7 @@ export default function BookingWidget() {
                     ))}
                   </select>
                   {preferences.appointmentType && appointmentTypes.find(t => t.code === preferences.appointmentType)?.description && (
-                    <p className="text-xs text-gray-500 mt-1.5">
+                    <p className="text-xs text-gray-600 mt-2 leading-relaxed">
                       {appointmentTypes.find(t => t.code === preferences.appointmentType)?.description}
                     </p>
                   )}
@@ -787,21 +962,21 @@ export default function BookingWidget() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Duration</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Duration</label>
                     <input
                       type="text"
                       value={`${preferences.duration} min`}
                       disabled
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-600"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-sm font-semibold text-gray-600"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Mode</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Mode</label>
                     <select
                       value={preferences.mode}
                       onChange={(e) => setPreferences({ ...preferences, mode: e.target.value })}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all text-sm"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
                     >
                       <option value="At Clinic">At Clinic</option>
                       <option value="Telemedicine">Telemedicine</option>
@@ -811,13 +986,13 @@ export default function BookingWidget() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
                     Location <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={preferences.location}
                     onChange={(e) => setPreferences({ ...preferences, location: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all text-sm"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
                     required
                   >
                     <option value="">Select location</option>
@@ -826,7 +1001,7 @@ export default function BookingWidget() {
                     ))}
                   </select>
                   {preferences.location && locations.find(l => l.id === preferences.location)?.address && (
-                    <p className="text-xs text-gray-500 mt-1.5">
+                    <p className="text-xs text-gray-600 mt-2 leading-relaxed">
                       {(() => {
                         const addr = locations.find(l => l.id === preferences.location)?.address;
                         return `${addr?.line}, ${addr?.city}, ${addr?.state} ${addr?.postalCode}`;
@@ -836,9 +1011,9 @@ export default function BookingWidget() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Timezone</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Timezone</label>
                   <select
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-600"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-sm font-semibold text-gray-600"
                     disabled
                   >
                     <option value={Intl.DateTimeFormat().resolvedOptions().timeZone}>
@@ -854,130 +1029,43 @@ export default function BookingWidget() {
         {/* Step 2: Provider & Slot Selection */}
         {step === 2 && (
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="border-b border-gray-200 p-6">
-              <h2 className="text-2xl font-bold text-gray-900">Select Provider & Time</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                {formatSelectedDate()} • Showing Slots for{' '}
-                {locations.find(l => l.id === preferences.location)?.name}
+            <div className="border-b border-gray-200 p-6 bg-white">
+              <h2 className="text-2xl font-bold text-gray-900 mb-1">Select Provider & Time</h2>
+              <p className="text-sm text-gray-600 font-medium">
+                {formatSelectedDate()} • {locations.find(l => l.id === preferences.location)?.name}
               </p>
             </div>
 
             <div className="grid md:grid-cols-2 divide-x divide-gray-200">
-              {/* Providers List */}
+              {/* Calendar - Moved to LEFT */}
               <div className="p-6">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Available Providers</h3>
-
-                {loadingSlots ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-                  </div>
-                ) : providers.length === 0 ? (
-                  <div className="text-center py-12">
-                    <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-600 font-medium">No providers available</p>
-                    <p className="text-sm text-gray-500 mt-1">Please try a different date</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-                    {providers.map((provider) => (
-                      <div key={provider.id}>
-                        <div
-                          className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                            selectedProvider === provider.id
-                              ? 'border-blue-500 bg-blue-50'
-                              : (provider.slotsAvailable || 0) > 0
-                              ? 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
-                              : 'border-gray-100 bg-gray-50 cursor-not-allowed opacity-60'
-                          }`}
-                          onClick={() => (provider.slotsAvailable || 0) > 0 && setSelectedProvider(provider.id)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
-                                (provider.slotsAvailable || 0) > 10 ? 'bg-green-100 text-green-700' :
-                                (provider.slotsAvailable || 0) > 0 ? 'bg-orange-100 text-orange-700' :
-                                'bg-gray-100 text-gray-400'
-                              }`}>
-                                {provider.initials}
-                              </div>
-                              <div>
-                                <p className="font-bold text-gray-900 text-sm">{provider.name}</p>
-                                <p className="text-xs text-gray-500">{provider.qualification}</p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              {(provider.slotsAvailable || 0) > 0 ? (
-                                <span className={`text-sm font-bold ${
-                                  (provider.slotsAvailable || 0) > 10 ? 'text-green-600' : 'text-orange-600'
-                                }`}>
-                                  {provider.slotsAvailable} Slots
-                                </span>
-                              ) : (
-                                <span className="text-xs text-gray-400 font-medium">No Slots</span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Time Slots */}
-                          {selectedProvider === provider.id && (provider.slotsAvailable || 0) > 0 && provider.slots && (
-                            <div className="mt-4 pt-4 border-t border-gray-200">
-                              <p className="text-xs font-semibold text-gray-600 mb-3">Select Time:</p>
-                              <div className="grid grid-cols-3 gap-2">
-                                {provider.slots.map((slot) => (
-                                  <button
-                                    key={slot.start}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedSlot(slot.start);
-                                    }}
-                                    className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${
-                                      selectedSlot === slot.start
-                                        ? 'bg-blue-600 text-white shadow-md'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-blue-100'
-                                    }`}
-                                  >
-                                    {formatTimeSlot(slot.start)}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Calendar */}
-              <div className="p-6">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Select Date</h3>
-                <div className="bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-xl p-5 border border-gray-200">
+                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Select Date</h3>
+                <div className="bg-white rounded-xl p-4 border border-gray-200">
                   <div className="flex items-center justify-between mb-4">
                     <button
                       onClick={handlePrevMonth}
-                      className="p-2 hover:bg-white rounded-lg transition-all"
+                      className="p-2 hover:bg-blue-50 rounded-lg transition-all"
                     >
-                      <ChevronRight className="w-4 h-4 rotate-180 text-gray-600" />
+                      <ChevronRight className="w-4 h-4 rotate-180 text-gray-700" />
                     </button>
-                    <p className="font-bold text-gray-900">{monthNames[currentMonth]} {currentYear}</p>
+                    <p className="font-bold text-base text-gray-900">{monthNames[currentMonth]} {currentYear}</p>
                     <button
                       onClick={handleNextMonth}
-                      className="p-2 hover:bg-white rounded-lg transition-all"
+                      className="p-2 hover:bg-blue-50 rounded-lg transition-all"
                     >
-                      <ChevronRight className="w-4 h-4 text-gray-600" />
+                      <ChevronRight className="w-4 h-4 text-gray-700" />
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                  <div className="grid grid-cols-7 gap-1.5 text-center mb-2">
                     {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
-                      <div key={day} className="text-xs font-bold text-gray-500 py-2">
+                      <div key={day} className="text-xs font-bold text-gray-500 py-1">
                         {day}
                       </div>
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-7 gap-1">
+                  <div className="grid grid-cols-7 gap-1.5">
                     {(() => {
                       const daysInMonth = getDaysInMonth(currentMonth, currentYear);
                       const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
@@ -1007,11 +1095,11 @@ export default function BookingWidget() {
                             key={day}
                             disabled={isPast}
                             onClick={() => handleDateSelect(day)}
-                            className={`py-2 rounded-lg text-sm font-medium transition-all ${
+                            className={`py-2 rounded-lg text-sm font-semibold transition-all ${
                               isSelected
                                 ? 'bg-blue-600 text-white shadow-md'
                                 : hasSlots
-                                ? 'bg-white text-gray-700 hover:bg-blue-100 border border-gray-200'
+                                ? 'text-gray-900 hover:bg-blue-50 hover:text-blue-600'
                                 : 'text-gray-300 cursor-not-allowed'
                             }`}
                           >
@@ -1025,20 +1113,108 @@ export default function BookingWidget() {
                   </div>
                 </div>
 
-                {selectedProvider && selectedSlot && (
-                  <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl">
+                {/* Location Info */}
+                {preferences.location && (
+                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex items-start gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <MapPin className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-xs font-semibold text-green-900">Selected</p>
-                        <p className="text-sm font-bold text-green-900 mt-1">
-                          {providers.find(p => p.id === selectedProvider)?.name}
+                        <p className="text-xs font-semibold text-blue-900 uppercase tracking-wide">APPOINTMENT LOCATION</p>
+                        <p className="text-sm font-bold text-gray-900 mt-1">
+                          {locations.find(l => l.id === preferences.location)?.name}
                         </p>
-                        <p className="text-xs text-green-700 mt-0.5">
-                          {formatSelectedDate()} at {formatTimeSlot(selectedSlot)}
-                        </p>
+                        {locations.find(l => l.id === preferences.location)?.address && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            {(() => {
+                              const addr = locations.find(l => l.id === preferences.location)?.address;
+                              return `${addr?.line}, ${addr?.city}, ${addr?.state} ${addr?.postalCode}`;
+                            })()}
+                          </p>
+                        )}
                       </div>
                     </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Providers List - Moved to RIGHT */}
+              <div className="p-6">
+                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Available Providers</h3>
+
+                {loadingSlots ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+                  </div>
+                ) : providers.filter(p => (p.slotsAvailable || 0) > 0).length === 0 ? (
+                  <div className="text-center py-12">
+                    <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-base text-gray-700 font-bold">No providers available</p>
+                    <p className="text-sm text-gray-500 mt-1">Please try a different date</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                    {providers.filter(p => (p.slotsAvailable || 0) > 0).map((provider) => (
+                      <div key={provider.id}>
+                        <div
+                          className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                            selectedProvider === provider.id
+                              ? 'border-blue-600 bg-blue-50 shadow-lg'
+                              : (provider.slotsAvailable || 0) > 0
+                              ? 'border-gray-200 hover:border-blue-500 hover:bg-blue-50/30 hover:shadow-md'
+                              : 'border-gray-200 bg-gray-50/50 cursor-not-allowed opacity-50'
+                          }`}
+                          onClick={() => (provider.slotsAvailable || 0) > 0 && setSelectedProvider(provider.id)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                                (provider.slotsAvailable || 0) > 0 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-500'
+                              }`}>
+                                {provider.initials}
+                              </div>
+                              <div>
+                                <p className="font-bold text-gray-900 text-sm">{provider.name}</p>
+                                <p className="text-xs text-gray-500 font-medium">{provider.qualification}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              {(provider.slotsAvailable || 0) > 0 ? (
+                                <span className="text-xs font-semibold text-blue-600">
+                                  {provider.slotsAvailable} slots
+                                </span>
+                              ) : (
+                                <span className="text-xs text-gray-400 font-semibold">Unavailable</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Time Slots */}
+                          {selectedProvider === provider.id && (provider.slotsAvailable || 0) > 0 && provider.slots && (
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                              <p className="text-xs font-semibold text-gray-700 mb-3">Available Times</p>
+                              <div className="grid grid-cols-3 gap-2">
+                                {provider.slots.map((slot) => (
+                                  <button
+                                    key={slot.start}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedSlot(slot.start);
+                                    }}
+                                    className={`px-3 py-2.5 rounded-lg text-xs font-semibold transition-all border ${
+                                      selectedSlot === slot.start
+                                        ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                        : 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-500'
+                                    }`}
+                                  >
+                                    {formatTimeSlot(slot.start)}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -1049,53 +1225,53 @@ export default function BookingWidget() {
         {/* Step 3: Confirmation */}
         {step === 3 && (
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Confirm Your Appointment</h2>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Confirm Your Appointment</h2>
 
               {/* Summary Card */}
-              <div className="mb-6 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+              <div className="mb-6 p-5 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center gap-4 mb-4 pb-4 border-b border-blue-200">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
-                    <span className="text-lg font-bold text-white">
+                  <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
+                    <span className="text-base font-bold text-white">
                       {patientInfo.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                     </span>
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900">{patientInfo.name}</p>
-                    <p className="text-sm text-gray-600">{patientInfo.email}</p>
+                    <p className="text-base font-bold text-gray-900">{patientInfo.name}</p>
+                    <p className="text-sm text-gray-600 mt-0.5">{patientInfo.email}</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="flex items-center gap-2 text-gray-700">
                     <User className="w-4 h-4 text-blue-600" />
-                    <span className="font-semibold">{providers.find(p => p.id === selectedProvider)?.name}</span>
+                    <span className="font-medium text-sm">{providers.find(p => p.id === selectedProvider)?.name}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-700">
                     <Calendar className="w-4 h-4 text-blue-600" />
-                    <span>{new Date(currentYear, currentMonth, selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    <span className="font-medium text-sm">{new Date(currentYear, currentMonth, selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-700">
                     <Clock className="w-4 h-4 text-blue-600" />
-                    <span>{selectedSlot && formatTimeSlot(selectedSlot)} ({preferences.duration} min)</span>
+                    <span className="font-medium text-sm">{selectedSlot && formatTimeSlot(selectedSlot)} ({preferences.duration} min)</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-700">
                     <MapPin className="w-4 h-4 text-blue-600" />
-                    <span className="truncate">{locations.find(l => l.id === preferences.location)?.name}</span>
+                    <span className="truncate font-medium text-sm">{locations.find(l => l.id === preferences.location)?.name}</span>
                   </div>
                 </div>
               </div>
 
               {/* Reason */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
                   Reason for Visit
                   {orgInfo?.booking_settings?.require_reason && <span className="text-red-500 ml-1">*</span>}
                 </label>
                 <textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all text-sm resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm resize-none hover:border-gray-400"
                   rows={4}
                   placeholder="Please describe the reason for your visit..."
                   required={orgInfo?.booking_settings?.require_reason}
@@ -1111,7 +1287,7 @@ export default function BookingWidget() {
             <button
               onClick={handleBack}
               disabled={submitting}
-              className="px-6 py-3 border border-gray-300 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 border-2 border-gray-300 rounded-xl font-bold text-base text-gray-700 hover:bg-gray-50 hover:border-gray-400 hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Back
             </button>
@@ -1123,7 +1299,7 @@ export default function BookingWidget() {
             <button
               onClick={handleNext}
               disabled={loading}
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold text-base hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
@@ -1141,7 +1317,7 @@ export default function BookingWidget() {
             <button
               onClick={handleConfirm}
               disabled={submitting}
-              className="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold text-base hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <>
