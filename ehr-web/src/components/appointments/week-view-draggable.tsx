@@ -10,7 +10,7 @@ interface WeekViewDraggableProps {
   appointments: Appointment[];
   onAppointmentClick?: (appointment: Appointment) => void;
   onAppointmentDrop?: (appointment: Appointment, newDate: Date, newHour: number) => void;
-  onCreateAppointment?: (date: Date, startHour: number, endHour: number) => void;
+  onCreateAppointment?: (date: Date, startTime: Date, endTime: Date) => void;
   onAppointmentResize?: (appointment: Appointment, newStartTime: Date, newEndTime: Date) => void;
   onStatusChange?: (appointmentId: string, newStatus: string) => void;
   onStartEncounter?: (appointment: Appointment) => void;
@@ -30,8 +30,8 @@ export function WeekViewDraggable({
   const [dragOffset, setDragOffset] = useState<number>(0); // Track where on the card the user grabbed
   const [dragOver, setDragOver] = useState<{date: Date; hour: number} | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [createStart, setCreateStart] = useState<{date: Date; hour: number} | null>(null);
-  const [createEnd, setCreateEnd] = useState<{date: Date; hour: number} | null>(null);
+  const [createStart, setCreateStart] = useState<{date: Date; hour: number; minutes: number} | null>(null);
+  const [createEnd, setCreateEnd] = useState<{date: Date; hour: number; minutes: number} | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [resizingAppointment, setResizingAppointment] = useState<{appointment: Appointment; edge: 'top' | 'bottom'} | null>(null);
   const [resizePreview, setResizePreview] = useState<{newStart?: Date; newEnd?: Date} | null>(null);
@@ -459,26 +459,42 @@ export function WeekViewDraggable({
     }
 
     setIsCreating(true);
-    // For now, we still track by hour for simplicity
-    setCreateStart({ date, hour });
-    setCreateEnd({ date, hour });
+    // Track both hour and minutes for precise time
+    setCreateStart({ date, hour, minutes });
+    setCreateEnd({ date, hour, minutes });
   };
 
   const handleMouseEnter = (date: Date, hour: number, minutes: number = 0) => {
     if (isCreating && createStart) {
       // Only allow creating on same date
       if (date.toDateString() === createStart.date.toDateString()) {
-        setCreateEnd({ date, hour });
+        setCreateEnd({ date, hour, minutes });
       }
     }
   };
 
   const handleMouseUp = () => {
     if (isCreating && createStart && createEnd) {
-      const startHour = Math.min(createStart.hour, createEnd.hour);
-      const endHour = Math.max(createStart.hour, createEnd.hour) + 1; // +1 to include the end hour
-      
-      onCreateAppointment?.(createStart.date, startHour, endHour);
+      // Calculate start time (earlier time slot)
+      const startTotalMinutes = createStart.hour * 60 + createStart.minutes;
+      const endTotalMinutes = createEnd.hour * 60 + createEnd.minutes;
+
+      const earlierMinutes = Math.min(startTotalMinutes, endTotalMinutes);
+      const laterMinutes = Math.max(startTotalMinutes, endTotalMinutes);
+
+      // Create proper Date objects with exact time
+      const startTime = new Date(createStart.date);
+      startTime.setHours(Math.floor(earlierMinutes / 60), earlierMinutes % 60, 0, 0);
+
+      const endTime = new Date(createStart.date);
+      endTime.setHours(Math.floor(laterMinutes / 60), laterMinutes % 60, 0, 0);
+
+      // If start and end are the same slot, add default duration (1 hour or slot duration)
+      if (earlierMinutes === laterMinutes) {
+        endTime.setMinutes(endTime.getMinutes() + slotDuration);
+      }
+
+      onCreateAppointment?.(createStart.date, startTime, endTime);
     }
     
     setIsCreating(false);

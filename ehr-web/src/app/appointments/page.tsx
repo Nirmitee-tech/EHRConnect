@@ -571,16 +571,7 @@ export default function AppointmentsPage() {
     }
   };
 
-  const handleCreateFromDrag = (date: Date, startHour: number, endHour: number) => {
-    const startTime = new Date(date);
-    startTime.setHours(startHour, 0, 0, 0);
-
-    const endTime = new Date(date);
-    endTime.setHours(endHour, 0, 0, 0);
-
-    // Calculate duration in minutes
-    const durationMinutes = (endHour - startHour) * 60;
-
+  const handleCreateFromDrag = (date: Date, startTime: Date, endTime: Date) => {
     // Open the drawer with pre-filled date and time
     setClickedDate(startTime);
     setIsDrawerOpen(true);
@@ -701,7 +692,7 @@ export default function AppointmentsPage() {
         </div>
       )}
 
-      <div className="flex items-center justify-between px-6 py-2.5 bg-white border-b border-gray-200">
+      <div className="px-6 py-2.5 bg-white border-b border-gray-200">
         <CalendarToolbar
           currentDate={currentDate}
           view={view}
@@ -717,13 +708,6 @@ export default function AppointmentsPage() {
             }
           }}
         />
-        {/* Print button hidden - not needed for daily use */}
-        {/* <PrintAppointments
-          appointments={filteredAppointments}
-          date={currentDate}
-          view={view}
-          facilityName={currentFacility?.name}
-        /> */}
       </div>
 
       <div className="flex flex-1 overflow-hidden">

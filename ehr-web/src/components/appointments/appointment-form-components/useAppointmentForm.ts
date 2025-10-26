@@ -38,7 +38,9 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
     operatory: '',
     treatmentCategory: '',
     date: initialDate ? initialDate.toISOString().split('T')[0] : '',
-    time: '09:00',
+    time: initialDate
+      ? `${initialDate.getHours().toString().padStart(2, '0')}:${initialDate.getMinutes().toString().padStart(2, '0')}`
+      : '09:00',
     durationHours: 0,
     durationMinutes: defaultDuration,
     notes: '',
@@ -86,7 +88,8 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
     } else if (initialDate) {
       setFormData(prev => ({
         ...prev,
-        date: initialDate.toISOString().split('T')[0]
+        date: initialDate.toISOString().split('T')[0],
+        time: `${initialDate.getHours().toString().padStart(2, '0')}:${initialDate.getMinutes().toString().padStart(2, '0')}`
       }));
     }
   }, [editingAppointment, initialDate]);
