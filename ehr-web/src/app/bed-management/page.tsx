@@ -343,7 +343,43 @@ export default function BedManagementPage() {
       </Card>
 
       {/* Quick Actions */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <Card
+          className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-green-200 bg-green-50"
+          onClick={() => window.location.href = '/bed-management/demo'}
+        >
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              Demo Floor Plan
+              <Badge variant="default" className="text-xs bg-green-600">Try Now</Badge>
+            </CardTitle>
+            <CardDescription>Interactive demo with mock data - Click beds to admit patients!</CardDescription>
+          </CardHeader>
+        </Card>
+
+        <Card
+          className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-blue-200 bg-blue-50"
+          onClick={() => window.location.href = '/bed-management/floor-plan'}
+        >
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              Floor Plan View
+              <Badge variant="default" className="text-xs bg-blue-600">Real Data</Badge>
+            </CardTitle>
+            <CardDescription>Interactive room layout with your actual beds - Click to admit patients!</CardDescription>
+          </CardHeader>
+        </Card>
+
+        <Card
+          className="hover:shadow-lg transition-shadow cursor-pointer"
+          onClick={() => window.location.href = '/bed-management/visual'}
+        >
+          <CardHeader>
+            <CardTitle className="text-lg">Visual Bed Management</CardTitle>
+            <CardDescription>Interactive room layout with operations panel</CardDescription>
+          </CardHeader>
+        </Card>
+
         <Card
           className="hover:shadow-lg transition-shadow cursor-pointer"
           onClick={() => window.location.href = '/bed-management/wards'}

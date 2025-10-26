@@ -30,9 +30,9 @@ CREATE TABLE IF NOT EXISTS organizations (
   metadata JSONB -- Additional org metadata
 );
 
-CREATE INDEX idx_organizations_slug ON organizations(slug);
-CREATE INDEX idx_organizations_status ON organizations(status);
-CREATE INDEX idx_organizations_created_by ON organizations(created_by);
+CREATE INDEX IF NOT EXISTS idx_organizations_slug ON organizations(slug);
+CREATE INDEX IF NOT EXISTS idx_organizations_status ON organizations(status);
+CREATE INDEX IF NOT EXISTS idx_organizations_created_by ON organizations(created_by);
 
 -- =====================================================
 -- LOCATIONS (Facilities/Branches)
@@ -57,9 +57,9 @@ CREATE TABLE IF NOT EXISTS locations (
   UNIQUE(org_id, code)
 );
 
-CREATE INDEX idx_locations_org_id ON locations(org_id);
-CREATE INDEX idx_locations_active ON locations(active);
-CREATE INDEX idx_locations_org_active ON locations(org_id, active);
+CREATE INDEX IF NOT EXISTS idx_locations_org_id ON locations(org_id);
+CREATE INDEX IF NOT EXISTS idx_locations_active ON locations(active);
+CREATE INDEX IF NOT EXISTS idx_locations_org_active ON locations(org_id, active);
 
 -- =====================================================
 -- DEPARTMENTS (Optional for v1, prepared for v2)
@@ -79,8 +79,8 @@ CREATE TABLE IF NOT EXISTS departments (
   UNIQUE(org_id, location_id, code)
 );
 
-CREATE INDEX idx_departments_org_id ON departments(org_id);
-CREATE INDEX idx_departments_location_id ON departments(location_id);
+CREATE INDEX IF NOT EXISTS idx_departments_org_id ON departments(org_id);
+CREATE INDEX IF NOT EXISTS idx_departments_location_id ON departments(location_id);
 
 -- =====================================================
 -- USERS
@@ -102,9 +102,9 @@ CREATE TABLE IF NOT EXISTS users (
   metadata JSONB
 );
 
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_keycloak_user_id ON users(keycloak_user_id);
-CREATE INDEX idx_users_status ON users(status);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_keycloak_user_id ON users(keycloak_user_id);
+CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
 
 -- =====================================================
 -- ROLES
@@ -121,8 +121,8 @@ CREATE TABLE IF NOT EXISTS roles (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_roles_key ON roles(key);
-CREATE INDEX idx_roles_scope_level ON roles(scope_level);
+CREATE INDEX IF NOT EXISTS idx_roles_key ON roles(key);
+CREATE INDEX IF NOT EXISTS idx_roles_scope_level ON roles(scope_level);
 
 -- Insert default system roles
 INSERT INTO roles (key, name, description, scope_level, permissions, is_system) VALUES
@@ -160,10 +160,10 @@ CREATE TABLE IF NOT EXISTS role_assignments (
   metadata JSONB
 );
 
-CREATE INDEX idx_role_assignments_user_id ON role_assignments(user_id);
-CREATE INDEX idx_role_assignments_org_id ON role_assignments(org_id);
-CREATE INDEX idx_role_assignments_location_id ON role_assignments(location_id);
-CREATE INDEX idx_role_assignments_active ON role_assignments(user_id, org_id) WHERE revoked_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_role_assignments_user_id ON role_assignments(user_id);
+CREATE INDEX IF NOT EXISTS idx_role_assignments_org_id ON role_assignments(org_id);
+CREATE INDEX IF NOT EXISTS idx_role_assignments_location_id ON role_assignments(location_id);
+CREATE INDEX IF NOT EXISTS idx_role_assignments_active ON role_assignments(user_id, org_id) WHERE revoked_at IS NULL;
 
 -- =====================================================
 -- INVITATIONS
@@ -192,11 +192,11 @@ CREATE TABLE IF NOT EXISTS invitations (
   )
 );
 
-CREATE INDEX idx_invitations_org_id ON invitations(org_id);
-CREATE INDEX idx_invitations_email ON invitations(email);
-CREATE INDEX idx_invitations_token ON invitations(token);
-CREATE INDEX idx_invitations_status ON invitations(status);
-CREATE INDEX idx_invitations_expires_at ON invitations(expires_at);
+CREATE INDEX IF NOT EXISTS idx_invitations_org_id ON invitations(org_id);
+CREATE INDEX IF NOT EXISTS idx_invitations_email ON invitations(email);
+CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);
+CREATE INDEX IF NOT EXISTS idx_invitations_status ON invitations(status);
+CREATE INDEX IF NOT EXISTS idx_invitations_expires_at ON invitations(expires_at);
 
 -- =====================================================
 -- AUDIT EVENTS
@@ -220,13 +220,13 @@ CREATE TABLE IF NOT EXISTS audit_events (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_audit_events_org_id ON audit_events(org_id);
-CREATE INDEX idx_audit_events_actor_user_id ON audit_events(actor_user_id);
-CREATE INDEX idx_audit_events_action ON audit_events(action);
-CREATE INDEX idx_audit_events_target_type ON audit_events(target_type);
-CREATE INDEX idx_audit_events_target_id ON audit_events(target_id);
-CREATE INDEX idx_audit_events_created_at ON audit_events(created_at DESC);
-CREATE INDEX idx_audit_events_org_created ON audit_events(org_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_events_org_id ON audit_events(org_id);
+CREATE INDEX IF NOT EXISTS idx_audit_events_actor_user_id ON audit_events(actor_user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_events_action ON audit_events(action);
+CREATE INDEX IF NOT EXISTS idx_audit_events_target_type ON audit_events(target_type);
+CREATE INDEX IF NOT EXISTS idx_audit_events_target_id ON audit_events(target_id);
+CREATE INDEX IF NOT EXISTS idx_audit_events_created_at ON audit_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_events_org_created ON audit_events(org_id, created_at DESC);
 
 CREATE OR REPLACE FUNCTION set_audit_event_category()
 RETURNS TRIGGER AS $$
@@ -267,8 +267,8 @@ CREATE TABLE IF NOT EXISTS audit_settings (
   UNIQUE(org_id, preference_key)
 );
 
-CREATE INDEX idx_audit_settings_org ON audit_settings(org_id);
-CREATE INDEX idx_audit_settings_key ON audit_settings(org_id, preference_key);
+CREATE INDEX IF NOT EXISTS idx_audit_settings_org ON audit_settings(org_id);
+CREATE INDEX IF NOT EXISTS idx_audit_settings_key ON audit_settings(org_id, preference_key);
 
 -- =====================================================
 -- EMAIL VERIFICATIONS
@@ -284,9 +284,9 @@ CREATE TABLE IF NOT EXISTS email_verifications (
   metadata JSONB
 );
 
-CREATE INDEX idx_email_verifications_email ON email_verifications(email);
-CREATE INDEX idx_email_verifications_token ON email_verifications(token);
-CREATE INDEX idx_email_verifications_expires_at ON email_verifications(expires_at);
+CREATE INDEX IF NOT EXISTS idx_email_verifications_email ON email_verifications(email);
+CREATE INDEX IF NOT EXISTS idx_email_verifications_token ON email_verifications(token);
+CREATE INDEX IF NOT EXISTS idx_email_verifications_expires_at ON email_verifications(expires_at);
 
 -- =====================================================
 -- ORGANIZATION SETTINGS (Separate table for scalability)
@@ -303,8 +303,8 @@ CREATE TABLE IF NOT EXISTS organization_settings (
   UNIQUE(org_id, category, key)
 );
 
-CREATE INDEX idx_organization_settings_org_id ON organization_settings(org_id);
-CREATE INDEX idx_organization_settings_category ON organization_settings(org_id, category);
+CREATE INDEX IF NOT EXISTS idx_organization_settings_org_id ON organization_settings(org_id);
+CREATE INDEX IF NOT EXISTS idx_organization_settings_category ON organization_settings(org_id, category);
 
 -- =====================================================
 -- FUNCTIONS & TRIGGERS
