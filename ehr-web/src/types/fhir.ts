@@ -84,6 +84,11 @@ export interface FHIRPatient extends FHIRResource {
   birthDate?: string;
   deceased?: boolean | string;
   address?: FHIRAddress[];
+  photo?: Array<{
+    contentType?: string;
+    data?: string;
+    url?: string;
+  }>;
   maritalStatus?: {
     coding?: Array<{
       system?: string;

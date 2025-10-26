@@ -96,7 +96,11 @@ function createResourceRoutes(resourceType, controller) {
   router.post(`/${resourceType}`, async (req, res) => {
     try {
       validateFHIRResource(resourceType, req.body);
-      const createdResource = await controller.create(req.db, req.body);
+
+      // Extract org_id from middleware context or headers
+      const orgId = req.orgContext?.orgId || req.headers['x-org-id'];
+
+      const createdResource = await controller.create(req.db, req.body, orgId);
 
       // Broadcast real-time update for Appointments
       if (resourceType === 'Appointment') {

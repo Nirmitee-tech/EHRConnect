@@ -23,6 +23,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const integrationsRoutes = require('./routes/integrations');
 const bedManagementRoutes = require('./routes/bed-management');
 const dataMapperRoutes = require('./routes/data-mapper');
+const notificationRoutes = require('./routes/notifications');
 const { initializeDatabase } = require('./database/init');
 const socketService = require('./services/socket.service');
 const billingJobs = require('./services/billing.jobs');
@@ -48,7 +49,15 @@ app.use(cors({
   origin: '*', // Allow all origins for VAPI integration
   credentials: false, // Must be false when origin is '*'
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-org-id']
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'x-org-id',
+    'x-user-id',
+    'x-user-roles',
+    'x-location-ids',
+    'x-request-id',
+  ]
 }));
 app.use(express.json({
   limit: '10mb',
@@ -173,6 +182,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/integrations', integrationsRoutes);
 app.use('/api/bed-management', bedManagementRoutes);
 app.use('/api/data-mapper', dataMapperRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

@@ -9,6 +9,7 @@ import { UserProfile } from './user-profile';
 import { TabProvider } from '@/contexts/tab-context';
 import { TabBar } from './tab-bar';
 import { cn } from '@/lib/utils';
+import { NotificationProvider } from '@/contexts/notification-context';
 
 const MAIN_CONTENT_PADDING = {
   default: 'p-6',
@@ -81,25 +82,27 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
 
   // Show full layout WITH sidebar when authenticated
   return (
-    <TabProvider>
-      <div className="flex h-screen bg-gray-50">
-        {/* Sidebar */}
-        <HealthcareSidebar />
+    <NotificationProvider>
+      <TabProvider>
+        <div className="flex h-screen bg-gray-50">
+          {/* Sidebar */}
+          <HealthcareSidebar />
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
-          <HealthcareHeader />
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Header */}
+            <HealthcareHeader />
 
-          {/* Tab Bar */}
-          <TabBar />
+            {/* Tab Bar */}
+            <TabBar />
 
-          {/* Main Content */}
-          <main className={cn('flex-1 overflow-auto bg-gray-50', mainContentPaddingClass)}>
-            {children}
-          </main>
+            {/* Main Content */}
+            <main className={cn('flex-1 overflow-auto bg-gray-50', mainContentPaddingClass)}>
+              {children}
+            </main>
+          </div>
         </div>
-      </div>
-    </TabProvider>
+      </TabProvider>
+    </NotificationProvider>
   );
 }

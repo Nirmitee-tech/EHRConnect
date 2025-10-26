@@ -21,6 +21,8 @@ interface SearchableSelectProps {
   className?: string;
   required?: boolean;
   showColorInButton?: boolean; // Show color in the selected button
+  onAddNew?: () => void; // Callback for "Add New" button
+  addNewLabel?: string; // Label for "Add New" button
 }
 
 export function SearchableSelect({
@@ -32,7 +34,9 @@ export function SearchableSelect({
   disabled = false,
   className = '',
   required = false,
-  showColorInButton = false
+  showColorInButton = false,
+  onAddNew,
+  addNewLabel = 'Add New'
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -148,6 +152,22 @@ export function SearchableSelect({
               />
             </div>
           </div>
+
+          {/* Add New Button - Always visible at top */}
+          {onAddNew && (
+            <button
+              type="button"
+              onClick={() => {
+                onAddNew();
+                setIsOpen(false);
+                setSearchQuery('');
+              }}
+              className="w-full px-4 py-2.5 text-left transition-colors flex items-center gap-2 border-b-2 border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium sticky top-[60px] z-10"
+            >
+              <span className="text-lg">+</span>
+              <span>{addNewLabel}</span>
+            </button>
+          )}
 
           {/* Options List */}
           <div className="overflow-y-auto max-h-60">

@@ -20,7 +20,7 @@ import { PrintAppointments } from '@/components/appointments/print-appointments'
 import { useFacility } from '@/contexts/facility-context';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { io, Socket } from 'socket.io-client';
-import { getSession } from '@/lib/auth';
+import { useSession } from 'next-auth/react';
 
 // Medical appointment categories
 const medicalCategories: EventCategory[] = [
@@ -34,6 +34,7 @@ const medicalCategories: EventCategory[] = [
 export default function AppointmentsPage() {
   const router = useRouter();
   const { currentFacility } = useFacility();
+  const { data: session } = useSession();
 
   // Socket.IO connection
   const socketRef = useRef<Socket | null>(null);
@@ -245,73 +246,75 @@ export default function AppointmentsPage() {
 
   // Initialize Socket.IO for real-time updates
   useEffect(() => {
-    const initSocket = async () => {
-      try {
-        const session = await getSession();
-        if (!session?.token || !session?.orgId) {
-          console.log('No session available for Socket.IO');
-          return;
-        }
+    const token = session?.accessToken;
+    const orgId = session?.org_id;
+    const userId =
+      (session?.user && 'id' in session.user ? (session.user as { id?: string }).id : undefined) ??
+      (session as { userId?: string | null } | undefined)?.userId ??
+      null;
 
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const socket = io(API_URL, {
-          auth: {
-            token: session.token,
-            orgId: session.orgId
-          },
-          transports: ['websocket', 'polling'],
-          reconnection: true,
-          reconnectionDelay: 1000,
-          reconnectionAttempts: 5
-        });
+    if (!token || !orgId) {
+      return undefined;
+    }
 
-        socketRef.current = socket;
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const socket = io(API_URL, {
+        auth: {
+          token,
+          orgId,
+          userId: userId ?? undefined,
+        },
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5,
+      });
 
-        socket.on('connect', () => {
-          console.log('✅ Connected to real-time appointment service');
-        });
+      socketRef.current = socket;
 
-        socket.on('connected', (data: any) => {
-          console.log('Real-time service ready:', data.message);
-        });
+      socket.on('connect', () => {
+        console.log('✅ Connected to real-time appointment service');
+      });
 
-        socket.on('disconnect', () => {
-          console.log('❌ Disconnected from real-time service');
-        });
+      socket.on('connected', (data: any) => {
+        console.log('Real-time service ready:', data.message);
+      });
 
-        socket.on('connect_error', (error: any) => {
-          console.error('Socket connection error:', error.message);
-        });
+      socket.on('disconnect', () => {
+        console.log('❌ Disconnected from real-time service');
+      });
 
-        // Listen for appointment events
-        socket.on('appointment:created', (data: any) => {
-          console.log('📅 Appointment created:', data);
-          loadAppointments();
-          loadStats();
-        });
+      socket.on('connect_error', (error: any) => {
+        console.error('Socket connection error:', error.message);
+      });
 
-        socket.on('appointment:updated', (data: any) => {
-          console.log('✏️ Appointment updated:', data);
-          loadAppointments();
-          loadStats();
-        });
+      // Listen for appointment events
+      socket.on('appointment:created', (data: any) => {
+        console.log('📅 Appointment created:', data);
+        loadAppointments();
+        loadStats();
+      });
 
-        socket.on('appointment:cancelled', (data: any) => {
-          console.log('❌ Appointment cancelled:', data);
-          loadAppointments();
-          loadStats();
-        });
+      socket.on('appointment:updated', (data: any) => {
+        console.log('✏️ Appointment updated:', data);
+        loadAppointments();
+        loadStats();
+      });
 
-        socket.on('slots:changed', (data: any) => {
-          console.log('🔄 Slots changed:', data);
-          loadAppointments();
-        });
-      } catch (error) {
-        console.error('Failed to initialize Socket.IO:', error);
-      }
-    };
+      socket.on('appointment:cancelled', (data: any) => {
+        console.log('❌ Appointment cancelled:', data);
+        loadAppointments();
+        loadStats();
+      });
 
-    initSocket();
+      socket.on('slots:changed', (data: any) => {
+        console.log('🔄 Slots changed:', data);
+        loadAppointments();
+      });
+    } catch (error) {
+      console.error('Failed to initialize Socket.IO:', error);
+    }
 
     // Cleanup on unmount
     return () => {
@@ -320,7 +323,7 @@ export default function AppointmentsPage() {
         socketRef.current = null;
       }
     };
-  }, []);
+  }, [session?.accessToken, session?.org_id]);
 
   const loadAppointments = async () => {
     setLoading(true);

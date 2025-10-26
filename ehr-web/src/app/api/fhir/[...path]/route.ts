@@ -9,7 +9,8 @@ export async function GET(
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await params;
-  return handleFHIRRequest('GET', request, path);
+  const session = await getServerSession(authOptions);
+  return handleFHIRRequest('GET', request, path, session);
 }
 
 export async function POST(
@@ -17,7 +18,8 @@ export async function POST(
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await params;
-  return handleFHIRRequest('POST', request, path);
+  const session = await getServerSession(authOptions);
+  return handleFHIRRequest('POST', request, path, session);
 }
 
 export async function PUT(
@@ -25,7 +27,8 @@ export async function PUT(
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await params;
-  return handleFHIRRequest('PUT', request, path);
+  const session = await getServerSession(authOptions);
+  return handleFHIRRequest('PUT', request, path, session);
 }
 
 export async function PATCH(
@@ -33,7 +36,8 @@ export async function PATCH(
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await params;
-  return handleFHIRRequest('PATCH', request, path);
+  const session = await getServerSession(authOptions);
+  return handleFHIRRequest('PATCH', request, path, session);
 }
 
 export async function DELETE(
@@ -41,13 +45,15 @@ export async function DELETE(
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await params;
-  return handleFHIRRequest('DELETE', request, path);
+  const session = await getServerSession(authOptions);
+  return handleFHIRRequest('DELETE', request, path, session);
 }
 
 async function handleFHIRRequest(
   method: string,
   request: NextRequest,
-  pathSegments: string[]
+  pathSegments: string[],
+  session: any
 ) {
   try {
     const path = pathSegments.join('/');
@@ -56,21 +62,34 @@ async function handleFHIRRequest(
 
     const fhirUrl = `${FHIR_BASE_URL}/fhir/R4/${path}${queryParams ? `?${queryParams}` : ''}`;
 
-    console.log(`[FHIR Proxy] ${method} ${fhirUrl}`);
+    console.log(`\n========== [FHIR Proxy] ${method} REQUEST ==========`);
+    console.log(`[FHIR Proxy] URL: ${fhirUrl}`);
+    console.log(`[FHIR Proxy] Session:`, JSON.stringify(session, null, 2));
 
-    // Get session to include org_id
-    const session = await getServerSession(authOptions);
+    // Get org_id from session
+    const orgId = session?.org_id as string | undefined;
 
-    // Simple pass-through to our FHIR backend with org_id header
+    console.log(`[FHIR Proxy] Extracted org_id:`, orgId);
+
+    // Simple pass-through to our FHIR backend
     const headers: HeadersInit = {
       'Content-Type': 'application/fhir+json',
       'Accept': 'application/fhir+json',
     };
 
-    // Add org_id header from session
-    if (session?.org_id) {
-      headers['x-org-id'] = session.org_id as string;
-      console.log(`[FHIR Proxy] Including org_id: ${session.org_id}`);
+    // First, try to get org_id from client request headers (takes priority)
+    const clientOrgId = request.headers.get('x-org-id');
+
+    // Use client org_id if provided, otherwise fall back to session org_id
+    const finalOrgId = clientOrgId || orgId;
+
+    // Add org_id header
+    if (finalOrgId) {
+      headers['x-org-id'] = finalOrgId;
+      console.log(`[FHIR Proxy] ✅ Forwarding org_id: ${finalOrgId} (source: ${clientOrgId ? 'client header' : 'session'})`);
+    } else {
+      console.error('[FHIR Proxy] ❌ No org_id found in session or client headers');
+      console.error('[FHIR Proxy] Session object:', session);
     }
 
     const requestOptions: RequestInit = {

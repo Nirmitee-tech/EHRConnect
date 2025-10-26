@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useSession } from 'next-auth/react';
 import { AppointmentService } from '@/services/appointment.service';
 import { Appointment } from '@/types/appointment';
 import { DrawerHeader } from './appointment-form-components/DrawerHeader';
@@ -52,6 +53,7 @@ export function AppointmentFormDrawer({
   editingAppointment,
   existingAppointments = []
 }: AppointmentFormDrawerProps) {
+  const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState<TabType>('appointment');
   const [appointmentType, setAppointmentType] = useState<AppointmentType>('single');
   const [loading, setLoading] = useState(false);
@@ -241,7 +243,9 @@ export function AppointmentFormDrawer({
           appointmentData
         );
       } else {
-        savedAppointment = await AppointmentService.createAppointment(appointmentData);
+        // Pass org_id from session
+        const orgId = (session as any)?.org_id;
+        savedAppointment = await AppointmentService.createAppointment(appointmentData, orgId);
       }
 
       setBookingStatus('success');

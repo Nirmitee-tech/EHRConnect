@@ -6,7 +6,7 @@ import { CreatePatientRequest, UpdatePatientRequest } from '@/services/patient.s
 import { useFacility } from '@/contexts/facility-context';
 import { usePatientForm } from '@/hooks/use-patient-form';
 import { Button } from '@nirmitee.io/design-system';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NoFacilityNotice } from './patient-form-components/NoFacilityNotice';
 import { PatientSearch } from './patient-form-components/PatientSearch';
 import { PersonalDetailsSection } from './patient-form-components/PersonalDetailsSection';
@@ -21,7 +21,6 @@ interface PatientFormProps {
 
 export function PatientForm({ patient, isEditing = false, onSubmit, onCancel }: PatientFormProps) {
   const { currentFacility } = useFacility();
-  const [photoPreview, setPhotoPreview] = useState<string>('');
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>(undefined);
   const [isUpdatingExisting, setIsUpdatingExisting] = useState(false);
 
@@ -36,6 +35,12 @@ export function PatientForm({ patient, isEditing = false, onSubmit, onCancel }: 
     validate,
     prepareSubmitData
   } = usePatientForm(patient, currentFacility?.id);
+
+  const [photoPreview, setPhotoPreview] = useState<string>(formData.photo || '');
+
+  useEffect(() => {
+    setPhotoPreview(formData.photo || '');
+  }, [formData.photo]);
 
   const handlePhotoChange = (photo: string) => {
     setPhotoPreview(photo);
@@ -75,6 +80,7 @@ export function PatientForm({ patient, isEditing = false, onSubmit, onCancel }: 
 
     try {
       const submitData = prepareSubmitData();
+      console.log('Submitting patient data with photo:', submitData.photo ? 'Yes (' + submitData.photo.length + ' bytes)' : 'No');
 
       if (isUpdatingExisting && selectedPatientId) {
         await onSubmit({

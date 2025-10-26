@@ -27,6 +27,7 @@ export interface CreatePatientRequest {
   gender: 'male' | 'female' | 'other' | 'unknown';
   email?: string;
   phone?: string;
+  photo?: string;
   address?: {
     line: string[];
     city: string;
@@ -155,6 +156,7 @@ export class PatientService {
   async createPatient(request: CreatePatientRequest, userId: string): Promise<FHIRPatient> {
     try {
       const patient = this.buildPatientResource(request);
+      console.log('Creating patient with photo:', patient.photo ? 'Yes' : 'No');
       
       const createdPatient = await fhirService.createPatient(patient) as FHIRPatient;
 
@@ -365,6 +367,13 @@ export class PatientService {
       });
     }
 
+    // Build photo array if provided
+    const photo = request.photo ? [{
+      contentType: 'image/jpeg',
+      data: request.photo.split(',')[1] || request.photo,
+      url: request.photo
+    }] : undefined;
+
     return {
       resourceType: 'Patient',
       identifier: identifiers.length > 0 ? identifiers : undefined,
@@ -377,6 +386,7 @@ export class PatientService {
       telecom: telecom.length > 0 ? telecom : undefined,
       gender: request.gender,
       birthDate: request.dateOfBirth,
+      photo: photo,
       address: request.address ? [{
         use: 'home',
         type: 'physical',
@@ -441,6 +451,15 @@ export class PatientService {
         });
       }
       updated.telecom = telecom;
+    }
+
+    // Update photo
+    if (update.photo) {
+      updated.photo = [{
+        contentType: 'image/jpeg',
+        data: update.photo.split(',')[1] || update.photo,
+        url: update.photo
+      }];
     }
 
     // Update address

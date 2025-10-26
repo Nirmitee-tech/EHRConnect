@@ -1,5 +1,6 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const notificationService = require('./notification.service');
 
 /**
  * Socket.IO Service for Real-time Permission Updates
@@ -156,12 +157,27 @@ class SocketService {
     }
 
     const userRoom = `user:${userId}`;
-    this.io.to(userRoom).emit('permission-changed', {
+    const payload = {
       type: 'user_permission_change',
       userId,
       changeData,
       timestamp: new Date().toISOString(),
-    });
+    };
+
+    this.io.to(userRoom).emit('permission-changed', payload);
+
+    const orgId = changeData?.orgId || changeData?.org_id || changeData?.organizationId || changeData?.orgID;
+    if (orgId) {
+      notificationService.createNotification({
+        orgId,
+        userId,
+        event: 'permission-changed',
+        data: payload,
+        recipients: [userId],
+      }).catch((error) => {
+        console.error('Failed to persist permission notification:', error);
+      });
+    }
 
     console.log(`Notified user ${userId} of permission change`);
   }
@@ -191,11 +207,21 @@ class SocketService {
     }
 
     const orgRoom = `org:${orgId}`;
-    this.io.to(orgRoom).emit('role-changed', {
+    const payload = {
       type: 'org_role_change',
       orgId,
       changeData,
       timestamp: new Date().toISOString(),
+    };
+
+    this.io.to(orgRoom).emit('role-changed', payload);
+
+    notificationService.recordOrgEvent({
+      orgId,
+      event: 'role-changed',
+      data: payload,
+    }).catch((error) => {
+      console.error('Failed to persist role change notification:', error);
     });
 
     console.log(`Notified org ${orgId} of role change`);
@@ -213,17 +239,28 @@ class SocketService {
     // Notify the specific user
     this.notifyUserPermissionChange(userId, {
       type: 'role_assignment',
+      orgId,
       ...changeData,
     });
 
     // Also notify admins in the org
     const orgRoom = `org:${orgId}`;
-    this.io.to(orgRoom).emit('role-assignment-changed', {
+    const payload = {
       type: 'role_assignment_change',
       userId,
       orgId,
       changeData,
       timestamp: new Date().toISOString(),
+    };
+
+    this.io.to(orgRoom).emit('role-assignment-changed', payload);
+
+    notificationService.recordOrgEvent({
+      orgId,
+      event: 'role-assignment-changed',
+      data: payload,
+    }).catch((error) => {
+      console.error('Failed to persist role assignment notification:', error);
     });
 
     console.log(`Notified role assignment change for user ${userId} in org ${orgId}`);
@@ -241,17 +278,28 @@ class SocketService {
     // Notify the specific user
     this.notifyUserPermissionChange(userId, {
       type: 'role_revocation',
+      orgId,
       ...changeData,
     });
 
     // Also notify admins
     const orgRoom = `org:${orgId}`;
-    this.io.to(orgRoom).emit('role-revocation', {
+    const payload = {
       type: 'role_revocation',
       userId,
       orgId,
       changeData,
       timestamp: new Date().toISOString(),
+    };
+
+    this.io.to(orgRoom).emit('role-revocation', payload);
+
+    notificationService.recordOrgEvent({
+      orgId,
+      event: 'role-revocation',
+      data: payload,
+    }).catch((error) => {
+      console.error('Failed to persist role revocation notification:', error);
     });
 
     console.log(`Notified role revocation for user ${userId} in org ${orgId}`);
@@ -335,11 +383,21 @@ class SocketService {
     }
 
     const orgRoom = `org:${orgId}`;
-    this.io.to(orgRoom).emit('appointment:created', {
+    const payload = {
       type: 'appointment_created',
       orgId,
       appointment: appointmentData,
       timestamp: new Date().toISOString(),
+    };
+
+    this.io.to(orgRoom).emit('appointment:created', payload);
+
+    notificationService.recordOrgEvent({
+      orgId,
+      event: 'appointment:created',
+      data: payload,
+    }).catch((error) => {
+      console.error('Failed to persist appointment created notification:', error);
     });
 
     console.log(`Notified org ${orgId} of new appointment creation`);
@@ -355,11 +413,21 @@ class SocketService {
     }
 
     const orgRoom = `org:${orgId}`;
-    this.io.to(orgRoom).emit('appointment:updated', {
+    const payload = {
       type: 'appointment_updated',
       orgId,
       appointment: appointmentData,
       timestamp: new Date().toISOString(),
+    };
+
+    this.io.to(orgRoom).emit('appointment:updated', payload);
+
+    notificationService.recordOrgEvent({
+      orgId,
+      event: 'appointment:updated',
+      data: payload,
+    }).catch((error) => {
+      console.error('Failed to persist appointment updated notification:', error);
     });
 
     console.log(`Notified org ${orgId} of appointment update`);
@@ -375,11 +443,21 @@ class SocketService {
     }
 
     const orgRoom = `org:${orgId}`;
-    this.io.to(orgRoom).emit('appointment:cancelled', {
+    const payload = {
       type: 'appointment_cancelled',
       orgId,
       appointment: appointmentData,
       timestamp: new Date().toISOString(),
+    };
+
+    this.io.to(orgRoom).emit('appointment:cancelled', payload);
+
+    notificationService.recordOrgEvent({
+      orgId,
+      event: 'appointment:cancelled',
+      data: payload,
+    }).catch((error) => {
+      console.error('Failed to persist appointment cancelled notification:', error);
     });
 
     console.log(`Notified org ${orgId} of appointment cancellation`);

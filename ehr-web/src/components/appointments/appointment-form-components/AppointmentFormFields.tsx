@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { CalendarIcon, Clock, User, Plus } from 'lucide-react';
+import { CalendarIcon, Clock, User, Plus, MapPin, FileText } from 'lucide-react';
+import { SearchableSelect, SelectOption } from '@/components/ui/searchable-select';
 
 interface AppointmentFormFieldsProps {
   formData: any;
@@ -13,6 +14,7 @@ interface AppointmentFormFieldsProps {
   onPatientChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onToggleNewPatient: () => void;
   onAddLocation: (location: string) => void;
+  onOpenPatientDrawer?: () => void;
 }
 
 export function AppointmentFormFields({
@@ -26,7 +28,8 @@ export function AppointmentFormFields({
   onDoctorChange,
   onPatientChange,
   onToggleNewPatient,
-  onAddLocation
+  onAddLocation,
+  onOpenPatientDrawer
 }: AppointmentFormFieldsProps) {
   const [showAddLocation, setShowAddLocation] = useState(false);
   const [newLocation, setNewLocation] = useState('');
@@ -134,39 +137,43 @@ export function AppointmentFormFields({
     return !isWorkingDay(date) || isOnVacation(date);
   };
 
+  // Convert practitioners to SearchableSelect options
+  const doctorOptions: SelectOption[] = practitioners.map(p => ({
+    value: p.id,
+    label: p.name,
+    color: p.color,
+    textColor: p.color ? '#FFFFFF' : undefined // White text for colored backgrounds
+  }));
+
+  // Convert patients to SearchableSelect options
+  const patientOptions: SelectOption[] = patients.map(p => ({
+    value: p.id,
+    label: p.name
+  }));
+
   return (
     <div className="space-y-4">
       {/* Doctor */}
       <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Doctor<span className="text-red-500">*</span>
-        </label>
         {!showAddDoctor ? (
-          <select
+          <SearchableSelect
+            label="Doctor"
             required
+            options={doctorOptions}
             value={formData.doctorId}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === '__add_new__') {
-                setShowAddDoctor(true);
-              } else {
-                onDoctorChange(e);
-              }
+            onChange={(value) => {
+              // Simulate event for compatibility
+              const event = { target: { value } } as React.ChangeEvent<HTMLSelectElement>;
+              onDoctorChange(event);
             }}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="">Select Doctor</option>
-            {practitioners.map((doctor) => (
-              <option key={doctor.id} value={doctor.id}>
-                {doctor.name}
-              </option>
-            ))}
-            <option value="__add_new__" className="font-medium text-blue-600">
-              + Create New Practitioner
-            </option>
-          </select>
+            placeholder="Select Doctor"
+            showColorInButton
+            onAddNew={() => setShowAddDoctor(true)}
+            addNewLabel="Create New Practitioner"
+          />
         ) : (
-          <div className="mt-1 space-y-2">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Doctor</label>
             <p className="text-sm text-gray-600">
               Please go to Staff Management to add a new practitioner, then return here.
             </p>
@@ -183,85 +190,60 @@ export function AppointmentFormFields({
 
       {/* Patient */}
       <div>
-        <div className="flex items-center justify-between">
-          <label className="block text-sm font-medium text-gray-700">
-            Patient<span className="text-red-500">*</span>
-          </label>
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-gray-400" />
-            <span className="text-sm text-gray-600">New Patient</span>
-            <button
-              type="button"
-              onClick={onToggleNewPatient}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                isNewPatient ? 'bg-blue-600' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  isNewPatient ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-        {!isNewPatient ? (
-          <select
-            required
-            value={formData.patientId}
-            onChange={onPatientChange}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="">Select Patient</option>
-            {patients.map((patient) => (
-              <option key={patient.id} value={patient.id}>
-                {patient.name}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <input
-            type="text"
-            required
-            value={formData.patientName}
-            onChange={(e) => onFormDataChange('patientName', e.target.value)}
-            placeholder="Enter new patient name"
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-        )}
+        <SearchableSelect
+          label="Patient"
+          required
+          options={patientOptions}
+          value={formData.patientId}
+          onChange={(value) => {
+            // Simulate event for compatibility
+            const event = { target: { value } } as React.ChangeEvent<HTMLSelectElement>;
+            onPatientChange(event);
+          }}
+          placeholder="Select Patient"
+          onAddNew={onOpenPatientDrawer}
+          addNewLabel="Add New Patient"
+        />
       </div>
 
       {/* Location/Room */}
       <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Location<span className="text-red-500">*</span>
-        </label>
-        {!showAddLocation ? (
-          <div className="mt-1 flex gap-2">
-            <select
-              required
-              value={formData.location || ''}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === '__add_new__') {
-                  setShowAddLocation(true);
-                } else {
-                  onFormDataChange('location', value);
-                }
-              }}
-              className="block flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        <div className="flex items-center justify-between mb-1">
+          <label className="block text-sm font-medium text-gray-700">
+            Location<span className="text-red-500">*</span>
+          </label>
+          {!showAddLocation && (
+            <button
+              type="button"
+              onClick={() => setShowAddLocation(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
             >
-              <option value="">Select Location</option>
-              {locations.map((location) => (
-                <option key={location} value={location}>
-                  {location}
-                </option>
-              ))}
-              <option value="__add_new__" className="font-medium text-blue-600">
-                + Add New Location
+              <MapPin className="h-3 w-3" />
+              Add New
+            </button>
+          )}
+        </div>
+        {!showAddLocation ? (
+          <select
+            required
+            value={formData.location || ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === '__add_new__') {
+                setShowAddLocation(true);
+              } else {
+                onFormDataChange('location', value);
+              }
+            }}
+            className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+          >
+            <option value="">Select Location</option>
+            {locations.map((location) => (
+              <option key={location} value={location}>
+                {location}
               </option>
-            </select>
-          </div>
+            ))}
+          </select>
         ) : (
           <div className="mt-1 space-y-2">
             <div className="flex gap-2">
@@ -339,9 +321,21 @@ export function AppointmentFormFields({
 
       {/* Treatment Category */}
       <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Treatment Category
-        </label>
+        <div className="flex items-center justify-between mb-1">
+          <label className="block text-sm font-medium text-gray-700">
+            Treatment Category
+          </label>
+          {!showAddCategory && (
+            <button
+              type="button"
+              onClick={() => setShowAddCategory(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+            >
+              <FileText className="h-3 w-3" />
+              Add New
+            </button>
+          )}
+        </div>
         {!showAddCategory ? (
           <select
             value={formData.treatmentCategory}
@@ -353,25 +347,22 @@ export function AppointmentFormFields({
                 onFormDataChange('treatmentCategory', value);
               }
             }}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
           >
-            <option value="">Not Specified</option>
+            <option value="">Select Category</option>
             {treatmentCategories.map((category) => (
               <option key={category} value={category}>
                 {category}
               </option>
             ))}
-            <option value="__add_new__" className="font-medium text-blue-600">
-              + Add New Category
-            </option>
           </select>
         ) : (
-          <div className="mt-1 space-y-2">
+          <div className="space-y-2">
             <div className="flex gap-2">
               <input
                 type="text"
                 placeholder="Enter new category name"
-                className="block flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="block flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
                 autoFocus
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
@@ -393,7 +384,7 @@ export function AppointmentFormFields({
                     setShowAddCategory(false);
                   }
                 }}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 Add
               </button>
@@ -401,7 +392,7 @@ export function AppointmentFormFields({
             <button
               type="button"
               onClick={() => setShowAddCategory(false)}
-              className="text-sm text-gray-600 hover:text-gray-800"
+              className="text-xs text-gray-600 hover:text-gray-800"
             >
               Cancel
             </button>
@@ -459,7 +450,7 @@ export function AppointmentFormFields({
           <label className="block text-sm font-medium text-gray-700">
             Date<span className="text-red-500">*</span>
           </label>
-          <div className="relative mt-1">
+          <div className="mt-1">
             <input
               type="date"
               required
@@ -473,9 +464,8 @@ export function AppointmentFormFields({
                 onFormDataChange('date', newDate);
               }}
               min={new Date().toISOString().split('T')[0]}
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
-            <CalendarIcon className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           </div>
           {formData.date && !formData.isEmergency && selectedPractitioner && (
             <div className="mt-1.5">
@@ -502,22 +492,16 @@ export function AppointmentFormFields({
             <label className="block text-sm font-medium text-gray-700">
               Time<span className="text-red-500">*</span>
             </label>
-            <div className="relative mt-1">
-              <select
+            <div className="mt-1">
+              <input
+                type="time"
                 required={!formData.isAllDay}
                 value={formData.time}
                 onChange={(e) => onFormDataChange('time', e.target.value)}
                 disabled={!formData.date || (!formData.isEmergency && isDateDisabled(formData.date))}
-                className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-              >
-                <option value="">Select time</option>
-                {getAvailableTimeSlots().map((slot) => (
-                  <option key={slot} value={slot}>
-                    {slot}
-                  </option>
-                ))}
-              </select>
-              <Clock className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                step="900"
+                className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500 text-sm"
+              />
             </div>
             {formData.date && !formData.isEmergency && getAvailableTimeSlots().length === 0 && (
               <p className="mt-1.5 text-xs text-red-600">

@@ -268,6 +268,7 @@ class EnhancedRBACService {
         setImmediate(() => {
           socketService.notifyUsersPermissionChange(userIds, {
             type: 'role_updated',
+            orgId: org_id,
             roleId: result.rows[0].id,
             roleName: result.rows[0].name,
             permissions: JSON.parse(result.rows[0].permissions),
@@ -279,6 +280,7 @@ class EnhancedRBACService {
       setImmediate(() => {
         socketService.notifyOrgRoleChange(org_id, {
           type: 'role_updated',
+          orgId: org_id,
           roleId: result.rows[0].id,
           roleName: result.rows[0].name,
         });
@@ -572,6 +574,7 @@ class EnhancedRBACService {
       setImmediate(() => {
         socketService.notifyRoleAssignment(user_id, org_id, {
           type: 'role_assigned',
+          orgId: org_id,
           roleId: role_id,
           roleName: role.name,
           roleKey: role.key,

@@ -64,9 +64,10 @@ export function usePatientForm(patient?: FHIRPatient, facilityId?: string) {
       const mrn = patient.identifier?.find(
         id => id.type?.coding?.some(c => c.code === 'MR')
       )?.value;
+      const photo = patient.photo?.[0]?.url || patient.photo?.[0]?.data || '';
 
       setFormData({
-        photo: '',
+        photo: photo,
         prefix: name?.prefix?.[0] || 'Mr',
         firstName: name?.given?.[0] || '',
         lastName: name?.family || '',
@@ -161,6 +162,7 @@ export function usePatientForm(patient?: FHIRPatient, facilityId?: string) {
       phone: formData.phone.trim() || undefined,
       mrn: formData.mrn.trim() || formData.hospitalId.trim() || undefined,
       facilityId: facilityId!,
+      photo: formData.photo || undefined,
       address: hasAddress ? {
         line: formData.address.line.filter(l => l.trim()),
         city: formData.address.city.trim(),

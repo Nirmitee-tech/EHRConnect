@@ -1,28 +1,21 @@
 'use client';
 
-import { Plus, HelpCircle, Zap, Calculator, Bell } from 'lucide-react';
+import { Plus, HelpCircle, Zap, Calculator } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { getPageInfo } from '@/config/navigation.config';
 import { SearchBar } from './search-bar';
 import { UserProfile } from './user-profile';
+import { NotificationBell } from './notification-bell';
 
 const ActionIcons = () => (
   <div className="flex items-center space-x-1">
-    {[
-      { Icon: Bell, badge: true },
-      { Icon: HelpCircle, badge: false },
-      { Icon: Zap, badge: false },
-      { Icon: Calculator, badge: false }
-    ].map(({ Icon, badge }, index) => (
+    {[HelpCircle, Zap, Calculator].map((Icon, index) => (
       <button
         key={index}
         className="relative p-2 text-gray-500 hover:text-primary rounded-lg hover:bg-gray-100 transition-colors"
       >
         <Icon className="h-4 w-4" />
-        {badge && (
-          <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full ring-1 ring-white" />
-        )}
       </button>
     ))}
   </div>
@@ -70,6 +63,7 @@ export function HealthcareHeader() {
               </Button>
             )}
 
+            <NotificationBell />
             <ActionIcons />
             <StatusBadge />
             <UserProfile />

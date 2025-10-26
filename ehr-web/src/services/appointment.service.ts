@@ -560,9 +560,16 @@ export class AppointmentService {
   /**
    * Create a new appointment
    */
-  static async createAppointment(appointmentData: Partial<Appointment>): Promise<Appointment> {
+  static async createAppointment(appointmentData: Partial<Appointment>, orgId?: string): Promise<Appointment> {
     try {
-      const fhirAppointment: Partial<FHIRAppointment> = {
+      // Use provided org_id or try to get from localStorage as fallback
+      const finalOrgId = orgId || (typeof window !== 'undefined' ? localStorage.getItem('currentFacilityId') : null);
+
+      if (!finalOrgId) {
+        throw new Error('No facility selected. Please select a facility from settings.');
+      }
+
+      const fhirAppointment: any = {
         resourceType: 'Appointment',
         status: AppointmentService.mapStatusToFHIR(appointmentData.status || 'scheduled'),
         start: appointmentData.startTime ? new Date(appointmentData.startTime).toISOString() : undefined,
@@ -584,10 +591,36 @@ export class AppointmentService {
             },
             status: 'accepted'
           }
+        ],
+        // Add org_id as a FHIR extension (backend expects this format)
+        extension: [
+          {
+            url: 'http://ehrconnect.io/fhir/StructureDefinition/appointment-organization',
+            valueReference: {
+              reference: `Organization/${finalOrgId}`
+            }
+          }
         ]
       };
 
-      const created = await medplum.createResource(fhirAppointment as FHIRAppointment);
+      console.log('[Appointment Service] Creating appointment with org_id:', finalOrgId);
+
+      // Use direct fetch with org_id header (matching user's pattern)
+      const response = await fetch('/api/fhir/Appointment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/fhir+json',
+          'x-org-id': finalOrgId,
+        },
+        body: JSON.stringify(fhirAppointment),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `Failed to create appointment: ${response.status} ${response.statusText}`);
+      }
+
+      const created = await response.json();
       return AppointmentService.transformFHIRAppointment(created);
     } catch (error) {
       console.error('Error creating appointment:', error);
