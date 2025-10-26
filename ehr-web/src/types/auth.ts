@@ -24,6 +24,7 @@ declare module 'next-auth' {
     refreshToken?: string;
     idToken?: string;
     roles?: string[];
+    hasMoreRoles?: boolean;
     fhirUser?: string;
     // Multi-tenant claims
     org_id?: string;

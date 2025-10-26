@@ -7,6 +7,7 @@ declare module 'next-auth' {
     refreshToken?: string
     idToken?: string
     roles?: string[]
+    hasMoreRoles?: boolean
     fhirUser?: string
     permissions?: string[]
     // Multi-tenant fields

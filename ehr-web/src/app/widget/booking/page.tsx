@@ -83,7 +83,7 @@
  * - Date/time handling uses user's local timezone
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { Calendar, Clock, MapPin, User, Phone, Mail, ArrowRight, CheckCircle2, ChevronRight, AlertCircle, Loader2, Info, Download, Shield } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
@@ -166,7 +166,7 @@ interface Slot {
 // MAIN COMPONENT
 // ============================================================================
 
-export default function BookingWidget() {
+function BookingWidgetContent() {
   const searchParams = useSearchParams();
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -1434,5 +1434,20 @@ END:VCALENDAR`;
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BookingWidget() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[480px] items-center justify-center gap-2 p-8">
+          <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+          <span className="text-sm text-gray-500">Loading booking widget...</span>
+        </div>
+      }
+    >
+      <BookingWidgetContent />
+    </Suspense>
   );
 }

@@ -33,17 +33,24 @@ const FALLBACK_SEVERITY: NotificationSeverity = 'info';
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+  value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined;
+
 const EVENT_MAPPERS: Record<string, NotificationEventMapper> = {
   'appointment:created': {
     title: 'Appointment scheduled',
     description: (payload) => {
+      const appointment = payload.appointment as
+        | { patientName?: string; start?: string }
+        | undefined;
       const patientName =
-        (payload.appointment?.patientName as string | undefined) ??
+        (appointment?.patientName as string | undefined) ??
         (payload.patientName as string | undefined) ??
         'A patient';
-      const start = payload.appointment?.start ?? payload.start;
-      return `${patientName} booked an appointment${start ? ` for ${new Date(start as string).toLocaleString()}` : ''
-        }.`;
+      const start = appointment?.start ?? (payload.start as string | undefined);
+      return `${patientName} booked an appointment${
+        start ? ` for ${new Date(start).toLocaleString()}` : ''
+      }.`;
     },
     category: 'appointment',
     severity: 'success',
@@ -85,8 +92,11 @@ const EVENT_MAPPERS: Record<string, NotificationEventMapper> = {
   'permission-changed': {
     title: 'Permissions updated',
     description: (payload) => {
-      const changeType = (payload.changeData?.type as string | undefined) || (payload.type as string | undefined);
-      const roleName = payload.changeData?.roleName as string | undefined;
+      const changeData = asRecord(payload.changeData);
+      const changeType =
+        (changeData?.type as string | undefined) ||
+        (payload.type as string | undefined);
+      const roleName = changeData?.roleName as string | undefined;
       const readableType = changeType ? changeType.replace(/[_-]/g, ' ') : 'updated';
       if (roleName) {
         return `${roleName} permissions were ${readableType}.`;
@@ -100,7 +110,8 @@ const EVENT_MAPPERS: Record<string, NotificationEventMapper> = {
   'role-changed': {
     title: 'Role configuration updated',
     description: (payload) => {
-      const roleName = payload.changeData?.roleName as string | undefined;
+      const changeData = asRecord(payload.changeData);
+      const roleName = changeData?.roleName as string | undefined;
       return roleName
         ? `Organization role ${roleName} was updated.`
         : 'Organization role definitions were updated.';
@@ -112,8 +123,9 @@ const EVENT_MAPPERS: Record<string, NotificationEventMapper> = {
   'role-assignment-changed': {
     title: 'Role assignment updated',
     description: (payload) => {
-      const roleName = payload.changeData?.roleName as string | undefined;
-      const targetUser = payload.changeData?.targetUserName as string | undefined;
+      const changeData = asRecord(payload.changeData);
+      const roleName = changeData?.roleName as string | undefined;
+      const targetUser = changeData?.targetUserName as string | undefined;
       if (roleName && targetUser) {
         return `${roleName} assignment updated for ${targetUser}.`;
       }
@@ -129,8 +141,9 @@ const EVENT_MAPPERS: Record<string, NotificationEventMapper> = {
   'role-revocation': {
     title: 'Role revoked',
     description: (payload) => {
-      const roleName = payload.changeData?.roleName as string | undefined;
-      const targetUser = payload.changeData?.targetUserName as string | undefined;
+      const changeData = asRecord(payload.changeData);
+      const roleName = changeData?.roleName as string | undefined;
+      const targetUser = changeData?.targetUserName as string | undefined;
       if (roleName && targetUser) {
         return `${roleName} role was revoked for ${targetUser}.`;
       }

@@ -23,7 +23,11 @@ interface NotificationContextValue {
   markAllAsRead: () => Promise<void>;
   addNotification: (notification: NotificationItem) => void;
   removeNotification: (id: string) => void;
-  setNotifications: (notifications: NotificationItem[]) => void;
+  setNotifications: (
+    notifications:
+      | NotificationItem[]
+      | ((prev: NotificationItem[]) => NotificationItem[])
+  ) => void;
 }
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
@@ -113,9 +117,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const setNotifications = useCallback(
-    (items: NotificationItem[]) => {
-      setNotificationsState(items);
-      persistNotifications(items);
+    (
+      value:
+        | NotificationItem[]
+        | ((prev: NotificationItem[]) => NotificationItem[])
+    ) => {
+      setNotificationsState((prev) => {
+        const next =
+          typeof value === 'function'
+            ? value(prev)
+            : value;
+        persistNotifications(next);
+        return next;
+      });
     },
     [persistNotifications]
   );
@@ -188,7 +202,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       return;
     }
 
-    tokenRef.current = session?.accessToken ?? null;
+    const token = session?.accessToken ?? null;
+    tokenRef.current = token;
     storageKeyRef.current = getStorageKey(userId, orgId);
 
     const stored = loadStoredNotifications();
@@ -196,7 +211,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       setNotificationsState(stored);
     }
 
-    if (!session?.accessToken) {
+    if (!token) {
       return;
     }
 
@@ -217,7 +232,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     };
 
     notificationService.connect({
-      token: session.accessToken,
+      token,
       orgId,
       userId,
       onNotification: handleNotification,
@@ -229,7 +244,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       setIsLoading(true);
       try {
         const items = await notificationService.fetchNotifications({
-          token: session.accessToken,
+          token,
           orgId,
           userId,
         });
