@@ -104,7 +104,7 @@ app.use(cors({
 }));
 app.use(express.json({
   limit: '10mb',
-  type: ['application/json', 'application/fhir+json']
+  type: ['application/json', 'application/fhir+json', 'application/json-patch+json']
 }));
 app.use(express.urlencoded({ extended: true }));
 
