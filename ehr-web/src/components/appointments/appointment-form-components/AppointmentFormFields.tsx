@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CalendarIcon, Clock, User, Plus, MapPin, FileText } from 'lucide-react';
 import { SearchableSelect, SelectOption } from '@/components/ui/searchable-select';
 
@@ -126,6 +126,52 @@ export function AppointmentFormFields({
 
     return slots;
   };
+
+  // Check if doctor is unavailable for selected date/time
+  const isDoctorUnavailable = (): boolean => {
+    if (!selectedPractitioner || !formData.date || !formData.time) return false;
+
+    const selectedDate = new Date(`${formData.date}T${formData.time}`);
+
+    // Check if on vacation
+    if (isOnVacation(selectedDate)) return true;
+
+    // Check if non-working day
+    if (!isWorkingDay(selectedDate)) return true;
+
+    // Check if outside working hours
+    const workingHours = getWorkingHours(selectedDate);
+    if (workingHours) {
+      const [startHour, startMin] = workingHours.start.split(':').map(Number);
+      const [endHour, endMin] = workingHours.end.split(':').map(Number);
+
+      const selectedHour = selectedDate.getHours();
+      const selectedMin = selectedDate.getMinutes();
+
+      const selectedTimeInMin = selectedHour * 60 + selectedMin;
+      const startTimeInMin = startHour * 60 + startMin;
+      const endTimeInMin = endHour * 60 + endMin;
+
+      if (selectedTimeInMin < startTimeInMin || selectedTimeInMin >= endTimeInMin) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  // Auto-uncheck emergency flag when doctor becomes available
+  useEffect(() => {
+    // Only auto-uncheck if it's currently checked
+    if (formData.isEmergency) {
+      const unavailable = isDoctorUnavailable();
+      // If doctor is now available, uncheck the emergency flag
+      if (!unavailable) {
+        onFormDataChange('isEmergency', false);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.doctorId, formData.date, formData.time]);
 
   // Check if date should be disabled
   const isDateDisabled = (dateStr: string): boolean => {
@@ -436,23 +482,25 @@ export function AppointmentFormFields({
         />
       </div>
 
-      {/* Emergency Appointment */}
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={formData.isEmergency}
-            onChange={(e) => onFormDataChange('isEmergency', e.target.checked)}
-            className="rounded border-red-300 text-red-600 focus:ring-red-500 h-5 w-5"
-          />
-          <div>
-            <span className="text-sm font-medium text-red-900">Emergency Appointment</span>
-            <p className="text-xs text-red-700 mt-0.5">
-              Override availability restrictions (leaves, working hours)
-            </p>
-          </div>
-        </label>
-      </div>
+      {/* Emergency Appointment - Only show when doctor is unavailable */}
+      {isDoctorUnavailable() && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.isEmergency}
+              onChange={(e) => onFormDataChange('isEmergency', e.target.checked)}
+              className="rounded border-red-300 text-red-600 focus:ring-red-500 h-5 w-5"
+            />
+            <div>
+              <span className="text-sm font-medium text-red-900">Emergency Appointment</span>
+              <p className="text-xs text-red-700 mt-0.5">
+                Override availability restrictions (leaves, working hours)
+              </p>
+            </div>
+          </label>
+        </div>
+      )}
 
       {/* Email & SMS */}
       <details className="rounded-lg border border-gray-200">
