@@ -370,22 +370,7 @@ export function WeekViewDraggable({
       const newEnd = new Date(newStart);
       newEnd.setMinutes(newEnd.getMinutes() + aptDurationMinutes);
 
-      // Find overlapping appointments on the same date
-      const overlapping = appointments.filter(apt => {
-        if (apt.id === draggedAppointment.id) return false; // Skip the dragged appointment itself
-        const aptStart = new Date(apt.startTime);
-        if (aptStart.toDateString() !== date.toDateString()) return false; // Different date
-
-        const aptEnd = new Date(apt.endTime);
-        // Check if times overlap
-        return (newStart < aptEnd && newEnd > aptStart);
-      });
-
-      if (overlapping.length > 0) {
-        console.log(`⚠️ Drop will overlap with ${overlapping.length} appointment(s):`, overlapping.map(a => a.patientName));
-        // Allow the drop - layout will handle displaying overlapping appointments side-by-side
-      }
-
+      // Overlapping appointments are allowed - layout will handle displaying them side-by-side
       onAppointmentDrop?.(draggedAppointment, date, hourWithMinutes);
     }
 
@@ -522,20 +507,11 @@ export function WeekViewDraggable({
       const dateStr = date.toDateString();
       const dateApts = getAppointmentsForDate(date);
       map.set(dateStr, dateApts);
-
-      // Debug logging
-      if (dateApts.length > 0) {
-        console.log(`📅 ${dateStr}: ${dateApts.length} appointments`, dateApts.map(a => ({
-          name: a.patientName,
-          start: new Date(a.startTime).toLocaleTimeString(),
-          end: new Date(a.endTime).toLocaleTimeString()
-        })));
-      }
     });
     return map;
   }, [appointments, currentDate]);
 
-  // Pre-calculate layout for each date
+  // Pre-calculate layout for each date (memoized for performance)
   const layoutByDate = React.useMemo(() => {
     const map = new Map<string, Map<string, { column: number; totalColumns: number }>>();
     weekDates.forEach(date => {
@@ -543,15 +519,6 @@ export function WeekViewDraggable({
       const dateApts = appointmentsByDate.get(dateStr) || [];
       const layout = calculateAppointmentLayout(dateApts);
       map.set(dateStr, layout);
-
-      // Debug logging
-      if (dateApts.length > 1) {
-        console.log(`📐 ${dateStr} layout:`, Array.from(layout.entries()).map(([id, info]) => ({
-          id: id.substring(0, 8),
-          column: info.column,
-          totalColumns: info.totalColumns
-        })));
-      }
     });
     return map;
   }, [appointmentsByDate, currentDate]);
@@ -834,11 +801,11 @@ export function WeekViewDraggable({
                   return (
                     <div
                       key={dateIdx}
-                      className={`relative h-[60px] border-b border-r border-gray-100 last:border-r-0 transition-all duration-150 ease-in-out ${
+                      className={`relative h-[60px] border-b border-r border-gray-100 last:border-r-0 transition-colors duration-100 ease-out ${
                         isToday ? 'bg-blue-50/20' : 'bg-white'
                       } ${isDraggedOver ? 'bg-blue-100/70 ring-1 ring-inset ring-blue-400' : ''} ${
                         inCreateRange ? 'bg-green-50 ring-2 ring-inset ring-green-400' : ''
-                      } hover:bg-gray-50/50`}
+                      } hover:bg-gray-50/60`}
                       onDragOver={(e) => handleDragOver(e, date, hour, minutes)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, date, hour, minutes)}
@@ -851,9 +818,11 @@ export function WeekViewDraggable({
                       }}
                       onMouseUp={resizingAppointment ? handleResizeEnd : undefined}
                     >
-                      {/* Visual indicator for drag over */}
+                      {/* Visual indicator for drag over - enhanced for better visibility */}
                       {isDraggedOver && (
-                        <div className="absolute inset-0 border-2 border-blue-400 bg-blue-100/30 pointer-events-none rounded" />
+                        <div className="absolute inset-0 border-2 border-blue-500 bg-blue-100/40 pointer-events-none rounded shadow-lg transition-all duration-75">
+                          <div className="absolute inset-0 bg-gradient-to-b from-blue-200/30 to-transparent" />
+                        </div>
                       )}
                     </div>
                   );
@@ -969,21 +938,26 @@ export function WeekViewDraggable({
                     // Single appointment, no overlap - tighter spacing
                     // When ANY appointment is being dragged, make all OTHER appointments transparent to pointer events
                     const shouldAllowDragThrough = draggedAppointment && !isDragging;
+                    const isDraggingOther = draggedAppointment && draggedAppointment.id !== apt.id;
 
                     return (
                       <div
                         key={apt.id}
-                        className={`absolute transition-all duration-200 ease-in-out ${isBeingResized ? 'opacity-70 ring-2 ring-blue-400' : ''}`}
+                        className={`absolute transition-all duration-150 ease-out ${isBeingResized ? 'ring-2 ring-blue-400' : ''}`}
                         style={{
-                          top: `${style.top}px`,
+                          transform: `translate3d(0, ${style.top}px, 0)`,
                           height: `${style.height}px`,
                           left: '1px',
                           right: '1px',
                           zIndex: isDragging || isBeingResized ? 1000 : isHovered ? 100 : 10,
                           // When dragging, make element invisible and non-interactive
                           visibility: isDragging ? 'hidden' : 'visible',
+                          // Dim other appointments while dragging for better focus
+                          opacity: isDraggingOther ? 0.5 : isBeingResized ? 0.7 : 1,
                           // Allow drag-through when another appointment is being dragged
-                          pointerEvents: shouldAllowDragThrough ? 'none' : 'auto'
+                          pointerEvents: shouldAllowDragThrough ? 'none' : 'auto',
+                          // GPU acceleration hints
+                          willChange: isDragging || isBeingResized ? 'transform, opacity' : 'auto'
                         }}
                       >
                         {appointmentElement}
@@ -997,21 +971,26 @@ export function WeekViewDraggable({
 
                   // When ANY appointment is being dragged, make all OTHER appointments transparent to pointer events
                   const shouldAllowDragThrough = draggedAppointment && !isDragging;
+                  const isDraggingOther = draggedAppointment && draggedAppointment.id !== apt.id;
 
                   return (
                     <div
                       key={apt.id}
-                      className={`absolute transition-all duration-200 ease-in-out ${isBeingResized ? 'opacity-70 ring-2 ring-blue-400' : ''}`}
+                      className={`absolute transition-all duration-150 ease-out ${isBeingResized ? 'ring-2 ring-blue-400' : ''}`}
                       style={{
-                        top: `${style.top}px`,
+                        transform: `translate3d(0, ${style.top}px, 0)`,
                         height: `${style.height}px`,
                         left: `calc(${leftPercent}% + 1px)`,
                         width: `calc(${columnWidth}% - 1px)`,
                         zIndex: isDragging || isBeingResized ? 1000 : isHovered ? 100 : 10 + layoutInfo.column,
                         // When dragging, make element invisible and non-interactive
                         visibility: isDragging ? 'hidden' : 'visible',
+                        // Dim other appointments while dragging for better focus
+                        opacity: isDraggingOther ? 0.5 : isBeingResized ? 0.7 : 1,
                         // Allow drag-through when another appointment is being dragged
-                        pointerEvents: shouldAllowDragThrough ? 'none' : 'auto'
+                        pointerEvents: shouldAllowDragThrough ? 'none' : 'auto',
+                        // GPU acceleration hints
+                        willChange: isDragging || isBeingResized ? 'transform, opacity' : 'auto'
                       }}
                     >
                       {appointmentElement}
