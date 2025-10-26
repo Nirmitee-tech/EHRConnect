@@ -15,6 +15,8 @@ const PUBLIC_PATHS = [
   '/_next',
   '/favicon.ico',
   '/api/health',
+  '/widget', // Public booking widget
+  '/api/public', // Public API endpoints for widget
 ];
 
 // Root path should be accessible to everyone (landing page)
