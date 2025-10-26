@@ -25,7 +25,27 @@ COPY . .
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production
+# Hardcoded Environment Variables
+ENV NODE_ENV=production \
+    DB_HOST=72.60.205.71 \
+    DB_PORT=5432 \
+    DB_NAME=postgres \
+    DB_USER=ehruser \
+    DB_PASSWORD=nilkamal0_Y \
+    AUTH_PROVIDER=postgres \
+    JWT_SECRET=your-super-secret-jwt-key-change-this-in-production-min-32-chars \
+    PORT=8000 \
+    ALLOWED_ORIGINS=* \
+    KEYCLOAK_URL=https://auth-dev.nirmitee.io:8080 \
+    KEYCLOAK_REALM=ehr-realm \
+    KEYCLOAK_ADMIN_USER=admin \
+    KEYCLOAK_ADMIN_PASSWORD=admin123 \
+    KEYCLOAK_CLIENT_ID=admin-cli \
+    SOCKET_IO_ENABLED=true \
+    SOCKET_PORT=8001 \
+    SOCKET_CORS_ORIGIN=* \
+    CLAIMMD_API_URL=https://api.claim.md/v1 \
+    LOG_LEVEL=info
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
