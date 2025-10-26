@@ -42,6 +42,7 @@ export function SearchableSelect({
   const [searchQuery, setSearchQuery] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const selectedItemRef = useRef<HTMLButtonElement>(null);
 
   // Get selected option
   const selectedOption = options.find(opt => opt.value === value);
@@ -64,13 +65,26 @@ export function SearchableSelect({
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       // Focus search input when dropdown opens
-      setTimeout(() => searchInputRef.current?.focus(), 0);
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+
+      // Scroll selected item into view with a longer delay to ensure rendering
+      setTimeout(() => {
+        if (selectedItemRef.current) {
+          selectedItemRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest'
+          });
+        }
+      }, 200);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, value]); // Added value dependency to re-scroll when selection changes
 
   const handleSelect = (optionValue: string) => {
     onChange(optionValue);
@@ -137,7 +151,7 @@ export function SearchableSelect({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-hidden">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-hidden">
           {/* Search Input */}
           <div className="p-2 border-b border-gray-200 sticky top-0 bg-white">
             <div className="relative">
@@ -170,7 +184,7 @@ export function SearchableSelect({
           )}
 
           {/* Options List */}
-          <div className="overflow-y-auto max-h-60">
+          <div className="overflow-y-auto max-h-72">
             {filteredOptions.length === 0 ? (
               <div className="px-4 py-8 text-center text-gray-500 text-sm">
                 No options found
@@ -182,6 +196,7 @@ export function SearchableSelect({
                   <button
                     key={option.value}
                     type="button"
+                    ref={isSelected ? selectedItemRef : null}
                     onClick={() => handleSelect(option.value)}
                     className={`
                       w-full px-4 py-2.5 text-left transition-colors

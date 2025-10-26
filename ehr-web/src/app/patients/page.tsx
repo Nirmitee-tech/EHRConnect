@@ -90,22 +90,17 @@ export default function PatientsPage() {
     }
   };
 
-  // Search handler with debounce
+  // Load patients on search or tab change
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (searchQuery !== '') {
         setSearching(true);
       }
       loadPatients(searchQuery);
-    }, 500);
+    }, searchQuery ? 500 : 0);
 
     return () => clearTimeout(timeoutId);
   }, [searchQuery, activeTab]);
-
-  // Initial load
-  useEffect(() => {
-    loadPatients();
-  }, [activeTab]);
 
   const getAge = (birthDate: string) => {
     if (!birthDate) return '';

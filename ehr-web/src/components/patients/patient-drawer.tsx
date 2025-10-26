@@ -15,7 +15,8 @@ interface PatientDrawerProps {
   onOpenChange: (open: boolean) => void;
   patient?: FHIRPatient;
   isEditing?: boolean;
-  onSuccess?: () => void;
+  onSuccess?: (createdPatientId?: string) => void;
+  skipEncounter?: boolean; // Skip encounter form and just close after patient creation
 }
 
 type WorkflowStep = 'patient-form' | 'encounter-form';
@@ -30,12 +31,13 @@ interface CreatedPatientData {
   email?: string;
 }
 
-export function PatientDrawer({ 
-  open, 
-  onOpenChange, 
-  patient, 
+export function PatientDrawer({
+  open,
+  onOpenChange,
+  patient,
   isEditing = false,
-  onSuccess 
+  onSuccess,
+  skipEncounter = false
 }: PatientDrawerProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -96,7 +98,7 @@ export function PatientDrawer({
         const createdPatientResponse = await patientService.createPatient(patientData as CreatePatientRequest, 'current-user');
 
         // Calculate age from date of birth
-        const age = patientData.dateOfBirth 
+        const age = patientData.dateOfBirth
           ? Math.floor((Date.now() - new Date(patientData.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
           : undefined;
 
@@ -111,8 +113,20 @@ export function PatientDrawer({
           email: patientData.email
         });
 
-        // Move to encounter form
-        setCurrentStep('encounter-form');
+        // If skipEncounter flag is set, close drawer and call onSuccess
+        if (skipEncounter) {
+          onOpenChange(false);
+          setCurrentStep('patient-form');
+          const patientId = createdPatientResponse.id || '';
+          setCreatedPatient(null);
+
+          if (onSuccess) {
+            onSuccess(patientId); // Pass the created patient ID
+          }
+        } else {
+          // Move to encounter form
+          setCurrentStep('encounter-form');
+        }
       }
     } catch (error) {
       console.error('Failed to save patient:', error);

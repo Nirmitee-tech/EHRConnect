@@ -49,7 +49,14 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
   });
 
   const [practitioners, setPractitioners] = useState<Array<{ id: string; name: string; color?: string; vacations?: any[]; officeHours?: any[] }>>([]);
-  const [patients, setPatients] = useState<Array<{ id: string; name: string }>>([]);
+  const [patients, setPatients] = useState<Array<{
+    id: string;
+    name: string;
+    dateOfBirth?: string;
+    gender?: string;
+    phone?: string;
+    email?: string;
+  }>>([]);
 
   // Load organization settings
   useEffect(() => {
@@ -135,10 +142,21 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
         _count: 100,
         _sort: '-_lastUpdated'
       });
-      const patientList = bundle.map(p => ({
-        id: p.id!,
-        name: p.name?.[0] ? `${p.name[0].given?.join(' ')} ${p.name[0].family}` : 'Unknown'
-      }));
+      const patientList = bundle.map(p => {
+        // Extract phone
+        const phone = p.telecom?.find((t: any) => t.system === 'phone')?.value;
+        // Extract email
+        const email = p.telecom?.find((t: any) => t.system === 'email')?.value;
+
+        return {
+          id: p.id!,
+          name: p.name?.[0] ? `${p.name[0].given?.join(' ')} ${p.name[0].family}` : 'Unknown',
+          dateOfBirth: p.birthDate,
+          gender: p.gender,
+          phone,
+          email
+        };
+      });
       setPatients(patientList);
     } catch (error) {
       console.error('Error loading patients:', error);
@@ -215,6 +233,8 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
     updateField,
     handleDoctorChange,
     handlePatientChange,
-    resetForm
+    resetForm,
+    refreshPatients: loadPatients, // Expose function to refresh patient list
+    refreshPractitioners: loadPractitioners // Expose function to refresh practitioner list
   };
 }

@@ -5,7 +5,14 @@ import { SearchableSelect, SelectOption } from '@/components/ui/searchable-selec
 interface AppointmentFormFieldsProps {
   formData: any;
   practitioners: Array<{ id: string; name: string; color?: string; vacations?: any[]; officeHours?: any[] }>;
-  patients: Array<{ id: string; name: string }>;
+  patients: Array<{
+    id: string;
+    name: string;
+    dateOfBirth?: string;
+    gender?: string;
+    phone?: string;
+    email?: string;
+  }>;
   treatmentCategories: string[];
   locations: string[];
   isNewPatient: boolean;
@@ -15,6 +22,8 @@ interface AppointmentFormFieldsProps {
   onToggleNewPatient: () => void;
   onAddLocation: (location: string) => void;
   onOpenPatientDrawer?: () => void;
+  onOpenLocationDrawer?: () => void;
+  onOpenCategoryDrawer?: () => void;
 }
 
 export function AppointmentFormFields({
@@ -29,22 +38,11 @@ export function AppointmentFormFields({
   onPatientChange,
   onToggleNewPatient,
   onAddLocation,
-  onOpenPatientDrawer
+  onOpenPatientDrawer,
+  onOpenLocationDrawer,
+  onOpenCategoryDrawer
 }: AppointmentFormFieldsProps) {
-  const [showAddLocation, setShowAddLocation] = useState(false);
-  const [newLocation, setNewLocation] = useState('');
-
-  const handleAddLocation = () => {
-    if (newLocation.trim()) {
-      onAddLocation(newLocation.trim());
-      onFormDataChange('location', newLocation.trim());
-      setNewLocation('');
-      setShowAddLocation(false);
-    }
-  };
-
   const [showAddDoctor, setShowAddDoctor] = useState(false);
-  const [showAddCategory, setShowAddCategory] = useState(false);
 
   // Get selected practitioner
   const selectedPractitioner = practitioners.find(p => p.id === formData.doctorId);
@@ -146,10 +144,23 @@ export function AppointmentFormFields({
   }));
 
   // Convert patients to SearchableSelect options
-  const patientOptions: SelectOption[] = patients.map(p => ({
-    value: p.id,
-    label: p.name
-  }));
+  const patientOptions: SelectOption[] = patients.map(p => {
+    // Format subtitle with available patient details
+    const details = [];
+    if (p.dateOfBirth) {
+      const age = Math.floor((Date.now() - new Date(p.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+      details.push(`${age}y, DOB: ${new Date(p.dateOfBirth).toLocaleDateString()}`);
+    }
+    if (p.gender) details.push(p.gender.charAt(0).toUpperCase() + p.gender.slice(1));
+    if (p.phone) details.push(`📞 ${p.phone}`);
+    if (p.email) details.push(`📧 ${p.email}`);
+
+    return {
+      value: p.id,
+      label: p.name,
+      subtitle: details.length > 0 ? details.join(' • ') : undefined
+    };
+  });
 
   return (
     <div className="space-y-4">
@@ -208,79 +219,16 @@ export function AppointmentFormFields({
 
       {/* Location/Room */}
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="block text-sm font-medium text-gray-700">
-            Location<span className="text-red-500">*</span>
-          </label>
-          {!showAddLocation && (
-            <button
-              type="button"
-              onClick={() => setShowAddLocation(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-            >
-              <MapPin className="h-3 w-3" />
-              Add New
-            </button>
-          )}
-        </div>
-        {!showAddLocation ? (
-          <select
-            required
-            value={formData.location || ''}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === '__add_new__') {
-                setShowAddLocation(true);
-              } else {
-                onFormDataChange('location', value);
-              }
-            }}
-            className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-          >
-            <option value="">Select Location</option>
-            {locations.map((location) => (
-              <option key={location} value={location}>
-                {location}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <div className="mt-1 space-y-2">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newLocation}
-                onChange={(e) => setNewLocation(e.target.value)}
-                placeholder="Enter new location name"
-                className="block flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                autoFocus
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddLocation();
-                  }
-                }}
-              />
-              <button
-                type="button"
-                onClick={handleAddLocation}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                Add
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setShowAddLocation(false);
-                setNewLocation('');
-              }}
-              className="text-sm text-gray-600 hover:text-gray-800"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
+        <SearchableSelect
+          label="Location"
+          required
+          options={locations.map(loc => ({ value: loc, label: loc }))}
+          value={formData.location || ''}
+          onChange={(value) => onFormDataChange('location', value)}
+          placeholder="Select Location"
+          onAddNew={onOpenLocationDrawer}
+          addNewLabel="Add New Location"
+        />
       </div>
 
       {/* Practitioner Availability Info */}
@@ -321,83 +269,15 @@ export function AppointmentFormFields({
 
       {/* Treatment Category */}
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="block text-sm font-medium text-gray-700">
-            Treatment Category
-          </label>
-          {!showAddCategory && (
-            <button
-              type="button"
-              onClick={() => setShowAddCategory(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-            >
-              <FileText className="h-3 w-3" />
-              Add New
-            </button>
-          )}
-        </div>
-        {!showAddCategory ? (
-          <select
-            value={formData.treatmentCategory}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === '__add_new__') {
-                setShowAddCategory(true);
-              } else {
-                onFormDataChange('treatmentCategory', value);
-              }
-            }}
-            className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-          >
-            <option value="">Select Category</option>
-            {treatmentCategories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Enter new category name"
-                className="block flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                autoFocus
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const input = e.currentTarget;
-                    if (input.value.trim()) {
-                      onFormDataChange('treatmentCategory', input.value.trim());
-                      setShowAddCategory(false);
-                    }
-                  }
-                }}
-              />
-              <button
-                type="button"
-                onClick={(e) => {
-                  const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                  if (input?.value.trim()) {
-                    onFormDataChange('treatmentCategory', input.value.trim());
-                    setShowAddCategory(false);
-                  }
-                }}
-                className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                Add
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowAddCategory(false)}
-              className="text-xs text-gray-600 hover:text-gray-800"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
+        <SearchableSelect
+          label="Treatment Category"
+          options={treatmentCategories.map(cat => ({ value: cat, label: cat }))}
+          value={formData.treatmentCategory || ''}
+          onChange={(value) => onFormDataChange('treatmentCategory', value)}
+          placeholder="Select Category"
+          onAddNew={onOpenCategoryDrawer}
+          addNewLabel="Add New Category"
+        />
       </div>
 
       {/* All-Day Event Toggle */}
