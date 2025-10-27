@@ -32,6 +32,7 @@ export type FHIRResourceType =
   | 'Coverage'
   | 'Binary'
   | 'CarePlan'
+  | 'FamilyMemberHistory'
 
 // Generic FHIR search parameters
 export interface FHIRSearchParams {

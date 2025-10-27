@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { User, Edit, Calendar, Pill, AlertCircle, Activity, FileText, Loader2, Shield, ChevronLeft, ChevronRight, Plus, X, ChevronDown } from 'lucide-react';
+import { User, Edit, Calendar, Pill, AlertCircle, Activity, FileText, Loader2, Shield, ChevronLeft, ChevronRight, Plus, X, ChevronDown, Users } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@nirmitee.io/design-system';
 import { useParams, useSearchParams } from 'next/navigation';
 import { fhirService } from '@/lib/medplum';
@@ -24,6 +24,7 @@ import { ProblemsTab } from './components/tabs/ProblemsTab';
 import { MedicationsTab } from './components/tabs/MedicationsTab';
 import { AllergiesTab } from './components/tabs/AllergiesTab';
 import { DocumentsTab } from './components/tabs/DocumentsTab';
+import { FamilyHistoryTab } from './components/tabs/FamilyHistoryTab';
 import { VitalsDrawer } from './components/drawers/VitalsDrawer';
 import { ProblemDrawer } from './components/drawers/ProblemDrawer';
 import { MedicationDrawer } from './components/drawers/MedicationDrawer';
@@ -788,6 +789,7 @@ export default function PatientDetailPage() {
     { id: 'problems', label: 'Problems', icon: AlertCircle },
     { id: 'medications', label: 'Medications', icon: Pill },
     { id: 'allergies', label: 'Allergies', icon: AlertCircle },
+    { id: 'family-history', label: 'Family History', icon: Users },
     { id: 'insurance', label: 'Insurance', icon: Shield },
     { id: 'documents', label: 'Documents', icon: FileText }
   ];
@@ -967,6 +969,9 @@ export default function PatientDetailPage() {
                 allergies={allergies}
                 onAddAllergy={() => setShowAllergyDrawer(true)}
               />
+            </div>
+            <div style={{ display: activeTab === 'family-history' ? 'block' : 'none' }}>
+              <FamilyHistoryTab patientId={patientId} />
             </div>
             <div style={{ display: activeTab === 'insurance' ? 'block' : 'none' }}>
               <div className="p-4">

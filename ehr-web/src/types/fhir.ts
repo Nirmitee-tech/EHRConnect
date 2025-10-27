@@ -248,3 +248,82 @@ export interface FHIRCommunication extends FHIRResource {
     text: string;
   }>;
 }
+
+// FHIR FamilyMemberHistory Resource for Family Health History
+export interface FHIRCodeableConcept {
+  coding?: Array<{
+    system?: string;
+    code?: string;
+    display?: string;
+  }>;
+  text?: string;
+}
+
+export interface FHIRAge {
+  value?: number;
+  unit?: string;
+  system?: string;
+  code?: string;
+}
+
+export interface FHIRRange {
+  low?: {
+    value?: number;
+    unit?: string;
+  };
+  high?: {
+    value?: number;
+    unit?: string;
+  };
+}
+
+export interface FHIRPeriod {
+  start?: string;
+  end?: string;
+}
+
+export interface FHIRAnnotation {
+  authorReference?: FHIRReference;
+  authorString?: string;
+  time?: string;
+  text: string;
+}
+
+export interface FHIRFamilyMemberHistory extends FHIRResource {
+  resourceType: 'FamilyMemberHistory';
+  identifier?: FHIRIdentifier[];
+  instantiatesCanonical?: string[];
+  instantiatesUri?: string[];
+  status: 'partial' | 'completed' | 'entered-in-error' | 'health-unknown';
+  dataAbsentReason?: FHIRCodeableConcept;
+  patient: FHIRReference; // Patient reference (required)
+  date?: string; // DateTime when history was recorded
+  name?: string; // Name of family member
+  relationship: FHIRCodeableConcept; // Relationship to patient (required)
+  sex?: FHIRCodeableConcept; // Gender of family member
+  bornPeriod?: FHIRPeriod;
+  bornDate?: string;
+  bornString?: string;
+  ageAge?: FHIRAge;
+  ageRange?: FHIRRange;
+  ageString?: string;
+  estimatedAge?: boolean;
+  deceasedBoolean?: boolean;
+  deceasedAge?: FHIRAge;
+  deceasedRange?: FHIRRange;
+  deceasedDate?: string;
+  deceasedString?: string;
+  reasonCode?: FHIRCodeableConcept[];
+  reasonReference?: FHIRReference[];
+  note?: FHIRAnnotation[];
+  condition?: Array<{
+    code: FHIRCodeableConcept; // Condition suffered by family member
+    outcome?: FHIRCodeableConcept; // Result of condition
+    contributedToDeath?: boolean;
+    onsetAge?: FHIRAge;
+    onsetRange?: FHIRRange;
+    onsetPeriod?: FHIRPeriod;
+    onsetString?: string;
+    note?: FHIRAnnotation[];
+  }>;
+}
