@@ -124,23 +124,76 @@ export function getStatusBadgeClass(status: string): string {
 /**
  * Extract FHIR value from resource
  */
-export function extractFHIRValue(resource: any, path: string, defaultValue: string = '-'): string {
+export function extractFHIRValue(
+  resource: unknown,
+  path: string,
+  defaultValue: string = '-'
+): string {
   try {
     const parts = path.split('.');
-    let value = resource;
-    
+    let value: unknown = resource;
+
     for (const part of parts) {
-      if (value && typeof value === 'object') {
+      if (Array.isArray(value)) {
+        const index = Number(part);
+        if (!Number.isNaN(index) && index in value) {
+          value = value[index];
+          continue;
+        }
+        return defaultValue;
+      }
+
+      if (isRecord(value) && part in value) {
         value = value[part];
       } else {
         return defaultValue;
       }
     }
-    
-    return value || defaultValue;
+
+    const normalized = normalizeFHIRValue(value);
+    return normalized !== null ? normalized : defaultValue;
   } catch {
     return defaultValue;
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function normalizeFHIRValue(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === 'string') {
+    return value.length > 0 ? value : null;
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+
+  if (Array.isArray(value)) {
+    const entries = value
+      .map((item) => normalizeFHIRValue(item))
+      .filter((item): item is string => item !== null);
+    return entries.length > 0 ? entries.join(', ') : null;
+  }
+
+  if (isRecord(value)) {
+    const preferredKeys = ['text', 'display', 'value', 'name', 'code'];
+    for (const key of preferredKeys) {
+      if (key in value) {
+        const normalized = normalizeFHIRValue(value[key]);
+        if (normalized) {
+          return normalized;
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 /**
