@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Appointment } from '@/types/appointment';
-import { DetailedAppointmentCard } from './detailed-appointment-card';
+import { CompactEventCard } from './compact-event-card';
+import { cn } from '@/lib/utils';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -11,12 +12,14 @@ interface MonthViewProps {
   onDateClick?: (date: Date) => void;
 }
 
-export function MonthView({ 
-  currentDate, 
-  appointments, 
+export function MonthView({
+  currentDate,
+  appointments,
   onAppointmentClick,
-  onDateClick 
+  onDateClick
 }: MonthViewProps) {
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+
   const getMonthDates = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -24,11 +27,13 @@ export function MonthView({
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
 
+    // Start from Sunday (getDay() returns 0 for Sunday)
     const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - ((firstDay.getDay() + 6) % 7));
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
 
+    // End on Saturday
     const endDate = new Date(lastDay);
-    endDate.setDate(endDate.getDate() + (7 - ((lastDay.getDay() + 6) % 7)));
+    endDate.setDate(endDate.getDate() + (6 - lastDay.getDay()));
 
     const dates: Date[] = [];
     const current = new Date(startDate);
@@ -42,9 +47,16 @@ export function MonthView({
   };
 
   const getAppointmentsForDate = (date: Date) => {
-    return appointments.filter(apt => {
+    const dateAppointments = appointments.filter(apt => {
       const aptDate = new Date(apt.startTime);
       return aptDate.toDateString() === date.toDateString();
+    });
+
+    // Sort by start time
+    return dateAppointments.sort((a, b) => {
+      const timeA = new Date(a.startTime).getTime();
+      const timeB = new Date(b.startTime).getTime();
+      return timeA - timeB;
     });
   };
 
@@ -52,16 +64,30 @@ export function MonthView({
   const today = new Date();
   const currentMonth = currentDate.getMonth();
 
-  const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  const toggleDateExpansion = (dateString: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newExpanded = new Set(expandedDates);
+    if (newExpanded.has(dateString)) {
+      newExpanded.delete(dateString);
+    } else {
+      newExpanded.add(dateString);
+    }
+    setExpandedDates(newExpanded);
+  };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden bg-white">
       {/* Week days header */}
-      <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
+      <div className="grid grid-cols-7 border-b border-gray-300">
         {weekDays.map((day) => (
           <div
             key={day}
-            className="border-r border-gray-200 p-2 text-center text-xs font-semibold text-gray-600 last:border-r-0"
+            className={cn(
+              'border-r border-gray-300 py-3 px-4 text-sm font-semibold text-gray-700',
+              'last:border-r-0'
+            )}
           >
             {day}
           </div>
@@ -69,59 +95,70 @@ export function MonthView({
       </div>
 
       {/* Calendar grid */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-7 auto-rows-fr">
+      <div className="flex-1 overflow-auto">
+        <div className="grid grid-cols-7" style={{ gridAutoRows: '1fr' }}>
           {monthDates.map((date, idx) => {
             const isToday = date.toDateString() === today.toDateString();
             const isCurrentMonth = date.getMonth() === currentMonth;
             const dayAppointments = getAppointmentsForDate(date);
+            const dateString = date.toDateString();
+            const isExpanded = expandedDates.has(dateString);
+
+            // Determine how many events to show
+            const maxVisibleEvents = 3;
+            const visibleAppointments = isExpanded
+              ? dayAppointments
+              : dayAppointments.slice(0, maxVisibleEvents);
+            const hiddenCount = dayAppointments.length - maxVisibleEvents;
 
             return (
               <div
                 key={idx}
-                onClick={() => onDateClick?.(date)}
-                className={`relative min-h-[160px] cursor-pointer border-b border-r border-gray-200 p-2 transition-colors hover:bg-gray-50 last:border-r-0 ${
-                  !isCurrentMonth ? 'bg-gray-50/50' : 'bg-white'
-                } ${isToday ? 'ring-2 ring-inset ring-blue-500' : ''}`}
+                className={cn(
+                  'relative min-h-[120px] border-b border-r border-gray-300 p-2',
+                  'transition-colors',
+                  isCurrentMonth ? 'bg-white' : 'bg-gray-50',
+                  'last:border-r-0'
+                )}
               >
-                {/* Date number */}
-                <div className="mb-2 flex items-center justify-between">
-                  <span
-                    className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-semibold ${
-                      isToday
-                        ? 'bg-blue-600 text-white'
-                        : isCurrentMonth
-                        ? 'text-gray-900'
-                        : 'text-gray-400'
-                    }`}
+                {/* Date number and overflow indicator */}
+                <div className="mb-1.5 flex items-start justify-between">
+                  <button
+                    onClick={() => onDateClick?.(date)}
+                    className={cn(
+                      'flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium',
+                      'transition-colors hover:bg-gray-100',
+                      isToday && 'bg-blue-600 text-white hover:bg-blue-700',
+                      !isToday && isCurrentMonth && 'text-gray-900',
+                      !isToday && !isCurrentMonth && 'text-gray-400'
+                    )}
                   >
                     {date.getDate()}
-                  </span>
-                  {dayAppointments.length > 0 && (
-                    <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700">
-                      {dayAppointments.length}
-                    </span>
+                  </button>
+
+                  {/* Overflow count badge in corner (like Google Calendar) */}
+                  {!isExpanded && hiddenCount > 0 && (
+                    <button
+                      onClick={(e) => toggleDateExpansion(dateString, e)}
+                      className={cn(
+                        'text-[11px] font-medium text-blue-600 hover:text-blue-700',
+                        'hover:underline transition-colors'
+                      )}
+                    >
+                      +{hiddenCount}
+                    </button>
                   )}
                 </div>
 
                 {/* Appointments */}
-                <div className="space-y-1.5">
-                  {dayAppointments.slice(0, 2).map((apt) => (
-                    <div key={apt.id} className="min-h-[60px]">
-                      <DetailedAppointmentCard
-                        appointment={apt}
-                        onClick={() => {
-                          onAppointmentClick?.(apt);
-                        }}
-                        className="text-[10px]"
-                      />
-                    </div>
+                <div className="space-y-1">
+                  {visibleAppointments.map((apt) => (
+                    <CompactEventCard
+                      key={apt.id}
+                      appointment={apt}
+                      onClick={() => onAppointmentClick?.(apt)}
+                    />
                   ))}
-                  {dayAppointments.length > 2 && (
-                    <div className="rounded bg-gray-100 px-2 py-1 text-center text-xs text-gray-600 font-medium">
-                      +{dayAppointments.length - 2} more
-                    </div>
-                  )}
                 </div>
               </div>
             );
