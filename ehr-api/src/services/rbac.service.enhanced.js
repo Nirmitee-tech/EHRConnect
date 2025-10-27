@@ -1,6 +1,7 @@
 const { query, transaction } = require('../database/connection');
 const crypto = require('crypto');
 const socketService = require('./socket.service');
+const { syncUserLocations } = require('../utils/user-location-sync');
 const {
   matchesPermission,
   hasAnyPermission,
@@ -490,8 +491,13 @@ class EnhancedRBACService {
       scope,
       location_id,
       department_id,
-      expires_at
+      expires_at,
+      location_ids
     } = assignmentData;
+
+    const normalizedLocationIds = Array.isArray(location_ids)
+      ? [...new Set(location_ids.filter(Boolean))]
+      : [];
 
     // Validate inputs
     if (!user_id || !org_id || !role_id || !scope) {
@@ -531,61 +537,160 @@ class EnhancedRBACService {
         throw new Error('User not found in organization');
       }
 
-      // Insert role assignment
-      const insertSql = `
-        INSERT INTO role_assignments (
-          user_id, org_id, role_id, scope, location_id, department_id,
-          assigned_by, expires_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING *
-      `;
+      const insertedAssignments = [];
 
-      const result = await client.query(insertSql, [
-        user_id,
-        org_id,
-        role_id,
-        scope,
-        location_id || null,
-        department_id || null,
-        assigned_by_user_id,
-        expires_at || null
-      ]);
+      if (scope === 'LOCATION') {
+        const targetLocations = normalizedLocationIds.length > 0
+          ? normalizedLocationIds
+          : location_id
+            ? [location_id]
+            : [];
 
-      // Audit log
-      await this._createAuditLog(client, {
-        org_id,
-        actor_user_id: assigned_by_user_id,
-        action: 'ROLE.GRANTED',
-        target_type: 'RoleAssignment',
-        target_id: result.rows[0].id,
-        target_name: `${role.name} to user ${user_id}`,
-        status: 'success',
-        metadata: {
-          user_id,
-          role_key: role.key,
-          scope,
-          location_id,
-          department_id
+        if (targetLocations.length === 0) {
+          throw new Error('Location scoped role assignments require at least one location_id');
         }
+
+        for (const locId of targetLocations) {
+          const exists = await client.query(
+            `SELECT 1 FROM role_assignments
+             WHERE user_id = $1 AND org_id = $2 AND role_id = $3
+               AND scope = $4 AND location_id = $5
+               AND revoked_at IS NULL
+             LIMIT 1`,
+            [user_id, org_id, role_id, scope, locId]
+          );
+
+          if (exists.rows.length > 0) {
+            continue;
+          }
+
+          const insertSql = `
+            INSERT INTO role_assignments (
+              user_id, org_id, role_id, scope, location_id, department_id,
+              assigned_by, expires_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING *
+          `;
+
+          const result = await client.query(insertSql, [
+            user_id,
+            org_id,
+            role_id,
+            scope,
+            locId,
+            department_id || null,
+            assigned_by_user_id,
+            expires_at || null
+          ]);
+
+          insertedAssignments.push(result.rows[0]);
+
+          await this._createAuditLog(client, {
+            org_id,
+            actor_user_id: assigned_by_user_id,
+            action: 'ROLE.GRANTED',
+            target_type: 'RoleAssignment',
+            target_id: result.rows[0].id,
+            target_name: `${role.name} to user ${user_id}`,
+            status: 'success',
+            metadata: {
+              user_id,
+              role_key: role.key,
+              scope,
+              location_id: locId,
+              department_id
+            }
+          });
+
+          setImmediate(() => {
+            socketService.notifyRoleAssignment(user_id, org_id, {
+              type: 'role_assigned',
+              orgId: org_id,
+              roleId: role_id,
+              roleName: role.name,
+              roleKey: role.key,
+              permissions: JSON.parse(role.permissions),
+              scope,
+              locationId: locId,
+              departmentId: department_id,
+            });
+          });
+        }
+      } else {
+        const exists = await client.query(
+          `SELECT 1 FROM role_assignments
+           WHERE user_id = $1 AND org_id = $2 AND role_id = $3
+             AND scope = $4 AND location_id IS NULL
+             AND revoked_at IS NULL
+           LIMIT 1`,
+          [user_id, org_id, role_id, scope]
+        );
+
+        if (exists.rows.length === 0) {
+          const insertSql = `
+            INSERT INTO role_assignments (
+              user_id, org_id, role_id, scope, location_id, department_id,
+              assigned_by, expires_at
+            )
+            VALUES ($1, $2, $3, $4, NULL, $5, $6, $7)
+            RETURNING *
+          `;
+
+          const result = await client.query(insertSql, [
+            user_id,
+            org_id,
+            role_id,
+            scope,
+            department_id || null,
+            assigned_by_user_id,
+            expires_at || null
+          ]);
+
+          insertedAssignments.push(result.rows[0]);
+
+          await this._createAuditLog(client, {
+            org_id,
+            actor_user_id: assigned_by_user_id,
+            action: 'ROLE.GRANTED',
+            target_type: 'RoleAssignment',
+            target_id: result.rows[0].id,
+            target_name: `${role.name} to user ${user_id}`,
+            status: 'success',
+            metadata: {
+              user_id,
+              role_key: role.key,
+              scope,
+              department_id
+            }
+          });
+
+          setImmediate(() => {
+            socketService.notifyRoleAssignment(user_id, org_id, {
+              type: 'role_assigned',
+              orgId: org_id,
+              roleId: role_id,
+              roleName: role.name,
+              roleKey: role.key,
+              permissions: JSON.parse(role.permissions),
+              scope,
+              locationId: null,
+              departmentId: department_id,
+            });
+          });
+        }
+      }
+
+      const syncedLocationIds = await syncUserLocations({
+        userId: user_id,
+        orgId: org_id,
+        client
       });
 
-      // Notify user via Socket.IO
-      setImmediate(() => {
-        socketService.notifyRoleAssignment(user_id, org_id, {
-          type: 'role_assigned',
-          orgId: org_id,
-          roleId: role_id,
-          roleName: role.name,
-          roleKey: role.key,
-          permissions: JSON.parse(role.permissions),
-          scope,
-          locationId: location_id,
-          departmentId: department_id,
-        });
-      });
-
-      return result.rows[0];
+      return {
+        assignments: insertedAssignments,
+        location_ids: syncedLocationIds
+      };
     });
   }
 

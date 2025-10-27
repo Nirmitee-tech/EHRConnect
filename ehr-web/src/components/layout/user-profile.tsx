@@ -76,7 +76,7 @@ export function UserProfile() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-gray-100 transition-all"
+        className="flex items-center space-x-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-all"
       >
         <div className="relative">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -93,7 +93,7 @@ export function UserProfile() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+        <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
           <div className="px-4 py-3 border-b border-gray-100">
             <p className="text-sm font-semibold text-gray-900">{userName}</p>
             {userEmail && (

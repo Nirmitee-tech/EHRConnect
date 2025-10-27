@@ -276,6 +276,18 @@ router.get('/me', async (req, res) => {
 
     const user = result.rows[0];
 
+    const locationResult = await query(
+      `SELECT
+         ARRAY_AGG(DISTINCT ra.location_id) FILTER (WHERE ra.location_id IS NOT NULL) AS location_ids
+       FROM role_assignments ra
+       WHERE ra.user_id = $1
+         AND ra.revoked_at IS NULL
+         AND (ra.expires_at IS NULL OR ra.expires_at > CURRENT_TIMESTAMP)`,
+      [user.id]
+    );
+
+    const locationIds = (locationResult.rows[0]?.location_ids || []).filter(Boolean);
+
     // Format response
     const profile = {
       id: user.id,
@@ -288,14 +300,14 @@ router.get('/me', async (req, res) => {
       org_logo: user.org_logo,
       org_specialties: user.org_specialties || [],
       onboarding_completed: user.onboarding_completed,
-      location_ids: user.location_ids || [],
+      location_ids: locationIds,
       scope: user.scope,
       roles: user.roles || [],
       permissions: user.permissions || [],
       // Additional metadata
       total_roles: (user.roles || []).length,
       total_permissions: (user.permissions || []).length,
-      total_locations: (user.location_ids || []).length,
+      total_locations: locationIds.length,
     };
 
     res.json({

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Building2, ChevronDown } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import { useFacility } from '@/contexts/facility-context';
 import {
   Select,

@@ -146,8 +146,13 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
     ]
   },
   {
+    title: 'REPORTS & ANALYTICS',
     items: [
-      { name: 'Report', href: '/reports', icon: FileText },
+      { name: 'Reports', href: '/reports', icon: BarChart3 }
+    ]
+  },
+  {
+    items: [
       { name: 'Customer Support', href: '/support', icon: HelpCircle }
     ]
   }

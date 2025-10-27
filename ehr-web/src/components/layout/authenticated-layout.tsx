@@ -16,7 +16,8 @@ const MAIN_CONTENT_PADDING = {
   overrides: [
     { prefix: '/appointments', padding: 'p-0' },
     { prefix: '/apga', padding: 'p-0' },
-    { prefix: '/feature', padding: 'p-0' }
+    { prefix: '/feature', padding: 'p-0' },
+    { prefix: '/reports', padding: 'p-0' }
   ]
 } as const;
 

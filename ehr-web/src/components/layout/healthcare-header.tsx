@@ -1,34 +1,13 @@
 'use client';
 
-import { Plus, HelpCircle, Zap, Calculator } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { getPageInfo } from '@/config/navigation.config';
 import { SearchBar } from './search-bar';
 import { UserProfile } from './user-profile';
 import { NotificationBell } from './notification-bell';
-
-const ActionIcons = () => (
-  <div className="flex items-center space-x-1">
-    {[HelpCircle, Zap, Calculator].map((Icon, index) => (
-      <button
-        key={index}
-        className="relative p-2 text-gray-500 hover:text-primary rounded-lg hover:bg-gray-100 transition-colors"
-      >
-        <Icon className="h-4 w-4" />
-      </button>
-    ))}
-  </div>
-);
-
-const StatusBadge = () => (
-  <div className="bg-[#10B981] text-white px-3 py-1 rounded-md text-xs font-medium">
-    <span className="flex items-center gap-1.5">
-      <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-      1/4 Active
-    </span>
-  </div>
-);
+import { FacilitySwitcher } from '../facility-switcher';
 
 export function HealthcareHeader() {
   const pathname = usePathname();
@@ -38,13 +17,12 @@ export function HealthcareHeader() {
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="px-4 py-2.5">
         <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg font-semibold text-gray-900">
-              {pageInfo.title}
-            </h1>
+          <div className="flex items-center gap-3 text-gray-900">
+            <h1 className="text-lg font-semibold">{pageInfo.title}</h1>
+            <span className="text-gray-300">|</span>
             <span className="text-xs text-gray-500">
-              {new Date().toLocaleDateString('en-US', { 
-                month: 'short', 
+              {new Date().toLocaleDateString('en-US', {
+                month: 'short',
                 day: 'numeric',
                 year: 'numeric'
               })}
@@ -55,7 +33,7 @@ export function HealthcareHeader() {
             <SearchBar />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {pageInfo.actionButton && (
               <Button className="bg-primary hover:bg-primary/90 text-white rounded-lg px-4 py-2 flex items-center gap-2">
                 <Plus className="h-4 w-4" />
@@ -63,9 +41,8 @@ export function HealthcareHeader() {
               </Button>
             )}
 
+            <FacilitySwitcher />
             <NotificationBell />
-            <ActionIcons />
-            <StatusBadge />
             <UserProfile />
           </div>
         </div>

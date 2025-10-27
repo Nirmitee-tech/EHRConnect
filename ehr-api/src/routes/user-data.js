@@ -132,37 +132,37 @@ router.get('/locations', requireAuth, async (req, res) => {
     const result = await cache.getOrSet(
       cache.CACHE_KEYS.USER_LOCATIONS(userId),
       async () => {
-        // Get user's location_ids array
-        const userResult = await query(
-          'SELECT location_ids FROM users WHERE id = $1',
+        const locationAgg = await query(
+          `SELECT
+             ARRAY_AGG(DISTINCT ra.location_id) FILTER (WHERE ra.location_id IS NOT NULL) AS location_ids
+           FROM role_assignments ra
+           WHERE ra.user_id = $1
+             AND ra.revoked_at IS NULL
+             AND (ra.expires_at IS NULL OR ra.expires_at > CURRENT_TIMESTAMP)`,
           [userId]
         );
 
-        if (userResult.rows.length === 0) {
-          return { location_ids: [], locations: [] };
-        }
-
-        const locationIds = userResult.rows[0].location_ids || [];
+        const locationIds = (locationAgg.rows[0]?.location_ids || []).filter(Boolean);
 
         if (locationIds.length === 0) {
           return { location_ids: [], locations: [] };
         }
 
-        // Fetch location details from FHIR resources
+        // Fetch location details from locations table
         const locationsResult = await query(
-          `SELECT resource_data
-           FROM fhir_resources
-           WHERE resource_type = 'Location'
-             AND deleted = FALSE
-             AND id = ANY($1)`,
+          `SELECT id, name, address, active, timezone, location_type
+           FROM locations
+           WHERE id = ANY($1)`,
           [locationIds]
         );
 
         const locations = locationsResult.rows.map(row => ({
-          id: row.resource_data.id,
-          name: row.resource_data.name,
-          status: row.resource_data.status,
-          address: row.resource_data.address,
+          id: row.id,
+          name: row.name,
+          status: row.active ? 'active' : 'inactive',
+          address: row.address,
+          timezone: row.timezone,
+          type: row.location_type,
         }));
 
         return {
@@ -209,7 +209,6 @@ router.get('/profile', requireAuth, async (req, res) => {
             u.name,
             u.org_id,
             u.onboarding_completed,
-            u.location_ids,
             u.scope,
             u.created_at,
             u.updated_at
@@ -222,7 +221,21 @@ router.get('/profile', requireAuth, async (req, res) => {
           throw new Error('User not found');
         }
 
-        return dbResult.rows[0];
+        const profile = dbResult.rows[0];
+
+        const locationAgg = await query(
+          `SELECT
+             ARRAY_AGG(DISTINCT ra.location_id) FILTER (WHERE ra.location_id IS NOT NULL) AS location_ids
+           FROM role_assignments ra
+           WHERE ra.user_id = $1
+             AND ra.revoked_at IS NULL
+             AND (ra.expires_at IS NULL OR ra.expires_at > CURRENT_TIMESTAMP)`,
+          [userId]
+        );
+
+        profile.location_ids = (locationAgg.rows[0]?.location_ids || []).filter(Boolean);
+
+        return profile;
       },
       cache.DEFAULT_TTL.USER_DATA
     );

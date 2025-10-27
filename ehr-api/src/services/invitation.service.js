@@ -2,6 +2,7 @@ const { query, transaction } = require('../database/connection');
 const crypto = require('crypto');
 const KeycloakService = require('./keycloak.service');
 const RBACService = require('./rbac.service');
+const { syncUserLocations } = require('../utils/user-location-sync');
 
 /**
  * Staff Invitation Service
@@ -23,9 +24,17 @@ class InvitationService {
       expires_in_days = 7
     } = invitationData;
 
+    const normalizedLocationIds = Array.isArray(location_ids)
+      ? [...new Set(location_ids.filter(Boolean))]
+      : [];
+
     // Validate
     if (!org_id || !email || !role_keys || role_keys.length === 0 || !scope) {
       throw new Error('Missing required fields');
+    }
+
+    if (scope === 'LOCATION' && normalizedLocationIds.length === 0) {
+      throw new Error('Location scoped invitations require at least one location_id');
     }
 
     // Check if user already exists in this org
@@ -72,7 +81,7 @@ class InvitationService {
           invitedBy,
           role_keys,
           scope,
-          location_ids,
+          normalizedLocationIds,
           department_ids,
           token,
           expiresAt
@@ -178,30 +187,77 @@ class InvitationService {
       );
 
       for (const role of roleResults.rows) {
-        await client.query(
-          `INSERT INTO role_assignments (
-            user_id, org_id, role_id, scope, location_id, assigned_by
-          )
-          VALUES ($1, $2, $3, $4, $5, $6)`,
-          [
-            user.id,
-            invitation.org_id,
-            role.id,
-            invitation.scope,
-            invitation.scope === 'LOCATION' && invitation.location_ids.length > 0 
-              ? invitation.location_ids[0] 
-              : null,
-            invitation.invited_by
-          ]
-        );
+        if (invitation.scope === 'LOCATION') {
+          for (const locationId of invitation.location_ids || []) {
+            const exists = await client.query(
+              `SELECT 1 FROM role_assignments
+               WHERE user_id = $1 AND org_id = $2 AND role_id = $3
+                 AND scope = $4 AND location_id = $5
+                 AND revoked_at IS NULL
+               LIMIT 1`,
+              [user.id, invitation.org_id, role.id, invitation.scope, locationId]
+            );
+
+            if (exists.rows.length > 0) {
+              continue;
+            }
+
+            await client.query(
+              `INSERT INTO role_assignments (
+                user_id, org_id, role_id, scope, location_id, assigned_by
+              )
+              VALUES ($1, $2, $3, $4, $5, $6)`,
+              [
+                user.id,
+                invitation.org_id,
+                role.id,
+                invitation.scope,
+                locationId,
+                invitation.invited_by
+              ]
+            );
+          }
+        } else {
+          const exists = await client.query(
+            `SELECT 1 FROM role_assignments
+             WHERE user_id = $1 AND org_id = $2 AND role_id = $3
+               AND scope = $4 AND location_id IS NULL
+               AND revoked_at IS NULL
+             LIMIT 1`,
+            [user.id, invitation.org_id, role.id, invitation.scope]
+          );
+
+          if (exists.rows.length === 0) {
+            await client.query(
+              `INSERT INTO role_assignments (
+                user_id, org_id, role_id, scope, location_id, assigned_by
+              )
+              VALUES ($1, $2, $3, $4, NULL, $5)`,
+              [
+                user.id,
+                invitation.org_id,
+                role.id,
+                invitation.scope,
+                invitation.invited_by
+              ]
+            );
+          }
+        }
       }
+
+      const syncedLocationIds = await syncUserLocations({
+        userId: user.id,
+        orgId: invitation.org_id,
+        client
+      });
 
       // Get aggregated permissions (returns array directly)
       const permissions = await RBACService.getUserPermissions(user.id, invitation.org_id);
 
       // Update Keycloak user with permissions
       await KeycloakService.updateUserAttributes(keycloakUser.id, {
-        permissions: Array.isArray(permissions) ? permissions : []
+        permissions: Array.isArray(permissions) ? permissions : [],
+        location_ids: syncedLocationIds
       });
 
       // Mark invitation as accepted
