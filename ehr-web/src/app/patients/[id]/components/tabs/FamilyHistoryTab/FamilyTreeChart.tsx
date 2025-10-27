@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { Edit, Heart, AlertCircle } from 'lucide-react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Edit, Heart, AlertCircle, User } from 'lucide-react';
 import type { FHIRFamilyMemberHistory } from '@/types/fhir';
+import { fhirService } from '@/lib/medplum';
+import type { FHIRPatient } from '@/types/fhir';
 
 interface FamilyTreeChartProps {
   familyHistory: FHIRFamilyMemberHistory[];
@@ -88,6 +90,31 @@ export function FamilyTreeChart({
   lineageFilter,
   onEditMember
 }: FamilyTreeChartProps) {
+  const [patient, setPatient] = useState<FHIRPatient | null>(null);
+
+  useEffect(() => {
+    const loadPatient = async () => {
+      try {
+        const patientData = await fhirService.read('Patient', patientId);
+        setPatient(patientData as FHIRPatient);
+      } catch (error) {
+        console.error('Error loading patient:', error);
+      }
+    };
+    loadPatient();
+  }, [patientId]);
+
+  const patientName = useMemo(() => {
+    if (!patient) return 'Patient';
+    const name = patient.name?.[0];
+    if (!name) return 'Patient';
+    const parts = [name.given?.join(' '), name.family].filter(Boolean);
+    return parts.join(' ') || 'Patient';
+  }, [patient]);
+
+  const patientGender = useMemo(() => {
+    return patient?.gender || 'unknown';
+  }, [patient]);
 
   const treeData = useMemo(() => {
     const nodes: TreeMember[] = familyHistory.map(member => {
@@ -144,7 +171,7 @@ export function FamilyTreeChart({
   const getGenerationLabel = (gen: number): string => {
     if (gen === -2) return 'Grandparents';
     if (gen === -1) return 'Parents & Aunts/Uncles';
-    if (gen === 0) return 'Patient & Siblings';
+    if (gen === 0) return 'Patient & Siblings/Spouse';
     if (gen === 1) return 'Children';
     if (gen === 2) return 'Grandchildren';
     return `Generation ${gen}`;
@@ -201,6 +228,46 @@ export function FamilyTreeChart({
 
               {/* Family Members in Generation */}
               <div className="flex justify-center gap-6 flex-wrap">
+                {/* Patient Card - Center of Generation 0 */}
+                {generation === 0 && (
+                  <div className="relative group">
+                    <div className={`
+                      relative w-40 rounded-xl border-4 shadow-lg
+                      ${patientGender === 'male' ? 'bg-blue-100 border-blue-500' :
+                        patientGender === 'female' ? 'bg-pink-100 border-pink-500' :
+                        'bg-purple-100 border-purple-500'}
+                    `}>
+                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                        <span className="px-3 py-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold rounded-full shadow-md">
+                          PATIENT
+                        </span>
+                      </div>
+                      <div className="p-4 pt-6">
+                        <div className={`text-sm font-bold text-center mb-0.5 min-h-[2.5rem] flex items-center justify-center ${
+                          patientGender === 'male' ? 'text-blue-900' :
+                          patientGender === 'female' ? 'text-pink-900' :
+                          'text-purple-900'
+                        }`}>
+                          {patientName}
+                        </div>
+                        <div className="text-xs text-center text-gray-600 mb-3 font-medium">
+                          Index Patient
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-center gap-2 text-xs text-gray-700">
+                            <User className="h-3.5 w-3.5" />
+                            <span className="font-medium">
+                              {patientGender === 'male' ? '♂ Male' :
+                               patientGender === 'female' ? '♀ Female' :
+                               patientGender || 'Unknown'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {nodes.map(node => (
                   <div
                     key={node.id}
@@ -287,6 +354,10 @@ export function FamilyTreeChart({
         {/* Legend */}
         <div className="mt-12 flex justify-center">
           <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm inline-flex gap-6">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded bg-purple-100 border-4 border-purple-500" />
+              <span className="text-xs text-gray-700 font-semibold">Index Patient</span>
+            </div>
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded bg-blue-50 border-2 border-blue-300" />
               <span className="text-xs text-gray-700">Male</span>
