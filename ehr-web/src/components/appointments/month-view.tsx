@@ -77,10 +77,13 @@ export function MonthView({
     setExpandedDates(newExpanded);
   };
 
+  // Calculate number of weeks to display
+  const numWeeks = monthDates.length / 7;
+
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-white">
+    <div className="h-full flex flex-col bg-white">
       {/* Week days header */}
-      <div className="grid grid-cols-7 border-b border-gray-300">
+      <div className="grid grid-cols-7 border-b border-gray-300 flex-shrink-0">
         {weekDays.map((day) => (
           <div
             key={day}
@@ -94,47 +97,47 @@ export function MonthView({
         ))}
       </div>
 
-      {/* Calendar grid */}
-      <div className="flex-1 overflow-auto">
-        <div className="grid grid-cols-7" style={{ gridAutoRows: '1fr' }}>
-          {monthDates.map((date, idx) => {
-            const isToday = date.toDateString() === today.toDateString();
-            const isCurrentMonth = date.getMonth() === currentMonth;
-            const dayAppointments = getAppointmentsForDate(date);
-            const dateString = date.toDateString();
-            const isExpanded = expandedDates.has(dateString);
+      {/* Calendar grid - Use full remaining height */}
+      <div className="flex-1 min-h-0 grid grid-cols-7" style={{ gridTemplateRows: `repeat(${numWeeks}, minmax(0, 1fr))` }}>
+        {monthDates.map((date, idx) => {
+          const isToday = date.toDateString() === today.toDateString();
+          const isCurrentMonth = date.getMonth() === currentMonth;
+          const dayAppointments = getAppointmentsForDate(date);
+          const dateString = date.toDateString();
+          const isExpanded = expandedDates.has(dateString);
 
-            // Determine how many events to show
-            const maxVisibleEvents = 3;
-            const visibleAppointments = isExpanded
-              ? dayAppointments
-              : dayAppointments.slice(0, maxVisibleEvents);
-            const hiddenCount = dayAppointments.length - maxVisibleEvents;
+          // Determine how many events to show
+          const maxVisibleEvents = 3;
+          const visibleAppointments = isExpanded
+            ? dayAppointments
+            : dayAppointments.slice(0, maxVisibleEvents);
+          const hiddenCount = dayAppointments.length - maxVisibleEvents;
 
-            return (
-              <div
-                key={idx}
-                className={cn(
-                  'relative min-h-[120px] border-b border-r border-gray-300 p-2',
-                  'transition-colors',
-                  isCurrentMonth ? 'bg-white' : 'bg-gray-50',
-                  'last:border-r-0'
-                )}
-              >
+          return (
+            <div
+              key={idx}
+              onClick={() => onDateClick?.(date)}
+              className={cn(
+                'relative border-b border-r border-gray-300 p-2 flex flex-col cursor-pointer',
+                'transition-colors hover:bg-blue-50/30',
+                isCurrentMonth ? 'bg-white' : 'bg-gray-50',
+                'last:border-r-0',
+                idx >= monthDates.length - 7 && 'border-b-0' // Remove bottom border on last row
+              )}
+            >
                 {/* Date number and overflow indicator */}
-                <div className="mb-1.5 flex items-start justify-between">
-                  <button
-                    onClick={() => onDateClick?.(date)}
+                <div className="mb-1.5 flex items-start justify-between flex-shrink-0">
+                  <div
                     className={cn(
                       'flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium',
-                      'transition-colors hover:bg-gray-100',
-                      isToday && 'bg-blue-600 text-white hover:bg-blue-700',
+                      'transition-colors',
+                      isToday && 'bg-blue-600 text-white',
                       !isToday && isCurrentMonth && 'text-gray-900',
                       !isToday && !isCurrentMonth && 'text-gray-400'
                     )}
                   >
                     {date.getDate()}
-                  </button>
+                  </div>
 
                   {/* Overflow count badge in corner (like Google Calendar) */}
                   {!isExpanded && hiddenCount > 0 && (
@@ -150,8 +153,8 @@ export function MonthView({
                   )}
                 </div>
 
-                {/* Appointments */}
-                <div className="space-y-1">
+                {/* Appointments - scrollable if too many */}
+                <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
                   {visibleAppointments.map((apt) => (
                     <CompactEventCard
                       key={apt.id}
@@ -163,7 +166,6 @@ export function MonthView({
               </div>
             );
           })}
-        </div>
       </div>
     </div>
   );
