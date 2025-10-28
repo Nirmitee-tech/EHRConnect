@@ -6,6 +6,7 @@ import { CalendarToolbar } from '@/components/appointments/calendar-toolbar';
 import { DayView } from '@/components/appointments/day-view';
 import { WeekViewDraggable } from '@/components/appointments/week-view-draggable';
 import { MonthView } from '@/components/appointments/month-view';
+import { ProviderDashboard } from '@/components/appointments/provider-dashboard';
 import { AppointmentStatsPanel } from '@/components/appointments/appointment-stats';
 import { AppointmentFormDrawer } from '@/components/appointments/appointment-form-drawer';
 import { AppointmentDetailsDrawer } from '@/components/appointments/appointment-details-drawer';
@@ -620,9 +621,15 @@ export default function AppointmentsPage() {
           viewMode={viewMode}
           onViewModeChange={(mode) => {
             setViewMode(mode);
-            // If switching to doctor view, set a default doctor (first in list)
+            // If switching to doctor view, set a default doctor (first in list) and switch to dashboard
             if (mode === 'doctor' && practitioners.length > 0) {
               setCurrentDoctorId(practitioners[0].name);
+              setView('dashboard');
+            } else if (mode === 'admin') {
+              // Switch back to week view when returning to admin mode
+              if (view === 'dashboard') {
+                setView('week');
+              }
             }
           }}
         />
@@ -643,6 +650,14 @@ export default function AppointmentsPage() {
             </div>
           ) : (
             <>
+              {view === 'dashboard' && (
+                <ProviderDashboard
+                  practitionerId={currentDoctorId || ''}
+                  currentDate={currentDate}
+                  appointments={filteredAppointments}
+                  onAppointmentClick={handleAppointmentClick}
+                />
+              )}
               {view === 'day' && (
                 <DayView
                   currentDate={currentDate}
@@ -677,7 +692,8 @@ export default function AppointmentsPage() {
           )}
         </div>
 
-        {/* Right Sidebar - Compact Style */}
+        {/* Right Sidebar - Compact Style (hidden when dashboard is active) */}
+        {view !== 'dashboard' && (
         <div className="w-80 border-l border-gray-200 bg-gray-50 flex flex-col">
           {/* Header with Today */}
           <div className="bg-white px-4 py-2.5 border-b border-gray-200">
@@ -1050,6 +1066,7 @@ export default function AppointmentsPage() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Appointment Form Drawer */}

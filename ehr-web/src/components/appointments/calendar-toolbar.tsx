@@ -43,9 +43,10 @@ export function CalendarToolbar({
       newDate.setDate(newDate.getDate() - 1);
     } else if (view === 'week') {
       newDate.setDate(newDate.getDate() - 7);
-    } else {
+    } else if (view === 'month') {
       newDate.setMonth(newDate.getMonth() - 1);
     }
+    // Dashboard view doesn't have navigation
     onDateChange(newDate);
   };
 
@@ -55,9 +56,10 @@ export function CalendarToolbar({
       newDate.setDate(newDate.getDate() + 1);
     } else if (view === 'week') {
       newDate.setDate(newDate.getDate() + 7);
-    } else {
+    } else if (view === 'month') {
       newDate.setMonth(newDate.getMonth() + 1);
     }
+    // Dashboard view doesn't have navigation
     onDateChange(newDate);
   };
 
@@ -126,6 +128,30 @@ export function CalendarToolbar({
 
       {/* Right Section: View Controls */}
       <div className="flex items-center gap-0.5">
+        {viewMode === 'doctor' && (
+          <button
+            onClick={() => onViewChange('dashboard')}
+            className={cn(
+              'h-7 px-3 text-xs font-medium rounded transition-colors border',
+              view === 'dashboard'
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'text-gray-700 border-gray-300 hover:bg-gray-100 hover:border-gray-400'
+            )}
+          >
+            Dashboard
+          </button>
+        )}
+        <button
+          onClick={() => onViewChange('list')}
+          className={cn(
+            'h-7 px-3 text-xs font-medium rounded transition-colors border',
+            view === 'list'
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'text-gray-700 border-gray-300 hover:bg-gray-100 hover:border-gray-400'
+          )}
+        >
+          List
+        </button>
         <button
           onClick={() => onViewChange('day')}
           className={cn(

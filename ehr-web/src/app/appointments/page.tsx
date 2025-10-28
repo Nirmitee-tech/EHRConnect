@@ -7,6 +7,8 @@ import { CalendarToolbar } from '@/components/appointments/calendar-toolbar';
 import { DayView } from '@/components/appointments/day-view';
 import { WeekViewDraggable } from '@/components/appointments/week-view-draggable';
 import { MonthView } from '@/components/appointments/month-view';
+import { ProviderDashboard } from '@/components/appointments/provider-dashboard';
+import { AppointmentListView } from '@/components/appointments/appointment-list-view';
 import { AppointmentStatsPanel } from '@/components/appointments/appointment-stats';
 import { AppointmentFormDrawer } from '@/components/appointments/appointment-form-drawer';
 import { AppointmentDetailsDrawer } from '@/components/appointments/appointment-details-drawer';
@@ -402,7 +404,7 @@ export default function AppointmentsPage() {
     const startDate = new Date(current);
     const endDate = new Date(current);
 
-    if (view === 'day') {
+    if (view === 'day' || view === 'list' || view === 'dashboard') {
       startDate.setHours(0, 0, 0, 0);
       endDate.setHours(23, 59, 59, 999);
     } else if (view === 'week') {
@@ -705,9 +707,15 @@ export default function AppointmentsPage() {
           viewMode={viewMode}
           onViewModeChange={(mode) => {
             setViewMode(mode);
-            // If switching to doctor view, set a default doctor (first in list)
+            // If switching to doctor view, set a default doctor (first in list) and switch to dashboard
             if (mode === 'doctor' && practitioners.length > 0) {
               setCurrentDoctorId(practitioners[0].name);
+              setView('dashboard');
+            } else if (mode === 'admin') {
+              // Switch back to week view when returning to admin mode
+              if (view === 'dashboard') {
+                setView('week');
+              }
             }
           }}
         />
@@ -752,11 +760,38 @@ export default function AppointmentsPage() {
                   onDateClick={handleDateClick}
                 />
               )}
+              {view === 'dashboard' && (
+                <ProviderDashboard
+                  practitionerId={currentDoctorId || ''}
+                  currentDate={currentDate}
+                  appointments={filteredAppointments}
+                  onAppointmentClick={handleAppointmentClick}
+                  onDateChange={handleDateChange}
+                  onAppointmentDrop={handleAppointmentDrop}
+                />
+              )}
+              {view === 'list' && (
+                <AppointmentListView
+                  appointments={filteredAppointments}
+                  currentDate={currentDate}
+                  onDateChange={handleDateChange}
+                  onAppointmentClick={handleAppointmentClick}
+                  onCreateAppointment={handleNewAppointment}
+                  onPrintList={() => window.print()}
+                  onInstantMeeting={() => {
+                    // TODO: Implement instant meeting functionality
+                    console.log('Instant meeting clicked');
+                  }}
+                  practitioners={practitioners.map(p => ({ id: p.name, name: p.name }))}
+                  locations={locations.map(l => ({ id: l.name, name: l.name }))}
+                />
+              )}
             </>
           )}
         </div>
 
-        {/* Right Sidebar - Compact Style */}
+        {/* Right Sidebar - Compact Style (hidden when dashboard or list is active) */}
+        {view !== 'dashboard' && view !== 'list' && (
         <div className={`border-l border-gray-200 bg-gray-50 flex flex-col transition-all duration-300 ${
           isSidebarCollapsed ? 'w-12' : 'w-80'
         }`}>
@@ -1149,6 +1184,7 @@ export default function AppointmentsPage() {
           </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Appointment Form Drawer */}

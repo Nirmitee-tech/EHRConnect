@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { User, Edit, Calendar, Pill, AlertCircle, Activity, FileText, Loader2, Shield, ChevronLeft, ChevronRight, Plus, X, ChevronDown, Users } from 'lucide-react';
+import { User, Edit, Calendar, Pill, AlertCircle, Activity, FileText, Loader2, Shield, ChevronLeft, ChevronRight, Plus, X, ChevronDown, LayoutDashboard, Search, Syringe, TestTube, ImageIcon, History, CreditCard, DollarSign, FileCheck, UserCircle, Globe } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@nirmitee.io/design-system';
 import { useParams, useSearchParams } from 'next/navigation';
 import { fhirService } from '@/lib/medplum';
@@ -782,16 +782,23 @@ export default function PatientDetailPage() {
   }
 
   const sections = [
-    { id: 'dashboard', label: 'Dashboard', icon: Activity },
-    { id: 'chart', label: 'Chart', icon: FileText },
-    { id: 'vitals', label: 'Vitals', icon: Activity },
-    { id: 'encounters', label: 'Encounters', icon: Calendar },
-    { id: 'problems', label: 'Problems', icon: AlertCircle },
-    { id: 'medications', label: 'Medications', icon: Pill },
-    { id: 'allergies', label: 'Allergies', icon: AlertCircle },
-    { id: 'family-history', label: 'Family History', icon: Users },
-    { id: 'insurance', label: 'Insurance', icon: Shield },
-    { id: 'documents', label: 'Documents', icon: FileText }
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, count: null },
+    { id: 'allergies', label: 'Allergies', icon: AlertCircle, count: allergies.length },
+    { id: 'problems', label: 'Diagnoses', icon: Search, count: problems.length },
+    { id: 'medications', label: 'Medications', icon: Pill, count: medications.length },
+    { id: 'vaccines', label: 'Vaccines', icon: Syringe, count: null },
+    { id: 'vitals', label: 'Vitals', icon: Activity, count: null },
+    { id: 'lab', label: 'Lab', icon: TestTube, count: null },
+    { id: 'imaging', label: 'Imaging', icon: ImageIcon, count: null },
+    { id: 'history', label: 'History', icon: History, count: null },
+    { id: 'documents', label: 'Documents', icon: FileText, count: null },
+    { id: 'encounters', label: 'Visit Details', icon: Calendar, count: null },
+    { id: 'financial', label: 'Financial', icon: DollarSign, count: null },
+    { id: 'billing', label: 'Billing', icon: FileCheck, count: null },
+    { id: 'insurance', label: 'Insurance', icon: Shield, count: null },
+    { id: 'card-details', label: 'Card Details', icon: CreditCard, count: null },
+    { id: 'profile', label: 'Profile', icon: UserCircle, count: null },
+    { id: 'portal-access', label: 'Portal Access', icon: Globe, count: null }
   ];
 
   return (
@@ -850,6 +857,7 @@ export default function PatientDetailPage() {
               {sections.map((section) => {
                 const Icon = section.icon;
                 const isActive = activeTab === section.id;
+                const hasCount = section.count !== null && section.count > 0;
                 return (
                   <button
                     key={section.id}
@@ -860,12 +868,21 @@ export default function PatientDetailPage() {
                         ? 'bg-primary text-white shadow-sm'
                         : 'text-gray-700 hover:bg-gray-50'
                       }
-                      ${sidebarCollapsed ? 'justify-center px-2' : ''}
+                      ${sidebarCollapsed ? 'justify-center px-2' : 'justify-between'}
                     `}
                     title={sidebarCollapsed ? section.label : ''}
                   >
-                    <Icon className="h-4 w-4 flex-shrink-0" />
-                    {!sidebarCollapsed && <span className="truncate">{section.label}</span>}
+                    <div className="flex items-center gap-3">
+                      <Icon className="h-4 w-4 flex-shrink-0" />
+                      {!sidebarCollapsed && <span className="truncate">{section.label}</span>}
+                    </div>
+                    {!sidebarCollapsed && hasCount && (
+                      <span className={`inline-flex items-center justify-center w-5 h-5 text-xs font-semibold rounded-full ${
+                        isActive ? 'bg-white text-primary' : 'bg-green-100 text-green-700'
+                      }`}>
+                        {section.count}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -1051,6 +1068,151 @@ export default function PatientDetailPage() {
             </div>
             <div style={{ display: activeTab === 'documents' ? 'block' : 'none' }}>
               <DocumentsTab />
+            </div>
+
+            {/* Vaccines Tab */}
+            <div style={{ display: activeTab === 'vaccines' ? 'block' : 'none' }}>
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900">Vaccines</h2>
+                  <button className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Vaccine
+                  </button>
+                </div>
+                <div className="text-center py-12 text-gray-500">
+                  <Syringe className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm">No vaccines recorded</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Lab Tab */}
+            <div style={{ display: activeTab === 'lab' ? 'block' : 'none' }}>
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900">Lab Results</h2>
+                  <button className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Lab Result
+                  </button>
+                </div>
+                <div className="text-center py-12 text-gray-500">
+                  <TestTube className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm">No lab results available</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Imaging Tab */}
+            <div style={{ display: activeTab === 'imaging' ? 'block' : 'none' }}>
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900">Imaging</h2>
+                  <button className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Imaging
+                  </button>
+                </div>
+                <div className="text-center py-12 text-gray-500">
+                  <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm">No imaging studies available</p>
+                </div>
+              </div>
+            </div>
+
+            {/* History Tab */}
+            <div style={{ display: activeTab === 'history' ? 'block' : 'none' }}>
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-6">Medical History</h2>
+                <div className="text-center py-12 text-gray-500">
+                  <History className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm">No medical history recorded</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Financial Tab */}
+            <div style={{ display: activeTab === 'financial' ? 'block' : 'none' }}>
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-6">Financial Information</h2>
+                <div className="text-center py-12 text-gray-500">
+                  <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm">No financial information available</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Billing Tab */}
+            <div style={{ display: activeTab === 'billing' ? 'block' : 'none' }}>
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-6">Billing</h2>
+                <div className="text-center py-12 text-gray-500">
+                  <FileCheck className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm">No billing information available</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Card Details Tab */}
+            <div style={{ display: activeTab === 'card-details' ? 'block' : 'none' }}>
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900">Payment Methods</h2>
+                  <button className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Card
+                  </button>
+                </div>
+                <div className="text-center py-12 text-gray-500">
+                  <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm">No payment methods on file</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Profile Tab */}
+            <div style={{ display: activeTab === 'profile' ? 'block' : 'none' }}>
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-6">Patient Profile</h2>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Name</label>
+                      <p className="text-sm text-gray-900 mt-1">{patient?.name}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Date of Birth</label>
+                      <p className="text-sm text-gray-900 mt-1">{patient?.dob || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Gender</label>
+                      <p className="text-sm text-gray-900 mt-1 capitalize">{patient?.gender}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Contact</label>
+                      <p className="text-sm text-gray-900 mt-1">{patient?.phone || patient?.email || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Portal Access Tab */}
+            <div style={{ display: activeTab === 'portal-access' ? 'block' : 'none' }}>
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900">Portal Access</h2>
+                  <button className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Enable Portal
+                  </button>
+                </div>
+                <div className="text-center py-12 text-gray-500">
+                  <Globe className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm">Portal access not configured</p>
+                </div>
+              </div>
             </div>
 
             {/* Dynamic Encounter Tabs */}

@@ -43,9 +43,10 @@ export function CalendarToolbar({
       newDate.setDate(newDate.getDate() - 1);
     } else if (view === 'week') {
       newDate.setDate(newDate.getDate() - 7);
-    } else {
+    } else if (view === 'month') {
       newDate.setMonth(newDate.getMonth() - 1);
     }
+    // Dashboard view doesn't have navigation
     onDateChange(newDate);
   };
 
@@ -55,9 +56,10 @@ export function CalendarToolbar({
       newDate.setDate(newDate.getDate() + 1);
     } else if (view === 'week') {
       newDate.setDate(newDate.getDate() + 7);
-    } else {
+    } else if (view === 'month') {
       newDate.setMonth(newDate.getMonth() + 1);
     }
+    // Dashboard view doesn't have navigation
     onDateChange(newDate);
   };
 
@@ -103,6 +105,19 @@ export function CalendarToolbar({
         {/* View Controls */}
         <div className="flex items-center border-l border-gray-300 pl-2 gap-1">
           {/* View Type Buttons */}
+          {viewMode === 'doctor' && (
+            <button
+              onClick={() => onViewChange('dashboard')}
+              className={cn(
+                'h-9 px-4 text-sm font-semibold rounded-lg transition-colors',
+                view === 'dashboard'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-gray-700 hover:bg-gray-100'
+              )}
+            >
+              Dashboard
+            </button>
+          )}
           <button
             onClick={() => onViewChange('day')}
             className={cn(

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, Users, Filter, Grid, List, MoreVertical, Plus, Search, Phone, Mail, Calendar, MapPin, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { User, Users, Filter, Grid, List, Plus, Search, Calendar, AlertCircle, Loader2, Download, Edit2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useFacility } from '@/contexts/facility-context';
@@ -11,6 +11,7 @@ import { useTabNavigation } from '@/hooks/use-tab-navigation';
 interface PatientData {
   id: string;
   name: string;
+  mrn?: string;
   phone: string;
   email: string;
   address: string;
@@ -20,6 +21,8 @@ interface PatientData {
   birthDate: string;
   active: boolean;
   resourceType: string;
+  photo?: string;
+  primaryCareProvider?: string;
 }
 
 export default function PatientsPage() {
@@ -34,14 +37,19 @@ export default function PatientsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [totalCount, setTotalCount] = useState(0);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [editingPatient, setEditingPatient] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Load patients from FHIR API
-  const loadPatients = async (search: string = '') => {
+  const loadPatients = async (search: string = '', page: number = 1) => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      let url = '/api/fhir/Patient?_count=50';
+      const offset = (page - 1) * pageSize;
+      let url = `/api/fhir/Patient?_count=${pageSize}&_getpagesoffset=${offset}`;
       if (search) {
         url += `&name=${encodeURIComponent(search)}`;
       }
@@ -64,10 +72,27 @@ export default function PatientsPage() {
         const name = resource.name?.[0];
         const telecom = resource.telecom || [];
         const address = resource.address?.[0];
-        
+
+        // Extract photo (either from url or data)
+        const photo = resource.photo?.[0]?.url || resource.photo?.[0]?.data
+          ? (resource.photo[0].data ? `data:${resource.photo[0].contentType || 'image/jpeg'};base64,${resource.photo[0].data}` : resource.photo[0].url)
+          : undefined;
+
+        // Extract MRN from identifiers
+        const mrn = resource.identifier?.find((id: any) =>
+          id.type?.coding?.some((c: any) => c.code === 'MR' || c.code === 'MRN') ||
+          id.system?.includes('mrn') ||
+          id.use === 'official'
+        )?.value;
+
+        // Extract Primary Care Provider
+        const pcp = resource.generalPractitioner?.[0]?.display ||
+                    resource.managingOrganization?.display;
+
         return {
           id: resource.id,
           name: name ? `${(name.given || []).join(' ')} ${name.family || ''}`.trim() : 'Unknown',
+          mrn: mrn,
           phone: telecom.find((t: any) => t.system === 'phone')?.value || '',
           email: telecom.find((t: any) => t.system === 'email')?.value || '',
           address: address ? `${address.line?.[0] || ''} ${address.city || ''} ${address.state || ''}`.trim() : '',
@@ -76,7 +101,9 @@ export default function PatientsPage() {
           gender: resource.gender || 'unknown',
           birthDate: resource.birthDate || '',
           active: resource.active !== false,
-          resourceType: resource.resourceType
+          resourceType: resource.resourceType,
+          photo: photo,
+          primaryCareProvider: pcp
         };
       });
 
@@ -92,15 +119,21 @@ export default function PatientsPage() {
 
   // Load patients on search or tab change
   useEffect(() => {
+    setCurrentPage(1); // Reset to page 1 when search or tab changes
     const timeoutId = setTimeout(() => {
       if (searchQuery !== '') {
         setSearching(true);
       }
-      loadPatients(searchQuery);
+      loadPatients(searchQuery, 1);
     }, searchQuery ? 500 : 0);
 
     return () => clearTimeout(timeoutId);
   }, [searchQuery, activeTab]);
+
+  // Load patients when page changes
+  useEffect(() => {
+    loadPatients(searchQuery, currentPage);
+  }, [currentPage]);
 
   const getAge = (birthDate: string) => {
     if (!birthDate) return '';
@@ -116,13 +149,86 @@ export default function PatientsPage() {
   };
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
+    if (!dateString) return null;
+    try {
+      const date = new Date(dateString);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return null;
+      }
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      return null;
+    }
   };
+
+  // Export to CSV
+  const exportToCSV = () => {
+    if (patients.length === 0) {
+      alert('No patients to export');
+      return;
+    }
+
+    const headers = ['Patient Name', 'MRN', 'Date of Birth', 'Age', 'Gender', 'Phone', 'Email', 'Address', 'Primary Care Provider', 'Last Visit', 'Status'];
+
+    const csvData = patients.map(patient => [
+      patient.name,
+      patient.mrn || '',
+      patient.birthDate || '',
+      patient.birthDate ? getAge(patient.birthDate).toString() : '',
+      patient.gender,
+      patient.phone,
+      patient.email,
+      patient.address,
+      patient.primaryCareProvider || '',
+      formatDate(patient.lastVisit) || '',
+      patient.active ? 'Active' : 'Inactive'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', `patients_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Handle edit patient
+  const handleEditPatient = async (patient: PatientData) => {
+    try {
+      // Fetch full FHIR patient data
+      const response = await fetch(`/api/fhir/Patient/${patient.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch patient details');
+      }
+      const fhirPatient = await response.json();
+      setEditingPatient(fhirPatient);
+      setIsEditing(true);
+      setIsDrawerOpen(true);
+    } catch (error) {
+      console.error('Error fetching patient:', error);
+      alert('Failed to load patient details for editing');
+    }
+  };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const startEntry = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endEntry = Math.min(currentPage * pageSize, totalCount);
 
   return (
     <div className="space-y-4">
@@ -134,13 +240,24 @@ export default function PatientsPage() {
             {currentFacility?.name ? `Managing patients for ${currentFacility.name}` : 'Manage patient records and information'}
           </p>
         </div>
-        <Button
-          onClick={() => setIsDrawerOpen(true)}
-          className="bg-primary hover:bg-primary/90 text-white"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Patient
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={exportToCSV}
+            variant="outline"
+            className="flex items-center gap-2"
+            disabled={patients.length === 0}
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button
+            onClick={() => setIsDrawerOpen(true)}
+            className="bg-primary hover:bg-primary/90 text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Patient
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -322,124 +439,139 @@ export default function PatientsPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
-                      Patient
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Patient Name
                     </th>
-                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
-                      Contact
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date of Birth
                     </th>
-                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
-                      Demographics
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Contact Details
                     </th>
-                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
-                      Registration
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Primary Care Provider (PCP)
                     </th>
-                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Last Visit
                     </th>
-                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
-                      Status
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Active
                     </th>
-                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-gray-200">
                   {patients.map((patient, index) => (
-                    <tr 
-                      key={patient.id} 
+                    <tr
+                      key={patient.id}
                       onClick={() => openPatientTab(patient.id, patient.name)}
                       className="hover:bg-gray-50 transition-colors cursor-pointer"
                       style={{
                         animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both`
                       }}
                     >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                            {patient.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                          </div>
-                          <div>
-                            <div className="text-sm font-semibold text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {patient.photo ? (
+                            <img
+                              src={patient.photo}
+                              alt={patient.name}
+                              className="h-10 w-10 rounded-full object-cover border border-gray-200"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white text-sm font-semibold">
+                              {patient.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
                               {patient.name}
                             </div>
-                            <div className="text-[10px] text-gray-500">ID: {patient.id.substring(0, 8)}...</div>
+                            <div className="text-xs text-gray-500">
+                              {patient.mrn ? `#${patient.mrn}` : `#${patient.id.substring(0, 8)}`}
+                            </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="space-y-0.5">
-                          {patient.phone && (
-                            <div className="flex items-center space-x-1.5 text-xs text-gray-700">
-                              <Phone className="h-3 w-3 text-gray-400" />
-                              <span>{patient.phone}</span>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {patient.birthDate && formatDate(patient.birthDate) ? (
+                          <div>
+                            <div className="text-sm text-gray-900">
+                              {formatDate(patient.birthDate)}
                             </div>
-                          )}
-                          {patient.email && (
-                            <div className="flex items-center space-x-1.5 text-xs text-blue-600 hover:text-blue-800">
-                              <Mail className="h-3 w-3 text-gray-400" />
-                              <a href={`mailto:${patient.email}`}>{patient.email}</a>
+                            <div className="text-xs text-gray-500">
+                              ({getAge(patient.birthDate)} years)
                             </div>
-                          )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1">
                           {patient.address && (
-                            <div className="flex items-center space-x-1.5 text-xs text-gray-600">
-                              <MapPin className="h-3 w-3 text-gray-400" />
-                              <span className="truncate max-w-32">{patient.address}</span>
+                            <div className="text-sm text-gray-900 max-w-xs truncate">
+                              {patient.address}
                             </div>
                           )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="space-y-0.5">
-                          <div className="flex items-center">
-                            <span className={`inline-flex px-2 py-0.5 text-[10px] font-medium rounded-md capitalize ${
-                              patient.gender === 'male' ? 'bg-[#E0EFFF] text-[#2563EB]' :
-                              patient.gender === 'female' ? 'bg-pink-100 text-pink-800' :
-                              'bg-[#F3F4F6] text-[#4B5563]'
-                            }`}>
-                              {patient.gender}
-                            </span>
+                          <div className="flex flex-col gap-0.5">
+                            {patient.phone && (
+                              <div className="text-xs text-gray-600">
+                                {patient.phone}
+                              </div>
+                            )}
+                            {patient.email && (
+                              <a
+                                href={`mailto:${patient.email}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                              >
+                                {patient.email}
+                              </a>
+                            )}
                           </div>
-                          {patient.birthDate && (
-                            <div className="text-xs text-gray-600">
-                              Age: {getAge(patient.birthDate)} yrs
-                            </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {patient.primaryCareProvider || (
+                            <span className="text-gray-400">-</span>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center space-x-1.5 text-xs text-gray-700">
-                          <Calendar className="h-3 w-3 text-gray-400" />
-                          <span>{formatDate(patient.registered)}</span>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {patient.lastVisit && formatDate(patient.lastVisit) ? (
+                            formatDate(patient.lastVisit)
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center space-x-1.5 text-xs text-gray-700">
-                          <Clock className="h-3 w-3 text-gray-400" />
-                          <span>{formatDate(patient.lastVisit)}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-md ${
-                          patient.active 
-                            ? 'bg-[#E8F5E8] text-[#047857]' 
-                            : 'bg-[#F3F4F6] text-[#4B5563]'
-                        }`}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            patient.active
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
                           {patient.active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <Button
                           onClick={(e) => {
                             e.stopPropagation();
-                            openPatientTab(patient.id, patient.name);
+                            handleEditPatient(patient);
                           }}
                           variant="ghost"
                           size="sm"
-                          className="hover:bg-gray-100 h-7 w-7 p-0"
+                          className="hover:bg-gray-100"
                         >
-                          <MoreVertical className="h-3.5 w-3.5" />
+                          <Edit2 className="h-4 w-4 text-gray-600" />
                         </Button>
                       </td>
                     </tr>
@@ -448,15 +580,110 @@ export default function PatientsPage() {
               </table>
             </div>
           )}
+
+          {/* Pagination */}
+          {!loading && patients.length > 0 && (
+            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+              <div className="flex-1 flex justify-between sm:hidden">
+                <Button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  variant="outline"
+                  size="sm"
+                >
+                  Previous
+                </Button>
+                <Button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  variant="outline"
+                  size="sm"
+                >
+                  Next
+                </Button>
+              </div>
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing <span className="font-medium">{startEntry}</span> to{' '}
+                    <span className="font-medium">{endEntry}</span> of{' '}
+                    <span className="font-medium">{totalCount}</span> results
+                  </p>
+                </div>
+                <div>
+                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    <Button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      variant="outline"
+                      size="sm"
+                      className="rounded-l-md"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      <span className="ml-1">Previous</span>
+                    </Button>
+
+                    {/* Page numbers */}
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <Button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          variant={currentPage === pageNum ? 'default' : 'outline'}
+                          size="sm"
+                          className={currentPage === pageNum ? 'bg-primary text-white' : ''}
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+
+                    <Button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      variant="outline"
+                      size="sm"
+                      className="rounded-r-md"
+                    >
+                      <span className="mr-1">Next</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* Patient Drawer */}
       <PatientDrawer
         open={isDrawerOpen}
-        onOpenChange={setIsDrawerOpen}
+        onOpenChange={(open) => {
+          setIsDrawerOpen(open);
+          if (!open) {
+            setEditingPatient(null);
+            setIsEditing(false);
+          }
+        }}
+        patient={editingPatient}
+        isEditing={isEditing}
+        skipEncounter={true}
         onSuccess={() => {
-          loadPatients(searchQuery);
+          loadPatients(searchQuery, currentPage);
+          setEditingPatient(null);
+          setIsEditing(false);
         }}
       />
     </div>
