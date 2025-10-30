@@ -15,10 +15,10 @@ export function PatientMeetingLayout({
   localPeer
 }: PatientMeetingLayoutProps) {
   return (
-    <div className="flex-1 p-3 bg-gray-100">
+    <div className="flex-1 p-2 md:p-3 bg-gray-100">
       {/* Full-screen Video Grid */}
-      <div className="h-full grid gap-3 auto-rows-fr" style={{
-        gridTemplateColumns: peers.length === 1 ? '1fr' : peers.length === 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(400px, 1fr))'
+      <div className="h-full grid gap-2 md:gap-3 auto-rows-fr" style={{
+        gridTemplateColumns: peers.length === 1 ? '1fr' : peers.length === 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(280px, 1fr))'
       }}>
         {peers.map((peer) => (
           <VideoTile

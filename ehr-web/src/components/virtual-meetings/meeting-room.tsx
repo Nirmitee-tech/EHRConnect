@@ -39,6 +39,7 @@ import { EnhancedParticipantsSidebar } from './enhanced-participants-sidebar';
 import { ClinicalNotesPanel } from './clinical-notes-panel';
 import { ProviderMeetingLayout } from './provider-meeting-layout';
 import { PatientMeetingLayout } from './patient-meeting-layout';
+import { fhirService } from '@/lib/medplum';
 
 interface MeetingRoomProps {
   authToken: string;
@@ -107,6 +108,7 @@ export function MeetingRoom({
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [meetingStartTime] = useState(new Date());
+  const [observations, setObservations] = useState<any[]>([]);
 
   // Join room on mount
   useEffect(() => {
@@ -184,6 +186,28 @@ export function MeetingRoom({
       return () => clearTimeout(forceEnableTimer);
     }
   }, [isConnected, localPeer, hmsActions, isLocalVideoEnabled, isLocalAudioEnabled]);
+
+  // Fetch observations for patient when patientId is available
+  useEffect(() => {
+    const fetchObservations = async () => {
+      if (!patientId) return;
+
+      try {
+        const observationRes = await fhirService.search('Observation', {
+          patient: patientId,
+          _count: 50,
+          _sort: '-date',
+          category: 'vital-signs'
+        });
+        setObservations(observationRes.entry?.map((e: any) => e.resource) || []);
+      } catch (error) {
+        console.error('Error fetching observations:', error);
+        setObservations([]);
+      }
+    };
+
+    fetchObservations();
+  }, [patientId]);
 
   // Toggle functions with aggressive logging
   const toggleAudio = async () => {
@@ -404,6 +428,7 @@ export function MeetingRoom({
           setShowClinicalNotes={setShowClinicalNotes}
           showVitalsPanel={showVitalsPanel}
           setShowVitalsPanel={setShowVitalsPanel}
+          observations={observations}
         />
       ) : (
         /* Patient View: Full-screen video */
@@ -484,9 +509,9 @@ export function MeetingRoom({
       />
 
       {/* Control Bar */}
-      <div className="bg-white px-6 py-3 border-t border-gray-200">
+      <div className="bg-white px-2 md:px-6 py-2 md:py-3 border-t border-gray-200">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 hidden md:flex">
             <div className="px-3 py-1.5 bg-gray-100 rounded-lg border border-gray-200">
               <span className="text-gray-700 text-xs font-medium">
                 {peers.length} {peers.length !== 1 ? 'Participants' : 'Participant'}
@@ -495,10 +520,10 @@ export function MeetingRoom({
           </div>
 
           {/* Center Controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 md:gap-2 mx-auto md:mx-0">
             <button
               onClick={toggleAudio}
-              className={`p-3 rounded-lg transition-all ${
+              className={`p-2 md:p-3 rounded-lg transition-all ${
                 isLocalAudioEnabled
                   ? 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
                   : 'bg-red-500 hover:bg-red-600 text-white'
@@ -506,15 +531,15 @@ export function MeetingRoom({
               title={isLocalAudioEnabled ? 'Mute' : 'Unmute'}
             >
               {isLocalAudioEnabled ? (
-                <Mic className="w-5 h-5" />
+                <Mic className="w-4 h-4 md:w-5 md:h-5" />
               ) : (
-                <MicOff className="w-5 h-5" />
+                <MicOff className="w-4 h-4 md:w-5 md:h-5" />
               )}
             </button>
 
             <button
               onClick={toggleVideo}
-              className={`p-3 rounded-lg transition-all ${
+              className={`p-2 md:p-3 rounded-lg transition-all ${
                 isLocalVideoEnabled
                   ? 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
                   : 'bg-red-500 hover:bg-red-600 text-white'
@@ -522,15 +547,15 @@ export function MeetingRoom({
               title={isLocalVideoEnabled ? 'Stop Video' : 'Start Video'}
             >
               {isLocalVideoEnabled ? (
-                <Video className="w-5 h-5" />
+                <Video className="w-4 h-4 md:w-5 md:h-5" />
               ) : (
-                <VideoOff className="w-5 h-5" />
+                <VideoOff className="w-4 h-4 md:w-5 md:h-5" />
               )}
             </button>
 
             <button
               onClick={toggleScreenShare}
-              className={`p-3 rounded-lg transition-all ${
+              className={`p-2 md:p-3 rounded-lg transition-all hidden md:flex ${
                 isScreenSharing || isSomeoneScreenSharing
                   ? 'bg-gray-700 hover:bg-gray-800 text-white'
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
@@ -543,14 +568,14 @@ export function MeetingRoom({
 
             <button
               onClick={() => setShowChat(!showChat)}
-              className={`p-3 rounded-lg transition-all relative ${
+              className={`p-2 md:p-3 rounded-lg transition-all relative ${
                 showChat
                   ? 'bg-gray-700 hover:bg-gray-800 text-white'
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
               }`}
               title="Chat"
             >
-              <MessageSquare className="w-5 h-5" />
+              <MessageSquare className="w-4 h-4 md:w-5 md:h-5" />
               {messages.length > 0 && !showChat && (
                 <div className="absolute -top-1 -right-1 min-w-[18px] h-4 bg-red-500 rounded-full flex items-center justify-center px-1 text-xs font-bold text-white">
                   {messages.length}
@@ -560,14 +585,14 @@ export function MeetingRoom({
 
             <button
               onClick={() => setShowParticipants(!showParticipants)}
-              className={`p-3 rounded-lg transition-all ${
+              className={`p-2 md:p-3 rounded-lg transition-all ${
                 showParticipants
                   ? 'bg-gray-700 hover:bg-gray-800 text-white'
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
               }`}
               title="Participants"
             >
-              <Users className="w-5 h-5" />
+              <Users className="w-4 h-4 md:w-5 md:h-5" />
             </button>
 
             {/* Provider Controls - Only show for hosts */}
@@ -577,14 +602,14 @@ export function MeetingRoom({
                 {patientId && (
                   <button
                     onClick={() => setShowVitalsPanel(!showVitalsPanel)}
-                    className={`p-3 rounded-lg transition-all ${
+                    className={`p-2 md:p-3 rounded-lg transition-all hidden sm:flex ${
                       showVitalsPanel
                         ? 'bg-gray-700 hover:bg-gray-800 text-white'
                         : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
                     }`}
                     title="Capture Vitals"
                   >
-                    <Activity className="w-5 h-5" />
+                    <Activity className="w-4 h-4 md:w-5 md:h-5" />
                   </button>
                 )}
 
@@ -592,34 +617,34 @@ export function MeetingRoom({
                 {patientId && (
                   <button
                     onClick={() => setShowClinicalNotes(!showClinicalNotes)}
-                    className={`p-3 rounded-lg transition-all ${
+                    className={`p-2 md:p-3 rounded-lg transition-all hidden sm:flex ${
                       showClinicalNotes
                         ? 'bg-gray-700 hover:bg-gray-800 text-white'
                         : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
                     }`}
                     title="Clinical Notes"
                   >
-                    <FileText className="w-5 h-5" />
+                    <FileText className="w-4 h-4 md:w-5 md:h-5" />
                   </button>
                 )}
 
                 {/* Consent Dialog */}
                 <button
                   onClick={() => setShowConsentDialog(true)}
-                  className={`p-3 rounded-lg transition-all ${
+                  className={`p-2 md:p-3 rounded-lg transition-all hidden lg:flex ${
                     consentGiven
                       ? 'bg-green-100 text-green-700 border border-green-200'
                       : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
                   }`}
                   title="Manage Consent"
                 >
-                  <FileText className="w-5 h-5" />
+                  <FileText className="w-4 h-4 md:w-5 md:h-5" />
                 </button>
 
                 {/* Recording Toggle */}
                 <button
                   onClick={toggleRecording}
-                  className={`p-3 rounded-lg transition-all ${
+                  className={`p-2 md:p-3 rounded-lg transition-all hidden lg:flex ${
                     isRecording
                       ? 'bg-red-500 hover:bg-red-600 text-white'
                       : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
@@ -627,26 +652,26 @@ export function MeetingRoom({
                   title={isRecording ? 'Stop Recording' : 'Start Recording'}
                 >
                   {isRecording ? (
-                    <Square className="w-5 h-5" />
+                    <Square className="w-4 h-4 md:w-5 md:h-5" />
                   ) : (
-                    <Circle className="w-5 h-5" />
+                    <Circle className="w-4 h-4 md:w-5 md:h-5" />
                   )}
                 </button>
               </>
             )}
 
-            <div className="w-px h-8 bg-gray-200 mx-2" />
+            <div className="w-px h-6 md:h-8 bg-gray-200 mx-1 md:mx-2" />
 
             <button
               onClick={handleLeave}
-              className="p-3 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-all"
+              className="p-2 md:p-3 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-all"
               title="Leave Meeting"
             >
-              <PhoneOff className="w-5 h-5" />
+              <PhoneOff className="w-4 h-4 md:w-5 md:h-5" />
             </button>
           </div>
 
-          <div className="w-[100px]" /> {/* Spacer for centering */}
+          <div className="hidden md:block w-[100px]" /> {/* Spacer for centering */}
         </div>
       </div>
 
