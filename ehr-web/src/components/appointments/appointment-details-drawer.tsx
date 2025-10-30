@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Phone, MapPin, MessageCircle, CreditCard, Clock, Edit3, UserX, UserCheck, XCircle, Copy, FileText, CheckCircle, Receipt } from 'lucide-react';
 import { Appointment } from '@/types/appointment';
 import { EncounterService } from '@/services/encounter.service';
 import { useRouter } from 'next/navigation';
 import { InstantMeetingButton } from '@/components/virtual-meetings/instant-meeting-button';
+import { LiveCallIndicator } from '@/components/appointments/live-call-indicator';
 
 interface AppointmentDetailsDrawerProps {
   isOpen: boolean;
@@ -38,6 +39,17 @@ export function AppointmentDetailsDrawer({
   const [isCompleting, setIsCompleting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [encounterId, setEncounterId] = useState<string | null>(null);
+  const [meetingCode, setMeetingCode] = useState<string | null>(null);
+  const [autoCompleteEnabled, setAutoCompleteEnabled] = useState(true);
+
+  // Extract meeting code from appointment telehealth data
+  useEffect(() => {
+    if (appointment?.resourceData?.telehealth?.meetingCode) {
+      setMeetingCode(appointment.resourceData.telehealth.meetingCode);
+    } else {
+      setMeetingCode(null);
+    }
+  }, [appointment]);
 
   if (!isOpen || !appointment) return null;
 
@@ -113,6 +125,33 @@ export function AppointmentDetailsDrawer({
       alert('Failed to complete appointment. Please try again.');
     } finally {
       setIsCompleting(false);
+    }
+  };
+
+  // Auto-complete appointment when call ends
+  const handleCallEnded = async () => {
+    if (!autoCompleteEnabled) return;
+
+    console.log('Call ended, auto-completing appointment...');
+
+    try {
+      // Auto-complete the appointment
+      await handleCompleteAppointment();
+
+      // Show notification
+      alert('Video call ended. Appointment has been marked as completed.');
+
+      // Refresh the appointment list
+      onAppointmentUpdated?.();
+    } catch (error) {
+      console.error('Failed to auto-complete appointment:', error);
+    }
+  };
+
+  const handleJoinLiveCall = () => {
+    if (meetingCode) {
+      const meetingUrl = `/meeting/${meetingCode}`;
+      window.open(meetingUrl, '_blank');
     }
   };
 
@@ -198,20 +237,51 @@ export function AppointmentDetailsDrawer({
           </div>
         )}
 
+        {/* Live Call Indicator */}
+        {meetingCode && appointment.status !== 'completed' && appointment.status !== 'cancelled' && (
+          <div className="border-b border-gray-200 px-4 py-3">
+            <LiveCallIndicator
+              meetingCode={meetingCode}
+              onMeetingEnded={handleCallEnded}
+              onJoinCall={handleJoinLiveCall}
+            />
+          </div>
+        )}
+
         {/* Telehealth Video Meeting */}
         {(appointment.status === 'scheduled' || appointment.status === 'in-progress') && (
           <div className="border-b border-gray-200 px-4 py-3 bg-gradient-to-r from-purple-50 to-indigo-50">
-            <div className="flex justify-center">
-              <InstantMeetingButton
-                appointmentId={appointment.id}
-                patientId={appointment.patientId}
-                practitionerId={appointment.practitionerId}
-                variant="appointment"
-              />
-            </div>
-            <p className="text-xs text-purple-700 mt-2 text-center">
-              Start a secure HIPAA-compliant video consultation
-            </p>
+            {meetingCode ? (
+              <div className="text-center">
+                <p className="text-sm font-semibold text-purple-900 mb-2">
+                  Video Call Ready
+                </p>
+                <button
+                  onClick={handleJoinLiveCall}
+                  className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md"
+                >
+                  Join Video Call
+                </button>
+                <p className="text-xs text-purple-600 mt-2">
+                  Meeting Code: <span className="font-mono font-bold">{meetingCode}</span>
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-center">
+                  <InstantMeetingButton
+                    appointmentId={appointment.id}
+                    patientId={appointment.patientId}
+                    practitionerId={appointment.practitionerId}
+                    variant="appointment"
+                    onMeetingCreated={(meeting) => setMeetingCode(meeting.meetingCode)}
+                  />
+                </div>
+                <p className="text-xs text-purple-700 mt-2 text-center">
+                  Start a secure HIPAA-compliant video consultation
+                </p>
+              </>
+            )}
           </div>
         )}
 

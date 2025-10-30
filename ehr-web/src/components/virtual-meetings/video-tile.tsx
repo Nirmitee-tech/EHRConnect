@@ -47,6 +47,24 @@ export function VideoTile({ peer, isLocal = false }: VideoTileProps) {
     [hmsVideoRef]
   );
 
+  // Handle fullscreen
+  const handleFullscreen = () => {
+    const element = videoElementRef.current?.parentElement;
+    if (!element) return;
+
+    if (!document.fullscreenElement) {
+      element.requestFullscreen?.() ||
+      (element as any).webkitRequestFullscreen?.() ||
+      (element as any).mozRequestFullScreen?.() ||
+      (element as any).msRequestFullscreen?.();
+    } else {
+      document.exitFullscreen?.() ||
+      (document as any).webkitExitFullscreen?.() ||
+      (document as any).mozCancelFullScreen?.() ||
+      (document as any).msExitFullscreen?.();
+    }
+  };
+
   // Aggressive debug logging
   useEffect(() => {
     console.log(`[VideoTile] 🎬 Rendering ${peer.name} ${isLocal ? '(You)' : ''}`);
@@ -147,8 +165,9 @@ export function VideoTile({ peer, isLocal = false }: VideoTileProps) {
       {/* Hover Controls */}
       <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
         <button
+          onClick={handleFullscreen}
           className="p-2.5 bg-slate-900/80 backdrop-blur-md hover:bg-slate-800 rounded-xl transition-colors border border-white/20 shadow-lg"
-          title="Fullscreen"
+          title="Toggle Fullscreen"
         >
           <Maximize2 className="w-4 h-4 text-white" />
         </button>

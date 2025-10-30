@@ -5,9 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { Video, Loader, AlertCircle, CheckCircle, User, Mic, MicOff, VideoOff, Settings } from 'lucide-react';
 import { getMeetingByCode, joinMeetingByCode, type VirtualMeeting } from '@/lib/api/virtual-meetings';
 import { MeetingRoom } from '@/components/virtual-meetings/meeting-room';
+import { ConsentDialog } from '@/components/virtual-meetings/consent-dialog';
 import { useSession } from 'next-auth/react';
 
-type ViewState = 'loading' | 'lobby' | 'meeting' | 'error' | 'ended';
+type ViewState = 'loading' | 'lobby' | 'consent' | 'meeting' | 'error' | 'ended';
 
 export default function MeetingJoinPage() {
   const params = useParams();
@@ -26,6 +27,7 @@ export default function MeetingJoinPage() {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
+  const [consentGiven, setConsentGiven] = useState(false);
 
   // Load meeting details and check authentication
   useEffect(() => {
@@ -121,6 +123,17 @@ export default function MeetingJoinPage() {
       return;
     }
 
+    // For patients (guests), show consent first
+    if (userType === 'guest' && !consentGiven) {
+      setViewState('consent');
+      return;
+    }
+
+    // If consent already given or is practitioner, join directly
+    await proceedToJoinMeeting();
+  };
+
+  const proceedToJoinMeeting = async () => {
     try {
       setJoining(true);
       setError('');
@@ -165,8 +178,22 @@ export default function MeetingJoinPage() {
       } catch (restartErr) {
         console.error('[Lobby] Failed to restart camera:', restartErr);
       }
+      setViewState('lobby');
     } finally {
       setJoining(false);
+    }
+  };
+
+  const handleConsent = async (consents: Record<string, boolean>) => {
+    try {
+      // TODO: Send consent to API
+      console.log('Patient consent received:', consents);
+      setConsentGiven(true);
+      // After consent, proceed to join
+      await proceedToJoinMeeting();
+    } catch (error) {
+      console.error('Failed to save consent:', error);
+      throw error;
     }
   };
 
@@ -181,23 +208,15 @@ export default function MeetingJoinPage() {
   // Loading State
   if (viewState === 'loading') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-2xl p-12 max-w-md w-full text-center">
-          <div className="relative inline-block mb-6">
-            <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl animate-pulse" />
-            <Loader className="w-16 h-16 text-blue-600 animate-spin relative" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center border border-gray-200">
+          <Loader className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Loading Meeting
           </h2>
-          <p className="text-gray-600 text-lg">
-            Preparing your secure video consultation...
+          <p className="text-gray-600 text-sm">
+            Preparing your video consultation...
           </p>
-          <div className="mt-6 flex items-center justify-center gap-2">
-            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" />
-            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
-          </div>
         </div>
       </div>
     );
@@ -206,21 +225,21 @@ export default function MeetingJoinPage() {
   // Error State
   if (viewState === 'error') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-2xl p-12 max-w-md w-full text-center">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <AlertCircle className="w-10 h-10 text-red-600" />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center border border-gray-200">
+          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-200">
+            <AlertCircle className="w-8 h-8 text-red-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Meeting Not Available
           </h2>
-          <p className="text-gray-600 mb-2 text-lg">{error}</p>
-          <p className="text-gray-500 text-sm mb-8">
-            Please check your meeting link or contact support for assistance.
+          <p className="text-gray-600 mb-1 text-sm">{error}</p>
+          <p className="text-gray-500 text-xs mb-6">
+            Please check your meeting link or contact support.
           </p>
           <button
             onClick={() => window.location.href = '/'}
-            className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
+            className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
           >
             Return to Home
           </button>
@@ -232,25 +251,56 @@ export default function MeetingJoinPage() {
   // Meeting Ended State
   if (viewState === 'ended') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-2xl p-12 max-w-md w-full text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <CheckCircle className="w-10 h-10 text-green-600" />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center border border-gray-200">
+          <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-200">
+            <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Consultation Complete
           </h2>
-          <p className="text-gray-600 mb-8 text-lg">
-            Thank you for using EHR Connect Telehealth. Your session has ended successfully.
+          <p className="text-gray-600 mb-6 text-sm">
+            Thank you for using EHR Connect Telehealth.
           </p>
           <button
             onClick={() => window.location.href = '/'}
-            className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
+            className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
           >
             Close Window
           </button>
         </div>
       </div>
+    );
+  }
+
+  // Consent Dialog (for patients before joining)
+  if (viewState === 'consent') {
+    return (
+      <>
+        {/* Background with video preview */}
+        <div className="h-screen bg-gray-100 flex items-center justify-center">
+          <div className="absolute inset-0 opacity-10">
+            <div className="h-full w-full flex items-center justify-center">
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                className="h-full w-full object-cover blur-sm"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Consent Dialog */}
+        <ConsentDialog
+          isOpen={true}
+          onClose={() => setViewState('lobby')}
+          onConsent={handleConsent}
+          patientName={displayName}
+          meetingId={meeting?.id || meetingCode}
+        />
+      </>
     );
   }
 
@@ -263,139 +313,128 @@ export default function MeetingJoinPage() {
         displayName={displayName}
         onLeave={handleLeaveMeeting}
         isHost={userType === 'practitioner'}
+        patientId={meeting.patientId}
+        patientName={(meeting as any).patientName}
+        encounterId={(meeting as any).encounterId}
       />
     );
   }
 
-  // Lobby - Google Meet Style
+  // Lobby - Clean Professional Light Theme
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200">
+      <div className="bg-white border-b border-gray-200 px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-600 rounded-lg">
+            <div className="p-2 bg-gray-700 rounded-lg">
               <Video className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-semibold text-gray-900">EHR Connect</h1>
+            <div>
+              <h1 className="text-base font-semibold text-gray-900">EHR Connect Telehealth</h1>
+              <p className="text-xs text-gray-500">Secure Video Consultation</p>
+            </div>
           </div>
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-            <span>•</span>
-            <span className="font-mono">{meetingCode}</span>
+          <div className="flex items-center gap-3">
+            <span className="px-3 py-1.5 bg-gray-100 rounded-md text-xs font-mono text-gray-700">
+              {meetingCode}
+            </span>
+            <span className="text-sm text-gray-500">
+              {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Main Content - Side by Side */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-
-          {/* Left: Video Preview */}
-          <div className="space-y-4">
-            <div className="relative bg-gray-900 rounded-3xl overflow-hidden shadow-2xl aspect-video">
-              {videoEnabled ? (
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-                  <div className="text-center">
-                    <div className="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <User className="w-12 h-12 text-gray-400" />
-                    </div>
-                    <p className="text-gray-400">Camera is off</p>
+      {/* Main Content - No Scroll */}
+      <div className="flex-1 flex overflow-hidden bg-gray-50">
+        {/* Left Side: Patient Info & Join Controls */}
+        <div className="flex-1 flex flex-col p-6 overflow-y-auto">
+          <div className="max-w-lg">
+            {/* Patient Details Card */}
+            {meeting && (meeting as any).patientName && (
+              <div className="mb-4 bg-white rounded-lg border border-gray-200 p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <User className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-gray-900">{(meeting as any).patientName || 'Patient'}</h3>
+                    <p className="text-xs text-gray-500">ID: {meeting.patientId?.substring(0, 8) || 'N/A'}</p>
                   </div>
                 </div>
-              )}
 
-              {/* Name Badge */}
-              <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md px-4 py-2 rounded-lg">
-                <p className="text-white text-sm font-medium">
-                  {displayName || 'You'}
-                </p>
-              </div>
-
-              {/* Controls Overlay */}
-              <div className="absolute bottom-4 right-4 flex gap-2">
-                <button
-                  onClick={toggleAudio}
-                  className={`p-3 rounded-full transition-all ${
-                    audioEnabled
-                      ? 'bg-white/20 hover:bg-white/30 backdrop-blur-md'
-                      : 'bg-red-500 hover:bg-red-600'
-                  }`}
-                >
-                  {audioEnabled ? (
-                    <Mic className="w-5 h-5 text-white" />
-                  ) : (
-                    <MicOff className="w-5 h-5 text-white" />
-                  )}
-                </button>
-                <button
-                  onClick={toggleVideo}
-                  className={`p-3 rounded-full transition-all ${
-                    videoEnabled
-                      ? 'bg-white/20 hover:bg-white/30 backdrop-blur-md'
-                      : 'bg-red-500 hover:bg-red-600'
-                  }`}
-                >
-                  {videoEnabled ? (
-                    <Video className="w-5 h-5 text-white" />
-                  ) : (
-                    <VideoOff className="w-5 h-5 text-white" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Join Controls */}
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Ready to join?
-              </h2>
-              <p className="text-gray-600 text-lg">
-                {session?.user ? `Welcome back, ${session.user.name}!` : 'Enter your name to get started'}
-              </p>
-            </div>
-
-            {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                <p className="text-sm text-red-700">{error}</p>
+                {/* Encounter Info */}
+                {(meeting as any).encounterId && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <h4 className="text-xs font-medium text-gray-500 mb-2">Encounter Details</h4>
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">ID:</span>
+                        <span className="font-medium text-gray-900">{(meeting as any).encounterId.substring(0, 12)}...</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Type:</span>
+                        <span className="font-medium text-gray-900">Telehealth</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Status:</span>
+                        <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                          {meeting.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
+            {/* Welcome Section */}
+            <div className="mb-4">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                Ready to join?
+              </h2>
+              <p className="text-gray-600 text-sm">
+                {session?.user
+                  ? `Welcome back, ${session.user.name}!`
+                  : 'Enter your details to start your consultation'}
+              </p>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-red-700">{error}</p>
+              </div>
+            )}
+
+            {/* Meeting Status */}
             {meeting && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full" />
-                  <span className="text-sm font-medium text-gray-700">
-                    Meeting is <span className="capitalize">{meeting.status}</span>
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <span className="text-xs font-medium text-gray-800">
+                    Meeting is <span className="capitalize text-green-700">{meeting.status}</span>
                   </span>
                 </div>
               </div>
             )}
 
-            <form onSubmit={handleJoinMeeting} className="space-y-6">
+            {/* Join Form */}
+            <form onSubmit={handleJoinMeeting} className="space-y-4">
               {/* Name Input - Only show if not authenticated */}
               {!session?.user && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Your name
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                    Your Name
                   </label>
                   <input
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Enter your name"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                    placeholder="Enter your full name"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm text-gray-900"
                     required
                     autoFocus
                   />
@@ -405,31 +444,31 @@ export default function MeetingJoinPage() {
               {/* User Type - Only show if not authenticated */}
               {!session?.user && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Joining as
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                    I am joining as
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setUserType('practitioner')}
-                      className={`p-3 rounded-lg border-2 transition-all text-left ${
+                      className={`p-3 rounded-lg border transition-all text-center ${
                         userType === 'practitioner'
                           ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          : 'border-gray-300 bg-white hover:border-gray-400'
                       }`}
                     >
-                      <div className="font-medium text-sm">Healthcare Provider</div>
+                      <div className="font-medium text-xs text-gray-900">Provider</div>
                     </button>
                     <button
                       type="button"
                       onClick={() => setUserType('guest')}
-                      className={`p-3 rounded-lg border-2 transition-all text-left ${
+                      className={`p-3 rounded-lg border transition-all text-center ${
                         userType === 'guest'
                           ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          : 'border-gray-300 bg-white hover:border-gray-400'
                       }`}
                     >
-                      <div className="font-medium text-sm">Patient</div>
+                      <div className="font-medium text-xs text-gray-900">Patient</div>
                     </button>
                   </div>
                 </div>
@@ -439,11 +478,11 @@ export default function MeetingJoinPage() {
               <button
                 type="submit"
                 disabled={joining || !displayName.trim()}
-                className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-sm"
               >
                 {joining ? (
                   <>
-                    <Loader className="w-5 h-5 animate-spin" />
+                    <Loader className="w-4 h-4 animate-spin" />
                     Joining...
                   </>
                 ) : (
@@ -451,8 +490,8 @@ export default function MeetingJoinPage() {
                 )}
               </button>
 
-              {/* Info */}
-              <div className="text-center">
+              {/* Privacy Notice */}
+              <div className="text-center pt-1">
                 <p className="text-xs text-gray-500">
                   By joining, you agree to our{' '}
                   <a href="#" className="text-blue-600 hover:underline">terms</a> and{' '}
@@ -460,6 +499,76 @@ export default function MeetingJoinPage() {
                 </p>
               </div>
             </form>
+          </div>
+        </div>
+
+        {/* Right Side: Video Preview */}
+        <div className="w-[420px] bg-gray-100 flex items-center justify-center p-6 border-l border-gray-200">
+          <div className="w-full">
+            <div className="relative bg-black rounded-lg overflow-hidden aspect-video mb-3 border border-gray-300">
+              {videoEnabled ? (
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <User className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-400 text-sm">Camera is off</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Name Badge */}
+              <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+                <p className="text-white text-xs font-medium">
+                  {displayName || 'You'}
+                </p>
+              </div>
+
+              {/* Controls Overlay */}
+              <div className="absolute bottom-3 right-3 flex gap-2">
+                <button
+                  onClick={toggleAudio}
+                  className={`p-2.5 rounded-lg transition-all ${
+                    audioEnabled
+                      ? 'bg-white/20 hover:bg-white/30 backdrop-blur-sm'
+                      : 'bg-red-500 hover:bg-red-600'
+                  }`}
+                >
+                  {audioEnabled ? (
+                    <Mic className="w-4 h-4 text-white" />
+                  ) : (
+                    <MicOff className="w-4 h-4 text-white" />
+                  )}
+                </button>
+                <button
+                  onClick={toggleVideo}
+                  className={`p-2.5 rounded-lg transition-all ${
+                    videoEnabled
+                      ? 'bg-white/20 hover:bg-white/30 backdrop-blur-sm'
+                      : 'bg-red-500 hover:bg-red-600'
+                  }`}
+                >
+                  {videoEnabled ? (
+                    <Video className="w-4 h-4 text-white" />
+                  ) : (
+                    <VideoOff className="w-4 h-4 text-white" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Video Controls Info */}
+            <p className="text-center text-gray-500 text-xs">
+              Check your audio and video before joining
+            </p>
           </div>
         </div>
       </div>

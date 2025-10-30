@@ -13,7 +13,11 @@ import {
   Settings,
   Maximize2,
   Loader,
-  AlertCircle
+  AlertCircle,
+  Activity,
+  FileText,
+  Circle,
+  Square
 } from 'lucide-react';
 import {
   selectIsConnectedToRoom,
@@ -28,6 +32,13 @@ import {
   HMSPeer
 } from '@100mslive/react-sdk';
 import { VideoTile } from './video-tile';
+import { ConsentDialog } from './consent-dialog';
+import { VitalsDrawer } from '@/app/patients/[id]/components/drawers/VitalsDrawer';
+import type { VitalsFormData } from '@/app/patients/[id]/components/types';
+import { EnhancedParticipantsSidebar } from './enhanced-participants-sidebar';
+import { ClinicalNotesPanel } from './clinical-notes-panel';
+import { ProviderMeetingLayout } from './provider-meeting-layout';
+import { PatientMeetingLayout } from './patient-meeting-layout';
 
 interface MeetingRoomProps {
   authToken: string;
@@ -35,6 +46,9 @@ interface MeetingRoomProps {
   displayName: string;
   onLeave: () => void;
   isHost?: boolean;
+  patientId?: string;
+  patientName?: string;
+  encounterId?: string;
 }
 
 export function MeetingRoom({
@@ -42,7 +56,10 @@ export function MeetingRoom({
   meetingId,
   displayName,
   onLeave,
-  isHost = false
+  isHost = false,
+  patientId,
+  patientName,
+  encounterId
 }: MeetingRoomProps) {
   const hmsActions = useHMSActions();
 
@@ -81,6 +98,15 @@ export function MeetingRoom({
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('Connecting...');
   const [isJoining, setIsJoining] = useState(true);
+
+  // New feature states
+  const [showConsentDialog, setShowConsentDialog] = useState(false);
+  const [showVitalsPanel, setShowVitalsPanel] = useState(false);
+  const [showClinicalNotes, setShowClinicalNotes] = useState(false);
+  const [consentGiven, setConsentGiven] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [meetingStartTime] = useState(new Date());
 
   // Join room on mount
   useEffect(() => {
@@ -222,273 +248,311 @@ export function MeetingRoom({
     }
   };
 
+  // Recording duration timer
+  useEffect(() => {
+    if (!isRecording) return;
+
+    const interval = setInterval(() => {
+      setRecordingDuration(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRecording]);
+
+  // Consent handler
+  const handleConsent = async (consents: Record<string, boolean>) => {
+    try {
+      // TODO: Send consent to API
+      console.log('Consent received:', consents);
+      setConsentGiven(true);
+      setShowConsentDialog(false);
+
+      // If recording consent given, can start recording
+      if (consents.recording) {
+        // Can now enable recording
+      }
+    } catch (error) {
+      console.error('Failed to save consent:', error);
+      throw error;
+    }
+  };
+
+  // Vitals save handler
+  const handleSaveVitals = async (data: VitalsFormData) => {
+    try {
+      // TODO: Send vitals to API
+      console.log('Vitals captured:', data);
+      // The drawer will close automatically on success
+      setShowVitalsPanel(false);
+    } catch (error) {
+      console.error('Failed to save vitals:', error);
+      throw error;
+    }
+  };
+
+  // Clinical notes save handler
+  const handleSaveClinicalNotes = async (note: any) => {
+    try {
+      // TODO: Send clinical notes to API
+      console.log('Clinical notes saved:', note);
+    } catch (error) {
+      console.error('Failed to save clinical notes:', error);
+      throw error;
+    }
+  };
+
+  // Start/stop recording
+  const toggleRecording = async () => {
+    if (!consentGiven && !isRecording) {
+      setShowConsentDialog(true);
+      return;
+    }
+
+    try {
+      if (isRecording) {
+        // TODO: Stop recording via API
+        setIsRecording(false);
+        setRecordingDuration(0);
+      } else {
+        // TODO: Start recording via API
+        setIsRecording(true);
+      }
+    } catch (error) {
+      console.error('Recording toggle error:', error);
+      alert('Failed to toggle recording');
+    }
+  };
+
+  const formatRecordingDuration = (seconds: number): string => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   // Show loading state while joining
   if (isJoining) {
     return (
-      <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+      <div className="h-screen w-full bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="relative inline-block mb-8">
-            <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-2xl animate-pulse" />
-            <Loader className="w-16 h-16 text-blue-400 animate-spin relative" />
-          </div>
-          <h2 className="text-3xl font-bold text-white mb-3">
+          <Loader className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Connecting to Meeting
           </h2>
-          <p className="text-blue-200 text-lg mb-6">
+          <p className="text-gray-600 text-sm">
             {connectionStatus}
           </p>
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" />
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
-          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex flex-col">
+    <div className="h-screen w-full bg-white flex flex-col">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-800/90 to-blue-900/90 backdrop-blur-xl px-6 py-4 flex items-center justify-between border-b border-white/10 shadow-lg">
-        <div className="flex items-center gap-4">
-          <div className="p-2 bg-blue-500/20 rounded-lg">
-            <Video className="w-6 h-6 text-blue-400" />
+      <div className="bg-white px-6 py-3 flex items-center justify-between border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gray-700 rounded-lg">
+            <Video className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-white font-bold text-lg">EHR Connect Telehealth</h1>
-            <p className="text-blue-200 text-sm">Secure Video Consultation{meetingId ? ` • ${meetingId.substring(0, 8)}` : ''}</p>
+            <h1 className="text-gray-900 font-semibold text-base">EHR Connect Telehealth</h1>
+            <p className="text-gray-500 text-xs">
+              {patientName || 'Secure Video Consultation'}
+              {meetingId ? ` • ${meetingId.substring(0, 8)}` : ''}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md ${
+          {/* Recording Indicator */}
+          {isRecording && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200">
+              <Circle className="w-2 h-2 fill-red-500 text-red-500" />
+              <span className="text-xs font-medium">{formatRecordingDuration(recordingDuration)}</span>
+              <span className="text-xs">REC</span>
+            </div>
+          )}
+
+          {/* Connection Status */}
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
             isConnected
-              ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-              : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+              ? 'bg-green-50 text-green-700 border border-green-200'
+              : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
           }`}>
             <div className={`w-2 h-2 rounded-full ${
-              isConnected ? 'bg-green-400 shadow-lg shadow-green-400/50' : 'bg-yellow-400 animate-pulse'
+              isConnected ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'
             }`} />
-            <span className="text-sm font-semibold">{connectionStatus}</span>
+            <span className="text-xs font-medium">{connectionStatus}</span>
           </div>
-          <button className="p-2.5 hover:bg-white/10 rounded-lg transition-colors">
-            <Settings className="w-5 h-5 text-blue-200" />
+          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <Settings className="w-5 h-5 text-gray-600" />
           </button>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Video Grid */}
-        <div className="flex-1 p-4">
-          <div className="h-full grid gap-4 auto-rows-fr" style={{
-            gridTemplateColumns: peers.length === 1 ? '1fr' : peers.length === 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(320px, 1fr))'
-          }}>
-            {peers.map((peer) => (
-              <VideoTile
-                key={peer.id}
-                peer={peer}
-                isLocal={peer.id === localPeer?.id}
-              />
+      {/* Main Content Area - Conditional Layout */}
+      {isHost && patientId ? (
+        /* Provider View: Patient details left, video right */
+        <ProviderMeetingLayout
+          peers={peers}
+          localPeer={localPeer}
+          patientId={patientId}
+          patientName={patientName || 'Patient'}
+          encounterId={encounterId}
+          onSaveClinicalNotes={handleSaveClinicalNotes}
+          showClinicalNotes={showClinicalNotes}
+          setShowClinicalNotes={setShowClinicalNotes}
+          showVitalsPanel={showVitalsPanel}
+          setShowVitalsPanel={setShowVitalsPanel}
+        />
+      ) : (
+        /* Patient View: Full-screen video */
+        <PatientMeetingLayout
+          peers={peers}
+          localPeer={localPeer}
+        />
+      )}
+
+      {/* Chat Sidebar (Available for both) */}
+      {showChat && (
+        <div className="absolute right-0 top-0 bottom-16 w-80 bg-gray-800 border-l border-gray-700 flex flex-col z-30">
+          <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-gray-400" />
+              <h3 className="text-white font-semibold">Chat</h3>
+            </div>
+            <button
+              onClick={() => setShowChat(false)}
+              className="text-gray-400 hover:text-white text-2xl leading-none"
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {messages.map((msg) => (
+              <div key={msg.id} className="bg-gray-700 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-primary text-sm font-medium">
+                    {msg.senderName}
+                  </span>
+                  <span className="text-gray-400 text-xs">
+                    {new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <p className="text-white text-sm">{msg.message}</p>
+              </div>
             ))}
 
-            {/* Show message if no peers */}
-            {peers.length === 0 && (
-              <div className="col-span-full flex items-center justify-center">
-                <div className="text-center">
-                  <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                  <p className="text-gray-400 text-lg">Waiting for participants to join...</p>
-                </div>
+            {messages.length === 0 && (
+              <div className="text-center py-8">
+                <MessageSquare className="w-12 h-12 text-gray-600 mx-auto mb-2" />
+                <p className="text-gray-500 text-sm">No messages yet</p>
               </div>
             )}
           </div>
+
+          <div className="p-4 border-t border-gray-700">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Type a message..."
+                className="flex-1 bg-gray-700 text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={!chatInput.trim()}
+                className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+              >
+                Send
+              </button>
+            </div>
+          </div>
         </div>
+      )}
 
-        {/* Chat Sidebar */}
-        {showChat && (
-          <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
-            <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-gray-400" />
-                <h3 className="text-white font-semibold">Chat</h3>
-              </div>
-              <button
-                onClick={() => setShowChat(false)}
-                className="text-gray-400 hover:text-white text-2xl leading-none"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {messages.map((msg) => (
-                <div key={msg.id} className="bg-gray-700 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-primary text-sm font-medium">
-                      {msg.senderName}
-                    </span>
-                    <span className="text-gray-400 text-xs">
-                      {new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <p className="text-white text-sm">{msg.message}</p>
-                </div>
-              ))}
-
-              {messages.length === 0 && (
-                <div className="text-center py-8">
-                  <MessageSquare className="w-12 h-12 text-gray-600 mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">No messages yet</p>
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 border-t border-gray-700">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Type a message..."
-                  className="flex-1 bg-gray-700 text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!chatInput.trim()}
-                  className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
-                >
-                  Send
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Participants Sidebar */}
-        {showParticipants && (
-          <div className="w-64 bg-gray-800 border-l border-gray-700 flex flex-col">
-            <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-gray-400" />
-                <h3 className="text-white font-semibold">
-                  Participants ({peers.length})
-                </h3>
-              </div>
-              <button
-                onClick={() => setShowParticipants(false)}
-                className="text-gray-400 hover:text-white text-2xl leading-none"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {peers.map((peer) => (
-                <div
-                  key={peer.id}
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-primary font-semibold">
-                      {peer.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-medium truncate">
-                      {peer.name}
-                      {peer.isLocal && ' (You)'}
-                    </p>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      {peer.audioEnabled ? (
-                        <Mic className="w-3 h-3 text-green-400" />
-                      ) : (
-                        <MicOff className="w-3 h-3 text-red-400" />
-                      )}
-                      {peer.videoEnabled ? (
-                        <Video className="w-3 h-3 text-green-400" />
-                      ) : (
-                        <VideoOff className="w-3 h-3 text-gray-400" />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Enhanced Participants Sidebar (Available for both) */}
+      <EnhancedParticipantsSidebar
+        isOpen={showParticipants}
+        onClose={() => setShowParticipants(false)}
+        peers={peers}
+        localPeerId={localPeer?.id}
+        meetingStartTime={meetingStartTime}
+      />
 
       {/* Control Bar */}
-      <div className="bg-gradient-to-r from-slate-800/95 to-blue-900/95 backdrop-blur-xl px-8 py-5 border-t border-white/10 shadow-2xl">
+      <div className="bg-white px-6 py-3 border-t border-gray-200">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <div className="px-4 py-2 bg-white/10 rounded-lg backdrop-blur-md">
-              <span className="text-blue-100 text-sm font-semibold">
+          <div className="flex items-center gap-2">
+            <div className="px-3 py-1.5 bg-gray-100 rounded-lg border border-gray-200">
+              <span className="text-gray-700 text-xs font-medium">
                 {peers.length} {peers.length !== 1 ? 'Participants' : 'Participant'}
               </span>
             </div>
           </div>
 
           {/* Center Controls */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={toggleAudio}
-              className={`p-4 rounded-xl transition-all shadow-lg ${
+              className={`p-3 rounded-lg transition-all ${
                 isLocalAudioEnabled
-                  ? 'bg-white/20 hover:bg-white/30 text-white backdrop-blur-md'
-                  : 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/50'
+                  ? 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
+                  : 'bg-red-500 hover:bg-red-600 text-white'
               }`}
               title={isLocalAudioEnabled ? 'Mute' : 'Unmute'}
             >
               {isLocalAudioEnabled ? (
-                <Mic className="w-6 h-6" />
+                <Mic className="w-5 h-5" />
               ) : (
-                <MicOff className="w-6 h-6" />
+                <MicOff className="w-5 h-5" />
               )}
             </button>
 
             <button
               onClick={toggleVideo}
-              className={`p-4 rounded-xl transition-all shadow-lg ${
+              className={`p-3 rounded-lg transition-all ${
                 isLocalVideoEnabled
-                  ? 'bg-white/20 hover:bg-white/30 text-white backdrop-blur-md'
-                  : 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/50'
+                  ? 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
+                  : 'bg-red-500 hover:bg-red-600 text-white'
               }`}
               title={isLocalVideoEnabled ? 'Stop Video' : 'Start Video'}
             >
               {isLocalVideoEnabled ? (
-                <Video className="w-6 h-6" />
+                <Video className="w-5 h-5" />
               ) : (
-                <VideoOff className="w-6 h-6" />
+                <VideoOff className="w-5 h-5" />
               )}
             </button>
 
             <button
               onClick={toggleScreenShare}
-              className={`p-4 rounded-xl transition-all shadow-lg ${
+              className={`p-3 rounded-lg transition-all ${
                 isScreenSharing || isSomeoneScreenSharing
-                  ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-blue-500/50'
-                  : 'bg-white/20 hover:bg-white/30 text-white backdrop-blur-md'
+                  ? 'bg-gray-700 hover:bg-gray-800 text-white'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
               }`}
               title="Share Screen"
               disabled={isSomeoneScreenSharing && !isScreenSharing}
             >
-              <MonitorUp className="w-6 h-6" />
+              <MonitorUp className="w-5 h-5" />
             </button>
 
             <button
               onClick={() => setShowChat(!showChat)}
-              className={`p-4 rounded-xl transition-all shadow-lg relative ${
+              className={`p-3 rounded-lg transition-all relative ${
                 showChat
-                  ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-blue-500/50'
-                  : 'bg-white/20 hover:bg-white/30 text-white backdrop-blur-md'
+                  ? 'bg-gray-700 hover:bg-gray-800 text-white'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
               }`}
               title="Chat"
             >
-              <MessageSquare className="w-6 h-6" />
+              <MessageSquare className="w-5 h-5" />
               {messages.length > 0 && !showChat && (
-                <div className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 rounded-full flex items-center justify-center px-1.5 text-xs font-bold shadow-lg shadow-red-500/50">
+                <div className="absolute -top-1 -right-1 min-w-[18px] h-4 bg-red-500 rounded-full flex items-center justify-center px-1 text-xs font-bold text-white">
                   {messages.length}
                 </div>
               )}
@@ -496,30 +560,126 @@ export function MeetingRoom({
 
             <button
               onClick={() => setShowParticipants(!showParticipants)}
-              className={`p-4 rounded-xl transition-all shadow-lg ${
+              className={`p-3 rounded-lg transition-all ${
                 showParticipants
-                  ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-blue-500/50'
-                  : 'bg-white/20 hover:bg-white/30 text-white backdrop-blur-md'
+                  ? 'bg-gray-700 hover:bg-gray-800 text-white'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
               }`}
               title="Participants"
             >
-              <Users className="w-6 h-6" />
+              <Users className="w-5 h-5" />
             </button>
 
-            <div className="w-px h-10 bg-white/20 mx-2" />
+            {/* Provider Controls - Only show for hosts */}
+            {isHost && (
+              <>
+                {/* Vitals Capture */}
+                {patientId && (
+                  <button
+                    onClick={() => setShowVitalsPanel(!showVitalsPanel)}
+                    className={`p-3 rounded-lg transition-all ${
+                      showVitalsPanel
+                        ? 'bg-gray-700 hover:bg-gray-800 text-white'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
+                    }`}
+                    title="Capture Vitals"
+                  >
+                    <Activity className="w-5 h-5" />
+                  </button>
+                )}
+
+                {/* Clinical Notes */}
+                {patientId && (
+                  <button
+                    onClick={() => setShowClinicalNotes(!showClinicalNotes)}
+                    className={`p-3 rounded-lg transition-all ${
+                      showClinicalNotes
+                        ? 'bg-gray-700 hover:bg-gray-800 text-white'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
+                    }`}
+                    title="Clinical Notes"
+                  >
+                    <FileText className="w-5 h-5" />
+                  </button>
+                )}
+
+                {/* Consent Dialog */}
+                <button
+                  onClick={() => setShowConsentDialog(true)}
+                  className={`p-3 rounded-lg transition-all ${
+                    consentGiven
+                      ? 'bg-green-100 text-green-700 border border-green-200'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
+                  }`}
+                  title="Manage Consent"
+                >
+                  <FileText className="w-5 h-5" />
+                </button>
+
+                {/* Recording Toggle */}
+                <button
+                  onClick={toggleRecording}
+                  className={`p-3 rounded-lg transition-all ${
+                    isRecording
+                      ? 'bg-red-500 hover:bg-red-600 text-white'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
+                  }`}
+                  title={isRecording ? 'Stop Recording' : 'Start Recording'}
+                >
+                  {isRecording ? (
+                    <Square className="w-5 h-5" />
+                  ) : (
+                    <Circle className="w-5 h-5" />
+                  )}
+                </button>
+              </>
+            )}
+
+            <div className="w-px h-8 bg-gray-200 mx-2" />
 
             <button
               onClick={handleLeave}
-              className="p-4 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all shadow-lg shadow-red-500/50 font-semibold"
+              className="p-3 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-all"
               title="Leave Meeting"
             >
-              <PhoneOff className="w-6 h-6" />
+              <PhoneOff className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="w-[120px]" /> {/* Spacer for centering */}
+          <div className="w-[100px]" /> {/* Spacer for centering */}
         </div>
       </div>
+
+      {/* Consent Dialog */}
+      <ConsentDialog
+        isOpen={showConsentDialog}
+        onClose={() => setShowConsentDialog(false)}
+        onConsent={handleConsent}
+        patientName={patientName}
+        meetingId={meetingId}
+      />
+
+      {/* Vitals Capture Drawer */}
+      {patientId && (
+        <VitalsDrawer
+          open={showVitalsPanel}
+          onOpenChange={setShowVitalsPanel}
+          onSave={handleSaveVitals}
+          mode="create"
+        />
+      )}
+
+      {/* Clinical Notes Panel */}
+      {patientId && (
+        <ClinicalNotesPanel
+          isOpen={showClinicalNotes}
+          onClose={() => setShowClinicalNotes(false)}
+          onSave={handleSaveClinicalNotes}
+          patientName={patientName}
+          patientId={patientId}
+          encounterId={encounterId}
+        />
+      )}
     </div>
   );
 }

@@ -3,7 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Appointment } from '@/types/appointment';
 import { cn } from '@/lib/utils';
-import { Clock, MapPin, Calendar, Stethoscope } from 'lucide-react';
+import { Clock, MapPin, Calendar, Stethoscope, Video } from 'lucide-react';
+import { useMeetingStatus } from '@/hooks/useMeetingStatus';
 
 interface CompactEventCardProps {
   appointment: Appointment;
@@ -15,6 +16,11 @@ export function CompactEventCard({ appointment, onClick }: CompactEventCardProps
   const [previewPosition, setPreviewPosition] = useState<'top' | 'bottom'>('bottom');
   const cardRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  // Get meeting status
+  const meetingCode = appointment.resourceData?.telehealth?.meetingCode;
+  const { meetingStatus } = useMeetingStatus(meetingCode);
+  const isLive = meetingStatus?.isActive;
 
   const startTime = new Date(appointment.startTime);
   const endTime = new Date(appointment.endTime);
@@ -156,13 +162,19 @@ export function CompactEventCard({ appointment, onClick }: CompactEventCardProps
           borderColor: style.bgColor
         } : undefined}
       >
-        <div className="flex items-baseline gap-1.5 whitespace-nowrap overflow-hidden">
+        <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
           <span className="font-semibold flex-shrink-0">
             {formatTime(startTime)}
           </span>
           <span className="truncate font-medium">
             {appointment.patientName || 'Untitled'}
           </span>
+          {isLive && (
+            <span className="flex items-center gap-1 bg-red-500 text-white px-1.5 py-0.5 rounded text-[9px] font-bold uppercase animate-pulse">
+              <Video className="w-2.5 h-2.5" />
+              LIVE
+            </span>
+          )}
         </div>
       </div>
 
