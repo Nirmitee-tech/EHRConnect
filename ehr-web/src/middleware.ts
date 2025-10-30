@@ -17,6 +17,8 @@ const PUBLIC_PATHS = [
   '/api/health',
   '/widget', // Public booking widget
   '/api/public', // Public API endpoints for widget
+  '/meeting', // Public meeting links for patients
+  '/join', // Alternative public meeting join path
 ];
 
 // Root path should be accessible to everyone (landing page)

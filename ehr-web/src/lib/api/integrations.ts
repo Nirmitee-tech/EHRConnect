@@ -46,6 +46,27 @@ export async function getVendors(options?: {
 }
 
 /**
+ * Transform snake_case database response to camelCase frontend format
+ */
+function transformIntegrationResponse(dbRow: any): IntegrationConfig {
+  return {
+    id: dbRow.id,
+    vendorId: dbRow.vendor_id,
+    enabled: dbRow.enabled,
+    environment: dbRow.environment || 'sandbox',
+    apiEndpoint: dbRow.api_endpoint || '',
+    credentials: typeof dbRow.credentials === 'string' ? JSON.parse(dbRow.credentials) : dbRow.credentials || {},
+    usageMappings: typeof dbRow.usage_mappings === 'string' ? JSON.parse(dbRow.usage_mappings) : dbRow.usage_mappings || [],
+    healthStatus: dbRow.health_status || 'inactive',
+    lastTestedAt: dbRow.last_tested_at ? new Date(dbRow.last_tested_at) : undefined,
+    createdAt: dbRow.created_at ? new Date(dbRow.created_at) : new Date(),
+    updatedAt: dbRow.updated_at ? new Date(dbRow.updated_at) : new Date(),
+    createdBy: dbRow.created_by || 'unknown',
+    updatedBy: dbRow.updated_by || 'unknown'
+  };
+}
+
+/**
  * Get all integrations for an organization
  */
 export async function getIntegrations(orgId: string, options?: {
@@ -68,13 +89,14 @@ export async function getIntegrations(orgId: string, options?: {
     }
   });
 
-  const result: ApiResponse<IntegrationConfig[]> = await response.json();
+  const result: ApiResponse<any[]> = await response.json();
 
   if (!result.success) {
     throw new Error(result.error || 'Failed to fetch integrations');
   }
 
-  return result.data || [];
+  // Transform database response to frontend format
+  return (result.data || []).map(transformIntegrationResponse);
 }
 
 /**
@@ -115,13 +137,13 @@ export async function createIntegration(
     })
   });
 
-  const result: ApiResponse<IntegrationConfig> = await response.json();
+  const result: ApiResponse<any> = await response.json();
 
   if (!result.success || !result.data) {
     throw new Error(result.error || 'Failed to create integration');
   }
 
-  return result.data;
+  return transformIntegrationResponse(result.data);
 }
 
 /**
@@ -145,13 +167,13 @@ export async function updateIntegration(
     })
   });
 
-  const result: ApiResponse<IntegrationConfig> = await response.json();
+  const result: ApiResponse<any> = await response.json();
 
   if (!result.success || !result.data) {
     throw new Error(result.error || 'Failed to update integration');
   }
 
-  return result.data;
+  return transformIntegrationResponse(result.data);
 }
 
 /**
@@ -184,13 +206,13 @@ export async function toggleIntegration(
     body: JSON.stringify({ enabled })
   });
 
-  const result: ApiResponse<IntegrationConfig> = await response.json();
+  const result: ApiResponse<any> = await response.json();
 
   if (!result.success || !result.data) {
     throw new Error(result.error || 'Failed to toggle integration');
   }
 
-  return result.data;
+  return transformIntegrationResponse(result.data);
 }
 
 /**

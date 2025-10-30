@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@100mslive/react-sdk": "^0.10.39",
     "@medplum/core": "^4.4.1",
     "@medplum/react": "^4.4.1",
     "@nirmitee.io/design-system": "^1.0.0",

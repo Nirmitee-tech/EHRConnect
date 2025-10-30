@@ -1,228 +1,70 @@
-# Fixes Applied - Multi-Tenant Security & Booking Widget
+# Fixes Applied - Virtual Meeting Errors
 
-## ✅ Issues Fixed
+## ✅ Fixed Issues
 
-### 1. Booking Widget "column resource_data does not exist" Error
+### 1. Missing `meetingId` in API Response
+**Error:** `Invalid Meeting Configuration - Missing authentication token or meeting ID`
 
-**Problem:**
-The booking widget was throwing error: "column 'resource_data' does not exist"
+**Root Cause:** The backend `formatMeetingResponse()` method wasn't returning the `meetingId` field, even though it was stored in the database as `meeting_id`.
 
-**Root Cause:**
-The `/api/public/v2/widget/organization/:slug` endpoint was trying to query `resource_data` column from the `organizations` table, but that table uses individual columns (`id`, `name`, `slug`, `logo_url`, etc.) instead of a JSONB `resource_data` column.
+**Fix Applied:** Updated `/ehr-api/src/services/virtual-meetings.service.js` line 871-893
 
-**Fix Applied:**
-Updated query in `ehr-api/src/routes/public.js:518` to select individual columns:
+**Added fields:**
+```javascript
+formatMeetingResponse(meeting) {
+  return {
+    id: meeting.id,
+    appointmentId: meeting.appointment_id,
+    encounterId: meeting.encounter_id,      // ✅ Added
+    orgId: meeting.org_id,                  // ✅ Added
+    meetingId: meeting.meeting_id,          // ✅ Added (CRITICAL)
+    meetingCode: meeting.meeting_code,
+    roomUrl: meeting.room_url,
+    publicLink: meeting.public_link,
+    hostLink: meeting.host_link,            // ✅ Added
+    status: meeting.status,
+    hostPractitionerId: meeting.host_practitioner_id,  // ✅ Added
+    patientId: meeting.patient_id,          // ✅ Added
+    startedAt: meeting.started_at,
+    endedAt: meeting.ended_at,
+    recordingEnabled: meeting.recording_enabled,
+    recordingUrl: meeting.recording_url,
+    createdAt: meeting.created_at,
+    updatedAt: meeting.updated_at,          // ✅ Added
+    participantCount: meeting.participant_count || 0
+  };
+}
+```
+
+## 🚀 Next Steps
+
+### Step 1: Restart Backend Server
+
+The backend code has been updated, so you need to restart the API server:
+
+```bash
+cd ehr-api
+npm run dev
+```
+
+### Step 2: Add 100ms Template ID (Still Required!)
+
+As documented in `100MS_DEBUG_FIX.md`, you still need to add the `templateId`:
 
 ```sql
--- Before (broken)
-SELECT resource_data
-FROM organizations
-WHERE slug = $1 AND active = TRUE
-
--- After (fixed)
-SELECT id, name, slug, org_type, logo_url, specialties, settings
-FROM organizations
-WHERE slug = $1 AND status = 'active'
+UPDATE integrations
+SET credentials = jsonb_set(
+  credentials,
+  '{templateId}',
+  '"YOUR_TEMPLATE_ID_HERE"'
+)
+WHERE vendor_id = '100ms'
+  AND org_id = '27b52b74-4f64-4ad0-b48d-ae47a8659da2';
 ```
 
-**Result:** ✅ Widget now loads successfully!
+Get template ID from: https://dashboard.100ms.live/ → Templates section
 
-**Test:**
-```bash
-curl "http://localhost:8000/api/public/v2/widget/organization/test-clinic"
-# Returns organization data without errors
-```
+### Step 3: Test the Complete Flow
 
-### 2. Booking Widget Missing Organization Parameter
+After both fixes, the meeting flow should work end-to-end! ✅
 
-**Problem:**
-Navbar link to booking widget didn't include organization slug, causing "Organization parameter is missing" error.
-
-**Fix Applied:**
-Updated `ehr-web/src/components/layout/user-profile.tsx:122`:
-
-```tsx
-// Before
-href="/widget/booking"
-
-// After
-href={`/widget/booking?org=${(session as any)?.org_slug || ''}`}
-```
-
-**Result:** ✅ Widget now receives correct organization context!
-
-### 3. Multi-Tenant Data Isolation Security
-
-**Problem:**
-Appointments and other FHIR resources lacked organization-level filtering, allowing potential cross-tenant data access.
-
-**Fixes Applied:**
-
-#### A. Database Migration
-Added `org_id` column to `fhir_resources` table with indexes:
-
-```bash
-# Migration ran successfully
-ALTER TABLE fhir_resources ADD COLUMN org_id VARCHAR(64);
-CREATE INDEX idx_fhir_resources_org_id ON fhir_resources(org_id);
-CREATE INDEX idx_fhir_resources_org_type ON fhir_resources(org_id, resource_type);
-```
-
-Verified:
-```bash
-PGPASSWORD=medplum123 psql -h localhost -U medplum -d medplum -c \
-  "SELECT column_name FROM information_schema.columns WHERE table_name = 'fhir_resources';"
-
-# Result includes: org_id column ✅
-```
-
-#### B. Controller Updates
-Updated `ehr-api/src/controllers/appointment.js` - all methods now require/filter by `org_id`:
-
-- ✅ `search(db, query, orgId)` - Filters by org_id
-- ✅ `read(db, id, orgId)` - Filters by org_id
-- ✅ `create(db, resourceData, orgId)` - Requires org_id
-- ✅ `update(db, id, resourceData, orgId)` - Filters by org_id
-- ✅ `delete(db, id, orgId)` - Filters by org_id
-
-#### C. API Route Updates
-Updated `ehr-api/src/routes/public.js`:
-
-- ✅ V2 endpoints pass org_id to controller
-- ✅ `GET /api/public/v2/appointments` uses org_id filtering
-- ✅ `POST /api/public/v2/book-appointment` creates with org_id
-- ⚠️ V1 endpoints marked DEPRECATED with security warnings
-
-**Result:** ✅ Complete multi-tenant data isolation implemented!
-
-## 📋 Available Organizations
-
-Current organizations in database:
-
-| Name | Slug | Status |
-|------|------|--------|
-| Test Clinic | `test-clinic` | active |
-| Smith Medical Clinic | `smith-clinic` | active |
-| Healthcare Plus Clinic | `healthcare-plus-clinic` | active |
-| Pune | `pune` | active |
-| Mahehs | `mahehs` | pending_verification |
-
-## 🧪 Testing
-
-### Test Widget Loading
-
-1. **Via Browser:**
-   - Login at http://localhost:3000
-   - Click profile dropdown → "Book Appointment (Public Widget)"
-   - Should load without errors ✅
-
-2. **Via API:**
-   ```bash
-   curl "http://localhost:8000/api/public/v2/widget/organization/test-clinic"
-   ```
-
-   Expected response:
-   ```json
-   {
-     "success": true,
-     "organization": {
-       "id": "43896883-a786-458c-9006-80afd740961b",
-       "name": "Test Clinic",
-       "slug": "test-clinic",
-       ...
-     }
-   }
-   ```
-
-### Test Multi-Tenant Security
-
-```bash
-# Create appointment with org_id
-curl -X POST -H "Content-Type: application/json" \
-  -H "x-org-id: 43896883-a786-458c-9006-80afd740961b" \
-  "http://localhost:8000/api/public/v2/book-appointment" \
-  -d '{
-    "patientId": "patient-123",
-    "startTime": "2025-10-27T10:00:00Z"
-  }'
-
-# Get appointments filtered by org
-curl -H "x-org-id: 43896883-a786-458c-9006-80afd740961b" \
-  "http://localhost:8000/api/public/v2/appointments"
-```
-
-## 📚 Documentation Created
-
-1. **MULTI_TENANT_SECURITY.md** - Comprehensive security guide
-   - Architecture overview
-   - API usage examples
-   - Testing procedures
-   - Best practices
-
-2. **FIX_DATABASE_ERROR.md** - Troubleshooting guide
-   - Step-by-step setup instructions
-   - Common issues and solutions
-   - Service verification commands
-
-3. **FIXES_APPLIED.md** (this file) - Summary of changes
-
-## 🚀 Services Running
-
-```bash
-# Docker containers
-docker-compose ps
-
-# Result:
-✅ postgres - Running (healthy)
-✅ redis - Running (healthy)
-✅ keycloak - Running
-
-# Backend API
-lsof -ti:8000
-# Result: Process running on port 8000 ✅
-
-# Frontend (if running)
-lsof -ti:3000
-# Result: Process running on port 3000 ✅
-```
-
-## 📝 Files Modified/Created
-
-### Modified:
-- `ehr-api/src/routes/public.js` - Fixed widget organization query + v2 endpoints
-- `ehr-api/src/controllers/appointment.js` - Added org_id filtering
-- `ehr-web/src/components/layout/user-profile.tsx` - Fixed widget link
-
-### Created:
-- `ehr-api/src/database/migrations/001_add_org_id_to_fhir_resources.sql` - Database migration
-- `ehr-api/src/database/run-migration.js` - Migration runner
-- `MULTI_TENANT_SECURITY.md` - Security documentation
-- `FIX_DATABASE_ERROR.md` - Troubleshooting guide
-- `FIXES_APPLIED.md` - This summary
-
-## ✅ Summary
-
-**Before:**
-- ❌ Widget threw "column resource_data does not exist" error
-- ❌ Widget link missing org parameter
-- ❌ No org_id filtering on appointments (security risk!)
-
-**After:**
-- ✅ Widget loads successfully with correct organization
-- ✅ Widget link includes org parameter
-- ✅ Complete multi-tenant data isolation implemented
-- ✅ Database migration completed
-- ✅ All v2 endpoints enforce org_id security
-- ✅ Comprehensive documentation created
-
-## 🔐 Security Impact
-
-This implementation ensures:
-- Organizations can ONLY access their own data
-- Cross-tenant data leakage is prevented
-- All appointment operations are org-scoped
-- Database, controller, and API-level security
-
-## 🎉 Status: ALL ISSUES RESOLVED
-
-The booking widget is now fully functional and secure!

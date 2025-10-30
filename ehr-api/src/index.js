@@ -24,6 +24,7 @@ const integrationsRoutes = require('./routes/integrations');
 const bedManagementRoutes = require('./routes/bed-management');
 const dataMapperRoutes = require('./routes/data-mapper');
 const notificationRoutes = require('./routes/notifications');
+const virtualMeetingsRoutes = require('./routes/virtual-meetings.routes');
 const { initializeDatabase } = require('./database/init');
 const socketService = require('./services/socket.service');
 const billingJobs = require('./services/billing.jobs');
@@ -213,8 +214,8 @@ app.use('/api/orgs', organizationRoutes);
 app.use('/api/orgs', userRoutes);
 app.use('/api/orgs', onboardingRoutes);
 app.use('/api/invitations', invitationRoutes);
+app.use('/api/rbac/v2', rbacEnhancedRoutes); // Enhanced RBAC with permission matrix (must be before /api/rbac)
 app.use('/api/rbac', rbacRoutes);
-app.use('/api/rbac/v2', rbacEnhancedRoutes); // Enhanced RBAC with permission matrix
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userDataRoutes); // Separate endpoints for user data with Redis caching
 app.use('/api/billing', billingRoutes);
@@ -226,6 +227,7 @@ app.use('/api/integrations', integrationsRoutes);
 app.use('/api/bed-management', bedManagementRoutes);
 app.use('/api/data-mapper', dataMapperRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/virtual-meetings', virtualMeetingsRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

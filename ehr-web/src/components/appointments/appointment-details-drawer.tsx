@@ -5,6 +5,7 @@ import { X, Phone, MapPin, MessageCircle, CreditCard, Clock, Edit3, UserX, UserC
 import { Appointment } from '@/types/appointment';
 import { EncounterService } from '@/services/encounter.service';
 import { useRouter } from 'next/navigation';
+import { InstantMeetingButton } from '@/components/virtual-meetings/instant-meeting-button';
 
 interface AppointmentDetailsDrawerProps {
   isOpen: boolean;
@@ -193,6 +194,23 @@ export function AppointmentDetailsDrawer({
             </button>
             <p className="text-xs text-blue-700 mt-2 text-center">
               Begin documenting this patient visit
+            </p>
+          </div>
+        )}
+
+        {/* Telehealth Video Meeting */}
+        {(appointment.status === 'scheduled' || appointment.status === 'in-progress') && (
+          <div className="border-b border-gray-200 px-4 py-3 bg-gradient-to-r from-purple-50 to-indigo-50">
+            <div className="flex justify-center">
+              <InstantMeetingButton
+                appointmentId={appointment.id}
+                patientId={appointment.patientId}
+                practitionerId={appointment.practitionerId}
+                variant="appointment"
+              />
+            </div>
+            <p className="text-xs text-purple-700 mt-2 text-center">
+              Start a secure HIPAA-compliant video consultation
             </p>
           </div>
         )}

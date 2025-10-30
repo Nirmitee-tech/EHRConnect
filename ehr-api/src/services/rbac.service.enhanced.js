@@ -31,12 +31,12 @@ class EnhancedRBACService {
     const conditions = [];
 
     if (includeSystem) {
-      conditions.push('(is_system = true AND org_id IS NULL)');
+      conditions.push('(r.is_system = true AND r.org_id IS NULL)');
     }
 
     if (includeCustom && org_id) {
       params.push(org_id);
-      conditions.push(`org_id = $${params.length}`);
+      conditions.push(`r.org_id = $${params.length}`);
     }
 
     if (conditions.length > 0) {

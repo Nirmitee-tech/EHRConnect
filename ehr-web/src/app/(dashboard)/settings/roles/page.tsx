@@ -14,6 +14,8 @@ export default function RolesManagementPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'system' | 'custom'>('all')
   const [searchTerm, setSearchTerm] = useState('')
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card')
+  const [expandedRoleId, setExpandedRoleId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchRoles()
@@ -148,6 +150,36 @@ export default function RolesManagementPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
+
+          {/* View Switcher */}
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('card')}
+              className={`px-3 py-2 rounded-md transition-colors ${
+                viewMode === 'card'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title="Card View"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-2 rounded-md transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title="List View"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -161,16 +193,31 @@ export default function RolesManagementPage() {
               (Default roles available to all organizations)
             </span>
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {systemRoles.map((role) => (
-              <RoleCard
-                key={role.id}
-                role={role}
-                onEdit={() => router.push(`/settings/roles/${role.id}`)}
-                onCopy={() => router.push(`/settings/roles/${role.id}/copy`)}
-              />
-            ))}
-          </div>
+          {viewMode === 'card' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {systemRoles.map((role) => (
+                <RoleCard
+                  key={role.id}
+                  role={role}
+                  onViewDetails={() => setExpandedRoleId(expandedRoleId === role.id ? null : role.id)}
+                  onCopy={() => router.push(`/settings/roles/new?copy=${role.id}`)}
+                  expanded={expandedRoleId === role.id}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {systemRoles.map((role) => (
+                <RoleListItem
+                  key={role.id}
+                  role={role}
+                  onViewDetails={() => setExpandedRoleId(expandedRoleId === role.id ? null : role.id)}
+                  onCopy={() => router.push(`/settings/roles/new?copy=${role.id}`)}
+                  expanded={expandedRoleId === role.id}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -194,14 +241,27 @@ export default function RolesManagementPage() {
                 Create Your First Custom Role
               </button>
             </div>
-          ) : (
+          ) : viewMode === 'card' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {customRoles.map((role) => (
                 <RoleCard
                   key={role.id}
                   role={role}
-                  onEdit={() => router.push(`/settings/roles/${role.id}`)}
+                  onViewDetails={() => setExpandedRoleId(expandedRoleId === role.id ? null : role.id)}
                   isCustom
+                  expanded={expandedRoleId === role.id}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {customRoles.map((role) => (
+                <RoleListItem
+                  key={role.id}
+                  role={role}
+                  onViewDetails={() => setExpandedRoleId(expandedRoleId === role.id ? null : role.id)}
+                  isCustom
+                  expanded={expandedRoleId === role.id}
                 />
               ))}
             </div>
@@ -214,14 +274,16 @@ export default function RolesManagementPage() {
 
 function RoleCard({
   role,
-  onEdit,
+  onViewDetails,
   onCopy,
   isCustom = false,
+  expanded = false,
 }: {
   role: Role
-  onEdit: () => void
+  onViewDetails: () => void
   onCopy?: () => void
   isCustom?: boolean
+  expanded?: boolean
 }) {
   function getScopeBadgeColor(scope: RoleScopeLevel) {
     switch (scope) {
@@ -239,53 +301,171 @@ function RoleCard({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">{role.name}</h3>
-          <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${getScopeBadgeColor(role.scope_level)}`}>
-            {role.scope_level}
-          </span>
+    <div className={`bg-white border rounded-lg transition-all ${expanded ? 'border-blue-500 shadow-lg' : 'border-gray-200 hover:shadow-lg'}`}>
+      <div className="p-6">
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">{role.name}</h3>
+            <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${getScopeBadgeColor(role.scope_level)}`}>
+              {role.scope_level}
+            </span>
+          </div>
+          {!isCustom && role.is_system && (
+            <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded">
+              System
+            </span>
+          )}
+          {isCustom && role.parent_role_id && (
+            <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-600 rounded">
+              Modified
+            </span>
+          )}
         </div>
-        {!isCustom && role.is_system && (
-          <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded">
-            System
-          </span>
-        )}
-        {isCustom && role.parent_role_id && (
-          <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-600 rounded">
-            Modified
-          </span>
-        )}
-      </div>
 
-      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-        {role.description || 'No description'}
-      </p>
+        <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+          {role.description || 'No description'}
+        </p>
 
-      <div className="mb-4">
-        <div className="text-xs text-gray-500 mb-1">Permissions</div>
-        <div className="text-sm font-medium text-gray-900">
-          {role.permissions.length} permissions
+        <div className="mb-4">
+          <div className="text-xs text-gray-500 mb-1">Permissions</div>
+          <div className="text-sm font-medium text-gray-900">
+            {role.permissions.length} permissions
+          </div>
         </div>
-      </div>
 
-      <div className="flex gap-2">
-        <button
-          onClick={onEdit}
-          className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-        >
-          View Details
-        </button>
-        {onCopy && !isCustom && (
+        <div className="flex gap-2">
           <button
-            onClick={onCopy}
-            className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+            onClick={onViewDetails}
+            className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
           >
-            Copy & Customize
+            {expanded ? 'Hide Details' : 'View Details'}
+            <svg className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </button>
-        )}
+          {onCopy && !isCustom && (
+            <button
+              onClick={onCopy}
+              className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+            >
+              Copy
+            </button>
+          )}
+        </div>
       </div>
+
+      {expanded && (
+        <div className="border-t border-gray-200 p-6 bg-gray-50">
+          <h4 className="text-sm font-semibold text-gray-900 mb-3">Permissions ({role.permissions.length})</h4>
+          <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+            {role.permissions.map((permission, idx) => (
+              <div key={idx} className="text-xs bg-white px-2 py-1 rounded border border-gray-200 font-mono text-gray-700">
+                {permission}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RoleListItem({
+  role,
+  onViewDetails,
+  onCopy,
+  isCustom = false,
+  expanded = false,
+}: {
+  role: Role
+  onViewDetails: () => void
+  onCopy?: () => void
+  isCustom?: boolean
+  expanded?: boolean
+}) {
+  function getScopeBadgeColor(scope: RoleScopeLevel) {
+    switch (scope) {
+      case RoleScopeLevel.PLATFORM:
+        return 'bg-purple-100 text-purple-800'
+      case RoleScopeLevel.ORG:
+        return 'bg-blue-100 text-blue-800'
+      case RoleScopeLevel.LOCATION:
+        return 'bg-green-100 text-green-800'
+      case RoleScopeLevel.DEPARTMENT:
+        return 'bg-yellow-100 text-yellow-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  return (
+    <div className={`bg-white border rounded-lg transition-all ${expanded ? 'border-blue-500 shadow-lg' : 'border-gray-200 hover:shadow-md'}`}>
+      <div className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4 flex-1">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-base font-semibold text-gray-900">{role.name}</h3>
+                <span className={`px-2 py-0.5 text-xs font-medium rounded ${getScopeBadgeColor(role.scope_level)}`}>
+                  {role.scope_level}
+                </span>
+                {!isCustom && role.is_system && (
+                  <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded">
+                    System
+                  </span>
+                )}
+                {isCustom && role.parent_role_id && (
+                  <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-600 rounded">
+                    Modified
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-600 line-clamp-1">
+                {role.description || 'No description'}
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-gray-500">Permissions</div>
+              <div className="text-sm font-medium text-gray-900">
+                {role.permissions.length}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2 ml-4">
+            <button
+              onClick={onViewDetails}
+              className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
+            >
+              {expanded ? 'Hide' : 'View'}
+              <svg className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {onCopy && !isCustom && (
+              <button
+                onClick={onCopy}
+                className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+              >
+                Copy
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="border-t border-gray-200 p-4 bg-gray-50">
+          <h4 className="text-sm font-semibold text-gray-900 mb-3">Permissions ({role.permissions.length})</h4>
+          <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+            {role.permissions.map((permission, idx) => (
+              <div key={idx} className="text-xs bg-white px-2 py-1 rounded border border-gray-200 font-mono text-gray-700">
+                {permission}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -66,7 +66,7 @@ INSERT INTO integration_vendors (id, name, category, description, logo, website,
 ('plivo', 'Plivo', 'communication', 'Voice and SMS API platform', NULL, 'https://www.plivo.com', NULL, false),
 
 -- Telehealth
-('100ms', '100ms', 'telehealth', 'Live video infrastructure', NULL, 'https://www.100ms.live', 'https://docs.100ms.live', true),
+('100ms', '100ms', 'telehealth', 'Live video infrastructure', 'https://cdn.prod.website-files.com/687b2d16145b3601a227c560/68ce683be1f04481afea1307_67f797769b1a701883c4b76d_icon.svg', 'https://www.100ms.live', 'https://docs.100ms.live', true),
 ('agora', 'Agora', 'telehealth', 'Real-time engagement platform', NULL, 'https://www.agora.io', NULL, false),
 ('vonage', 'Vonage Video', 'telehealth', 'Video conferencing API', NULL, 'https://www.vonage.com', NULL, false),
 
