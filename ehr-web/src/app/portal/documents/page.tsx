@@ -17,9 +17,45 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import type { DocumentReference } from '@medplum/fhirtypes'
 
-type DocumentRow = DocumentReference & { id?: string }
+type FhirIdentifier = {
+  value?: string
+}
+
+type FhirCoding = {
+  code?: string
+  display?: string
+}
+
+type FhirCodeableConcept = {
+  text?: string
+  coding?: FhirCoding[]
+}
+
+type FhirAttachment = {
+  title?: string
+  contentType?: string
+  url?: string
+  size?: number
+}
+
+type FhirDocumentReferenceContent = {
+  attachment?: FhirAttachment
+}
+
+type DocumentReference = {
+  id?: string
+  identifier?: FhirIdentifier[]
+  status?: string
+  type?: FhirCodeableConcept
+  category?: FhirCodeableConcept[]
+  description?: string
+  date?: string
+  created?: string
+  content?: FhirDocumentReferenceContent[]
+}
+
+type DocumentRow = DocumentReference
 
 const CATEGORY_COLORS: Record<string, string> = {
   'lab-report': 'bg-sky-100 text-sky-700',

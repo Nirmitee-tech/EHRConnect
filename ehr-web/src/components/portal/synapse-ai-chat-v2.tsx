@@ -29,7 +29,7 @@ const agents = [
 // Helper function to render markdown-style tables
 const renderTable = (content: string) => {
   const tableRegex = /\|(.+)\|[\r\n]+\|[-:\s|]+\|[\r\n]+((?:\|.+\|[\r\n]*)+)/g
-  const parts: (string | JSX.Element)[] = []
+  const parts: Array<string | React.ReactElement> = []
   let lastIndex = 0
   let match
 
@@ -662,7 +662,7 @@ Would you like me to explain any specific part of these documents? Feel free to 
       content,
       timestamp: new Date()
     }])
-    return
+    return content
   }
 
   if (lowerInput.includes('lab') || lowerInput.includes('test result') || lowerInput.includes('blood')) {

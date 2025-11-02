@@ -7,7 +7,48 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import type { MedicationRequest } from '@medplum/fhirtypes'
+
+type FhirIdentifier = {
+  value?: string
+}
+
+type FhirCoding = {
+  display?: string
+}
+
+type FhirCodeableConcept = {
+  text?: string
+  coding?: FhirCoding[]
+}
+
+type FhirReference = {
+  display?: string
+  reference?: string
+}
+
+type FhirDosage = {
+  text?: string
+}
+
+type FhirPeriod = {
+  end?: string
+}
+
+type FhirDispenseRequest = {
+  validityPeriod?: FhirPeriod
+}
+
+type MedicationRequest = {
+  id?: string
+  identifier?: FhirIdentifier[]
+  medicationCodeableConcept?: FhirCodeableConcept
+  requester?: FhirReference
+  status?: string
+  intent?: string
+  dosageInstruction?: FhirDosage[]
+  authoredOn?: string
+  dispenseRequest?: FhirDispenseRequest
+}
 
 export default function MedicationsPage() {
   const [medications, setMedications] = useState<MedicationRequest[]>([])

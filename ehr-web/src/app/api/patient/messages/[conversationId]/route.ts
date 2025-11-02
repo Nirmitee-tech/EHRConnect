@@ -3,9 +3,19 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { PatientPortalService } from '@/services/patient-portal.service'
 
+type MessageParticipant = {
+  reference?: string
+}
+
+type PatientMessage = {
+  sender?: MessageParticipant
+  recipient?: MessageParticipant[]
+  sent?: string
+}
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { conversationId: string } }
+  context: { params: Promise<Record<string, string | string[] | undefined>> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -27,14 +37,27 @@ export async function GET(
       )
     }
 
-    const conversationId = params.conversationId
+    const resolvedParams = await context.params
+    const rawConversationId = resolvedParams?.conversationId
+    const conversationId = Array.isArray(rawConversationId)
+      ? rawConversationId[0]
+      : rawConversationId
+
+    if (!conversationId) {
+      return NextResponse.json(
+        { message: 'Conversation ID is required' },
+        { status: 400 }
+      )
+    }
 
     // Get all messages
-    const allMessages = await PatientPortalService.getPatientMessages(patientId)
+    const allMessages = (await PatientPortalService.getPatientMessages(
+      patientId
+    )) as PatientMessage[]
 
     // Filter messages for this conversation
     const patientRef = `Patient/${patientId}`
-    const conversationMessages = allMessages.filter((message: any) => {
+    const conversationMessages = allMessages.filter((message: PatientMessage) => {
       const senderId = message.sender?.reference || ''
       const recipientId = message.recipient?.[0]?.reference || ''
 
@@ -46,17 +69,20 @@ export async function GET(
     })
 
     // Sort by date
-    conversationMessages.sort((a: any, b: any) => {
+    conversationMessages.sort((a: PatientMessage, b: PatientMessage) => {
       const dateA = new Date(a.sent || 0).getTime()
       const dateB = new Date(b.sent || 0).getTime()
       return dateA - dateB
     })
 
     return NextResponse.json(conversationMessages)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching conversation messages:', error)
     return NextResponse.json(
-      { message: error.message || 'Failed to fetch messages' },
+      {
+        message:
+          error instanceof Error ? error.message : 'Failed to fetch messages',
+      },
       { status: 500 }
     )
   }

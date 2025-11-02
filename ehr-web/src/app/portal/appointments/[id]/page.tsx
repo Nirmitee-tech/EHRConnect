@@ -84,7 +84,7 @@ function getVisitType(appointment: FhirAppointment) {
 export default function AppointmentDetailsPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<Record<string, string | string[] | undefined>>
 }) {
   const router = useRouter()
   const { data: session, status } = useSession()
@@ -92,6 +92,45 @@ export default function AppointmentDetailsPage({
   const [appointment, setAppointment] = useState<FhirAppointment | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [appointmentId, setAppointmentId] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const resolveParams = async () => {
+      try {
+        const resolvedParams = await params
+        const rawId = resolvedParams?.id
+        const normalizedId = Array.isArray(rawId) ? rawId[0] : rawId
+
+        if (cancelled) {
+          return
+        }
+
+        if (!normalizedId) {
+          setError('Appointment ID is required.')
+          setLoading(false)
+          setAppointmentId(null)
+          return
+        }
+
+        setAppointmentId(normalizedId)
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Failed to resolve appointment params:', err)
+          setError('Unable to determine appointment ID.')
+          setLoading(false)
+          setAppointmentId(null)
+        }
+      }
+    }
+
+    resolveParams()
+
+    return () => {
+      cancelled = true
+    }
+  }, [params])
 
   useEffect(() => {
     if (status === 'loading') {
@@ -103,6 +142,10 @@ export default function AppointmentDetailsPage({
       return
     }
 
+    if (!appointmentId) {
+      return
+    }
+
     let cancelled = false
 
     const fetchAppointment = async () => {
@@ -110,7 +153,9 @@ export default function AppointmentDetailsPage({
         setLoading(true)
         setError(null)
 
-        const response = await fetch(`/api/patient/appointments/${encodeURIComponent(params.id)}`)
+        const response = await fetch(
+          `/api/patient/appointments/${encodeURIComponent(appointmentId)}`
+        )
 
         if (cancelled) {
           return
@@ -134,9 +179,11 @@ export default function AppointmentDetailsPage({
 
         const data = await response.json()
         setAppointment(data.appointment)
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!cancelled) {
-          setError(err.message || 'Unable to load appointment details.')
+          const message =
+            err instanceof Error ? err.message : 'Unable to load appointment details.'
+          setError(message)
           setAppointment(null)
         }
       } finally {
@@ -151,7 +198,7 @@ export default function AppointmentDetailsPage({
     return () => {
       cancelled = true
     }
-  }, [params.id, router, session?.patientId, status])
+  }, [appointmentId, router, session?.patientId, status])
 
   const statusBadge = useMemo(() => {
     if (!appointment) {

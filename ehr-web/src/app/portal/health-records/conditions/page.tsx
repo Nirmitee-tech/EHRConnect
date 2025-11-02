@@ -7,7 +7,41 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { format } from 'date-fns'
-import type { Condition } from '@medplum/fhirtypes'
+
+type FhirIdentifier = {
+  value?: string
+}
+
+type FhirCoding = {
+  display?: string
+}
+
+type FhirCodeableConcept = {
+  text?: string
+  coding?: FhirCoding[]
+}
+
+type FhirReference = {
+  display?: string
+  reference?: string
+}
+
+type FhirAnnotation = {
+  text?: string
+}
+
+type Condition = {
+  id?: string
+  identifier?: FhirIdentifier[]
+  code?: FhirCodeableConcept
+  asserter?: FhirReference
+  clinicalStatus?: FhirCodeableConcept
+  category?: FhirCodeableConcept[]
+  severity?: FhirCodeableConcept
+  onsetDateTime?: string
+  abatementDateTime?: string
+  note?: FhirAnnotation[]
+}
 
 export default function ConditionsPage() {
   const [conditions, setConditions] = useState<Condition[]>([])

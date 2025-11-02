@@ -17,9 +17,39 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import type { Patient } from '@medplum/fhirtypes'
 import type { PatientPreferences } from '@/services/patient-portal.service'
 import { DEFAULT_PATIENT_PREFERENCES } from '@/services/patient-portal.service'
+
+type FhirIdentifier = {
+  system?: string
+  value?: string
+}
+
+type FhirHumanName = {
+  given?: string[]
+  family?: string
+}
+
+type FhirContactPoint = {
+  system?: string
+  value?: string
+}
+
+type FhirAddress = {
+  line?: string[]
+  city?: string
+  state?: string
+  postalCode?: string
+  country?: string
+}
+
+type Patient = {
+  name?: FhirHumanName[]
+  telecom?: FhirContactPoint[]
+  address?: FhirAddress[]
+  birthDate?: string
+  identifier?: FhirIdentifier[]
+}
 
 interface ProfileResponse {
   patient: Patient

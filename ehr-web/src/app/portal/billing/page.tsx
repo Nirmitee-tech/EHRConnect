@@ -16,7 +16,80 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import type { Coverage, ExplanationOfBenefit, Invoice } from '@medplum/fhirtypes'
+
+type FhirIdentifier = {
+  value?: string
+}
+
+type FhirCoding = {
+  code?: string
+  display?: string
+}
+
+type FhirCodeableConcept = {
+  text?: string
+  coding?: FhirCoding[]
+}
+
+type FhirMoney = {
+  value?: number
+}
+
+type FhirReference = {
+  display?: string
+  reference?: string
+  identifier?: FhirIdentifier[]
+}
+
+type FhirPeriod = {
+  start?: string
+  end?: string
+}
+
+type FhirCoverageClass = {
+  type?: FhirCodeableConcept
+  value?: string
+}
+
+type Coverage = {
+  id?: string
+  identifier?: FhirIdentifier[]
+  payor?: FhirReference[]
+  status?: string
+  subscriberId?: string
+  beneficiary?: FhirReference
+  period?: FhirPeriod
+  class?: FhirCoverageClass[]
+}
+
+type ExplanationOfBenefitTotal = {
+  amount?: FhirMoney
+}
+
+type ExplanationOfBenefit = {
+  id?: string
+  identifier?: FhirIdentifier[]
+  status?: string
+  type?: FhirCodeableConcept
+  claim?: {
+    identifier?: FhirIdentifier[]
+  }
+  created?: string
+  provider?: FhirReference
+  paymentAmount?: FhirMoney
+  total?: ExplanationOfBenefitTotal[]
+}
+
+type Invoice = {
+  id?: string
+  identifier?: FhirIdentifier[]
+  status?: string
+  type?: FhirCodeableConcept
+  date?: string
+  subject?: FhirReference
+  totalGross?: FhirMoney
+  totalBalance?: FhirMoney
+}
 
 interface BillingSummary {
   coverages: Coverage[]

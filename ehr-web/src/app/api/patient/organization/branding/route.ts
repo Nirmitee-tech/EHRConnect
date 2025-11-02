@@ -2,7 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { medplum } from '@/lib/medplum'
-import type { Organization, Patient } from '@medplum/fhirtypes'
+
+type FhirReference = {
+  reference?: string
+}
+
+type FhirExtension = {
+  url?: string
+  valueUrl?: string
+  valueString?: string
+}
+
+type FhirPatient = {
+  managingOrganization?: FhirReference
+}
+
+type FhirOrganization = {
+  name?: string
+  alias?: string[]
+  extension?: FhirExtension[]
+}
 
 const DEFAULT_BRANDING = {
   name: 'EHRConnect',
@@ -11,8 +30,9 @@ const DEFAULT_BRANDING = {
   primaryColor: 'bg-blue-800'
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
+    void _request
     const session = await getServerSession(authOptions)
 
     if (!session?.user) {
@@ -30,7 +50,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch patient to get their managing organization
-    const patient = await medplum.readResource('Patient', patientId)
+    const patient = (await medplum.readResource('Patient', patientId)) as FhirPatient
 
     if (!patient.managingOrganization?.reference) {
       return NextResponse.json({ branding: DEFAULT_BRANDING })
@@ -40,7 +60,10 @@ export async function GET(request: NextRequest) {
     const orgId = patient.managingOrganization.reference.replace('Organization/', '')
 
     // Fetch organization details
-    const organization: Organization = await medplum.readResource('Organization', orgId)
+    const organization = (await medplum.readResource(
+      'Organization',
+      orgId
+    )) as FhirOrganization
 
     // Extract branding information from organization
     const branding = {
@@ -57,11 +80,14 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ branding })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching organization branding:', error)
     return NextResponse.json(
       {
-        message: error.message || 'Failed to fetch organization branding',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to fetch organization branding',
         branding: DEFAULT_BRANDING
       },
       { status: 200 } // Return 200 with default branding instead of error

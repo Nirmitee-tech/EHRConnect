@@ -174,6 +174,10 @@ export default function PatientFormsPage() {
                 const badge = getStatusBadge(form.status)
                 const dueDate = formatDate(form.dueDate)
                 const dueRelative = formatRelative(form.dueDate)
+                const questionnaireTitle =
+                  typeof form.questionnaire?.title === 'string'
+                    ? form.questionnaire.title
+                    : undefined
 
                 return (
                   <Card key={form.id} className="border border-gray-200">
@@ -203,10 +207,10 @@ export default function PatientFormsPage() {
                             {dueRelative}
                           </span>
                         )}
-                        {form.questionnaire?.title && (
+                        {questionnaireTitle && (
                           <span className="flex items-center gap-2">
                             <ClipboardList className="w-4 h-4 text-gray-500" />
-                            {form.questionnaire.title}
+                            {questionnaireTitle}
                           </span>
                         )}
                       </div>

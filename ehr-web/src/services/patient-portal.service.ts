@@ -3,6 +3,7 @@ import type {
   Patient,
   Address,
   Appointment,
+  AppointmentParticipant,
   Bundle,
   Observation,
   MedicationRequest,
@@ -19,6 +20,10 @@ import type {
   Questionnaire,
   QuestionnaireResponse,
   Task,
+  FhirExtension,
+  FhirContactPoint,
+  FhirIdentifier,
+  FhirCoding,
 } from '@medplum/fhirtypes'
 
 interface PatientRegistrationData {
@@ -687,7 +692,8 @@ export class PatientPortalService {
   static async getPatientPreferences(patientId: string): Promise<PatientPreferences> {
     try {
       const patient = await medplum.readResource('Patient', patientId)
-      const prefExtension = patient.extension?.find(
+      const extensions = patient.extension as FhirExtension[] | undefined
+      const prefExtension = extensions?.find(
         (ext) => ext.url === PATIENT_PREFERENCES_URL && ext.valueString
       )
 
@@ -717,14 +723,17 @@ export class PatientPortalService {
   ): Promise<Patient> {
     try {
       const patient = await medplum.readResource('Patient', patientId)
-      const sanitizedExtensions = (patient.extension || []).filter(
+      const existingExtensions = Array.isArray(patient.extension)
+        ? (patient.extension as FhirExtension[])
+        : []
+      const sanitizedExtensions = existingExtensions.filter(
         (ext) => ext.url !== PATIENT_PREFERENCES_URL
       )
 
       sanitizedExtensions.push({
         url: PATIENT_PREFERENCES_URL,
         valueString: JSON.stringify(preferences),
-      })
+      } as FhirExtension)
 
       patient.extension = sanitizedExtensions
 
@@ -995,7 +1004,7 @@ export class PatientPortalService {
       const appointment = await medplum.readResource('Appointment', appointmentId)
 
       // Verify patient owns this appointment
-      const patientParticipant = appointment.participant?.find((p) =>
+      const patientParticipant = appointment.participant?.find((p: AppointmentParticipant) =>
         p.actor?.reference?.includes(`Patient/${patientId}`)
       )
 
@@ -1060,15 +1069,21 @@ export class PatientPortalService {
 
       // Update contact info
       if (updates.email || updates.phone) {
+        const existingTelecom = Array.isArray(patient.telecom)
+          ? (patient.telecom as FhirContactPoint[])
+          : []
+        const emailContact = existingTelecom.find((t) => t.system === 'email')
+        const phoneContact = existingTelecom.find((t) => t.system === 'phone')
+
         patient.telecom = [
           {
             system: 'email',
-            value: updates.email || patient.telecom?.find((t) => t.system === 'email')?.value || '',
+            value: updates.email || emailContact?.value || '',
             use: 'home',
           },
           {
             system: 'phone',
-            value: updates.phone || patient.telecom?.find((t) => t.system === 'phone')?.value || '',
+            value: updates.phone || phoneContact?.value || '',
             use: 'mobile',
           },
         ]
@@ -1110,28 +1125,34 @@ export class PatientPortalService {
       const patient = await medplum.readResource('Patient', patientId)
 
       // Update email if not already set
-      const emailContact = patient.telecom?.find((t) => t.system === 'email')
+      const telecomEntries = Array.isArray(patient.telecom)
+        ? (patient.telecom as FhirContactPoint[])
+        : []
+      const emailContact = telecomEntries.find((t) => t.system === 'email')
       if (!emailContact) {
-        patient.telecom = patient.telecom || []
-        patient.telecom.push({
+        telecomEntries.push({
           system: 'email',
           value: email,
           use: 'home',
           rank: 1,
         })
+        patient.telecom = telecomEntries
       } else {
         emailContact.value = email
       }
 
       // Add email identifier if not exists
-      const emailIdentifier = patient.identifier?.find((i) => i.system === 'email')
+      const identifiers = Array.isArray(patient.identifier)
+        ? (patient.identifier as FhirIdentifier[])
+        : []
+      const emailIdentifier = identifiers.find((i) => i.system === 'email')
       if (!emailIdentifier) {
-        patient.identifier = patient.identifier || []
-        patient.identifier.push({
+        identifiers.push({
           use: 'secondary',
           system: 'email',
           value: email,
         })
+        patient.identifier = identifiers
       } else {
         emailIdentifier.value = email
       }
@@ -1144,45 +1165,50 @@ export class PatientPortalService {
         patient.meta.tag = []
       }
 
-      const hasPortalTag = patient.meta.tag.some((tag) => tag.code === 'portal-patient')
+      const metaTags: FhirCoding[] = Array.isArray(patient.meta.tag)
+        ? (patient.meta.tag as FhirCoding[])
+        : []
+      const hasPortalTag = metaTags.some((tag) => tag.code === 'portal-patient')
       if (!hasPortalTag) {
-        patient.meta.tag.push({
+        metaTags.push({
           system: 'urn:oid:ehrconnect:patient-portal',
           code: 'portal-patient',
           display: 'Patient Portal User',
         })
+        patient.meta.tag = metaTags
       }
 
       // Add or update password extension
       if (!patient.extension) {
         patient.extension = []
       }
+      const patientExtensions = patient.extension as FhirExtension[]
 
-      const passwordExtIndex = patient.extension.findIndex(
+      const passwordExtIndex = patientExtensions.findIndex(
         (ext) => ext.url === 'urn:oid:ehrconnect:password'
       )
 
       if (passwordExtIndex >= 0) {
-        patient.extension[passwordExtIndex].valueString = hashedPassword
+        patientExtensions[passwordExtIndex].valueString = hashedPassword
       } else {
-        patient.extension.push({
+        patientExtensions.push({
           url: 'urn:oid:ehrconnect:password',
           valueString: hashedPassword,
-        })
+        } as FhirExtension)
       }
 
       // Add portal access granted date
-      const portalAccessExtIndex = patient.extension.findIndex(
+      const portalAccessExtIndex = patientExtensions.findIndex(
         (ext) => ext.url === 'urn:oid:ehrconnect:portal-access-granted'
       )
 
       if (portalAccessExtIndex >= 0) {
-        patient.extension[portalAccessExtIndex].valueDateTime = new Date().toISOString()
+        patientExtensions[portalAccessExtIndex].valueDateTime = new Date().toISOString()
       } else {
-        patient.extension.push({
+        patientExtensions.push({
           url: 'urn:oid:ehrconnect:portal-access-granted',
           valueDateTime: new Date().toISOString(),
-        })
+        } as FhirExtension)
       }
 
       // Update patient resource

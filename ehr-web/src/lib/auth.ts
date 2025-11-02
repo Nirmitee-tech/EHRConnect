@@ -235,7 +235,11 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email
         token.userType = 'patient'
         token.patientId = user.patientId
-        token.org_id = user.orgId
+        const patientOrgId =
+          (user as { orgId?: string }).orgId ?? (user as { org_id?: string }).org_id
+        if (patientOrgId) {
+          token.org_id = patientOrgId
+        }
         token.accessToken = user.accessToken
         token.sessionToken = user.sessionToken
         // Patients don't need role/permission data

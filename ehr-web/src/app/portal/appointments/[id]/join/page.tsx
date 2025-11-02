@@ -30,18 +30,61 @@ type TelehealthAppointment = {
   }>
 }
 
-export default function JoinTelehealthPage({ params }: { params: { id: string } }) {
+type PageProps = {
+  params: Promise<Record<string, string | string[] | undefined>>
+}
+
+export default function JoinTelehealthPage({ params }: PageProps) {
   const router = useRouter()
   const [appointment, setAppointment] = useState<TelehealthAppointment | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [launching, setLaunching] = useState(false)
+  const [appointmentId, setAppointmentId] = useState<string | null>(null)
 
-  const loadAppointment = useCallback(async () => {
+  useEffect(() => {
+    let isActive = true
+
+    const resolveParams = async () => {
+      try {
+        const resolvedParams = await params
+        const rawId = resolvedParams?.id
+        const normalizedId = Array.isArray(rawId) ? rawId[0] : rawId
+
+        if (!isActive) {
+          return
+        }
+
+        if (!normalizedId) {
+          setError('Appointment ID is required')
+          setLoading(false)
+          setAppointmentId(null)
+          return
+        }
+
+        setAppointmentId(normalizedId)
+      } catch (err) {
+        console.error('Failed to resolve appointment params:', err)
+        if (isActive) {
+          setError('Unable to determine appointment ID')
+          setLoading(false)
+          setAppointmentId(null)
+        }
+      }
+    }
+
+    resolveParams()
+
+    return () => {
+      isActive = false
+    }
+  }, [params])
+
+  const loadAppointment = useCallback(async (id: string) => {
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch(`/api/patient/appointments/${encodeURIComponent(params.id)}`)
+      const response = await fetch(`/api/patient/appointments/${encodeURIComponent(id)}`)
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -62,17 +105,23 @@ export default function JoinTelehealthPage({ params }: { params: { id: string } 
     } finally {
       setLoading(false)
     }
-  }, [params.id])
+  }, [])
 
   useEffect(() => {
-    loadAppointment()
-  }, [loadAppointment])
+    if (!appointmentId) {
+      return
+    }
+    loadAppointment(appointmentId)
+  }, [appointmentId, loadAppointment])
 
   const handleLaunch = () => {
+    if (!appointmentId) {
+      return
+    }
     setLaunching(true)
     setTimeout(() => {
       setLaunching(false)
-      router.push(`/portal/appointments/${params.id}`)
+      router.push(`/portal/appointments/${appointmentId}`)
     }, 1500)
   }
 

@@ -2590,8 +2590,8 @@ export default function PatientDetailPage() {
         patientName={patient?.name}
         onSuccess={() => {
           // Refresh patient data and portal access status
-          fetchPatient();
-          checkPortalAccess();
+          void loadAllPatientData();
+          void checkPortalAccess();
         }}
       />
     </TabPageWrapper>

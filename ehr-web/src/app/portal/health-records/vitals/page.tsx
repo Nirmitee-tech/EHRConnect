@@ -14,7 +14,45 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
-import type { Observation, ObservationComponent } from '@medplum/fhirtypes'
+
+type FhirIdentifier = {
+  value?: string
+}
+
+type FhirCoding = {
+  code?: string
+  display?: string
+}
+
+type FhirCodeableConcept = {
+  text?: string
+  coding?: FhirCoding[]
+}
+
+type FhirQuantity = {
+  value?: number
+  unit?: string
+}
+
+type ObservationComponent = {
+  code?: FhirCodeableConcept
+  valueQuantity?: FhirQuantity
+}
+
+type FhirAnnotation = {
+  text?: string
+}
+
+type Observation = {
+  id?: string
+  identifier?: FhirIdentifier[]
+  code?: FhirCodeableConcept
+  status?: string
+  effectiveDateTime?: string
+  valueQuantity?: FhirQuantity
+  component?: Array<ObservationComponent | undefined>
+  note?: FhirAnnotation[]
+}
 
 export default function VitalSignsPage() {
   const [vitals, setVitals] = useState<Observation[]>([])
@@ -55,7 +93,13 @@ export default function VitalSignsPage() {
       const effectiveDate = observation.effectiveDateTime
       if (!code || !effectiveDate) return
 
-      if (!map.has(code) || new Date(effectiveDate) > new Date(map.get(code).effectiveDateTime)) {
+      const existing = map.get(code)
+      const existingDate = existing?.effectiveDateTime
+        ? new Date(existing.effectiveDateTime)
+        : null
+      const currentDate = new Date(effectiveDate)
+
+      if (!existingDate || currentDate > existingDate) {
         map.set(code, observation)
       }
     })

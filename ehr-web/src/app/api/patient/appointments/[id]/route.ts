@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
+type AppointmentParticipant = {
+  actor?: {
+    reference?: string
+  }
+}
+
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<Record<string, string | string[] | undefined>> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -34,7 +40,11 @@ export async function GET(
     }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-    const appointmentId = params.id
+    const resolvedParams = await context.params
+    const rawAppointmentId = resolvedParams?.id
+    const appointmentId = Array.isArray(rawAppointmentId)
+      ? rawAppointmentId[0]
+      : rawAppointmentId
 
     if (!appointmentId) {
       return NextResponse.json(
@@ -73,7 +83,7 @@ export async function GET(
 
     const hasPatientAccess = Array.isArray(appointment.participant)
       && appointment.participant.some(
-        (participant: any) =>
+        (participant: AppointmentParticipant) =>
           participant.actor?.reference === `Patient/${patientId}` ||
           participant.actor?.reference === patientId
       )
@@ -86,10 +96,15 @@ export async function GET(
     }
 
     return NextResponse.json({ appointment })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching appointment details:', error)
     return NextResponse.json(
-      { message: error.message || 'Failed to fetch appointment details' },
+      {
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to fetch appointment details',
+      },
       { status: 500 }
     )
   }

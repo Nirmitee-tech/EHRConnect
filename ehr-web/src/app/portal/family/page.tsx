@@ -15,9 +15,49 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import type { RelatedPerson } from '@medplum/fhirtypes'
 
-type FamilyMember = RelatedPerson & { id?: string }
+type FhirIdentifier = {
+  value?: string
+}
+
+type FhirCoding = {
+  display?: string
+}
+
+type FhirCodeableConcept = {
+  text?: string
+  coding?: FhirCoding[]
+}
+
+type FhirHumanName = {
+  text?: string
+  family?: string
+  given?: string[]
+}
+
+type FhirContactPoint = {
+  system?: string
+  value?: string
+}
+
+type FhirAddress = {
+  line?: string[]
+  city?: string
+  state?: string
+  postalCode?: string
+}
+
+type RelatedPerson = {
+  id?: string
+  identifier?: FhirIdentifier[]
+  name?: FhirHumanName[]
+  active?: boolean
+  relationship?: FhirCodeableConcept[]
+  telecom?: FhirContactPoint[]
+  address?: FhirAddress
+}
+
+type FamilyMember = RelatedPerson
 
 export default function FamilyAccessPage() {
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])

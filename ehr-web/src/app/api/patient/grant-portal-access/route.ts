@@ -4,19 +4,25 @@ import { authOptions } from '@/lib/auth'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
+type GrantPortalAccessPayload = {
+  patientId?: string
+  email?: string
+  tempPassword?: string
+  sendEmail?: boolean
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // Get session for provider authentication
     const session = await getServerSession(authOptions)
 
-    if (!session || !session.user) {
+    if (!session?.user) {
       return NextResponse.json(
         { message: 'Provider authentication required' },
         { status: 401 }
       )
     }
 
-    const body = await request.json()
+    const body = (await request.json()) as GrantPortalAccessPayload
     const { patientId, email, tempPassword, sendEmail } = body
 
     if (!patientId || !email || !tempPassword) {
@@ -26,14 +32,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Call ehr-api to grant portal access
+    const headers = new Headers({
+      'Content-Type': 'application/json',
+      'x-org-id': session.org_id ?? '',
+    })
+
+    if (session.user.id) {
+      headers.set('x-user-id', session.user.id)
+    }
+
     const response = await fetch(`${API_URL}/api/patient-portal/grant-access`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': session.user.id,
-        'x-org-id': session.org_id || '',
-      },
+      headers,
       body: JSON.stringify({
         fhirPatientId: patientId,
         email,
@@ -44,10 +54,9 @@ export async function POST(request: NextRequest) {
     const data = await response.json()
 
     if (!response.ok) {
-      throw new Error(data.error || 'Failed to grant portal access')
+      throw new Error(data?.error || 'Failed to grant portal access')
     }
 
-    // TODO: Send email if requested
     if (sendEmail) {
       console.log('Email sending not implemented yet. Would send to:', email)
     }
@@ -59,10 +68,15 @@ export async function POST(request: NextRequest) {
       },
       { status: 200 }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error granting portal access:', error)
     return NextResponse.json(
-      { message: error.message || 'Failed to grant portal access' },
+      {
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to grant portal access',
+      },
       { status: 500 }
     )
   }

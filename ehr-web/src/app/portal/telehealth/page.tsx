@@ -17,9 +17,42 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
-import type { Appointment } from '@medplum/fhirtypes'
 
-type TelehealthSession = Appointment & { id?: string }
+type FhirIdentifier = {
+  value?: string
+}
+
+type FhirCoding = {
+  text?: string
+  code?: string
+}
+
+type FhirCodeableConcept = {
+  text?: string
+  coding?: FhirCoding[]
+}
+
+type FhirReference = {
+  reference?: string
+  display?: string
+}
+
+type AppointmentParticipant = {
+  actor?: FhirReference
+}
+
+type Appointment = {
+  id?: string
+  identifier?: FhirIdentifier[]
+  start?: string
+  minutesDuration?: number
+  participant?: AppointmentParticipant[]
+  reasonCode?: FhirCodeableConcept[]
+  serviceType?: FhirCodeableConcept[]
+  status?: string
+}
+
+type TelehealthSession = Appointment
 
 export default function TelehealthPage() {
   const [sessions, setSessions] = useState<TelehealthSession[]>([])

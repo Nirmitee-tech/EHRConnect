@@ -6,7 +6,46 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import type { AllergyIntolerance, CodeableConcept } from '@medplum/fhirtypes'
+
+type FhirIdentifier = {
+  value?: string
+}
+
+type FhirCoding = {
+  code?: string
+  display?: string
+}
+
+type CodeableConcept = {
+  text?: string
+  coding?: FhirCoding[]
+}
+
+type FhirReference = {
+  display?: string
+  reference?: string
+}
+
+type AllergyReaction = {
+  severity?: string
+  manifestation?: Array<CodeableConcept | undefined>
+}
+
+type AllergyNote = {
+  text?: string
+}
+
+type AllergyIntolerance = {
+  id?: string
+  identifier?: FhirIdentifier[]
+  code?: CodeableConcept
+  recorder?: FhirReference
+  verificationStatus?: CodeableConcept
+  reaction?: AllergyReaction[]
+  criticality?: string
+  category?: string[]
+  note?: AllergyNote[]
+}
 
 export default function AllergiesPage() {
   const [allergies, setAllergies] = useState<AllergyIntolerance[]>([])
