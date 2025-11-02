@@ -15,10 +15,9 @@ import {
   Shield,
   User,
   ChevronDown,
-  ChevronUp,
-  Signal
+  ChevronUp
 } from 'lucide-react';
-import { HMSPeer } from '@100mslive/react-sdk';
+import { HMSPeer, useHMSStore } from '@100mslive/react-sdk';
 
 interface ParticipantHistory {
   id: string;
@@ -261,11 +260,16 @@ interface ParticipantCardProps {
 }
 
 function ParticipantCard({ peer, isLocal, isHost }: ParticipantCardProps) {
-  const getNetworkQualityColor = (quality: number): string => {
-    if (quality >= 4) return 'text-green-400';
-    if (quality >= 2) return 'text-yellow-400';
-    return 'text-red-400';
-  };
+  // Get actual track objects from the store (peer.audioTrack and peer.videoTrack are just IDs/strings)
+  const audioTrack = useHMSStore((state) =>
+    peer.audioTrack ? state.tracks[peer.audioTrack] : undefined
+  );
+  const videoTrack = useHMSStore((state) =>
+    peer.videoTrack ? state.tracks[peer.videoTrack] : undefined
+  );
+
+  const isAudioEnabled = audioTrack?.enabled;
+  const isVideoEnabled = videoTrack?.enabled;
 
   return (
     <div className={`p-3 rounded-xl transition-all ${
@@ -304,8 +308,8 @@ function ParticipantCard({ peer, isLocal, isHost }: ParticipantCardProps) {
           {/* Controls & Status */}
           <div className="flex items-center gap-2">
             {/* Audio */}
-            {peer.audioTrack ? (
-              peer.audioEnabled ? (
+            {audioTrack ? (
+              isAudioEnabled ? (
                 <div className="p-1 bg-green-500/20 rounded">
                   <Mic className="w-3 h-3 text-green-400" />
                 </div>
@@ -317,8 +321,8 @@ function ParticipantCard({ peer, isLocal, isHost }: ParticipantCardProps) {
             ) : null}
 
             {/* Video */}
-            {peer.videoTrack ? (
-              peer.videoEnabled ? (
+            {videoTrack ? (
+              isVideoEnabled ? (
                 <div className="p-1 bg-green-500/20 rounded">
                   <Video className="w-3 h-3 text-green-400" />
                 </div>
@@ -333,14 +337,6 @@ function ParticipantCard({ peer, isLocal, isHost }: ParticipantCardProps) {
             {peer.auxiliaryTracks && peer.auxiliaryTracks.length > 0 && (
               <div className="p-1 bg-blue-500/20 rounded">
                 <Monitor className="w-3 h-3 text-blue-400" />
-              </div>
-            )}
-
-            {/* Network Quality */}
-            {peer.networkQuality !== undefined && (
-              <div className={`flex items-center gap-0.5 ml-auto ${getNetworkQualityColor(peer.networkQuality)}`}>
-                <Signal className="w-3 h-3" />
-                <span className="text-xs font-medium">{peer.networkQuality}/5</span>
               </div>
             )}
           </div>

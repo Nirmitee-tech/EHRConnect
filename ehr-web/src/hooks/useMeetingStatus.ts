@@ -6,7 +6,6 @@ import { getMeetingByCode } from '@/lib/api/virtual-meetings';
 export interface MeetingStatus {
   isActive: boolean;
   status: 'scheduled' | 'active' | 'ended' | 'cancelled';
-  participantCount?: number;
   startedAt?: string;
   endedAt?: string;
 }
@@ -31,7 +30,6 @@ export function useMeetingStatus(meetingCode?: string, pollInterval = 5000) {
           setMeetingStatus({
             isActive: meeting.status === 'active',
             status: meeting.status as any,
-            participantCount: meeting.participantCount,
             startedAt: meeting.startedAt,
             endedAt: meeting.endedAt
           });

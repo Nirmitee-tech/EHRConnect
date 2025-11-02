@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Video, Users, PhoneOff } from 'lucide-react';
+import { Video, PhoneOff } from 'lucide-react';
 import { useMeetingStatus } from '@/hooks/useMeetingStatus';
 
 interface LiveCallIndicatorProps {
@@ -39,16 +39,6 @@ export function LiveCallIndicator({ meetingCode, onMeetingEnded, onJoinCall }: L
               Live Call
             </span>
           </div>
-
-          {/* Participant Count */}
-          {meetingStatus.participantCount !== undefined && (
-            <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
-              <Users className="w-3.5 h-3.5 text-white" />
-              <span className="text-white text-xs font-semibold">
-                {meetingStatus.participantCount}
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Join Button */}

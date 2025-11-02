@@ -18,7 +18,7 @@ const MAIN_CONTENT_PADDING = {
     { prefix: '/apga', padding: 'p-0' },
     { prefix: '/feature', padding: 'p-0' },
     { prefix: '/reports', padding: 'p-0' },
-    { prefix: '/patients', padding: 'p-0' }
+    { prefix: '/patients/', padding: 'p-0' }
   ]
 } as const;
 

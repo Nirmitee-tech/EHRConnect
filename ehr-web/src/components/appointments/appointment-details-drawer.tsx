@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Phone, MapPin, MessageCircle, CreditCard, Clock, Edit3, UserX, UserCheck, XCircle, Copy, FileText, CheckCircle, Receipt } from 'lucide-react';
 import { Appointment } from '@/types/appointment';
 import { EncounterService } from '@/services/encounter.service';
@@ -41,15 +41,6 @@ export function AppointmentDetailsDrawer({
   const [encounterId, setEncounterId] = useState<string | null>(null);
   const [meetingCode, setMeetingCode] = useState<string | null>(null);
   const [autoCompleteEnabled, setAutoCompleteEnabled] = useState(true);
-
-  // Extract meeting code from appointment telehealth data
-  useEffect(() => {
-    if (appointment?.resourceData?.telehealth?.meetingCode) {
-      setMeetingCode(appointment.resourceData.telehealth.meetingCode);
-    } else {
-      setMeetingCode(null);
-    }
-  }, [appointment]);
 
   if (!isOpen || !appointment) return null;
 

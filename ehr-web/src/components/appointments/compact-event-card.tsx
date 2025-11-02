@@ -18,7 +18,8 @@ export function CompactEventCard({ appointment, onClick }: CompactEventCardProps
   const previewRef = useRef<HTMLDivElement>(null);
 
   // Get meeting status
-  const meetingCode = appointment.resourceData?.telehealth?.meetingCode;
+  // TODO: Fetch meeting code from VirtualMeeting API if needed
+  const meetingCode = undefined;
   const { meetingStatus } = useMeetingStatus(meetingCode);
   const isLive = meetingStatus?.isActive;
 

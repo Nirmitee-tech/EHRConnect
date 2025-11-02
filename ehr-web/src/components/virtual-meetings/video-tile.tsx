@@ -173,22 +173,6 @@ export function VideoTile({ peer, isLocal = false }: VideoTileProps) {
         </button>
       </div>
 
-      {/* Network Quality Indicator */}
-      {peer.networkQuality !== undefined && (
-        <div className="absolute top-4 left-4 flex gap-1 bg-slate-900/60 backdrop-blur-md px-2 py-1.5 rounded-lg">
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className={`w-1 rounded-full transition-colors ${
-                i < peer.networkQuality
-                  ? 'bg-green-400'
-                  : 'bg-gray-600'
-              }`}
-              style={{ height: `${(i + 1) * 4}px` }}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
