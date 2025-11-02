@@ -121,35 +121,35 @@ export function VideoTile({ peer, isLocal = false }: VideoTileProps) {
           />
         ) : (
           // Show avatar when video is off
-          <div className="flex flex-col items-center justify-center">
-            <div className="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center mb-3">
-              <span className="text-white text-3xl font-semibold">
+          <div className="flex flex-col items-center justify-center px-2">
+            <div className="w-16 h-16 md:w-24 md:h-24 bg-primary/20 rounded-full flex items-center justify-center mb-2 md:mb-3">
+              <span className="text-white text-2xl md:text-3xl font-semibold">
                 {peer.name.charAt(0).toUpperCase()}
               </span>
             </div>
-            <p className="text-white text-lg font-medium">{peer.name}</p>
-            {isLocal && <p className="text-gray-400 text-sm mt-1">(You)</p>}
+            <p className="text-white text-sm md:text-lg font-medium text-center">{peer.name}</p>
+            {isLocal && <p className="text-gray-400 text-xs md:text-sm mt-1">(You)</p>}
           </div>
         )}
       </div>
 
       {/* Screen Share Badge */}
       {hasScreenShare && (
-        <div className="absolute top-4 left-4 bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium shadow-lg">
+        <div className="absolute top-2 left-2 md:top-4 md:left-4 bg-blue-500 text-white px-2 py-1 md:px-3 md:py-1.5 rounded-lg text-xs md:text-sm font-medium shadow-lg">
           Screen Sharing
         </div>
       )}
 
       {/* Participant Info Badge */}
-      <div className="absolute bottom-4 left-4 bg-slate-900/80 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 shadow-lg">
-        <div className="flex items-center gap-3">
-          <span className="text-white text-sm font-semibold">
+      <div className="absolute bottom-2 left-2 md:bottom-4 md:left-4 bg-slate-900/80 backdrop-blur-md px-2 py-1.5 md:px-4 md:py-2.5 rounded-lg md:rounded-xl border border-white/20 shadow-lg">
+        <div className="flex items-center gap-1.5 md:gap-3">
+          <span className="text-white text-xs md:text-sm font-semibold truncate max-w-[100px] md:max-w-none">
             {peer.name}
             {isLocal && ' (You)'}
           </span>
           {audioTrack && !isAudioEnabled && (
-            <div className="p-1 bg-red-500/20 rounded-md">
-              <MicOff className="w-3.5 h-3.5 text-red-400" />
+            <div className="p-0.5 md:p-1 bg-red-500/20 rounded-md flex-shrink-0">
+              <MicOff className="w-3 h-3 md:w-3.5 md:h-3.5 text-red-400" />
             </div>
           )}
         </div>
@@ -157,19 +157,19 @@ export function VideoTile({ peer, isLocal = false }: VideoTileProps) {
 
       {/* Audio Indicator */}
       {isAudioEnabled && (
-        <div className="absolute bottom-4 right-4">
-          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50" />
+        <div className="absolute bottom-2 right-2 md:bottom-4 md:right-4">
+          <div className="w-2 h-2 md:w-3 md:h-3 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50" />
         </div>
       )}
 
-      {/* Hover Controls */}
-      <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+      {/* Hover Controls - Hidden on mobile touch devices */}
+      <div className="absolute top-2 right-2 md:top-4 md:right-4 opacity-0 md:group-hover:opacity-100 transition-opacity flex gap-2">
         <button
           onClick={handleFullscreen}
-          className="p-2.5 bg-slate-900/80 backdrop-blur-md hover:bg-slate-800 rounded-xl transition-colors border border-white/20 shadow-lg"
+          className="p-1.5 md:p-2.5 bg-slate-900/80 backdrop-blur-md hover:bg-slate-800 rounded-lg md:rounded-xl transition-colors border border-white/20 shadow-lg"
           title="Toggle Fullscreen"
         >
-          <Maximize2 className="w-4 h-4 text-white" />
+          <Maximize2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
         </button>
       </div>
 

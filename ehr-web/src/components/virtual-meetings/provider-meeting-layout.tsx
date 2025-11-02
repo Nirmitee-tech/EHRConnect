@@ -353,20 +353,44 @@ export function ProviderMeetingLayout({
           </button>
         </div>
 
-        {/* Video Grid */}
-        <div className="flex-1 p-2 md:p-3">
-          <div className="h-full grid gap-2 md:gap-3" style={{
-            gridTemplateColumns: peers.length === 1 ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))',
-            gridAutoRows: peers.length === 1 ? '1fr' : 'auto'
-          }}>
-            {peers.map((peer) => (
-              <VideoTile
-                key={peer.id}
-                peer={peer}
-                isLocal={peer.id === localPeer?.id}
-              />
-            ))}
-          </div>
+        {/* Video Grid - Unified Responsive Layout */}
+        <div className="flex-1 p-2 md:p-3 overflow-hidden">
+          {peers.length === 0 ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center px-4">
+                <User className="w-12 h-12 md:w-16 md:h-16 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-700 text-base md:text-lg font-medium">Waiting for patient to join...</p>
+                <p className="text-gray-500 text-sm mt-2">The consultation will start once they arrive</p>
+              </div>
+            </div>
+          ) : (
+            <div
+              className={`h-full w-full grid gap-2 md:gap-3 ${(() => {
+                const count = peers.length;
+                if (count === 1) return 'grid-cols-1 grid-rows-1';
+                if (count === 2) return 'grid-cols-1 md:grid-cols-2 grid-rows-2 md:grid-rows-1';
+                if (count === 3) return 'grid-cols-2 md:grid-cols-3';
+                if (count === 4) return 'grid-cols-2 md:grid-cols-2';
+                if (count <= 6) return 'grid-cols-2 md:grid-cols-3';
+                if (count <= 9) return 'grid-cols-2 md:grid-cols-3 lg:grid-cols-3';
+                return '';
+              })()}`}
+              style={peers.length > 9 ? {
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gridAutoRows: 'minmax(0, 1fr)'
+              } : {
+                gridAutoRows: 'minmax(0, 1fr)'
+              }}
+            >
+              {peers.map((peer) => (
+                <VideoTile
+                  key={peer.id}
+                  peer={peer}
+                  isLocal={peer.id === localPeer?.id}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Participant Info Bar */}

@@ -209,9 +209,9 @@ export default function MeetingJoinPage() {
   if (viewState === 'loading') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center border border-gray-200">
-          <Loader className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+        <div className="bg-white rounded-lg shadow-lg p-6 md:p-8 max-w-md w-full text-center border border-gray-200">
+          <Loader className="w-10 h-10 md:w-12 md:h-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">
             Loading Meeting
           </h2>
           <p className="text-gray-600 text-sm">
@@ -226,11 +226,11 @@ export default function MeetingJoinPage() {
   if (viewState === 'error') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center border border-gray-200">
-          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-200">
-            <AlertCircle className="w-8 h-8 text-red-600" />
+        <div className="bg-white rounded-lg shadow-lg p-6 md:p-8 max-w-md w-full text-center border border-gray-200">
+          <div className="w-14 h-14 md:w-16 md:h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-200">
+            <AlertCircle className="w-7 h-7 md:w-8 md:h-8 text-red-600" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">
             Meeting Not Available
           </h2>
           <p className="text-gray-600 mb-1 text-sm">{error}</p>
@@ -239,7 +239,7 @@ export default function MeetingJoinPage() {
           </p>
           <button
             onClick={() => window.location.href = '/'}
-            className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            className="w-full md:w-auto px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
           >
             Return to Home
           </button>
@@ -252,11 +252,11 @@ export default function MeetingJoinPage() {
   if (viewState === 'ended') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center border border-gray-200">
-          <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-200">
-            <CheckCircle className="w-8 h-8 text-green-600" />
+        <div className="bg-white rounded-lg shadow-lg p-6 md:p-8 max-w-md w-full text-center border border-gray-200">
+          <div className="w-14 h-14 md:w-16 md:h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-200">
+            <CheckCircle className="w-7 h-7 md:w-8 md:h-8 text-green-600" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">
             Consultation Complete
           </h2>
           <p className="text-gray-600 mb-6 text-sm">
@@ -264,7 +264,7 @@ export default function MeetingJoinPage() {
           </p>
           <button
             onClick={() => window.location.href = '/'}
-            className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            className="w-full md:w-auto px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
           >
             Close Window
           </button>
@@ -320,47 +320,47 @@ export default function MeetingJoinPage() {
     );
   }
 
-  // Lobby - Clean Professional Light Theme
+  // Lobby - Responsive Professional Light Theme
   return (
-    <div className="h-screen bg-white flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gray-700 rounded-lg">
-              <Video className="w-5 h-5 text-white" />
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Header - Responsive */}
+      <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 bg-gray-700 rounded-lg">
+              <Video className="w-4 h-4 md:w-5 md:h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-base font-semibold text-gray-900">EHR Connect Telehealth</h1>
-              <p className="text-xs text-gray-500">Secure Video Consultation</p>
+              <h1 className="text-sm md:text-base font-semibold text-gray-900">EHR Connect Telehealth</h1>
+              <p className="text-xs text-gray-500 hidden sm:block">Secure Video Consultation</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="px-3 py-1.5 bg-gray-100 rounded-md text-xs font-mono text-gray-700">
+          <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-between sm:justify-end">
+            <span className="px-2.5 md:px-3 py-1 md:py-1.5 bg-gray-100 rounded-md text-xs font-mono text-gray-700">
               {meetingCode}
             </span>
-            <span className="text-sm text-gray-500">
+            <span className="text-xs md:text-sm text-gray-500">
               {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Main Content - No Scroll */}
-      <div className="flex-1 flex overflow-hidden bg-gray-50">
-        {/* Left Side: Patient Info & Join Controls */}
-        <div className="flex-1 flex flex-col p-6 overflow-y-auto">
-          <div className="max-w-lg">
+      {/* Main Content - Responsive Layout */}
+      <div className="flex-1 flex flex-col lg:flex-row bg-gray-50">
+        {/* Left Side: Patient Info & Join Controls - Stacks on top for mobile */}
+        <div className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto">
+          <div className="max-w-2xl mx-auto w-full">
             {/* Patient Details Card */}
             {meeting && (meeting as any).patientName && (
-              <div className="mb-4 bg-white rounded-lg border border-gray-200 p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <User className="w-6 h-6 text-white" />
+              <div className="mb-4 bg-white rounded-lg border border-gray-200 p-3 md:p-4">
+                <div className="flex items-center gap-2 md:gap-3 mb-3">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <User className="w-5 h-5 md:w-6 md:h-6 text-white" />
                   </div>
-                  <div>
-                    <h3 className="text-base font-semibold text-gray-900">{(meeting as any).patientName || 'Patient'}</h3>
-                    <p className="text-xs text-gray-500">ID: {meeting.patientId?.substring(0, 8) || 'N/A'}</p>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm md:text-base font-semibold text-gray-900 truncate">{(meeting as any).patientName || 'Patient'}</h3>
+                    <p className="text-xs text-gray-500 truncate">ID: {meeting.patientId?.substring(0, 8) || 'N/A'}</p>
                   </div>
                 </div>
 
@@ -369,15 +369,15 @@ export default function MeetingJoinPage() {
                   <div className="mt-3 pt-3 border-t border-gray-100">
                     <h4 className="text-xs font-medium text-gray-500 mb-2">Encounter Details</h4>
                     <div className="space-y-1.5 text-xs">
-                      <div className="flex justify-between">
+                      <div className="flex justify-between gap-2">
                         <span className="text-gray-600">ID:</span>
-                        <span className="font-medium text-gray-900">{(meeting as any).encounterId.substring(0, 12)}...</span>
+                        <span className="font-medium text-gray-900 truncate">{(meeting as any).encounterId.substring(0, 12)}...</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between gap-2">
                         <span className="text-gray-600">Type:</span>
                         <span className="font-medium text-gray-900">Telehealth</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between gap-2">
                         <span className="text-gray-600">Status:</span>
                         <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
                           {meeting.status}
@@ -391,7 +391,7 @@ export default function MeetingJoinPage() {
 
             {/* Welcome Section */}
             <div className="mb-4">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+              <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">
                 Ready to join?
               </h2>
               <p className="text-gray-600 text-sm">
@@ -434,7 +434,7 @@ export default function MeetingJoinPage() {
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="Enter your full name"
-                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm text-gray-900"
+                    className="w-full px-3 py-2.5 md:py-2 bg-white border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm text-gray-900"
                     required
                     autoFocus
                   />
@@ -451,7 +451,7 @@ export default function MeetingJoinPage() {
                     <button
                       type="button"
                       onClick={() => setUserType('practitioner')}
-                      className={`p-3 rounded-lg border transition-all text-center ${
+                      className={`p-3 md:p-3 rounded-lg border transition-all text-center ${
                         userType === 'practitioner'
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-300 bg-white hover:border-gray-400'
@@ -462,7 +462,7 @@ export default function MeetingJoinPage() {
                     <button
                       type="button"
                       onClick={() => setUserType('guest')}
-                      className={`p-3 rounded-lg border transition-all text-center ${
+                      className={`p-3 md:p-3 rounded-lg border transition-all text-center ${
                         userType === 'guest'
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-300 bg-white hover:border-gray-400'
@@ -478,7 +478,7 @@ export default function MeetingJoinPage() {
               <button
                 type="submit"
                 disabled={joining || !displayName.trim()}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-sm"
+                className="w-full py-3 md:py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-sm touch-manipulation"
               >
                 {joining ? (
                   <>
@@ -502,9 +502,9 @@ export default function MeetingJoinPage() {
           </div>
         </div>
 
-        {/* Right Side: Video Preview */}
-        <div className="w-[420px] bg-gray-100 flex items-center justify-center p-6 border-l border-gray-200">
-          <div className="w-full">
+        {/* Right Side: Video Preview - Full width on mobile, side panel on desktop */}
+        <div className="w-full lg:w-[420px] bg-gray-100 flex items-center justify-center p-4 md:p-6 border-t lg:border-t-0 lg:border-l border-gray-200">
+          <div className="w-full max-w-md lg:max-w-none">
             <div className="relative bg-black rounded-lg overflow-hidden aspect-video mb-3 border border-gray-300">
               {videoEnabled ? (
                 <video
@@ -517,8 +517,8 @@ export default function MeetingJoinPage() {
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
                   <div className="text-center">
-                    <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <User className="w-8 h-8 text-gray-400" />
+                    <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <User className="w-6 h-6 md:w-8 md:h-8 text-gray-400" />
                     </div>
                     <p className="text-gray-400 text-sm">Camera is off</p>
                   </div>
@@ -526,17 +526,17 @@ export default function MeetingJoinPage() {
               )}
 
               {/* Name Badge */}
-              <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+              <div className="absolute bottom-2 md:bottom-3 left-2 md:left-3 bg-black/70 backdrop-blur-sm px-2.5 md:px-3 py-1 md:py-1.5 rounded-lg">
                 <p className="text-white text-xs font-medium">
                   {displayName || 'You'}
                 </p>
               </div>
 
               {/* Controls Overlay */}
-              <div className="absolute bottom-3 right-3 flex gap-2">
+              <div className="absolute bottom-2 md:bottom-3 right-2 md:right-3 flex gap-2">
                 <button
                   onClick={toggleAudio}
-                  className={`p-2.5 rounded-lg transition-all ${
+                  className={`p-2 md:p-2.5 rounded-lg transition-all touch-manipulation ${
                     audioEnabled
                       ? 'bg-white/20 hover:bg-white/30 backdrop-blur-sm'
                       : 'bg-red-500 hover:bg-red-600'
@@ -550,7 +550,7 @@ export default function MeetingJoinPage() {
                 </button>
                 <button
                   onClick={toggleVideo}
-                  className={`p-2.5 rounded-lg transition-all ${
+                  className={`p-2 md:p-2.5 rounded-lg transition-all touch-manipulation ${
                     videoEnabled
                       ? 'bg-white/20 hover:bg-white/30 backdrop-blur-sm'
                       : 'bg-red-500 hover:bg-red-600'
