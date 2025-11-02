@@ -4,6 +4,7 @@ import "./globals.css";
 import AuthSessionProvider from "@/providers/session-provider";
 import { FacilityProvider } from "@/contexts/facility-context";
 import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
+import { ToastProvider } from "@/hooks/useToast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,13 +32,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
         suppressHydrationWarning
       >
-        <AuthSessionProvider>
-          <FacilityProvider>
-            <AuthenticatedLayout>
-              {children}
-            </AuthenticatedLayout>
-          </FacilityProvider>
-        </AuthSessionProvider>
+        <ToastProvider>
+          <AuthSessionProvider>
+            <FacilityProvider>
+              <AuthenticatedLayout>
+                {children}
+              </AuthenticatedLayout>
+            </FacilityProvider>
+          </AuthSessionProvider>
+        </ToastProvider>
       </body>
     </html>
   );

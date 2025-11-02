@@ -12,6 +12,7 @@ interface InstantMeetingButtonProps {
   displayName?: string;
   variant?: 'instant' | 'appointment';
   onMeetingCreated?: (meeting: VirtualMeeting) => void;
+  fullWidth?: boolean;
 }
 
 export function InstantMeetingButton({
@@ -20,7 +21,8 @@ export function InstantMeetingButton({
   practitionerId,
   displayName,
   variant = 'instant',
-  onMeetingCreated
+  onMeetingCreated,
+  fullWidth = false
 }: InstantMeetingButtonProps) {
   const { orgId } = useOrganization();
   const [loading, setLoading] = useState(false);
@@ -210,28 +212,28 @@ export function InstantMeetingButton({
     <button
       onClick={handleCreateMeeting}
       disabled={loading}
-      className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+      className={`${fullWidth ? 'flex w-full justify-center' : 'inline-flex'} items-center ${fullWidth ? 'gap-1.5' : 'gap-2'} ${fullWidth ? 'px-3' : 'px-4'} ${fullWidth ? 'py-2' : 'py-2'} ${fullWidth ? 'rounded-md' : 'rounded-lg'} font-medium ${fullWidth ? 'text-xs' : ''} transition-all ${
         variant === 'appointment'
-          ? 'bg-primary hover:bg-primary/90 text-white shadow-sm hover:shadow'
+          ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow'
           : 'bg-gradient-to-r from-primary to-indigo-600 hover:from-primary/90 hover:to-indigo-600/90 text-white shadow-md hover:shadow-lg'
       } disabled:opacity-50 disabled:cursor-not-allowed`}
       title={variant === 'appointment' ? 'Start Video Call' : 'Create Instant Meeting'}
     >
       {loading ? (
         <>
-          <Loader className="w-4 h-4 animate-spin" />
+          <Loader className={fullWidth ? "w-3.5 h-3.5" : "w-4 h-4"} animate-spin />
           <span>Creating...</span>
         </>
       ) : (
         <>
           {variant === 'appointment' ? (
             <>
-              <Video className="w-4 h-4" />
+              <Video className={fullWidth ? "w-3.5 h-3.5" : "w-4 h-4"} />
               <span>Start Video Call</span>
             </>
           ) : (
             <>
-              <Video className="w-4 h-4" />
+              <Video className={fullWidth ? "w-3.5 h-3.5" : "w-4 h-4"} />
               <span>Instant Meeting</span>
             </>
           )}
