@@ -1,660 +1,1203 @@
 'use client'
 
+/**
+ * Patient Portal Appointment Booking
+ * ===================================
+ * Integrated booking widget with pre-filled patient information
+ * Uses the same UI as /widget/booking but with authenticated patient data
+ */
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { format, addDays, startOfWeek, addWeeks, isSameDay, isToday } from 'date-fns'
+import { format } from 'date-fns'
 import {
-  Calendar as CalendarIcon,
+  Calendar,
   Clock,
   MapPin,
-  Video,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  CheckCircle2,
-  Loader2,
   User,
-  Stethoscope,
+  ArrowRight,
+  CheckCircle2,
+  ChevronRight,
+  AlertCircle,
+  Loader2,
+  Info,
+  Download,
+  Shield,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 
-const APPOINTMENT_TYPES = [
-  { value: 'in-person', label: 'In-Person Visit', icon: MapPin, description: 'Visit the clinic' },
-  { value: 'video', label: 'Video Call', icon: Video, description: 'Virtual consultation' },
-]
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
 
-const SPECIALTIES = [
-  'Primary Care',
-  'Cardiology',
-  'Dermatology',
-  'Orthopedics',
-  'Pediatrics',
-  'Mental Health',
-  'Dentistry',
-]
+interface PatientInfo {
+  id: string
+  name: string
+  email: string
+  phone: string
+  dob: string
+}
+
+interface AppointmentPreferences {
+  appointmentType: string
+  duration: string
+  mode: string
+  location: string
+}
+
+interface AppointmentType {
+  code: string
+  display: string
+  duration: number
+  description?: string
+}
+
+interface Location {
+  id: string
+  name: string
+  description?: string
+  address?: {
+    line: string
+    city: string
+    state: string
+    postalCode: string
+    country: string
+  }
+  phone?: string
+  type?: string
+}
+
+interface Provider {
+  id: string
+  name: string
+  firstName?: string
+  lastName?: string
+  qualification: string
+  specialty?: string
+  photo?: string
+  initials: string
+  active: boolean
+  slotsAvailable?: number
+  slots?: Slot[]
+}
+
+interface Slot {
+  start: string
+  end: string
+  duration: number
+}
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 export default function BookAppointmentPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-  // Step management
+  // ========================================
+  // STATE MANAGEMENT
+  // ========================================
+
+  // Step Management
   const [step, setStep] = useState(1)
 
-  // Step 1: Provider Selection
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedSpecialty, setSelectedSpecialty] = useState<string>('all')
-  const [providers, setProviders] = useState<any[]>([])
-  const [loadingProviders, setLoadingProviders] = useState(true)
-  const [selectedProvider, setSelectedProvider] = useState<any>(null)
+  // Patient Data (prefilled from session)
+  const [patientInfo, setPatientInfo] = useState<PatientInfo | null>(null)
+  const [preferences, setPreferences] = useState<AppointmentPreferences>({
+    appointmentType: '',
+    duration: '30',
+    mode: 'At Clinic',
+    location: '',
+  })
 
-  // Step 2: Appointment Type & Date
-  const [appointmentType, setAppointmentType] = useState('in-person')
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
-  const [currentWeek, setCurrentWeek] = useState(startOfWeek(new Date(), { weekStartsOn: 0 }))
-  const [availableSlots, setAvailableSlots] = useState<any[]>([])
-  const [loadingSlots, setLoadingSlots] = useState(false)
-  const [selectedSlot, setSelectedSlot] = useState<any>(null)
+  // Organization Data
+  const [orgId, setOrgId] = useState<string>('')
+  const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
 
-  // Step 3: Details
-  const [reason, setReason] = useState('')
-  const [notes, setNotes] = useState('')
+  // Provider & Slot Selection
+  const [providers, setProviders] = useState<Provider[]>([])
+  const [selectedProvider, setSelectedProvider] = useState<string>('')
+  const [selectedSlot, setSelectedSlot] = useState<string>('')
 
-  // Step 4: Booking
-  const [booking, setBooking] = useState(false)
+  // Calendar State
+  const [currentMonth, setCurrentMonth] = useState<number>(new Date().getMonth())
+  const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear())
+  const [selectedDate, setSelectedDate] = useState<number>(new Date().getDate())
 
-  useEffect(() => {
-    fetchProviders()
-  }, [selectedSpecialty])
+  // Confirmation
+  const [reason, setReason] = useState<string>('')
 
-  useEffect(() => {
-    if (selectedProvider && selectedDate) {
-      fetchAvailableSlots()
-    }
-  }, [selectedProvider, selectedDate])
+  // Loading & Error States
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+  const [loadingSlots, setLoadingSlots] = useState<boolean>(false)
+  const [submitting, setSubmitting] = useState<boolean>(false)
 
-  const fetchProviders = async () => {
+  // Success State
+  const [bookingSuccess, setBookingSuccess] = useState<boolean>(false)
+  const [bookingDetails, setBookingDetails] = useState<any>(null)
+
+  // ========================================
+  // API CALLS
+  // ========================================
+
+  /**
+   * Fetch patient profile from authenticated session
+   */
+  const fetchPatientProfile = async () => {
     try {
-      setLoadingProviders(true)
-      const response = await fetch(
-        `/api/patient/providers?specialty=${selectedSpecialty}&search=${searchQuery}`
-      )
+      const response = await fetch('/api/patient/profile')
       const data = await response.json()
-      setProviders(data.providers || [])
-    } catch (error) {
-      console.error('Error fetching providers:', error)
-    } finally {
-      setLoadingProviders(false)
+
+      if (!response.ok || !data.patient) {
+        throw new Error('Failed to fetch patient profile')
+      }
+
+      // Extract patient information
+      const patient = data.patient
+      const name = patient.name?.[0]
+      const telecom = patient.telecom || []
+
+      setPatientInfo({
+        id: patient.id,
+        name: name ? `${name.given?.[0] || ''} ${name.family || ''}`.trim() : '',
+        email: telecom.find((t: any) => t.system === 'email')?.value || '',
+        phone: telecom.find((t: any) => t.system === 'phone')?.value || '',
+        dob: patient.birthDate || '',
+      })
+
+      // Get organization ID from API response (from session)
+      if (data.orgId) {
+        setOrgId(data.orgId)
+      } else if (patient.managingOrganization?.reference) {
+        // Fallback: extract from patient's managing organization reference
+        const orgIdMatch = patient.managingOrganization.reference.match(/Organization\/(.+)/)
+        if (orgIdMatch) {
+          setOrgId(orgIdMatch[1])
+        }
+      }
+    } catch (err: any) {
+      console.error('Error fetching patient profile:', err)
+      setError('Failed to load patient information')
     }
   }
 
-  const fetchAvailableSlots = async () => {
-    if (!selectedProvider || !selectedDate) return
+  /**
+   * Fetch appointment types for the organization
+   */
+  const fetchAppointmentTypes = async () => {
+    if (!orgId) return
 
     try {
-      setLoadingSlots(true)
-      const dateStr = format(selectedDate, 'yyyy-MM-dd')
-      const response = await fetch(
-        `/api/patient/availability?providerId=${selectedProvider.id}&date=${dateStr}`
-      )
+      const response = await fetch(`${API_URL}/api/public/v2/widget/appointment-types?org_id=${orgId}`)
       const data = await response.json()
-      setAvailableSlots(data.slots || [])
-    } catch (error) {
-      console.error('Error fetching availability:', error)
+
+      if (data.success) {
+        setAppointmentTypes(data.appointmentTypes)
+        // Set first type as default if available
+        if (data.appointmentTypes.length > 0 && !preferences.appointmentType) {
+          setPreferences((prev) => ({
+            ...prev,
+            appointmentType: data.appointmentTypes[0].code,
+            duration: data.appointmentTypes[0].duration.toString(),
+          }))
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching appointment types:', err)
+    }
+  }
+
+  /**
+   * Fetch locations for the organization
+   */
+  const fetchLocations = async () => {
+    if (!orgId) return
+
+    try {
+      const response = await fetch(`${API_URL}/api/public/v2/widget/locations?org_id=${orgId}`)
+      const data = await response.json()
+
+      if (data.success) {
+        setLocations(data.locations)
+        // Set first location as default
+        if (data.locations.length > 0 && !preferences.location) {
+          setPreferences((prev) => ({
+            ...prev,
+            location: data.locations[0].id,
+          }))
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching locations:', err)
+    }
+  }
+
+  /**
+   * Fetch practitioners with slot availability for selected date
+   */
+  const fetchProvidersWithSlots = async () => {
+    if (!orgId) return
+
+    setLoadingSlots(true)
+    try {
+      // Format date as YYYY-MM-DD
+      const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(
+        selectedDate
+      ).padStart(2, '0')}`
+
+      // Fetch providers with slots
+      const response = await fetch(`${API_URL}/api/public/v2/widget/slots?org_id=${orgId}&date=${dateStr}`)
+      const data = await response.json()
+
+      if (data.success && data.practitioners) {
+        // Map API response to our Provider interface
+        const providersWithSlots: Provider[] = data.practitioners.map((p: any) => ({
+          id: p.practitionerId,
+          name: p.practitionerName,
+          qualification: p.specialty || 'Healthcare Provider',
+          specialty: p.specialty,
+          initials: p.practitionerName
+            .split(' ')
+            .map((n: string) => n[0])
+            .join('')
+            .toUpperCase()
+            .substring(0, 2),
+          active: true,
+          slotsAvailable: p.totalSlots,
+          slots: p.availableSlots,
+        }))
+
+        setProviders(providersWithSlots)
+      }
+    } catch (err) {
+      console.error('Error fetching providers:', err)
     } finally {
       setLoadingSlots(false)
     }
   }
 
-  const handleProviderSelect = (provider: any) => {
-    setSelectedProvider(provider)
-    setStep(2)
-  }
+  /**
+   * Create appointment booking
+   */
+  const createAppointment = async () => {
+    if (!orgId || !patientInfo?.id || !selectedProvider || !selectedSlot) {
+      setError('Missing required information')
+      return
+    }
 
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date)
-    setSelectedSlot(null)
-  }
-
-  const handleSlotSelect = (slot: any) => {
-    setSelectedSlot(slot)
-  }
-
-  const handleBookAppointment = async () => {
+    setSubmitting(true)
     try {
-      setBooking(true)
+      // Parse the selected slot to get start time
+      const selectedSlotObj = providers
+        .find((p) => p.id === selectedProvider)
+        ?.slots?.find((s) => s.start === selectedSlot)
 
-      const appointmentData = {
-        practitionerId: selectedProvider.id,
-        serviceType: reason,
-        start: selectedSlot.start,
-        end: selectedSlot.end,
-        reason,
-        notes,
-        type: appointmentType,
+      if (!selectedSlotObj) {
+        throw new Error('Selected slot not found')
       }
 
       const response = await fetch('/api/patient/appointments/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(appointmentData),
+        body: JSON.stringify({
+          practitionerId: selectedProvider,
+          startTime: selectedSlotObj.start,
+          endTime: selectedSlotObj.end,
+          appointmentType: preferences.appointmentType,
+          reason: reason,
+        }),
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to book appointment')
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to create appointment')
       }
 
-      const data = await response.json()
+      // Success! Show confirmation screen
+      setBookingDetails({
+        appointmentId: data.appointmentId,
+        patientName: patientInfo.name,
+        patientEmail: patientInfo.email,
+        providerName: providers.find((p) => p.id === selectedProvider)?.name,
+        date: new Date(currentYear, currentMonth, selectedDate),
+        time: selectedSlot,
+        location: locations.find((l) => l.id === preferences.location)?.name,
+        duration: preferences.duration,
+      })
+      setBookingSuccess(true)
 
       toast({
         title: 'Appointment Booked!',
         description: 'Your appointment has been successfully scheduled.',
       })
-
-      router.push(`/portal/appointments/${data.appointmentId}`)
-    } catch (error: any) {
+    } catch (err: any) {
+      setError(err.message || 'Failed to create appointment')
       toast({
         title: 'Booking Failed',
-        description: error.message || 'Failed to book appointment. Please try again.',
+        description: err.message || 'Failed to book appointment. Please try again.',
         variant: 'destructive',
       })
     } finally {
-      setBooking(false)
+      setSubmitting(false)
     }
   }
 
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeek, i))
+  // ========================================
+  // EFFECTS
+  // ========================================
+
+  /**
+   * Initialize on mount - fetch patient profile
+   */
+  useEffect(() => {
+    const initialize = async () => {
+      setLoading(true)
+      await fetchPatientProfile()
+      setLoading(false)
+    }
+    initialize()
+  }, [])
+
+  /**
+   * Fetch appointment types and locations when org ID is loaded
+   */
+  useEffect(() => {
+    if (orgId) {
+      fetchAppointmentTypes()
+      fetchLocations()
+    }
+  }, [orgId])
+
+  /**
+   * Fetch providers with slots when date changes (Step 2)
+   */
+  useEffect(() => {
+    if (step === 2 && orgId) {
+      fetchProvidersWithSlots()
+    }
+  }, [step, orgId, currentMonth, currentYear, selectedDate])
+
+  // ========================================
+  // EVENT HANDLERS
+  // ========================================
+
+  const monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ]
+
+  const getDaysInMonth = (month: number, year: number) => {
+    return new Date(year, month + 1, 0).getDate()
+  }
+
+  const getFirstDayOfMonth = (month: number, year: number) => {
+    return new Date(year, month, 1).getDay()
+  }
+
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11)
+      setCurrentYear(currentYear - 1)
+    } else {
+      setCurrentMonth(currentMonth - 1)
+    }
+  }
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0)
+      setCurrentYear(currentYear + 1)
+    } else {
+      setCurrentMonth(currentMonth + 1)
+    }
+  }
+
+  const handleDateSelect = (date: number) => {
+    setSelectedDate(date)
+    // Reset provider and slot selection when date changes
+    setSelectedProvider('')
+    setSelectedSlot('')
+  }
+
+  const handleNext = async () => {
+    if (step === 1) {
+      // Validate Step 1 fields
+      if (!preferences.appointmentType || !preferences.location) {
+        setError('Please select appointment type and location')
+        return
+      }
+
+      setError(null)
+      setStep(2)
+    } else if (step === 2) {
+      // Validate Step 2 selections
+      if (!selectedProvider || !selectedSlot) {
+        setError('Please select a provider and time slot')
+        return
+      }
+
+      setError(null)
+      setStep(3)
+    }
+  }
+
+  const handleBack = () => {
+    if (step > 1) {
+      setError(null)
+      setStep(step - 1)
+    }
+  }
+
+  const handleConfirm = async () => {
+    if (!reason.trim()) {
+      setError('Please provide a reason for your visit')
+      return
+    }
+
+    await createAppointment()
+  }
+
+  // Update duration when appointment type changes
+  const handleAppointmentTypeChange = (typeCode: string) => {
+    const selectedType = appointmentTypes.find((t) => t.code === typeCode)
+    setPreferences({
+      ...preferences,
+      appointmentType: typeCode,
+      duration: selectedType?.duration.toString() || preferences.duration,
+    })
+  }
+
+  // ========================================
+  // RENDER HELPERS
+  // ========================================
+
+  const formatTimeSlot = (isoString: string) => {
+    const date = new Date(isoString)
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    })
+  }
+
+  const formatSelectedDate = () => {
+    return new Date(currentYear, currentMonth, selectedDate).toLocaleDateString('en-US', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+  }
+
+  // Generate .ics calendar file for download
+  const generateCalendarFile = () => {
+    if (!bookingDetails) return
+
+    const startDate = new Date(bookingDetails.time)
+    const endDate = new Date(startDate.getTime() + parseInt(bookingDetails.duration) * 60000)
+
+    const formatICSDate = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+    }
+
+    const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//EHRConnect//Patient Portal//EN
+BEGIN:VEVENT
+UID:${bookingDetails.appointmentId}@ehrconnect.com
+DTSTAMP:${formatICSDate(new Date())}
+DTSTART:${formatICSDate(startDate)}
+DTEND:${formatICSDate(endDate)}
+SUMMARY:Medical Appointment with ${bookingDetails.providerName}
+DESCRIPTION:Appointment with ${bookingDetails.providerName}
+LOCATION:${bookingDetails.location}
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR`
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' })
+    const link = document.createElement('a')
+    link.href = window.URL.createObjectURL(blob)
+    link.setAttribute('download', `appointment-${bookingDetails.appointmentId}.ics`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  // ========================================
+  // LOADING & ERROR STATES
+  // ========================================
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-base text-gray-700 font-semibold">Loading booking form...</p>
+          <p className="text-sm text-gray-500 mt-1">Please wait a moment</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error && !patientInfo) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="bg-white border border-red-200 rounded-xl p-8 max-w-md shadow-sm">
+          <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2 text-center">Error Loading Profile</h2>
+          <p className="text-sm text-gray-700 text-center">{error}</p>
+          <button
+            onClick={() => router.push('/portal/dashboard')}
+            className="mt-6 w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 transition-all"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ========================================
+  // MAIN RENDER
+  // ========================================
+
+  // Success Screen
+  if (bookingSuccess && bookingDetails) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="max-w-2xl w-full">
+          {/* Success Card */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+            {/* Success Icon */}
+            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="w-10 h-10 text-white" />
+            </div>
+
+            {/* Success Message */}
+            <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">Appointment Confirmed</h2>
+            <p className="text-sm text-gray-600 text-center mb-8">
+              We've sent a confirmation email to{' '}
+              <span className="font-semibold text-gray-900">{bookingDetails.patientEmail}</span>
+            </p>
+
+            {/* Appointment Details */}
+            <div className="bg-gray-50 rounded-xl p-6 mb-6 border border-gray-200">
+              <div className="flex items-center gap-4 mb-5 pb-5 border-b border-gray-200">
+                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+                  <User className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">Patient</p>
+                  <p className="text-base font-bold text-gray-900">{bookingDetails.patientName}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <User className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">Provider</p>
+                    <p className="text-sm font-bold text-gray-900 mt-0.5">{bookingDetails.providerName}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Calendar className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">Date & Time</p>
+                    <p className="text-sm font-bold text-gray-900 mt-0.5">
+                      {bookingDetails.date.toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {formatTimeSlot(bookingDetails.time)} ({bookingDetails.duration} minutes)
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">Location</p>
+                    <p className="text-sm font-bold text-gray-900 mt-0.5">{bookingDetails.location}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="space-y-3">
+              <button
+                onClick={generateCalendarFile}
+                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+              >
+                <Download className="w-5 h-5" />
+                Add to Calendar
+              </button>
+
+              <button
+                onClick={() => router.push('/portal/appointments')}
+                className="w-full px-6 py-3 border border-gray-300 rounded-lg font-semibold text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all"
+              >
+                View All Appointments
+              </button>
+            </div>
+
+            {/* Appointment ID */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-xs text-gray-600 font-medium uppercase tracking-wide mb-1">Confirmation Number</p>
+              <p className="text-sm font-mono font-bold text-gray-900">{bookingDetails.appointmentId}</p>
+            </div>
+
+            {/* HIPAA Notice */}
+            <div className="mt-6 flex items-start gap-2 text-xs text-gray-600">
+              <Shield className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+              <p>
+                Your health information is protected under HIPAA. We will only use your data for healthcare purposes.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Book Appointment</h1>
-        <p className="text-gray-600 mt-1">Schedule a visit with your healthcare provider</p>
-      </div>
-
-      {/* Progress Steps */}
-      <div className="bg-white rounded-xl p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          {[
-            { num: 1, label: 'Select Provider' },
-            { num: 2, label: 'Choose Time' },
-            { num: 3, label: 'Add Details' },
-            { num: 4, label: 'Confirm' },
-          ].map((s, idx) => (
-            <div key={s.num} className="flex items-center flex-1">
-              <div
-                className={`flex items-center justify-center w-10 h-10 rounded-full font-bold transition-all ${
-                  step === s.num
-                    ? 'bg-blue-600 text-white scale-110'
-                    : step > s.num
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-200 text-gray-500'
-                }`}
-              >
-                {step > s.num ? <CheckCircle2 className="w-6 h-6" /> : s.num}
-              </div>
-              <div className="ml-3 hidden sm:block">
-                <p
-                  className={`text-sm font-medium ${
-                    step >= s.num ? 'text-gray-900' : 'text-gray-500'
-                  }`}
-                >
-                  {s.label}
-                </p>
-              </div>
-              {idx < 3 && (
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Book Appointment</h1>
+              <p className="text-sm text-gray-600">Schedule a visit with your healthcare provider</p>
+            </div>
+            <div className="flex items-center gap-3">
+              {[1, 2, 3].map((s) => (
                 <div
-                  className={`flex-1 h-1 mx-4 transition-all ${
-                    step > s.num ? 'bg-green-600' : 'bg-gray-200'
+                  key={s}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    s === step ? 'bg-blue-600 w-16 shadow-md' : s < step ? 'bg-green-500 w-10' : 'bg-gray-200 w-10'
                   }`}
                 />
-              )}
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
 
-      {/* Step 1: Provider Selection */}
-      {step === 1 && (
-        <div className="space-y-6">
-          {/* Search and Filter */}
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search providers by name..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select value={selectedSpecialty} onValueChange={setSelectedSpecialty}>
-                  <SelectTrigger className="w-full sm:w-48">
-                    <SelectValue placeholder="All Specialties" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Specialties</SelectItem>
-                    {SPECIALTIES.map((spec) => (
-                      <SelectItem key={spec} value={spec.toLowerCase()}>
-                        {spec}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Providers List */}
-          <div className="grid md:grid-cols-2 gap-4">
-            {loadingProviders ? (
-              <>
-                {[1, 2, 3, 4].map((i) => (
-                  <Skeleton key={i} className="h-48" />
-                ))}
-              </>
-            ) : providers.length > 0 ? (
-              providers.map((provider) => (
-                <Card
-                  key={provider.id}
-                  className="hover:shadow-lg transition-all cursor-pointer border-2 hover:border-blue-500"
-                  onClick={() => handleProviderSelect(provider)}
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <Avatar className="w-16 h-16">
-                        <AvatarImage src={provider.photo?.[0]?.url} />
-                        <AvatarFallback className="bg-blue-100 text-blue-600 text-lg">
-                          {provider.name?.[0]?.given?.[0]?.[0]}
-                          {provider.name?.[0]?.family?.[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Dr. {provider.name?.[0]?.given?.[0]} {provider.name?.[0]?.family}
-                        </h3>
-                        <p className="text-sm text-gray-600 mb-2">
-                          {provider.qualification?.[0]?.code?.text || 'Healthcare Provider'}
-                        </p>
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {Array.isArray(provider.specialty) && provider.specialty.map((spec: any, idx: number) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">
-                              {spec.text}
-                            </Badge>
-                          ))}
-                        </div>
-                        {provider.telecom && (
-                          <p className="text-sm text-gray-500">
-                            {provider.telecom.find((t: any) => t.system === 'phone')?.value}
-                          </p>
-                        )}
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <Card className="md:col-span-2">
-                <CardContent className="py-12 text-center">
-                  <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-600">No providers found. Try adjusting your search.</p>
-                </CardContent>
-              </Card>
-            )}
+      {/* Error Banner */}
+      {error && patientInfo && (
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-sm text-red-900">Error</p>
+              <p className="text-sm text-red-700 mt-0.5">{error}</p>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Step 2: Date & Time Selection */}
-      {step === 2 && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setStep(1)}
-                className="w-fit -ml-2 mb-2"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Change Provider
-              </Button>
-              <CardTitle>Selected Provider</CardTitle>
-              <div className="flex items-center gap-4 pt-4">
-                <Avatar className="w-12 h-12">
-                  <AvatarImage src={selectedProvider?.photo?.[0]?.url} />
-                  <AvatarFallback className="bg-blue-100 text-blue-600">
-                    {selectedProvider?.name?.[0]?.given?.[0]?.[0]}
-                    {selectedProvider?.name?.[0]?.family?.[0]}
-                  </AvatarFallback>
-                </Avatar>
+      {/* Content Area */}
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        {/* Step 1: Patient Info (Prefilled) & Preferences */}
+        {step === 1 && (
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Left: Patient Info (Read-only, prefilled) */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-gray-900 mb-1">Your Information</h2>
+              <p className="text-sm text-gray-600 mb-6">Your patient information from your profile</p>
+
+              <div className="space-y-4">
                 <div>
-                  <p className="font-semibold text-gray-900">
-                    Dr. {selectedProvider?.name?.[0]?.given?.[0]} {selectedProvider?.name?.[0]?.family}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {selectedProvider?.qualification?.[0]?.code?.text}
-                  </p>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          {/* Appointment Type */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Appointment Type</CardTitle>
-              <CardDescription>Choose how you'd like to meet</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <RadioGroup value={appointmentType} onValueChange={setAppointmentType}>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  {APPOINTMENT_TYPES.map((type) => (
-                    <label
-                      key={type.value}
-                      className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        appointmentType === type.value
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <RadioGroupItem value={type.value} id={type.value} />
-                      <type.icon
-                        className={`w-6 h-6 ${
-                          appointmentType === type.value ? 'text-blue-600' : 'text-gray-500'
-                        }`}
-                      />
-                      <div>
-                        <p className="font-medium text-gray-900">{type.label}</p>
-                        <p className="text-sm text-gray-600">{type.description}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </RadioGroup>
-            </CardContent>
-          </Card>
-
-          {/* Date & Time Selection */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Select Date & Time</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setCurrentWeek(addWeeks(currentWeek, -1))}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setCurrentWeek(addWeeks(currentWeek, 1))}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Week Calendar */}
-              <div className="grid grid-cols-7 gap-2">
-                {weekDays.map((day) => {
-                  const isSelected = selectedDate && isSameDay(day, selectedDate)
-                  const isPast = day < new Date() && !isToday(day)
-                  return (
-                    <button
-                      key={day.toISOString()}
-                      onClick={() => !isPast && handleDateSelect(day)}
-                      disabled={isPast}
-                      className={`p-3 rounded-lg text-center transition-all ${
-                        isSelected
-                          ? 'bg-blue-600 text-white'
-                          : isPast
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-gray-50 hover:bg-gray-100 text-gray-900'
-                      }`}
-                    >
-                      <p className="text-xs font-medium">{format(day, 'EEE')}</p>
-                      <p className="text-lg font-bold mt-1">{format(day, 'd')}</p>
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* Time Slots */}
-              {selectedDate && (
-                <div className="pt-4 border-t">
-                  <h4 className="font-semibold text-gray-900 mb-4">
-                    Available Times for {format(selectedDate, 'MMMM d, yyyy')}
-                  </h4>
-                  {loadingSlots ? (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                      {[1, 2, 3, 4, 5, 6].map((i) => (
-                        <Skeleton key={i} className="h-10" />
-                      ))}
-                    </div>
-                  ) : availableSlots.length > 0 ? (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                      {availableSlots.map((slot, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => handleSlotSelect(slot)}
-                          className={`p-2 rounded-lg text-sm font-medium transition-all ${
-                            selectedSlot === slot
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-                          }`}
-                        >
-                          {format(new Date(slot.start), 'h:mm a')}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-600 text-center py-8">
-                      No available slots for this date. Please select another date.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div className="flex justify-end pt-4">
-                <Button
-                  onClick={() => setStep(3)}
-                  disabled={!selectedSlot}
-                  size="lg"
-                >
-                  Continue
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Step 3: Additional Details */}
-      {step === 3 && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setStep(2)}
-                className="w-fit -ml-2 mb-2"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Change Time
-              </Button>
-              <CardTitle>Appointment Details</CardTitle>
-              <CardDescription>Tell us about the reason for your visit</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="reason">Reason for Visit *</Label>
-                <Input
-                  id="reason"
-                  placeholder="e.g., Annual checkup, Follow-up, New symptoms"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="notes">Additional Notes (Optional)</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Any additional information you'd like to share..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={4}
-                />
-              </div>
-
-              <div className="flex gap-4">
-                <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
-                  Back
-                </Button>
-                <Button onClick={() => setStep(4)} disabled={!reason} className="flex-1">
-                  Continue
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Step 4: Review & Confirm */}
-      {step === 4 && (
-        <div className="space-y-6">
-          <Card className="border-2 border-blue-200 bg-blue-50/50">
-            <CardHeader>
-              <CardTitle className="text-2xl">Review Your Appointment</CardTitle>
-              <CardDescription>Please review the details before confirming</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Provider */}
-              <div className="p-4 bg-white rounded-lg">
-                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <Stethoscope className="w-5 h-5 text-blue-600" />
-                  Provider
-                </h3>
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-12 h-12">
-                    <AvatarImage src={selectedProvider?.photo?.[0]?.url} />
-                    <AvatarFallback className="bg-blue-100 text-blue-600">
-                      {selectedProvider?.name?.[0]?.given?.[0]?.[0]}
-                      {selectedProvider?.name?.[0]?.family?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold text-gray-900">
-                      Dr. {selectedProvider?.name?.[0]?.given?.[0]} {selectedProvider?.name?.[0]?.family}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {selectedProvider?.qualification?.[0]?.code?.text}
-                    </p>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Full Name</label>
+                  <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-sm font-medium text-gray-900">
+                    {patientInfo?.name || 'Not provided'}
                   </div>
                 </div>
-              </div>
 
-              {/* Date & Time */}
-              <div className="p-4 bg-white rounded-lg">
-                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <CalendarIcon className="w-5 h-5 text-blue-600" />
-                  Date & Time
-                </h3>
-                <div className="space-y-2">
-                  <p className="text-gray-900">
-                    {selectedDate && format(selectedDate, 'EEEE, MMMM d, yyyy')}
-                  </p>
-                  <p className="text-gray-600">
-                    {selectedSlot && (
-                      <>
-                        {format(new Date(selectedSlot.start), 'h:mm a')} -{' '}
-                        {format(new Date(selectedSlot.end), 'h:mm a')}
-                      </>
-                    )}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
+                  <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-sm font-medium text-gray-900">
+                    {patientInfo?.email || 'Not provided'}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Phone Number</label>
+                  <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-sm font-medium text-gray-900">
+                    {patientInfo?.phone || 'Not provided'}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Date of Birth</label>
+                  <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-sm font-medium text-gray-900">
+                    {patientInfo?.dob ? format(new Date(patientInfo.dob), 'MMMM d, yyyy') : 'Not provided'}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-600 flex items-center gap-2">
+                    <Info className="w-4 h-4" />
+                    Update your information in{' '}
+                    <a href="/portal/profile" className="text-blue-600 hover:underline font-medium">
+                      Profile Settings
+                    </a>
                   </p>
                 </div>
               </div>
+            </div>
 
-              {/* Type */}
-              <div className="p-4 bg-white rounded-lg">
-                <h3 className="font-semibold text-gray-900 mb-3">Appointment Type</h3>
-                <div className="flex items-center gap-2">
-                  {appointmentType === 'video' ? (
-                    <>
-                      <Video className="w-5 h-5 text-purple-600" />
-                      <span className="text-gray-900">Video Call</span>
-                    </>
-                  ) : (
-                    <>
-                      <MapPin className="w-5 h-5 text-gray-600" />
-                      <span className="text-gray-900">In-Person Visit</span>
-                    </>
+            {/* Right: Appointment Preferences */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-gray-900 mb-1">Appointment Details</h2>
+              <p className="text-sm text-gray-600 mb-6">Select your appointment preferences</p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Appointment Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={preferences.appointmentType}
+                    onChange={(e) => handleAppointmentTypeChange(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
+                    required
+                  >
+                    <option value="">Select type</option>
+                    {appointmentTypes.map((type) => (
+                      <option key={type.code} value={type.code}>
+                        {type.display} ({type.duration} min)
+                      </option>
+                    ))}
+                  </select>
+                  {preferences.appointmentType &&
+                    appointmentTypes.find((t) => t.code === preferences.appointmentType)?.description && (
+                      <p className="text-xs text-gray-600 mt-2 leading-relaxed">
+                        {appointmentTypes.find((t) => t.code === preferences.appointmentType)?.description}
+                      </p>
+                    )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Duration</label>
+                    <input
+                      type="text"
+                      value={`${preferences.duration} min`}
+                      disabled
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-sm font-semibold text-gray-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Mode</label>
+                    <select
+                      value={preferences.mode}
+                      onChange={(e) => setPreferences({ ...preferences, mode: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
+                    >
+                      <option value="At Clinic">At Clinic</option>
+                      <option value="Telemedicine">Telemedicine</option>
+                      <option value="Home Visit">Home Visit</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Location <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={preferences.location}
+                    onChange={(e) => setPreferences({ ...preferences, location: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
+                    required
+                  >
+                    <option value="">Select location</option>
+                    {locations.map((loc) => (
+                      <option key={loc.id} value={loc.id}>
+                        {loc.name}
+                      </option>
+                    ))}
+                  </select>
+                  {preferences.location && locations.find((l) => l.id === preferences.location)?.address && (
+                    <p className="text-xs text-gray-600 mt-2 leading-relaxed">
+                      {(() => {
+                        const addr = locations.find((l) => l.id === preferences.location)?.address
+                        return `${addr?.line}, ${addr?.city}, ${addr?.state} ${addr?.postalCode}`
+                      })()}
+                    </p>
                   )}
                 </div>
-              </div>
 
-              {/* Reason */}
-              <div className="p-4 bg-white rounded-lg">
-                <h3 className="font-semibold text-gray-900 mb-3">Reason for Visit</h3>
-                <p className="text-gray-900">{reason}</p>
-                {notes && (
-                  <div className="mt-3 pt-3 border-t">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Additional Notes:</p>
-                    <p className="text-sm text-gray-600">{notes}</p>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Timezone</label>
+                  <select
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-sm font-semibold text-gray-600"
+                    disabled
+                  >
+                    <option value={Intl.DateTimeFormat().resolvedOptions().timeZone}>
+                      {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Provider & Slot Selection */}
+        {step === 2 && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="border-b border-gray-200 p-6 bg-white">
+              <h2 className="text-2xl font-bold text-gray-900 mb-1">Select Provider & Time</h2>
+              <p className="text-sm text-gray-600 font-medium">
+                {formatSelectedDate()} • {locations.find((l) => l.id === preferences.location)?.name}
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 divide-x divide-gray-200">
+              {/* Calendar - LEFT */}
+              <div className="p-6">
+                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Select Date</h3>
+                <div className="bg-white rounded-xl p-4 border border-gray-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <button onClick={handlePrevMonth} className="p-2 hover:bg-blue-50 rounded-lg transition-all">
+                      <ChevronRight className="w-4 h-4 rotate-180 text-gray-700" />
+                    </button>
+                    <p className="font-bold text-base text-gray-900">
+                      {monthNames[currentMonth]} {currentYear}
+                    </p>
+                    <button onClick={handleNextMonth} className="p-2 hover:bg-blue-50 rounded-lg transition-all">
+                      <ChevronRight className="w-4 h-4 text-gray-700" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1.5 text-center mb-2">
+                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
+                      <div key={day} className="text-xs font-bold text-gray-500 py-1">
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {(() => {
+                      const daysInMonth = getDaysInMonth(currentMonth, currentYear)
+                      const firstDay = getFirstDayOfMonth(currentMonth, currentYear)
+                      const today = new Date()
+                      const currentDay = today.getDate()
+                      const currentMonthToday = today.getMonth()
+                      const currentYearToday = today.getFullYear()
+
+                      const cells = []
+
+                      // Empty cells before month starts
+                      for (let i = 0; i < firstDay; i++) {
+                        cells.push(<div key={`empty-${i}`} className="py-2" />)
+                      }
+
+                      // Days of the month
+                      for (let day = 1; day <= daysInMonth; day++) {
+                        const isSelected = day === selectedDate
+                        const isPast =
+                          currentYear < currentYearToday ||
+                          (currentYear === currentYearToday && currentMonth < currentMonthToday) ||
+                          (currentYear === currentYearToday &&
+                            currentMonth === currentMonthToday &&
+                            day < currentDay)
+                        const hasSlots = !isPast
+
+                        cells.push(
+                          <button
+                            key={day}
+                            disabled={isPast}
+                            onClick={() => handleDateSelect(day)}
+                            className={`py-2 rounded-lg text-sm font-semibold transition-all ${
+                              isSelected
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : hasSlots
+                                ? 'text-gray-900 hover:bg-blue-50 hover:text-blue-600'
+                                : 'text-gray-300 cursor-not-allowed'
+                            }`}
+                          >
+                            {day}
+                          </button>
+                        )
+                      }
+
+                      return cells
+                    })()}
+                  </div>
+                </div>
+
+                {/* Location Info */}
+                {preferences.location && (
+                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-semibold text-blue-900 uppercase tracking-wide">
+                          APPOINTMENT LOCATION
+                        </p>
+                        <p className="text-sm font-bold text-gray-900 mt-1">
+                          {locations.find((l) => l.id === preferences.location)?.name}
+                        </p>
+                        {locations.find((l) => l.id === preferences.location)?.address && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            {(() => {
+                              const addr = locations.find((l) => l.id === preferences.location)?.address
+                              return `${addr?.line}, ${addr?.city}, ${addr?.state} ${addr?.postalCode}`
+                            })()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Actions */}
-              <div className="flex gap-4 pt-4">
-                <Button variant="outline" onClick={() => setStep(3)} className="flex-1">
-                  Back
-                </Button>
-                <Button
-                  onClick={handleBookAppointment}
-                  disabled={booking}
-                  className="flex-1"
-                  size="lg"
-                >
-                  {booking ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Booking...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                      Confirm Booking
-                    </>
-                  )}
-                </Button>
+              {/* Providers List - RIGHT */}
+              <div className="p-6">
+                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Available Providers</h3>
+
+                {loadingSlots ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+                  </div>
+                ) : providers.filter((p) => (p.slotsAvailable || 0) > 0).length === 0 ? (
+                  <div className="text-center py-12">
+                    <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-base text-gray-700 font-bold">No providers available</p>
+                    <p className="text-sm text-gray-500 mt-1">Please try a different date</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                    {providers
+                      .filter((p) => (p.slotsAvailable || 0) > 0)
+                      .map((provider) => (
+                        <div key={provider.id}>
+                          <div
+                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                              selectedProvider === provider.id
+                                ? 'border-blue-600 bg-blue-50 shadow-lg'
+                                : (provider.slotsAvailable || 0) > 0
+                                ? 'border-gray-200 hover:border-blue-500 hover:bg-blue-50/30 hover:shadow-md'
+                                : 'border-gray-200 bg-gray-50/50 cursor-not-allowed opacity-50'
+                            }`}
+                            onClick={() => (provider.slotsAvailable || 0) > 0 && setSelectedProvider(provider.id)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                                    (provider.slotsAvailable || 0) > 0
+                                      ? 'bg-blue-600 text-white'
+                                      : 'bg-gray-300 text-gray-500'
+                                  }`}
+                                >
+                                  {provider.initials}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-gray-900 text-sm">{provider.name}</p>
+                                  <p className="text-xs text-gray-500 font-medium">{provider.qualification}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                {(provider.slotsAvailable || 0) > 0 ? (
+                                  <span className="text-xs font-semibold text-blue-600">
+                                    {provider.slotsAvailable} slots
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-gray-400 font-semibold">Unavailable</span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Time Slots */}
+                            {selectedProvider === provider.id &&
+                              (provider.slotsAvailable || 0) > 0 &&
+                              provider.slots && (
+                                <div className="mt-4 pt-4 border-t border-gray-200">
+                                  <p className="text-xs font-semibold text-gray-700 mb-3">Available Times</p>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    {provider.slots.map((slot) => (
+                                      <button
+                                        key={slot.start}
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setSelectedSlot(slot.start)
+                                        }}
+                                        className={`px-3 py-2.5 rounded-lg text-xs font-semibold transition-all border ${
+                                          selectedSlot === slot.start
+                                            ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                            : 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-500'
+                                        }`}
+                                      >
+                                        {formatTimeSlot(slot.start)}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Confirmation */}
+        {step === 3 && (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Confirm Your Appointment</h2>
+
+              {/* Summary Card */}
+              <div className="mb-6 p-5 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-4 mb-4 pb-4 border-b border-blue-200">
+                  <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
+                    <span className="text-base font-bold text-white">
+                      {patientInfo?.name
+                        .split(' ')
+                        .map((n) => n[0])
+                        .join('')
+                        .toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-base font-bold text-gray-900">{patientInfo?.name}</p>
+                    <p className="text-sm text-gray-600 mt-0.5">{patientInfo?.email}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <User className="w-4 h-4 text-blue-600" />
+                    <span className="font-medium text-sm">
+                      {providers.find((p) => p.id === selectedProvider)?.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Calendar className="w-4 h-4 text-blue-600" />
+                    <span className="font-medium text-sm">
+                      {new Date(currentYear, currentMonth, selectedDate).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Clock className="w-4 h-4 text-blue-600" />
+                    <span className="font-medium text-sm">
+                      {selectedSlot && formatTimeSlot(selectedSlot)} ({preferences.duration} min)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <MapPin className="w-4 h-4 text-blue-600" />
+                    <span className="truncate font-medium text-sm">
+                      {locations.find((l) => l.id === preferences.location)?.name}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reason */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Reason for Visit <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm resize-none hover:border-gray-400"
+                  rows={4}
+                  placeholder="Please describe the reason for your visit..."
+                  required
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Navigation */}
+        <div className="flex justify-between items-center mt-8">
+          {step > 1 ? (
+            <button
+              onClick={handleBack}
+              disabled={submitting}
+              className="px-6 py-3 border-2 border-gray-300 rounded-xl font-bold text-base text-gray-700 hover:bg-gray-50 hover:border-gray-400 hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Back
+            </button>
+          ) : (
+            <div />
+          )}
+
+          {step < 3 ? (
+            <button
+              onClick={handleNext}
+              disabled={loading}
+              className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold text-base hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  Continue
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
+            </button>
+          ) : (
+            <button
+              onClick={handleConfirm}
+              disabled={submitting}
+              className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold text-base hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Booking...
+                </>
+              ) : (
+                <>
+                  Confirm Booking
+                  <CheckCircle2 className="w-5 h-5" />
+                </>
+              )}
+            </button>
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }

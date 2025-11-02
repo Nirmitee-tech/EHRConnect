@@ -16,6 +16,9 @@ import type {
   Communication,
   Consent,
   Coverage,
+  RelatedPerson,
+  ExplanationOfBenefit,
+  Invoice,
 } from '@medplum/fhirtypes'
 
 interface PatientRegistrationData {
@@ -50,6 +53,34 @@ interface AppointmentSearchParams {
   dateRange?: { start: string; end: string }
   practitionerId?: string
   serviceType?: string
+}
+
+export interface PatientPreferences {
+  emailNotifications: boolean
+  smsNotifications: boolean
+  appointmentReminders: boolean
+  shareHealthData: boolean
+  telehealthReminders: boolean
+}
+
+export interface PatientNotification {
+  id: string
+  type: 'appointment' | 'message' | 'document'
+  title: string
+  description: string
+  date: string
+  status?: string
+  link?: string
+}
+
+const PATIENT_PREFERENCES_URL = 'urn:oid:ehrconnect:patient-preferences'
+
+export const DEFAULT_PATIENT_PREFERENCES: PatientPreferences = {
+  emailNotifications: true,
+  smsNotifications: false,
+  appointmentReminders: true,
+  shareHealthData: false,
+  telehealthReminders: true,
 }
 
 export class PatientPortalService {
@@ -490,6 +521,236 @@ export class PatientPortalService {
       return bundle.entry?.map((e) => e.resource as DocumentReference) || []
     } catch (error) {
       console.error('Error fetching patient documents:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get patient billing summary including coverage, explanations of benefits, and invoices
+   */
+  static async getPatientBillingSummary(patientId: string): Promise<{
+    coverages: Coverage[]
+    explanations: ExplanationOfBenefit[]
+    invoices: Invoice[]
+  }> {
+    try {
+      const [coverageBundle, explanationBundle, invoiceBundle] = await Promise.all([
+        medplum.search('Coverage', {
+          beneficiary: `Patient/${patientId}`,
+          status: 'active,cancelled,draft,entered-in-error',
+        }),
+        medplum.search('ExplanationOfBenefit', {
+          patient: `Patient/${patientId}`,
+          _sort: '-created',
+          _count: 25,
+        }),
+        medplum
+          .search('Invoice', {
+            subject: `Patient/${patientId}`,
+            _sort: '-date',
+            _count: 25,
+          })
+          .catch(() => null),
+      ])
+
+      return {
+        coverages: coverageBundle.entry?.map((e) => e.resource as Coverage) || [],
+        explanations: explanationBundle.entry?.map((e) => e.resource as ExplanationOfBenefit) || [],
+        invoices: invoiceBundle?.entry?.map((e) => e.resource as Invoice) || [],
+      }
+    } catch (error) {
+      console.error('Error fetching patient billing summary:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get patient family/authorized contacts (RelatedPerson resources)
+   */
+  static async getPatientFamilyMembers(patientId: string): Promise<RelatedPerson[]> {
+    try {
+      const bundle = await medplum.search('RelatedPerson', {
+        patient: `Patient/${patientId}`,
+        _sort: 'name',
+        _count: 50,
+      })
+
+      return bundle.entry?.map((e) => e.resource as RelatedPerson) || []
+    } catch (error) {
+      console.error('Error fetching patient family members:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Build notifications timeline for patient based on appointments, documents, and communications
+   */
+  static async getPatientNotifications(patientId: string): Promise<PatientNotification[]> {
+    try {
+      const now = new Date()
+      const upcomingWindow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+
+      const [appointmentsBundle, communicationsBundle, documentsBundle] = await Promise.all([
+        medplum.search('Appointment', {
+          patient: `Patient/${patientId}`,
+          date: `ge${now.toISOString().split('T')[0]}`,
+          status: 'booked,pending,arrived,checked-in',
+          _sort: 'date',
+          _count: 20,
+        }),
+        medplum.search('Communication', {
+          recipient: `Patient/${patientId}`,
+          _sort: '-sent',
+          _count: 20,
+        }),
+        medplum.search('DocumentReference', {
+          subject: `Patient/${patientId}`,
+          _sort: '-date',
+          _count: 20,
+        }),
+      ])
+
+      const notifications: PatientNotification[] = []
+
+      appointmentsBundle.entry?.forEach((entry) => {
+        const appointment = entry.resource as Appointment
+        const startDate = appointment.start ? new Date(appointment.start) : null
+
+        if (startDate && startDate <= upcomingWindow) {
+          const practitioner = appointment.participant?.find((participant) =>
+            participant.actor?.reference?.startsWith('Practitioner/')
+          )
+          notifications.push({
+            id: appointment.id || `appointment-${notifications.length}`,
+            type: 'appointment',
+            title: practitioner?.actor?.display
+              ? `Appointment with ${practitioner.actor.display}`
+              : 'Upcoming appointment',
+            description: startDate
+              ? `Scheduled for ${startDate.toLocaleString()}`
+              : 'Upcoming appointment scheduled',
+            date: appointment.start || new Date().toISOString(),
+            status: appointment.status,
+            link: appointment.id ? `/portal/appointments/${appointment.id}` : undefined,
+          })
+        }
+      })
+
+      communicationsBundle.entry?.forEach((entry) => {
+        const communication = entry.resource as Communication
+        const senderName = communication.sender?.display || communication.sender?.reference || 'Care team'
+        const payloadText = communication.payload?.[0]?.contentString || 'You have a new message.'
+        notifications.push({
+          id: communication.id || `message-${notifications.length}`,
+          type: 'message',
+          title: `New message from ${senderName}`,
+          description: payloadText.slice(0, 120),
+          date: communication.sent || communication.received || new Date().toISOString(),
+          status: communication.status,
+          link: '/portal/messages',
+        })
+      })
+
+      documentsBundle.entry?.forEach((entry) => {
+        const document = entry.resource as DocumentReference
+        notifications.push({
+          id: document.id || `document-${notifications.length}`,
+          type: 'document',
+          title: document.description || document.type?.text || 'New health document available',
+          description: document.category?.[0]?.text || 'A new document has been shared with you.',
+          date: document.date || document.created || new Date().toISOString(),
+          status: document.status,
+          link: '/portal/documents',
+        })
+      })
+
+      return notifications.sort((a, b) => (a.date > b.date ? -1 : 1))
+    } catch (error) {
+      console.error('Error building patient notifications:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Retrieve patient preference flags stored on the Patient resource
+   */
+  static async getPatientPreferences(patientId: string): Promise<PatientPreferences> {
+    try {
+      const patient = await medplum.readResource('Patient', patientId)
+      const prefExtension = patient.extension?.find(
+        (ext) => ext.url === PATIENT_PREFERENCES_URL && ext.valueString
+      )
+
+      if (!prefExtension?.valueString) {
+        return DEFAULT_PATIENT_PREFERENCES
+      }
+
+      try {
+        const parsed = JSON.parse(prefExtension.valueString) as Partial<PatientPreferences>
+        return { ...DEFAULT_PATIENT_PREFERENCES, ...parsed }
+      } catch (parseError) {
+        console.warn('Failed to parse patient preferences extension:', parseError)
+        return DEFAULT_PATIENT_PREFERENCES
+      }
+    } catch (error) {
+      console.error('Error fetching patient preferences:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update patient preference flags stored on the Patient resource
+   */
+  static async updatePatientPreferences(
+    patientId: string,
+    preferences: PatientPreferences
+  ): Promise<Patient> {
+    try {
+      const patient = await medplum.readResource('Patient', patientId)
+      const sanitizedExtensions = (patient.extension || []).filter(
+        (ext) => ext.url !== PATIENT_PREFERENCES_URL
+      )
+
+      sanitizedExtensions.push({
+        url: PATIENT_PREFERENCES_URL,
+        valueString: JSON.stringify(preferences),
+      })
+
+      patient.extension = sanitizedExtensions
+
+      return await medplum.updateResource(patient)
+    } catch (error) {
+      console.error('Error updating patient preferences:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get telehealth-specific appointments for patient
+   */
+  static async getPatientTelehealthSessions(patientId: string): Promise<Appointment[]> {
+    try {
+      const upcomingAppointments = await this.getPatientAppointments(patientId, {
+        status: ['booked', 'pending', 'arrived', 'checked-in'],
+      })
+
+      return upcomingAppointments.filter((appointment) => {
+        const serviceType = appointment.serviceType?.[0]?.text?.toLowerCase() || ''
+        const appointmentTypeText = appointment.appointmentType?.text?.toLowerCase() || ''
+        const videoExtension = appointment.extension?.some((ext) =>
+          (ext.url || '').toLowerCase().includes('telehealth')
+        )
+
+        return (
+          serviceType.includes('video') ||
+          serviceType.includes('telehealth') ||
+          appointmentTypeText.includes('video') ||
+          appointmentTypeText.includes('telehealth') ||
+          videoExtension
+        )
+      })
+    } catch (error) {
+      console.error('Error fetching patient telehealth sessions:', error)
       throw error
     }
   }

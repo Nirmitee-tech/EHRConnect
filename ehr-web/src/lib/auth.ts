@@ -157,6 +157,7 @@ providers.push(
           name: data.user.email, // Will be populated from FHIR if needed
           userType: 'patient',
           patientId: data.user.fhirPatientId,
+          orgId: data.user.orgId,
           accessToken: data.token,
           sessionToken: data.sessionToken,
         }
@@ -234,9 +235,10 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email
         token.userType = 'patient'
         token.patientId = user.patientId
+        token.org_id = user.orgId
         token.accessToken = user.accessToken
         token.sessionToken = user.sessionToken
-        // Patients don't need org/role/permission data
+        // Patients don't need role/permission data
       }
       // Handle Postgres authentication (Credentials provider)
       else if (AUTH_PROVIDER === 'postgres' && user) {
@@ -283,9 +285,10 @@ export const authOptions: NextAuthOptions = {
       if (token.userType === 'patient') {
         session.userType = 'patient'
         session.patientId = token.patientId as string
+        session.org_id = token.org_id as string
         session.accessToken = token.accessToken as string
         session.sessionToken = token.sessionToken as string
-        // Patients don't need org/role/permission data
+        // Patients don't need role/permission data
         return session
       }
 
