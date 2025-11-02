@@ -20,6 +20,7 @@ import {
   Heart,
   Video,
   Users,
+  ClipboardList,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -40,6 +41,7 @@ const navigation = [
   { name: 'Messages', href: '/portal/messages', icon: MessageSquare, badge: 3 },
   { name: 'Documents', href: '/portal/documents', icon: FileCheck },
   { name: 'Billing', href: '/portal/billing', icon: CreditCard },
+  { name: 'Forms', href: '/portal/forms', icon: ClipboardList },
   { name: 'Family Access', href: '/portal/family', icon: Users },
   { name: 'Telehealth', href: '/portal/telehealth', icon: Video },
 ]

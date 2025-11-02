@@ -1,10 +1,7 @@
-import { medplum, FHIRService } from '@/lib/medplum'
+import { medplum } from '@/lib/medplum'
 import type {
   Patient,
-  HumanName,
-  ContactPoint,
   Address,
-  Identifier,
   Appointment,
   Bundle,
   Observation,
@@ -19,6 +16,9 @@ import type {
   RelatedPerson,
   ExplanationOfBenefit,
   Invoice,
+  Questionnaire,
+  QuestionnaireResponse,
+  Task,
 } from '@medplum/fhirtypes'
 
 interface PatientRegistrationData {
@@ -71,6 +71,17 @@ export interface PatientNotification {
   date: string
   status?: string
   link?: string
+}
+
+export interface PatientFormAssignment {
+  id: string
+  title: string
+  description?: string
+  status: 'not-started' | 'in-progress' | 'completed'
+  dueDate?: string
+  submittedOn?: string
+  questionnaire?: Questionnaire
+  questionnaireResponse?: QuestionnaireResponse
 }
 
 const PATIENT_PREFERENCES_URL = 'urn:oid:ehrconnect:patient-preferences'
@@ -256,12 +267,12 @@ export class PatientPortalService {
   static async authenticatePatient(
     email: string,
     password: string
-  ): Promise<{ patient: Patient; success: boolean }> {
+  ): Promise<{ patient: Patient | null; success: boolean }> {
     try {
       const patient = await this.findPatientByEmail(email)
 
       if (!patient) {
-        return { patient: null as any, success: false }
+        return { patient: null, success: false }
       }
 
       // Get hashed password from extension
@@ -277,10 +288,10 @@ export class PatientPortalService {
       const { compare } = await import('bcryptjs')
       const isValid = await compare(password, passwordExt.valueString)
 
-      return { patient, success: isValid }
+      return { patient: isValid ? patient : null, success: isValid }
     } catch (error) {
       console.error('Error authenticating patient:', error)
-      return { patient: null as any, success: false }
+      return { patient: null, success: false }
     }
   }
 
@@ -291,7 +302,6 @@ export class PatientPortalService {
     try {
       const now = new Date()
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-      const futureDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000)
 
       // Fetch upcoming appointments
       const appointmentsBundle = await medplum.search('Appointment', {
@@ -378,10 +388,10 @@ export class PatientPortalService {
     params?: AppointmentSearchParams
   ): Promise<Appointment[]> {
     try {
-      const searchParams: any = {
+      const searchParams: Record<string, string> = {
         patient: `Patient/${patientId}`,
         _sort: '-date',
-        _count: 50,
+        _count: '50',
       }
 
       if (params?.status && params.status.length > 0) {
@@ -722,6 +732,170 @@ export class PatientPortalService {
     } catch (error) {
       console.error('Error updating patient preferences:', error)
       throw error
+    }
+  }
+
+  /**
+   * Get patient form assignments (questionnaires to complete)
+   */
+  static async getPatientForms(patientId: string): Promise<{
+    current: PatientFormAssignment[]
+    past: PatientFormAssignment[]
+  }> {
+    const now = new Date()
+    const fallback: { current: PatientFormAssignment[]; past: PatientFormAssignment[] } = {
+      current: [
+        {
+          id: 'sample-annual-wellness',
+          title: 'Annual Wellness Questionnaire',
+          description: 'Share updates about your overall health and lifestyle before your annual visit.',
+          status: 'in-progress',
+          dueDate: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+          questionnaire: {
+            resourceType: 'Questionnaire',
+            id: 'sample-annual-wellness',
+            title: 'Annual Wellness Questionnaire',
+          },
+        },
+        {
+          id: 'sample-medication-review',
+          title: 'Medication Review Form',
+          description: 'Confirm your current medications and note any side effects you may be experiencing.',
+          status: 'not-started',
+          dueDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          questionnaire: {
+            resourceType: 'Questionnaire',
+            id: 'sample-medication-review',
+            title: 'Medication Review Form',
+          },
+        },
+      ],
+      past: [
+        {
+          id: 'sample-post-visit-feedback',
+          title: 'Post Visit Feedback',
+          description: 'Tell us about your recent visit so we can continue improving your experience.',
+          status: 'completed',
+          submittedOn: new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+          questionnaire: {
+            resourceType: 'Questionnaire',
+            id: 'sample-post-visit-feedback',
+            title: 'Post Visit Feedback',
+          },
+        },
+      ],
+    }
+
+    try {
+      const [taskBundle, responseBundle] = await Promise.all([
+        medplum
+          .search('Task', {
+            for: `Patient/${patientId}`,
+            status: 'requested,received,accepted,in-progress',
+            _count: 50,
+          })
+          .catch(() => ({ entry: [] } as Bundle<Task>)),
+        medplum
+          .search('QuestionnaireResponse', {
+            subject: `Patient/${patientId}`,
+            _sort: '-authored',
+            _count: 100,
+          })
+          .catch(() => ({ entry: [] } as Bundle<QuestionnaireResponse>)),
+      ])
+
+      const taskForms: PatientFormAssignment[] =
+        taskBundle.entry?.map((entry) => {
+          const task = entry.resource as Task
+          const dueDate = task.executionPeriod?.end || task.restriction?.period?.end
+          const questionnaireRef = task.focus?.reference || task.input?.[0]?.valueReference?.reference
+          const questionnaire: Questionnaire | undefined = questionnaireRef?.startsWith('Questionnaire/')
+            ? {
+                resourceType: 'Questionnaire',
+                id: questionnaireRef.split('/').pop() || questionnaireRef,
+                title: task.description || questionnaireRef.split('/').pop() || 'Patient Form',
+              }
+            : undefined
+
+          return {
+            id: task.id || `task-${task.identifier?.[0]?.value || Math.random().toString(36).slice(2)}`,
+            title: task.description || questionnaire?.title || 'Patient Form',
+            description: task.note?.[0]?.text,
+            status: 'not-started',
+            dueDate,
+            questionnaire,
+          }
+        }) || []
+
+      const responseForms: PatientFormAssignment[] =
+        responseBundle.entry?.map((entry, index) => {
+          const response = entry.resource as QuestionnaireResponse
+          const canonical = response.questionnaire
+          let questionnaire: Questionnaire | undefined
+          let title = 'Patient Questionnaire'
+
+          if (typeof canonical === 'string') {
+            const segments = canonical.split('/')
+            const lastSegment = segments[segments.length - 1]
+            title = lastSegment || title
+            questionnaire = {
+              resourceType: 'Questionnaire',
+              id: lastSegment || canonical,
+              title,
+            }
+          }
+
+          const normalizedStatus: PatientFormAssignment['status'] =
+            response.status === 'completed'
+              ? 'completed'
+              : response.status === 'in-progress'
+              ? 'in-progress'
+              : 'completed'
+
+          return {
+            id: response.id || `questionnaire-response-${index}`,
+            title: questionnaire?.title || 'Patient Questionnaire',
+            description: response.text?.div
+              ? response.text.div.replace(/<[^>]+>/g, '').slice(0, 140)
+              : undefined,
+            status: normalizedStatus,
+            submittedOn: response.authored || response.meta?.lastUpdated,
+            questionnaire,
+            questionnaireResponse: response,
+          }
+        }) || []
+
+      const allForms: PatientFormAssignment[] = [...taskForms, ...responseForms]
+
+      const nowIso = now.toISOString()
+      const currentForms = allForms.filter((form) => {
+        if (form.status === 'completed') {
+          return false
+        }
+        if (form.dueDate && form.dueDate < nowIso) {
+          return false
+        }
+        return true
+      })
+
+      const pastForms = allForms.filter((form) => {
+        if (form.status === 'completed') {
+          return true
+        }
+        if (form.dueDate && form.dueDate < nowIso) {
+          return true
+        }
+        return false
+      })
+
+      if (currentForms.length === 0 && pastForms.length === 0) {
+        return fallback
+      }
+
+      return { current: currentForms, past: pastForms }
+    } catch (error) {
+      console.error('Error fetching patient forms:', error)
+      return fallback
     }
   }
 
