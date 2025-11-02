@@ -333,3 +333,19 @@ input:focus, select:focus, textarea:focus {
   padding: 0.375rem 0.75rem !important;
   font-size: 0.75rem !important;
 }
+
+/* Patient Portal Theme - Navy #1B2156 */
+/* Tabs styling for patient portal */
+[data-state="active"] {
+  background-color: #1B2156 !important;
+  color: white !important;
+}
+
+/* Ensure proper contrast for inactive tabs */
+button[role="tab"]:not([data-state="active"]) {
+  color: #4B5563;
+}
+
+button[role="tab"]:not([data-state="active"]):hover {
+  background-color: rgba(27, 33, 86, 0.05);
+}

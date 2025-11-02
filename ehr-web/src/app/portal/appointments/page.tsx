@@ -84,36 +84,36 @@ export default function PatientAppointmentsPage() {
   })
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-4 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Appointments</h1>
-          <p className="text-gray-600 mt-1">Manage your appointments and schedule new visits</p>
+          <h1 className="text-2xl font-bold text-gray-900">Appointments</h1>
+          <p className="text-sm text-gray-600 mt-0.5">Manage your appointments and schedule new visits</p>
         </div>
-        <Button asChild size="lg" className="w-full sm:w-auto">
+        <Button asChild className="w-full sm:w-auto text-white" style={{ backgroundColor: '#1B2156' }}>
           <Link href="/portal/appointments/book">
-            <Plus className="w-5 h-5 mr-2" />
+            <Plus className="w-4 h-4 mr-1.5" />
             Book Appointment
           </Link>
         </Button>
       </div>
 
       {/* Search and Filter */}
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+      <Card className="border border-gray-200 shadow-sm bg-white">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search appointments..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-9 h-9"
               />
             </div>
-            <Button variant="outline">
-              <Filter className="w-4 h-4 mr-2" />
+            <Button variant="outline" size="sm" className="h-9">
+              <Filter className="w-4 h-4 mr-1.5" />
               Filters
             </Button>
           </div>
@@ -122,23 +122,23 @@ export default function PatientAppointmentsPage() {
 
       {/* Tabs */}
       <Tabs value={filter} onValueChange={(v) => setFilter(v as any)} className="w-full">
-        <TabsList className="w-full sm:w-auto grid grid-cols-3 h-auto">
-          <TabsTrigger value="upcoming" className="data-[state=active]:bg-blue-100">
+        <TabsList className="w-full sm:w-auto grid grid-cols-3">
+          <TabsTrigger value="upcoming">
             Upcoming
           </TabsTrigger>
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="past">Past</TabsTrigger>
         </TabsList>
 
-        <TabsContent value={filter} className="mt-6 space-y-4">
+        <TabsContent value={filter} className="mt-4 space-y-3">
           {loading ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-32" />
+                <Skeleton key={i} className="h-28" />
               ))}
             </div>
           ) : filteredAppointments.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {filteredAppointments.map((appointment) => {
                 const appointmentType = getAppointmentType(appointment)
                 const practitioner = appointment.participant?.find((p: any) =>
@@ -151,55 +151,55 @@ export default function PatientAppointmentsPage() {
                 return (
                   <Card
                     key={appointment.id}
-                    className="hover:shadow-lg transition-all cursor-pointer border-l-4 border-l-blue-500"
+                    className="hover:shadow-md transition-all cursor-pointer border border-gray-200 shadow-sm bg-white"
+                    style={{ borderLeftWidth: '3px', borderLeftColor: '#1B2156' }}
                   >
-                    <CardContent className="p-6">
-                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                         {/* Left Section - Appointment Info */}
-                        <div className="flex-1 space-y-3">
+                        <div className="flex-1 space-y-2">
                           <div className="flex items-start justify-between">
                             <div>
-                              <div className="flex items-center gap-3 mb-2">
-                                <h3 className="text-lg font-semibold text-gray-900">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-base font-bold text-gray-900">
                                   {practitioner?.actor?.display || 'Healthcare Provider'}
                                 </h3>
-                                <Badge className={getStatusColor(appointment.status)}>
+                                <Badge className={getStatusColor(appointment.status)} style={{ fontSize: '10px', padding: '2px 8px' }}>
                                   {appointment.status}
                                 </Badge>
                               </div>
-                              <p className="text-gray-600">
+                              <p className="text-sm text-gray-600">
                                 {appointment.serviceType?.[0]?.text || 'General Visit'}
                               </p>
                             </div>
                           </div>
 
-                          <div className="flex flex-wrap gap-4 text-sm">
-                            <div className="flex items-center gap-2 text-gray-700">
-                              <CalendarIcon className="w-4 h-4 text-gray-500" />
-                              {format(new Date(appointment.start), 'EEEE, MMMM d, yyyy')}
+                          <div className="flex flex-wrap gap-3 text-sm">
+                            <div className="flex items-center gap-1.5 text-gray-700">
+                              <CalendarIcon className="w-3.5 h-3.5 text-gray-500" />
+                              <span className="text-xs">{format(new Date(appointment.start), 'EEE, MMM d, yyyy')}</span>
                             </div>
-                            <div className="flex items-center gap-2 text-gray-700">
-                              <Clock className="w-4 h-4 text-gray-500" />
-                              {format(new Date(appointment.start), 'h:mm a')} -{' '}
-                              {format(new Date(appointment.end), 'h:mm a')}
+                            <div className="flex items-center gap-1.5 text-gray-700">
+                              <Clock className="w-3.5 h-3.5 text-gray-500" />
+                              <span className="text-xs">{format(new Date(appointment.start), 'h:mm a')} - {format(new Date(appointment.end), 'h:mm a')}</span>
                             </div>
-                            <div className={`flex items-center gap-2 ${appointmentType.color}`}>
-                              <appointmentType.icon className="w-4 h-4" />
-                              {appointmentType.text}
+                            <div className={`flex items-center gap-1.5 ${appointmentType.color}`}>
+                              <appointmentType.icon className="w-3.5 h-3.5" />
+                              <span className="text-xs">{appointmentType.text}</span>
                             </div>
                           </div>
 
                           {location && (
-                            <div className="flex items-start gap-2 text-sm text-gray-600">
-                              <MapPin className="w-4 h-4 text-gray-500 mt-0.5" />
+                            <div className="flex items-start gap-1.5 text-xs text-gray-600">
+                              <MapPin className="w-3.5 h-3.5 text-gray-500 mt-0.5" />
                               <span>{location.actor?.display}</span>
                             </div>
                           )}
 
                           {appointment.reasonCode?.[0]?.text && (
-                            <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-                              <p className="text-sm text-gray-700">
-                                <span className="font-medium">Reason: </span>
+                            <div className="mt-1.5 p-2 bg-gray-50 rounded-lg">
+                              <p className="text-xs text-gray-700">
+                                <span className="font-semibold">Reason: </span>
                                 {appointment.reasonCode[0].text}
                               </p>
                             </div>
@@ -210,9 +210,9 @@ export default function PatientAppointmentsPage() {
                         <div className="flex lg:flex-col gap-2 lg:items-end">
                           {appointment.status === 'booked' &&
                             appointmentType.icon === Video && (
-                              <Button variant="default" size="sm" asChild>
+                              <Button size="sm" className="text-white" style={{ backgroundColor: '#1B2156' }} asChild>
                                 <Link href={`/portal/appointments/${appointment.id}/join`}>
-                                  <Video className="w-4 h-4 mr-2" />
+                                  <Video className="w-3.5 h-3.5 mr-1.5" />
                                   Join Call
                                 </Link>
                               </Button>
@@ -220,7 +220,7 @@ export default function PatientAppointmentsPage() {
                           <Button variant="outline" size="sm" asChild>
                             <Link href={`/portal/appointments/${appointment.id}`}>
                               View Details
-                              <ChevronRight className="w-4 h-4 ml-1" />
+                              <ChevronRight className="w-3.5 h-3.5 ml-1" />
                             </Link>
                           </Button>
                         </div>
@@ -231,22 +231,22 @@ export default function PatientAppointmentsPage() {
               })}
             </div>
           ) : (
-            <Card>
-              <CardContent className="py-12">
+            <Card className="border border-gray-200 shadow-sm bg-white">
+              <CardContent className="py-10">
                 <div className="text-center">
-                  <CalendarIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <CalendarIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <h3 className="text-base font-bold text-gray-900 mb-1.5">
                     No {filter === 'upcoming' ? 'upcoming' : filter === 'past' ? 'past' : ''}{' '}
                     appointments
                   </h3>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-sm text-gray-600 mb-4">
                     {filter === 'upcoming'
                       ? "You don't have any upcoming appointments scheduled."
                       : "You don't have any appointments in this category."}
                   </p>
-                  <Button asChild>
+                  <Button asChild className="text-white" style={{ backgroundColor: '#1B2156' }}>
                     <Link href="/portal/appointments/book">
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus className="w-4 h-4 mr-1.5" />
                       Book Appointment
                     </Link>
                   </Button>

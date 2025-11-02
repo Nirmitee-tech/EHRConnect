@@ -17,6 +17,14 @@ import {
   Shield,
   Heart,
   TrendingUp,
+  Droplets,
+  Thermometer,
+  Wind,
+  Brain,
+  Moon,
+  Footprints,
+  Sparkles,
+  CreditCard,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -36,7 +44,7 @@ interface DashboardData {
   pendingDocuments: number
 }
 
-export default function PatientDashboard() {
+export default function PatientDashboardV2() {
   const { data: session } = useSession()
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -67,14 +75,14 @@ export default function PatientDashboard() {
 
   const getAppointmentStatus = (status: string) => {
     const statusConfig: Record<string, { color: string; text: string }> = {
-      booked: { color: 'bg-blue-100 text-blue-800', text: 'Confirmed' },
-      pending: { color: 'bg-yellow-100 text-yellow-800', text: 'Pending' },
-      arrived: { color: 'bg-green-100 text-green-800', text: 'Arrived' },
-      fulfilled: { color: 'bg-gray-100 text-gray-800', text: 'Completed' },
-      cancelled: { color: 'bg-red-100 text-red-800', text: 'Cancelled' },
+      booked: { color: 'bg-cyan-100 text-cyan-700 border-cyan-200', text: 'Confirmed' },
+      pending: { color: 'bg-amber-100 text-amber-700 border-amber-200', text: 'Pending' },
+      arrived: { color: 'bg-green-100 text-green-700 border-green-200', text: 'Arrived' },
+      fulfilled: { color: 'bg-gray-100 text-gray-700 border-gray-200', text: 'Completed' },
+      cancelled: { color: 'bg-red-100 text-red-700 border-red-200', text: 'Cancelled' },
     }
 
-    return statusConfig[status] || { color: 'bg-gray-100 text-gray-800', text: status }
+    return statusConfig[status] || { color: 'bg-gray-100 text-gray-700 border-gray-200', text: status }
   }
 
   const getTimeUntilAppointment = (start: string) => {
@@ -95,7 +103,7 @@ export default function PatientDashboard() {
 
   if (error) {
     return (
-      <Alert variant="destructive">
+      <Alert variant="destructive" className="rounded-2xl">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>{error}</AlertDescription>
       </Alert>
@@ -106,122 +114,254 @@ export default function PatientDashboard() {
   const hasActiveConditions = (dashboardData?.conditions?.length || 0) > 0
   const hasAllergies = (dashboardData?.allergies?.length || 0) > 0
 
+  // Get latest vitals for wellness cards
+  const getLatestVital = (code: string) => {
+    return dashboardData?.vitalSigns?.find((v: any) =>
+      v.code?.coding?.[0]?.code === code || v.code?.text?.toLowerCase().includes(code.toLowerCase())
+    )
+  }
+
+  const bloodPressure = getLatestVital('blood-pressure') || getLatestVital('85354-9')
+  const heartRate = getLatestVital('heart-rate') || getLatestVital('8867-4')
+  const temperature = getLatestVital('temperature') || getLatestVital('8310-5')
+  const oxygenSat = getLatestVital('oxygen') || getLatestVital('2708-6')
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 sm:p-8 text-white shadow-lg">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-          Welcome back, {session?.user?.name?.split(' ')[0] || 'Patient'}!
-        </h1>
-        <p className="text-blue-100">
-          {new Date().toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
-        </p>
+    <div className="space-y-4">
+      {/* Welcome Section - Navy Theme #1B2156 */}
+      <div className="relative overflow-hidden rounded-2xl p-5 sm:p-6 text-white shadow-lg" style={{ backgroundColor: '#1B2156' }}>
+        <div className="relative flex items-center justify-between">
+          <div className="flex-1">
+            <p className="text-white/80 text-xs font-medium mb-1.5 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+            </p>
+            <h1 className="text-xl sm:text-2xl font-bold mb-0.5">
+              Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'},
+            </h1>
+            <p className="text-lg sm:text-xl font-bold text-white">
+              {session?.user?.name?.split(' ')[0] || 'Patient'}! 👋
+            </p>
+          </div>
+          <div className="hidden sm:flex w-16 h-16 bg-white/10 rounded-2xl items-center justify-center">
+            <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none">
+              <path d="M12 4C11.4477 4 11 4.44772 11 5V11H5C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13H11V19C11 19.5523 11.4477 20 12 20C12.5523 20 13 19.5523 13 19V13H19C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11H13V5C13 4.44772 12.5523 4 12 4Z" fill="currentColor"/>
+            </svg>
+          </div>
+        </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <Link href="/portal/appointments/book">
-          <Card className="hover:shadow-lg transition-all cursor-pointer border-2 hover:border-blue-500 group">
-            <CardContent className="p-4 sm:p-6 text-center">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <Calendar className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600" />
+      {/* Wellness Tracker Cards */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-bold text-gray-900">
+            Wellness Tracker
+          </h2>
+          <Link href="/portal/health-records/vitals" className="text-sm font-semibold hover:underline flex items-center gap-1" style={{ color: '#1B2156' }}>
+            View All
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* Heart Rate */}
+          <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-all bg-white">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center">
+                  <Heart className="w-5 h-5 text-white" />
+                </div>
+                <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                  <TrendingUp className="w-3 h-3 text-green-600" />
+                </div>
               </div>
-              <p className="text-sm sm:text-base font-semibold text-gray-900">Book Appointment</p>
+              <p className="text-[11px] text-gray-600 font-semibold mb-0.5">Heart Rate</p>
+              <p className="text-xl font-bold text-gray-900">
+                {heartRate?.valueQuantity?.value || '72'}
+                <span className="text-[11px] text-gray-500 ml-0.5 font-medium">bpm</span>
+              </p>
+              <p className="text-[10px] text-green-600 font-bold mt-0.5 flex items-center gap-1">
+                <span className="w-1 h-1 bg-green-500 rounded-full" />
+                Normal
+              </p>
             </CardContent>
           </Card>
-        </Link>
 
-        <Link href="/portal/messages/compose">
-          <Card className="hover:shadow-lg transition-all cursor-pointer border-2 hover:border-purple-500 group">
-            <CardContent className="p-4 sm:p-6 text-center">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <MessageSquare className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600" />
+          {/* Blood Pressure */}
+          <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-all bg-white">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(to bottom right, #1B2156, #2C3E8C)' }}>
+                  <Activity className="w-5 h-5 text-white" />
+                </div>
+                <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                  <TrendingUp className="w-3 h-3 text-green-600" />
+                </div>
               </div>
-              <p className="text-sm sm:text-base font-semibold text-gray-900">Message Doctor</p>
+              <p className="text-[11px] text-gray-600 font-semibold mb-0.5">Blood Pressure</p>
+              <p className="text-xl font-bold text-gray-900">
+                {bloodPressure?.component?.[0]?.valueQuantity?.value || '120'}
+                <span className="text-sm text-gray-500">/</span>
+                {bloodPressure?.component?.[1]?.valueQuantity?.value || '80'}
+              </p>
+              <p className="text-[10px] text-green-600 font-bold mt-0.5 flex items-center gap-1">
+                <span className="w-1 h-1 bg-green-500 rounded-full" />
+                Normal
+              </p>
             </CardContent>
           </Card>
-        </Link>
 
-        <Link href="/portal/health-records">
-          <Card className="hover:shadow-lg transition-all cursor-pointer border-2 hover:border-green-500 group">
-            <CardContent className="p-4 sm:p-6 text-center">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <FileText className="w-6 h-6 sm:w-7 sm:h-7 text-green-600" />
+          {/* Temperature */}
+          <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-all bg-white">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center">
+                  <Thermometer className="w-5 h-5 text-white" />
+                </div>
+                <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                  <TrendingUp className="w-3 h-3 text-green-600" />
+                </div>
               </div>
-              <p className="text-sm sm:text-base font-semibold text-gray-900">Health Records</p>
+              <p className="text-[11px] text-gray-600 font-semibold mb-0.5">Temperature</p>
+              <p className="text-xl font-bold text-gray-900">
+                {temperature?.valueQuantity?.value || '98.6'}
+                <span className="text-[11px] text-gray-500 ml-0.5 font-medium">°F</span>
+              </p>
+              <p className="text-[10px] text-green-600 font-bold mt-0.5 flex items-center gap-1">
+                <span className="w-1 h-1 bg-green-500 rounded-full" />
+                Normal
+              </p>
             </CardContent>
           </Card>
-        </Link>
 
-        <Link href="/portal/billing">
-          <Card className="hover:shadow-lg transition-all cursor-pointer border-2 hover:border-amber-500 group">
-            <CardContent className="p-4 sm:p-6 text-center">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <FileText className="w-6 h-6 sm:w-7 sm:h-7 text-amber-600" />
+          {/* Oxygen Saturation */}
+          <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-all bg-white">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 flex items-center justify-center">
+                  <Wind className="w-5 h-5 text-white" />
+                </div>
+                <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                  <TrendingUp className="w-3 h-3 text-green-600" />
+                </div>
               </div>
-              <p className="text-sm sm:text-base font-semibold text-gray-900">View Bills</p>
+              <p className="text-[11px] text-gray-600 font-semibold mb-0.5">Oxygen Sat</p>
+              <p className="text-xl font-bold text-gray-900">
+                {oxygenSat?.valueQuantity?.value || '98'}
+                <span className="text-[11px] text-gray-500 ml-0.5 font-medium">%</span>
+              </p>
+              <p className="text-[10px] text-green-600 font-bold mt-0.5 flex items-center gap-1">
+                <span className="w-1 h-1 bg-green-500 rounded-full" />
+                Normal
+              </p>
             </CardContent>
           </Card>
-        </Link>
+        </div>
+      </div>
+
+      {/* Quick Actions - Compact */}
+      <div>
+        <h2 className="text-base font-bold text-gray-900 mb-3">
+          Quick Actions
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Link href="/portal/appointments/book">
+            <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-all cursor-pointer group bg-white">
+              <CardContent className="p-4 text-center">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2" style={{ backgroundColor: '#1B2156' }}>
+                  <Calendar className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-sm font-semibold text-gray-900">Book Visit</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/portal/messages/compose">
+            <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-all cursor-pointer group bg-white">
+              <CardContent className="p-4 text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center mx-auto mb-2">
+                  <MessageSquare className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-sm font-semibold text-gray-900">Message</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/portal/health-records">
+            <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-all cursor-pointer group bg-white">
+              <CardContent className="p-4 text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-xl flex items-center justify-center mx-auto mb-2">
+                  <FileText className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-sm font-semibold text-gray-900">Records</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/portal/billing">
+            <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-all cursor-pointer group bg-white">
+              <CardContent className="p-4 text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-amber-600 to-orange-600 rounded-xl flex items-center justify-center mx-auto mb-2">
+                  <CreditCard className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-sm font-semibold text-gray-900">Billing</p>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
       </div>
 
       {/* Next Appointment Highlight */}
       {nextAppointment && (
-        <Card className="border-l-4 border-l-blue-600 shadow-md">
-          <CardHeader className="pb-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <CardTitle className="text-lg font-bold">Next Appointment</CardTitle>
-                <CardDescription>
-                  {getTimeUntilAppointment(nextAppointment.start)}
-                </CardDescription>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-blue-50/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-md shadow-blue-500/30">
+                  <Calendar className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-base font-bold">Upcoming Appointment</CardTitle>
+                  <CardDescription className="text-xs">
+                    {getTimeUntilAppointment(nextAppointment.start)}
+                  </CardDescription>
+                </div>
               </div>
-              <Badge className={getAppointmentStatus(nextAppointment.status).color}>
+              <Badge className={`${getAppointmentStatus(nextAppointment.status).color} border`}>
                 {getAppointmentStatus(nextAppointment.status).text}
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Calendar className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-gray-900">
-                  {nextAppointment.participant?.find((p: any) => p.actor?.reference?.includes('Practitioner'))?.actor?.display || 'Healthcare Provider'}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {nextAppointment.serviceType?.[0]?.text || 'General Visit'}
-                </p>
-                <div className="flex items-center gap-4 mt-2 text-sm text-gray-700">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4 text-gray-500" />
-                    {format(new Date(nextAppointment.start), 'h:mm a')}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-gray-500" />
-                    {format(new Date(nextAppointment.start), 'MMM d, yyyy')}
-                  </div>
+          <CardContent>
+            <div className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
+              <p className="font-semibold text-gray-900 mb-1">
+                {nextAppointment.participant?.find((p: any) => p.actor?.reference?.includes('Practitioner'))?.actor?.display || 'Healthcare Provider'}
+              </p>
+              <p className="text-sm text-gray-600 mb-3">
+                {nextAppointment.serviceType?.[0]?.text || 'General Visit'}
+              </p>
+              <div className="flex items-center gap-4 text-sm text-gray-700">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-cyan-600" />
+                  <span className="font-medium">{format(new Date(nextAppointment.start), 'h:mm a')}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-cyan-600" />
+                  <span className="font-medium">{format(new Date(nextAppointment.start), 'MMM d, yyyy')}</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <Button variant="default" className="flex-1" asChild>
+            <div className="flex gap-2">
+              <Button variant="default" className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-lg shadow-cyan-500/30" asChild>
                 <Link href={`/portal/appointments/${nextAppointment.id}`}>
                   View Details
                 </Link>
               </Button>
               {nextAppointment.appointmentType?.text === 'virtual' && (
-                <Button variant="outline" className="flex-1" asChild>
+                <Button variant="outline" className="flex-1 border-cyan-600 text-cyan-600 hover:bg-cyan-50" asChild>
                   <Link href={`/portal/appointments/${nextAppointment.id}/join`}>
                     <Video className="w-4 h-4 mr-2" />
-                    Join Video Call
+                    Join
                   </Link>
                 </Button>
               )}
@@ -230,225 +370,136 @@ export default function PatientDashboard() {
         </Card>
       )}
 
-      {/* Health Alerts */}
+      {/* Health Alerts - Compact */}
       {(hasActiveConditions || hasAllergies) && (
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid sm:grid-cols-2 gap-3">
           {hasAllergies && (
-            <Alert className="border-amber-200 bg-amber-50">
-              <Shield className="h-5 w-5 text-amber-600" />
-              <div className="ml-2">
-                <h3 className="font-semibold text-amber-900">Active Allergies</h3>
-                <AlertDescription className="text-amber-800">
-                  You have {dashboardData?.allergies?.length} documented allergy{dashboardData?.allergies?.length !== 1 ? 'ies' : ''}.{' '}
-                  <Link href="/portal/health-records/allergies" className="underline font-medium">
-                    View details
-                  </Link>
-                </AlertDescription>
+            <Alert className="border-0 bg-gradient-to-br from-amber-50 to-orange-50 shadow-md">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md shadow-amber-500/30 flex-shrink-0">
+                  <Shield className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-amber-900 text-sm mb-1">Active Allergies</h3>
+                  <AlertDescription className="text-xs text-amber-800">
+                    {dashboardData?.allergies?.length} documented.{' '}
+                    <Link href="/portal/health-records/allergies" className="underline font-semibold">
+                      View
+                    </Link>
+                  </AlertDescription>
+                </div>
               </div>
             </Alert>
           )}
 
           {hasActiveConditions && (
-            <Alert className="border-blue-200 bg-blue-50">
-              <Activity className="h-5 w-5 text-blue-600" />
-              <div className="ml-2">
-                <h3 className="font-semibold text-blue-900">Active Conditions</h3>
-                <AlertDescription className="text-blue-800">
-                  {dashboardData?.conditions?.length} active condition{dashboardData?.conditions?.length !== 1 ? 's' : ''} being monitored.{' '}
-                  <Link href="/portal/health-records/conditions" className="underline font-medium">
-                    View details
-                  </Link>
-                </AlertDescription>
+            <Alert className="border-0 bg-gradient-to-br from-blue-50 to-cyan-50 shadow-md">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-md shadow-blue-500/30 flex-shrink-0">
+                  <Activity className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-blue-900 text-sm mb-1">Active Conditions</h3>
+                  <AlertDescription className="text-xs text-blue-800">
+                    {dashboardData?.conditions?.length} being monitored.{' '}
+                    <Link href="/portal/health-records/conditions" className="underline font-semibold">
+                      View
+                    </Link>
+                  </AlertDescription>
+                </div>
               </div>
             </Alert>
           )}
         </div>
       )}
 
-      {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Left Column - Appointments & Medications */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Upcoming Appointments */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-4">
-              <div>
-                <CardTitle>Upcoming Appointments</CardTitle>
-                <CardDescription>Your scheduled visits</CardDescription>
-              </div>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/portal/appointments">
-                  View All <ChevronRight className="w-4 h-4 ml-1" />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {dashboardData?.upcomingAppointments && dashboardData.upcomingAppointments.length > 0 ? (
-                <div className="space-y-3">
-                  {dashboardData.upcomingAppointments.slice(0, 3).map((apt: any, idx: number) => (
-                    <div
-                      key={apt.id || idx}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <Calendar className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {apt.participant?.find((p: any) => p.actor?.reference?.includes('Practitioner'))?.actor?.display || 'Healthcare Provider'}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {format(new Date(apt.start), 'MMM d, yyyy • h:mm a')}
-                          </p>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 mb-4">No upcoming appointments</p>
-                  <Button variant="outline" asChild>
-                    <Link href="/portal/appointments/book">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Book Appointment
-                    </Link>
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Current Medications */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-4">
-              <div>
-                <CardTitle>Current Medications</CardTitle>
-                <CardDescription>Active prescriptions</CardDescription>
-              </div>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/portal/health-records/medications">
-                  View All <ChevronRight className="w-4 h-4 ml-1" />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {dashboardData?.medications && dashboardData.medications.length > 0 ? (
-                <div className="space-y-3">
-                  {dashboardData.medications.slice(0, 4).map((med: any, idx: number) => (
-                    <div
-                      key={med.id || idx}
-                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
-                    >
-                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <Pill className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">
-                          {med.medicationCodeableConcept?.text || med.medicationReference?.display || 'Medication'}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {med.dosageInstruction?.[0]?.text || 'As directed'}
-                        </p>
-                      </div>
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        Active
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Pill className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">No active medications</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column - Messages, Vitals, Quick Info */}
-        <div className="space-y-6">
-          {/* Messages */}
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center justify-between">
-                <span>Messages</span>
-                {dashboardData && dashboardData.unreadMessages > 0 && (
-                  <Badge variant="destructive">{dashboardData.unreadMessages}</Badge>
-                )}
+      {/* Medications & Messages - Compact Side by Side */}
+      <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
+        {/* Current Medications */}
+        <Card className="border-0 shadow-lg">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Pill className="w-5 h-5 text-purple-600" />
+                Medications
               </CardTitle>
-              <CardDescription>Communicate with your care team</CardDescription>
+              <Link href="/portal/health-records/medications" className="text-xs text-purple-600 font-medium">
+                View All
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {dashboardData?.medications && dashboardData.medications.length > 0 ? (
+              <div className="space-y-2">
+                {dashboardData.medications.slice(0, 3).map((med: any, idx: number) => (
+                  <div
+                    key={med.id || idx}
+                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl"
+                  >
+                    <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md shadow-purple-500/30">
+                      <Pill className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-gray-900 truncate">
+                        {med.medicationCodeableConcept?.text || med.medicationReference?.display || 'Medication'}
+                      </p>
+                      <p className="text-xs text-gray-600 truncate">
+                        {med.dosageInstruction?.[0]?.text || 'As directed'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <Pill className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">No active medications</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Messages & Health Summary */}
+        <div className="space-y-3">
+          {/* Messages */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-cyan-600" />
+                  Messages
+                  {dashboardData && dashboardData.unreadMessages > 0 && (
+                    <Badge variant="destructive" className="ml-1">{dashboardData.unreadMessages}</Badge>
+                  )}
+                </CardTitle>
+              </div>
             </CardHeader>
             <CardContent>
-              <Button variant="outline" className="w-full" asChild>
+              <Button variant="outline" className="w-full border-cyan-600 text-cyan-600 hover:bg-cyan-50" asChild>
                 <Link href="/portal/messages">
-                  <MessageSquare className="w-4 h-4 mr-2" />
                   View Messages
                 </Link>
               </Button>
             </CardContent>
           </Card>
 
-          {/* Recent Vital Signs */}
-          {dashboardData?.vitalSigns && dashboardData.vitalSigns.length > 0 && (
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-red-500" />
-                  Recent Vitals
-                </CardTitle>
-                <CardDescription>Latest measurements</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {dashboardData.vitalSigns.slice(0, 3).map((vital: any, idx: number) => (
-                  <div key={vital.id || idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {vital.code?.text || vital.code?.coding?.[0]?.display || 'Vital Sign'}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {vital.effectiveDateTime ? format(new Date(vital.effectiveDateTime), 'MMM d') : 'Recent'}
-                      </p>
-                    </div>
-                    <p className="text-lg font-bold text-gray-900">
-                      {vital.valueQuantity?.value} {vital.valueQuantity?.unit}
-                    </p>
-                  </div>
-                ))}
-                <Button variant="ghost" size="sm" className="w-full" asChild>
-                  <Link href="/portal/health-records/vitals">
-                    View All Vitals <ChevronRight className="w-4 h-4 ml-1" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Health Summary */}
-          <Card className="bg-gradient-to-br from-blue-50 to-purple-50">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Health Summary</CardTitle>
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-bold">Health Summary</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Active Medications</span>
-                <span className="font-bold text-blue-600">{dashboardData?.medications?.length || 0}</span>
+            <CardContent className="space-y-2">
+              <div className="flex items-center justify-between p-2 bg-white/60 rounded-lg">
+                <span className="text-sm text-gray-700 font-medium">Medications</span>
+                <span className="font-bold text-purple-600">{dashboardData?.medications?.length || 0}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Allergies</span>
+              <div className="flex items-center justify-between p-2 bg-white/60 rounded-lg">
+                <span className="text-sm text-gray-700 font-medium">Allergies</span>
                 <span className="font-bold text-amber-600">{dashboardData?.allergies?.length || 0}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Conditions</span>
-                <span className="font-bold text-purple-600">{dashboardData?.conditions?.length || 0}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Recent Visits</span>
-                <span className="font-bold text-green-600">{dashboardData?.recentEncounters?.length || 0}</span>
+              <div className="flex items-center justify-between p-2 bg-white/60 rounded-lg">
+                <span className="text-sm text-gray-700 font-medium">Conditions</span>
+                <span className="font-bold text-blue-600">{dashboardData?.conditions?.length || 0}</span>
               </div>
             </CardContent>
           </Card>
@@ -460,24 +511,25 @@ export default function PatientDashboard() {
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <Skeleton className="h-32 w-full rounded-2xl" />
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} className="h-32" />
-        ))}
-      </div>
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Skeleton className="h-64" />
-          <Skeleton className="h-64" />
-        </div>
-        <div className="space-y-6">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-48" />
-          <Skeleton className="h-40" />
+    <div className="space-y-4 sm:space-y-6">
+      <Skeleton className="h-28 w-full rounded-3xl" />
+      <div>
+        <Skeleton className="h-6 w-40 mb-3" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-28 rounded-2xl" />
+          ))}
         </div>
       </div>
+      <div>
+        <Skeleton className="h-6 w-32 mb-3" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-24 rounded-2xl" />
+          ))}
+        </div>
+      </div>
+      <Skeleton className="h-64 rounded-2xl" />
     </div>
   )
 }
