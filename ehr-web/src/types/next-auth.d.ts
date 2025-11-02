@@ -20,6 +20,10 @@ declare module 'next-auth' {
     onboarding_completed?: boolean
     location_ids?: string[]
     scope?: string
+    // Patient portal fields
+    userType?: string
+    patientId?: string
+    sessionToken?: string
     user: {
       id?: string
       name?: string
@@ -61,6 +65,10 @@ declare module 'next-auth' {
     location_ids?: string[]
     scope?: string
     accessToken?: string
+    // Patient portal fields
+    userType?: string
+    patientId?: string
+    sessionToken?: string
   }
 }
 
@@ -84,5 +92,9 @@ declare module 'next-auth/jwt' {
     onboarding_completed?: boolean
     location_ids?: string[]
     scope?: string
+    // Patient portal fields
+    userType?: string
+    patientId?: string
+    sessionToken?: string
   }
 }

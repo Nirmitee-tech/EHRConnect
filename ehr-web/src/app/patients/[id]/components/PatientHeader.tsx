@@ -1,8 +1,9 @@
 import React from 'react';
-import { User, Edit, Calendar, Plus, ChevronDown, AlertTriangle, Activity, Phone, Mail, Heart, Clock, PlusCircle, Edit2, Pencil, Shield, ArrowLeft } from 'lucide-react';
+import { User, Edit, Calendar, Plus, ChevronDown, AlertTriangle, Activity, Phone, Mail, Heart, Clock, PlusCircle, Edit2, Pencil, Shield, ArrowLeft, Globe, CheckCircle2, XCircle } from 'lucide-react';
 import { Button, Badge } from '@nirmitee.io/design-system';
 import { PatientDetails } from './types';
 import { useRouter } from 'next/navigation';
+import { PortalAccessDialog } from '@/components/patients/portal-access-dialog';
 
 interface EncounterClass {
   code?: string;
@@ -57,7 +58,29 @@ export function PatientHeader({
 }: PatientHeaderProps) {
   const router = useRouter();
   const [showEncounterDropdown, setShowEncounterDropdown] = React.useState(false);
+  const [portalAccessDialogOpen, setPortalAccessDialogOpen] = React.useState(false);
+  const [hasPortalAccess, setHasPortalAccess] = React.useState(false);
+  const [checkingPortalAccess, setCheckingPortalAccess] = React.useState(true);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // Check if patient has portal access
+  React.useEffect(() => {
+    const checkPortalAccess = async () => {
+      try {
+        const response = await fetch(`/api/patient/check-portal-access?patientId=${patient.id}`);
+        const data = await response.json();
+        setHasPortalAccess(data.hasAccess || false);
+      } catch (error) {
+        console.error('Error checking portal access:', error);
+      } finally {
+        setCheckingPortalAccess(false);
+      }
+    };
+
+    if (patient.id) {
+      checkPortalAccess();
+    }
+  }, [patient.id]);
 
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -354,8 +377,51 @@ export function PatientHeader({
               <Edit className="h-3.5 w-3.5 text-gray-400 hover:text-green-600" />
             </button>
           </div>
+
+          {/* Patient Portal Access */}
+          <div className={`flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm border ${hasPortalAccess ? 'border-blue-200' : 'border-gray-200'} hover:shadow-md transition-shadow group`}>
+            <div className={`p-1.5 rounded ${hasPortalAccess ? 'bg-blue-50' : 'bg-gray-50'}`}>
+              <Globe className={`h-4 w-4 ${hasPortalAccess ? 'text-blue-600' : 'text-gray-400'}`} />
+            </div>
+            <div>
+              <div className="text-gray-500 font-medium mb-0.5 text-xs">Patient Portal</div>
+              {checkingPortalAccess ? (
+                <div className="text-gray-600 text-xs">Checking...</div>
+              ) : hasPortalAccess ? (
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-600" />
+                  <span className="text-green-700 font-semibold text-xs">Access Granted</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <XCircle className="h-3 w-3 text-gray-400" />
+                  <span className="text-gray-600 font-medium text-xs">No Access</span>
+                </div>
+              )}
+            </div>
+            {!hasPortalAccess && !checkingPortalAccess && (
+              <button
+                onClick={() => setPortalAccessDialogOpen(true)}
+                className="ml-2 px-2.5 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium shadow-sm transition-all hover:shadow opacity-0 group-hover:opacity-100"
+              >
+                Grant Access
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Portal Access Dialog */}
+      <PortalAccessDialog
+        open={portalAccessDialogOpen}
+        onOpenChange={setPortalAccessDialogOpen}
+        patientId={patient.id}
+        patientEmail={patient.email}
+        patientName={patient.name}
+        onSuccess={() => {
+          setHasPortalAccess(true);
+        }}
+      />
 
       {/* Active Problems Row with Wow Factor */}
       <div className="px-4 py-2 bg-white border-t border-gray-100">

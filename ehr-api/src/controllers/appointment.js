@@ -17,14 +17,20 @@ class AppointmentController {
 
       // Handle search parameters
       if (query.patient) {
+        const patientReference = String(query.patient).includes('/')
+          ? query.patient
+          : `Patient/${query.patient}`;
         whereClause += ` AND resource_data->'participant' @> $${paramIndex}::jsonb`;
-        queryParams.push(JSON.stringify([{ actor: { reference: `Patient/${query.patient}` } }]));
+        queryParams.push(JSON.stringify([{ actor: { reference: patientReference } }]));
         paramIndex++;
       }
 
       if (query.practitioner) {
+        const practitionerReference = String(query.practitioner).includes('/')
+          ? query.practitioner
+          : `Practitioner/${query.practitioner}`;
         whereClause += ` AND resource_data->'participant' @> $${paramIndex}::jsonb`;
-        queryParams.push(JSON.stringify([{ actor: { reference: `Practitioner/${query.practitioner}` } }]));
+        queryParams.push(JSON.stringify([{ actor: { reference: practitionerReference } }]));
         paramIndex++;
       }
 
@@ -36,9 +42,22 @@ class AppointmentController {
       }
 
       if (query.status) {
-        whereClause += ` AND resource_data->>'status' = $${paramIndex}`;
-        queryParams.push(query.status);
-        paramIndex++;
+        const statuses = String(query.status)
+          .split(',')
+          .map(status => status.trim())
+          .filter(Boolean);
+
+        if (statuses.length === 1) {
+          whereClause += ` AND resource_data->>'status' = $${paramIndex}`;
+          queryParams.push(statuses[0]);
+          paramIndex++;
+        } else if (statuses.length > 1) {
+          const placeholders = statuses
+            .map(() => `$${paramIndex++}`)
+            .join(', ');
+          whereClause += ` AND resource_data->>'status' IN (${placeholders})`;
+          queryParams.push(...statuses);
+        }
       }
 
       if (query.date) {

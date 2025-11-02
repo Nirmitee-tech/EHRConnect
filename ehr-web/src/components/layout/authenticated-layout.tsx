@@ -27,7 +27,7 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
 
   // Routes that should not show the sidebar
-  const noSidebarRoutes = ['/onboarding', '/register', '/accept-invitation', '/widget'];
+  const noSidebarRoutes = ['/onboarding', '/register', '/accept-invitation', '/widget', '/patient-login', '/patient-register', '/portal', '/meeting'];
   const shouldShowSidebar = !noSidebarRoutes.some(route => pathname?.startsWith(route));
   const mainContentPaddingClass =
     MAIN_CONTENT_PADDING.overrides.find(({ prefix }) => pathname?.startsWith(prefix))?.padding ??
@@ -35,8 +35,8 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
 
   // Show loading state
   if (status === 'loading') {
-    // For widget routes, show minimal loading
-    if (pathname?.startsWith('/widget')) {
+    // For routes that should have no layout (widget, patient pages, meetings), show minimal loading
+    if (pathname?.startsWith('/widget') || pathname?.startsWith('/patient-login') || pathname?.startsWith('/patient-register') || pathname?.startsWith('/meeting')) {
       return <>{children}</>;
     }
     return <LoadingState message="Loading..." />;
@@ -44,8 +44,8 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
 
   // Show login screen if not authenticated
   if (status === 'unauthenticated' || !session) {
-    // For widget routes, render without any header/layout
-    if (pathname?.startsWith('/widget')) {
+    // For routes that should have no layout (widget, patient pages, meetings), render without any header/layout
+    if (pathname?.startsWith('/widget') || pathname?.startsWith('/patient-login') || pathname?.startsWith('/patient-register') || pathname?.startsWith('/meeting')) {
       return <>{children}</>;
     }
 

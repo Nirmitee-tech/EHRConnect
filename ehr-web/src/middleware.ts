@@ -12,6 +12,9 @@ const PUBLIC_PATHS = [
   '/verify-email',
   '/forgot-password',
   '/reset-password',
+  '/patient-login', // Patient portal login
+  '/patient-register', // Patient portal registration
+  '/api/patient/register', // Patient registration API
   '/_next',
   '/favicon.ico',
   '/api/health',
@@ -29,6 +32,7 @@ const AUTH_ONLY_PATHS = [
   '/onboarding',
   '/select-organization',
   '/accept-invitation',
+  '/portal', // Patient portal - authenticated but no org context needed
 ];
 
 export async function middleware(request: NextRequest) {
@@ -75,9 +79,11 @@ export async function middleware(request: NextRequest) {
   // Get org context from token
   const tokenOrgId = token.org_id as string | undefined;
   const tokenOrgSlug = token.org_slug as string | undefined;
-  
+  const userType = token.userType as string | undefined;
+
   // If user has no org assigned and not already on onboarding, redirect to onboarding
-  if (!tokenOrgId && !pathname.startsWith('/onboarding')) {
+  // BUT: Skip this check for patients - they don't have org_id, they have patientId
+  if (!tokenOrgId && !pathname.startsWith('/onboarding') && userType !== 'patient') {
     return NextResponse.redirect(new URL('/onboarding', request.url));
   }
 

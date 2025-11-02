@@ -63,6 +63,7 @@ if (AUTH_PROVIDER === 'keycloak') {
     })
   )
 } else if (AUTH_PROVIDER === 'postgres') {
+  // Provider/Staff Credentials
   providers.push(
     CredentialsProvider({
       id: 'credentials',
@@ -114,6 +115,58 @@ if (AUTH_PROVIDER === 'keycloak') {
     })
   )
 }
+
+// Patient Credentials Provider (always available)
+providers.push(
+  CredentialsProvider({
+    id: 'patient-credentials',
+    name: 'Patient Login',
+    credentials: {
+      email: { label: 'Email', type: 'email' },
+      password: { label: 'Password', type: 'password' },
+      userType: { label: 'User Type', type: 'text' },
+    },
+    async authorize(credentials) {
+      try {
+        // Only handle patient authentication if userType is 'patient'
+        if (credentials?.userType !== 'patient') {
+          return null
+        }
+
+        // Call ehr-api for patient authentication
+        const res = await fetch(`${API_URL}/api/patient-portal/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: credentials.email,
+            password: credentials.password,
+          }),
+        })
+
+        const data = await res.json()
+
+        if (!res.ok || !data.success) {
+          console.log('Patient authentication failed:', data.error)
+          return null
+        }
+
+        // Return patient user object
+        return {
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.email, // Will be populated from FHIR if needed
+          userType: 'patient',
+          patientId: data.user.fhirPatientId,
+          accessToken: data.token,
+          sessionToken: data.sessionToken,
+        }
+      } catch (error) {
+        console.error('Patient authorization error:', error)
+        return null
+      }
+    },
+  })
+)
 
 export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development' || process.env.NEXTAUTH_DEBUG === 'true',
@@ -174,8 +227,19 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
+      // Handle Patient authentication (Patient Credentials provider)
+      if (user && user.userType === 'patient') {
+        token.id = user.id
+        token.name = user.name
+        token.email = user.email
+        token.userType = 'patient'
+        token.patientId = user.patientId
+        token.accessToken = user.accessToken
+        token.sessionToken = user.sessionToken
+        // Patients don't need org/role/permission data
+      }
       // Handle Postgres authentication (Credentials provider)
-      if (AUTH_PROVIDER === 'postgres' && user) {
+      else if (AUTH_PROVIDER === 'postgres' && user) {
         token.id = user.id
         token.name = user.name
         token.email = user.email
@@ -215,7 +279,17 @@ export const authOptions: NextAuthOptions = {
         session.user.email = token.email as string
       }
 
-      // Map ONLY essential authentication data
+      // Handle patient sessions
+      if (token.userType === 'patient') {
+        session.userType = 'patient'
+        session.patientId = token.patientId as string
+        session.accessToken = token.accessToken as string
+        session.sessionToken = token.sessionToken as string
+        // Patients don't need org/role/permission data
+        return session
+      }
+
+      // Map ONLY essential authentication data for providers
       // NOTE: We limit what goes into session to prevent "431 Request Header Fields Too Large" error
       // Large arrays (permissions, roles, location_ids, specialties) should be fetched from API when needed
       session.accessToken = token.accessToken as string
@@ -248,17 +322,17 @@ export const authOptions: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       // Parse the URL to check the pathname
       let targetUrl = url;
-      
+
       // Handle relative URLs
       if (url.startsWith('/')) {
         targetUrl = `${baseUrl}${url}`;
       }
-      
+
       // If URL is on the same origin, check if it's valid
       if (targetUrl.startsWith(baseUrl)) {
         const urlObj = new URL(targetUrl);
         const pathname = urlObj.pathname;
-        
+
         // NEVER redirect to API routes - these should not be navigation destinations
         if (pathname.startsWith('/api/')) {
           console.warn(`Blocked redirect to API route: ${pathname}. Redirecting to default page.`);
@@ -269,9 +343,17 @@ export const authOptions: NextAuthOptions = {
           return targetUrl;
         }
       }
-      
-      // For default redirects (no specific URL or API route blocked),
-      // the dashboard will check onboarding status and redirect if needed
+
+      // For default redirects after sign-in:
+      // Check if the sign-in came from patient-login page or if redirect URL contains /portal
+      // This works because NextAuth includes the original page URL in the redirect callback
+      const isPatientLogin = url.includes('patient-login') || url.includes('/portal') || targetUrl.includes('patient-login') || targetUrl.includes('/portal');
+
+      if (isPatientLogin) {
+        return `${baseUrl}/portal/dashboard`;
+      }
+
+      // For providers, the dashboard will check onboarding status and redirect if needed
       return `${baseUrl}/dashboard`;
     },
   },
