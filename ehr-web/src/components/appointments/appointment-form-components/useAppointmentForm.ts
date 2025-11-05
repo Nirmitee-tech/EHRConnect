@@ -23,6 +23,7 @@ interface FormData {
   allDayEventType?: string;
   isEmergency?: boolean;
   location?: string;
+  mode?: 'in-person' | 'video-call' | 'voice-call' | 'other';
 }
 
 export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appointment | null) {
@@ -45,7 +46,8 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
     durationMinutes: defaultDuration,
     notes: '',
     sendEmail: false,
-    sendSMS: false
+    sendSMS: false,
+    mode: 'in-person'
   });
 
   const [practitioners, setPractitioners] = useState<Array<{ id: string; name: string; color?: string; vacations?: any[]; officeHours?: any[] }>>([]);
@@ -179,7 +181,8 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
       durationMinutes: appointment.duration % 60,
       notes: appointment.reason || '',
       sendEmail: false,
-      sendSMS: false
+      sendSMS: false,
+      mode: appointment.mode || 'in-person'
     });
   };
 
@@ -222,7 +225,8 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
       durationMinutes: defaultDuration % 60,
       notes: '',
       sendEmail: false,
-      sendSMS: false
+      sendSMS: false,
+      mode: 'in-person'
     });
   };
 

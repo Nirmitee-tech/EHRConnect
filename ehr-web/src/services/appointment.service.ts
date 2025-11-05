@@ -569,6 +569,23 @@ export class AppointmentService {
         throw new Error('No facility selected. Please select a facility from settings.');
       }
 
+      const extensions: any[] = [
+        {
+          url: 'http://ehrconnect.io/fhir/StructureDefinition/appointment-organization',
+          valueReference: {
+            reference: `Organization/${finalOrgId}`
+          }
+        }
+      ];
+
+      // Add appointment mode extension if provided
+      if (appointmentData.mode) {
+        extensions.push({
+          url: 'http://ehrconnect.io/fhir/StructureDefinition/appointment-mode',
+          valueString: appointmentData.mode
+        });
+      }
+
       const fhirAppointment: any = {
         resourceType: 'Appointment',
         status: AppointmentService.mapStatusToFHIR(appointmentData.status || 'scheduled'),
@@ -592,15 +609,7 @@ export class AppointmentService {
             status: 'accepted'
           }
         ],
-        // Add org_id as a FHIR extension (backend expects this format)
-        extension: [
-          {
-            url: 'http://ehrconnect.io/fhir/StructureDefinition/appointment-organization',
-            valueReference: {
-              reference: `Organization/${finalOrgId}`
-            }
-          }
-        ]
+        extension: extensions
       };
 
       console.log('[Appointment Service] Creating appointment with org_id:', finalOrgId);
@@ -709,6 +718,11 @@ export class AppointmentService {
     const patient = fhir.participant?.find((p) => p.actor?.reference?.startsWith('Patient/'));
     const practitioner = fhir.participant?.find((p) => p.actor?.reference?.startsWith('Practitioner/'));
 
+    // Extract appointment mode from extension
+    const modeExtension = (fhir as any).extension?.find(
+      (ext: any) => ext.url === 'http://ehrconnect.io/fhir/StructureDefinition/appointment-mode'
+    );
+
     return {
       id: fhir.id!,
       patientId: patient?.actor?.reference?.split('/')[1] || '',
@@ -722,6 +736,7 @@ export class AppointmentService {
       duration: fhir.minutesDuration || 30,
       reason: fhir.comment,
       notes: fhir.description,
+      mode: modeExtension?.valueString as any,
       createdAt: new Date(fhir.meta?.lastUpdated || ''),
       updatedAt: new Date(fhir.meta?.lastUpdated || '')
     };

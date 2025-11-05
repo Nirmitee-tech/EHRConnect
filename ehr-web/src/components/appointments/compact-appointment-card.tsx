@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Appointment } from '@/types/appointment';
-import { Clock, Play, CheckCircle, XCircle, FileText, MoreVertical, User, MapPin, Phone, ActivitySquare } from 'lucide-react';
+import { Clock, Play, CheckCircle, XCircle, FileText, MoreVertical, User, MapPin, Phone, ActivitySquare, Video, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCalendarSettings } from '@/hooks/useCalendarSettings';
 
@@ -144,6 +144,19 @@ export function CompactAppointmentCard({
     }
   };
 
+  const getModeIcon = (mode?: string) => {
+    switch (mode) {
+      case 'video-call':
+        return <Video className="h-3 w-3 text-green-600" />;
+      case 'voice-call':
+        return <Phone className="h-3 w-3 text-purple-600" />;
+      case 'in-person':
+        return <Users className="h-3 w-3 text-blue-600" />;
+      default:
+        return null;
+    }
+  };
+
   // Use practitioner color if available
   const borderColor = appointment.practitionerColor || '#3b82f6';
 
@@ -189,12 +202,27 @@ export function CompactAppointmentCard({
                 {appointment.status === 'in-progress' ? 'Live' : appointment.status === 'scheduled' ? 'Scheduled' : ''}
               </span>
             </div>
-            {appointment.encounterId && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-green-500 text-white rounded text-[8px] font-bold animate-pulse">
-                <ActivitySquare className="h-2 w-2" />
-                <span>ENCOUNTER</span>
-              </div>
-            )}
+            <div className="flex items-center gap-1">
+              {/* Video Call Badge - Prominent */}
+              {appointment.mode === 'video-call' && (
+                <div className="flex items-center gap-0.5 px-1 py-0.5 bg-green-600 text-white rounded text-[8px] font-bold">
+                  <Video className="h-2.5 w-2.5" />
+                  <span>VIDEO</span>
+                </div>
+              )}
+              {appointment.mode === 'voice-call' && (
+                <div className="flex items-center gap-0.5 px-1 py-0.5 bg-purple-600 text-white rounded text-[8px] font-bold">
+                  <Phone className="h-2.5 w-2.5" />
+                  <span>CALL</span>
+                </div>
+              )}
+              {appointment.encounterId && (
+                <div className="flex items-center gap-0.5 px-1 py-0.5 bg-green-500 text-white rounded text-[8px] font-bold animate-pulse">
+                  <ActivitySquare className="h-2 w-2" />
+                  <span>ENCOUNTER</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Patient Name - Clickable, bold, larger */}
@@ -202,9 +230,12 @@ export function CompactAppointmentCard({
             onClick={handlePatientClick}
             className="cursor-pointer hover:text-blue-600 transition-colors mb-0.5"
           >
-            <h3 className="font-bold text-[11px] text-gray-900 hover:text-blue-600 truncate leading-tight">
-              {appointment.patientName}
-            </h3>
+            <div className="flex items-center gap-1">
+              <h3 className="font-bold text-[11px] text-gray-900 hover:text-blue-600 truncate leading-tight">
+                {appointment.patientName}
+              </h3>
+              {appointment.mode && getModeIcon(appointment.mode)}
+            </div>
           </div>
 
           {/* Time - compact */}
@@ -372,6 +403,13 @@ export function CompactAppointmentCard({
               <div className="flex items-center gap-2 text-xs">
                 <User className="h-3.5 w-3.5 text-gray-500 flex-shrink-0" />
                 <span className="text-gray-700">Dr. {appointment.practitionerName}</span>
+              </div>
+            )}
+
+            {appointment.mode && (
+              <div className="flex items-center gap-2 text-xs">
+                {getModeIcon(appointment.mode)}
+                <span className="text-gray-700 capitalize">{appointment.mode.replace('-', ' ')}</span>
               </div>
             )}
 
