@@ -1,8 +1,19 @@
 'use client';
 
 import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 import { useTabs } from '@/contexts/tab-context';
-import { X, MoreHorizontal, XCircle } from 'lucide-react';
+import { useUIPreferences } from '@/contexts/ui-preferences-context';
+import { X, MoreHorizontal, XCircle, Eye, EyeOff } from 'lucide-react';
+
+// Routes where the toggle should be shown (same as header hide routes)
+const DETAIL_PAGE_ROUTES = [
+  {
+    pattern: /^\/patients\/[^/]+$/,
+    exclude: ['/patients/new']
+  },
+  // Add more routes here as needed - should match HIDE_HEADER_ROUTES in healthcare-header.tsx
+];
 
 // Memoize individual tab component
 const TabItem = memo(({
@@ -78,11 +89,20 @@ const TabItem = memo(({
 TabItem.displayName = 'TabItem';
 
 export const TabBar = memo(function TabBar() {
+  const pathname = usePathname();
   const { tabs, activeTabId, setActiveTab, closeTab, closeAllTabs, closeOtherTabs } = useTabs();
+  const { hideHeaderOnDetailPages, setHideHeaderOnDetailPages } = useUIPreferences();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tabId: string } | null>(null);
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
+
+  // Check if current page is a detail page where toggle should be shown
+  const isDetailPage = pathname && DETAIL_PAGE_ROUTES.some(route => {
+    const matchesPattern = route.pattern.test(pathname);
+    const isExcluded = route.exclude?.some(exclusion => pathname.includes(exclusion));
+    return matchesPattern && !isExcluded;
+  });
 
   // Close context menu when clicking outside
   useEffect(() => {
@@ -160,29 +180,60 @@ export const TabBar = memo(function TabBar() {
   return (
     <>
       <div className="bg-gray-100 border-b border-gray-300 flex items-center overflow-x-auto overflow-y-hidden h-10 px-2 gap-1">
-        {tabs.map((tab) => {
-          const isActive = tab.id === activeTabId;
-          const isDragging = tab.id === draggedTabId;
-          const isDragOver = tab.id === dragOverTabId;
+        <div className="flex items-center gap-1 flex-1 overflow-x-auto">
+          {tabs.map((tab) => {
+            const isActive = tab.id === activeTabId;
+            const isDragging = tab.id === draggedTabId;
+            const isDragOver = tab.id === dragOverTabId;
 
-          return (
-            <TabItem
-              key={tab.id}
-              tab={tab}
-              isActive={isActive}
-              isDragging={isDragging}
-              isDragOver={isDragOver}
-              onTabClick={handleTabClick}
-              onCloseTab={handleCloseTab}
-              onContextMenu={handleContextMenu}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onDragEnd={handleDragEnd}
-            />
-          );
-        })}
+            return (
+              <TabItem
+                key={tab.id}
+                tab={tab}
+                isActive={isActive}
+                isDragging={isDragging}
+                isDragOver={isDragOver}
+                onTabClick={handleTabClick}
+                onCloseTab={handleCloseTab}
+                onContextMenu={handleContextMenu}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
+              />
+            );
+          })}
+        </div>
+
+        {/* Header Toggle Switch - Only show on detail pages */}
+        {isDetailPage && (
+          <div className="flex items-center gap-2 ml-auto pr-2 border-l border-gray-300 pl-3">
+            <button
+              onClick={() => setHideHeaderOnDetailPages(!hideHeaderOnDetailPages)}
+              className={`
+                flex items-center gap-2 px-3 py-1 rounded-md text-xs font-medium transition-all
+                ${hideHeaderOnDetailPages
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }
+              `}
+              title={hideHeaderOnDetailPages ? 'Header hidden on detail pages' : 'Header visible on all pages'}
+            >
+              {hideHeaderOnDetailPages ? (
+                <>
+                  <EyeOff size={14} />
+                  <span>Header Hidden</span>
+                </>
+              ) : (
+                <>
+                  <Eye size={14} />
+                  <span>Header Visible</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Context Menu */}

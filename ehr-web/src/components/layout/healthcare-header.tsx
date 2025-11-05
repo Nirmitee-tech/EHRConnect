@@ -8,10 +8,41 @@ import { SearchBar } from './search-bar';
 import { UserProfile } from './user-profile';
 import { NotificationBell } from './notification-bell';
 import { FacilitySwitcher } from '../facility-switcher';
+import { useUIPreferences } from '@/contexts/ui-preferences-context';
+
+// Routes where the entire header/navbar should be hidden
+const HIDE_HEADER_ROUTES = [
+  {
+    pattern: /^\/patients\/[^/]+$/,  // /patients/[id] - patient details page
+    exclude: ['/patients/new']        // but not /patients/new
+  },
+  // Add more routes here as needed:
+  // {
+  //   pattern: /^\/staff\/[^/]+$/,   // /staff/[id] - staff details page
+  //   exclude: ['/staff/new']
+  // },
+  // {
+  //   pattern: /^\/appointments\/[^/]+$/,  // /appointments/[id] - appointment details page
+  //   exclude: ['/appointments/new']
+  // },
+];
 
 export function HealthcareHeader() {
   const pathname = usePathname();
   const pageInfo = getPageInfo(pathname);
+  const { hideHeaderOnDetailPages } = useUIPreferences();
+
+  // Check if current route should hide the entire header
+  const isDetailPage = pathname && HIDE_HEADER_ROUTES.some(route => {
+    const matchesPattern = route.pattern.test(pathname);
+    const isExcluded = route.exclude?.some(exclusion => pathname.includes(exclusion));
+    return matchesPattern && !isExcluded;
+  });
+
+  // Hide entire header for specified routes only if the preference is enabled
+  if (isDetailPage && hideHeaderOnDetailPages) {
+    return null;
+  }
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
