@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Edit, Calendar, Plus, ChevronDown, AlertTriangle, Activity, Phone, Mail, Heart, Clock, PlusCircle, Edit2, Pencil, Shield, ArrowLeft, Globe, CheckCircle2, XCircle } from 'lucide-react';
+import { User, Edit, Calendar, Plus, ChevronDown, AlertTriangle, Activity, Phone, Mail, Heart, Clock, PlusCircle, Edit2, Pencil, Shield, ArrowLeft, Globe, CheckCircle2 } from 'lucide-react';
 import { Button, Badge } from '@nirmitee.io/design-system';
 import { PatientDetails } from './types';
 import { useRouter } from 'next/navigation';
@@ -100,13 +100,13 @@ export function PatientHeader({
 
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm">
-      {/* Compact Header - Single Row */}
-      <div className="px-4 py-2.5 flex items-center justify-between">
+      {/* Compact Header - Responsive */}
+      <div className="px-3 py-2 flex flex-col lg:flex-row lg:items-center justify-between gap-2">
         {/* Left Side - Patient Info */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 lg:gap-3 flex-wrap">
           {/* Patient Avatar */}
-          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <User className="h-5 w-5 text-blue-600" />
+          <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <User className="h-4 w-4 text-blue-600" />
           </div>
 
           {/* Patient Basic Info */}
@@ -116,31 +116,31 @@ export function PatientHeader({
                 Mr Mr {patient.name} S/o
               </h1>
             </div>
-            <div className="flex items-center gap-3 text-xs text-gray-600">
+            <div className="flex items-center gap-2 text-xs text-gray-600">
               <span className="capitalize">{patient.gender}</span>
-              <span>•</span>
+              <span className="text-gray-400">|</span>
               <span>#{patient.mrn}</span>
             </div>
           </div>
 
-          {/* Contact Info - Inline */}
-          <div className="flex items-center gap-4 text-xs text-gray-600 border-l border-gray-200 pl-4 ml-2">
+          {/* Contact Info - Responsive */}
+          <div className="flex items-center gap-2 lg:gap-3 text-xs text-gray-600 lg:border-l border-gray-200 lg:pl-3 lg:ml-2">
             {patient.phone !== '-' && (
               <div className="flex items-center gap-1">
                 <Phone className="h-3 w-3" />
-                <span>{patient.phone}</span>
+                <span className="hidden sm:inline">{patient.phone}</span>
               </div>
             )}
             {patient.email !== '-' && (
               <div className="flex items-center gap-1">
                 <Mail className="h-3 w-3" />
-                <span className="truncate max-w-[180px]">{patient.email}</span>
+                <span className="hidden md:inline truncate max-w-[180px]">{patient.email}</span>
               </div>
             )}
           </div>
 
-          {/* Quick Stats - Inline */}
-          <div className="flex items-center gap-4 text-xs border-l border-gray-200 pl-4 ml-2">
+          {/* Quick Stats - Hide on small screens */}
+          <div className="hidden xl:flex items-center gap-3 text-xs border-l border-gray-200 pl-3 ml-2">
             <div>
               <span className="text-gray-500">Group:</span>{' '}
               <span className="text-gray-700 font-medium">None</span>
@@ -157,16 +157,16 @@ export function PatientHeader({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 lg:ml-auto">
           {activeEncounters.length > 0 && (
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setShowEncounterDropdown(!showEncounterDropdown)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors"
               >
-                <Activity className="h-3.5 w-3.5" />
-                <span>Select Encounter ({activeEncounters.length})</span>
-                <ChevronDown className="h-3.5 w-3.5" />
+                <Activity className="h-3 w-3" />
+                <span>Encounter ({activeEncounters.length})</span>
+                <ChevronDown className="h-3 w-3" />
               </button>
 
               {showEncounterDropdown && (
@@ -225,187 +225,159 @@ export function PatientHeader({
 
           <button
             onClick={onNewVisit}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3 w-3" />
             <span>New Visit</span>
           </button>
         </div>
       </div>
 
-      {/* Clinical Info Row - Always Visible with Wow Factor */}
-      <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200 shadow-sm">
-        <div className="flex items-center gap-4 text-xs">
+      {/* Clinical Info Row - Responsive with Wrapping */}
+      <div className="px-3 py-2 bg-white border-t border-gray-200 overflow-x-auto">
+        <div className="flex items-center flex-wrap lg:flex-nowrap gap-y-2 text-xs">
           {/* Medical Info */}
-          <div className="flex items-center gap-3 bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-blue-50 rounded">
-                <Heart className="h-4 w-4 text-blue-600" />
-              </div>
-              <div>
-                <div className="text-gray-500 font-medium mb-0.5">Medical Information</div>
-                <div className="flex items-center gap-2 text-gray-700">
-                  <span className="text-gray-500">Blood Group:</span>
-                  <span className="font-semibold">-</span>
-                  <span className="text-gray-400">•</span>
-                  <span className="text-gray-500">Payment Due:</span>
-                  <span className="font-bold text-green-600">₹ 0.00</span>
-                </div>
-              </div>
+          <div className="flex items-center gap-1.5 pr-3 border-r border-gray-300 group flex-shrink-0">
+            <Heart className="h-3.5 w-3.5 text-blue-600 flex-shrink-0" />
+            <div className="flex items-center gap-1.5 text-gray-800 whitespace-nowrap">
+              <span className="text-gray-600 font-medium">Blood:</span>
+              <span className="font-semibold">-</span>
+              <span className="text-gray-400">•</span>
+              <span className="text-gray-600 font-medium">Due:</span>
+              <span className="font-bold text-green-600">₹0.00</span>
             </div>
-            <div className="flex items-center gap-1.5 ml-2 border-l border-gray-200 pl-3">
-              <button className="px-2.5 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium shadow-sm transition-all hover:shadow">
-                Receive Payment
-              </button>
-              <button className="px-2.5 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 font-medium transition-colors">
-                Send Link
-              </button>
-            </div>
+            <button className="px-2 py-0.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-all whitespace-nowrap flex-shrink-0">
+              Receive
+            </button>
+            <button className="px-2 py-0.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 font-medium transition-all whitespace-nowrap flex-shrink-0">
+              Link
+            </button>
             <button
               onClick={onOpenMedicalInfo}
-              className="p-1 hover:bg-gray-100 rounded transition-colors ml-1"
+              className="p-0.5 hover:bg-blue-50 rounded transition-colors flex-shrink-0"
+              title="Edit Medical Info"
             >
               <Edit className="h-3.5 w-3.5 text-gray-400 hover:text-blue-600" />
             </button>
           </div>
 
           {/* History */}
-          <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow group">
-            <div className="p-1.5 bg-indigo-50 rounded">
-              <Clock className="h-4 w-4 text-indigo-600" />
-            </div>
-            <div>
-              <div className="text-gray-500 font-medium mb-0.5">History</div>
-              <div className="text-gray-700 font-medium">Blood Pressure, Cholesterol</div>
-            </div>
+          <div className="flex items-center gap-1.5 px-3 pr-3 border-r border-gray-300 group">
+            <Clock className="h-3.5 w-3.5 text-indigo-600" />
+            <span className="text-gray-600 font-medium">History:</span>
+            <span className="text-gray-800 font-medium whitespace-nowrap">BP, Cholesterol</span>
             <button
               onClick={onOpenMedicalInfo}
-              className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100"
+              className="p-0.5 hover:bg-indigo-50 rounded transition-colors ml-1"
+              title="Add/Edit History"
             >
               <Plus className="h-3.5 w-3.5 text-gray-400 hover:text-indigo-600" />
-            </button>
-            <button
-              onClick={onOpenMedicalInfo}
-              className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100"
-            >
-              <Edit className="h-3.5 w-3.5 text-gray-400 hover:text-indigo-600" />
             </button>
           </div>
 
           {/* Allergies */}
-          <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm border border-red-200 hover:shadow-md transition-shadow group">
-            <div className="p-1.5 bg-red-50 rounded">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-            </div>
-            <div>
-              <div className="text-red-700 font-semibold mb-0.5">Allergies</div>
-              {allergies.length > 0 ? (
-                <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 px-3 pr-3 border-r border-gray-300 group">
+            <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
+            <span className="text-red-700 font-semibold">Allergies:</span>
+            {allergies.length > 0 ? (
+              <>
+                <div className="flex items-center gap-1 text-red-800 font-medium">
                   {allergies.slice(0, 2).map((allergy: any, idx: number) => (
-                    <span key={idx} className="text-red-700 font-medium">
+                    <span key={idx}>
                       {allergy.code?.text || allergy.code?.coding?.[0]?.display || 'Unknown'}
                       {idx < Math.min(allergies.length, 2) - 1 ? ',' : ''}
                     </span>
                   ))}
+                  {allergies.length > 2 && (
+                    <button
+                      onClick={onOpenAllergies}
+                      className="px-1.5 py-0.5 bg-red-100 text-red-800 rounded font-semibold hover:bg-red-200 transition-colors ml-1"
+                      title={`All allergies: ${allergies.map((a: any) => a.code?.text || a.code?.coding?.[0]?.display || 'Unknown').join(', ')}`}
+                    >
+                      +{allergies.length - 2} more
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <span className="text-gray-600 italic">No Known Allergies</span>
-              )}
-            </div>
+              </>
+            ) : (
+              <span className="text-gray-600 italic">None</span>
+            )}
             <button
               onClick={onOpenAllergies}
-              className="p-1 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+              className="p-0.5 hover:bg-red-50 rounded transition-colors ml-1"
+              title="Add/Edit Allergies"
             >
               <Plus className="h-3.5 w-3.5 text-gray-400 hover:text-red-600" />
-            </button>
-            <button
-              onClick={onOpenAllergies}
-              className="p-1 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"
-            >
-              <Edit className="h-3.5 w-3.5 text-gray-400 hover:text-red-600" />
             </button>
           </div>
 
           {/* Habits */}
-          <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow group">
-            <div className="p-1.5 bg-purple-50 rounded">
-              <Activity className="h-4 w-4 text-purple-600" />
-            </div>
-            <div>
-              <div className="text-gray-500 font-medium mb-0.5">Habits</div>
-              <div className="text-gray-700 font-medium">Aerated Drinks, Alcohol (rare)</div>
-            </div>
+          <div className="flex items-center gap-1.5 px-3 pr-3 border-r border-gray-300 group">
+            <Activity className="h-3.5 w-3.5 text-purple-600" />
+            <span className="text-gray-600 font-medium">Habits:</span>
+            <span className="text-gray-800 font-medium whitespace-nowrap">Drinks, Alcohol (rare)</span>
             <button
               onClick={onOpenMedicalInfo}
-              className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100"
+              className="p-0.5 hover:bg-purple-50 rounded transition-colors ml-1"
+              title="Add/Edit Habits"
             >
               <Plus className="h-3.5 w-3.5 text-gray-400 hover:text-purple-600" />
-            </button>
-            <button
-              onClick={onOpenMedicalInfo}
-              className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100"
-            >
-              <Edit className="h-3.5 w-3.5 text-gray-400 hover:text-purple-600" />
             </button>
           </div>
 
           {/* Insurance */}
-          <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm border border-green-200 hover:shadow-md transition-shadow group">
-            <div className="p-1.5 bg-green-50 rounded">
-              <Shield className="h-4 w-4 text-green-600" />
-            </div>
-            <div>
-              <div className="text-gray-500 font-medium mb-0.5 text-xs">Insurance</div>
-              {insurances.length > 0 ? (
-                <div className="text-gray-900 font-semibold text-xs">
-                  {insurances[0].payor?.[0]?.display || 'Unknown'} - Policy: {insurances[0].subscriberId || '-'}
-                </div>
-              ) : (
-                <div className="text-gray-700 font-medium text-xs">No Insurance</div>
-              )}
-            </div>
+          <div className="flex items-center gap-1.5 px-3 pr-3 border-r border-gray-300 group">
+            <Shield className="h-3.5 w-3.5 text-green-600" />
+            <span className="text-gray-600 font-medium">Insurance:</span>
+            {insurances.length > 0 ? (
+              <div className="flex items-center gap-1">
+                <span className="text-gray-900 font-semibold">
+                  {insurances[0].payor?.[0]?.display || 'Unknown'}
+                </span>
+                {insurances.length > 1 && (
+                  <button
+                    onClick={onOpenInsurance}
+                    className="px-1.5 py-0.5 bg-green-100 text-green-800 rounded font-semibold hover:bg-green-200 transition-colors"
+                    title={`All insurance policies: ${insurances.map((ins: any) => ins.payor?.[0]?.display || 'Unknown').join(', ')}`}
+                  >
+                    +{insurances.length - 1} more
+                  </button>
+                )}
+              </div>
+            ) : (
+              <span className="text-gray-600 font-medium">None</span>
+            )}
             <button
               onClick={onOpenInsurance}
-              className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100"
+              className="p-0.5 hover:bg-green-50 rounded transition-colors ml-1"
+              title="Add/Edit Insurance"
             >
               <Plus className="h-3.5 w-3.5 text-gray-400 hover:text-green-600" />
             </button>
-            <button
-              onClick={onOpenInsurance}
-              className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100"
-            >
-              <Edit className="h-3.5 w-3.5 text-gray-400 hover:text-green-600" />
-            </button>
           </div>
 
-          {/* Patient Portal Access */}
-          <div className={`flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm border ${hasPortalAccess ? 'border-blue-200' : 'border-gray-200'} hover:shadow-md transition-shadow group`}>
-            <div className={`p-1.5 rounded ${hasPortalAccess ? 'bg-blue-50' : 'bg-gray-50'}`}>
-              <Globe className={`h-4 w-4 ${hasPortalAccess ? 'text-blue-600' : 'text-gray-400'}`} />
-            </div>
-            <div>
-              <div className="text-gray-500 font-medium mb-0.5 text-xs">Patient Portal</div>
-              {checkingPortalAccess ? (
-                <div className="text-gray-600 text-xs">Checking...</div>
-              ) : hasPortalAccess ? (
-                <div className="flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3 text-green-600" />
-                  <span className="text-green-700 font-semibold text-xs">Access Granted</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1">
-                  <XCircle className="h-3 w-3 text-gray-400" />
-                  <span className="text-gray-600 font-medium text-xs">No Access</span>
-                </div>
-              )}
-            </div>
-            {!hasPortalAccess && !checkingPortalAccess && (
-              <button
-                onClick={() => setPortalAccessDialogOpen(true)}
-                className="ml-2 px-2.5 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium shadow-sm transition-all hover:shadow opacity-0 group-hover:opacity-100"
-              >
-                Grant Access
-              </button>
+          {/* Patient Portal Access - Last item, no border */}
+          <div className="flex items-center gap-1.5 px-3 group">
+            <Globe className={`h-3.5 w-3.5 ${hasPortalAccess ? 'text-blue-600' : 'text-gray-400'}`} />
+            <span className="text-gray-600 font-medium">Portal:</span>
+            {checkingPortalAccess ? (
+              <span className="text-gray-500">Loading...</span>
+            ) : hasPortalAccess ? (
+              <div className="flex items-center gap-0.5">
+                <CheckCircle2 className="h-3 w-3 text-green-600" />
+                <span className="text-green-700 font-semibold whitespace-nowrap">Granted</span>
+              </div>
+            ) : (
+              <>
+                <span className="text-gray-600 whitespace-nowrap">No Access</span>
+                <button
+                  onClick={() => setPortalAccessDialogOpen(true)}
+                  className="px-2 py-0.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-all ml-1 whitespace-nowrap"
+                  title="Grant Portal Access"
+                >
+                  Grant
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -423,50 +395,52 @@ export function PatientHeader({
         }}
       />
 
-      {/* Active Problems Row with Wow Factor */}
-      <div className="px-4 py-2 bg-white border-t border-gray-100">
-        <div className="flex items-center gap-3 text-xs">
-          <div className="flex items-center gap-2 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">
-            <div className="p-1 bg-amber-100 rounded">
-              <Activity className="h-3.5 w-3.5 text-amber-700" />
-            </div>
-            <span className="text-amber-800 font-semibold">Active Problems</span>
+      {/* Active Problems Row - Responsive */}
+      <div className="px-3 py-2 bg-white border-t border-gray-200 overflow-x-auto">
+        <div className="flex items-center gap-2 text-xs flex-wrap lg:flex-nowrap">
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
+            <Activity className="h-3.5 w-3.5 text-amber-700" />
+            <span className="text-amber-800 font-semibold">Active Problems:</span>
           </div>
 
           {activeProblems.length > 0 ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 flex-wrap">
               {activeProblems.map((problem: any, idx: number) => (
-                <span
-                  key={idx}
-                  className="px-3 py-1 bg-amber-50 text-amber-900 rounded-lg font-medium border border-amber-200 hover:bg-amber-100 transition-colors shadow-sm"
-                >
+                <span key={idx} className="text-amber-900 font-medium whitespace-nowrap">
                   {problem.code?.text || problem.code?.coding?.[0]?.display || 'Unknown'}
+                  {idx < activeProblems.length - 1 ? ',' : ''}
                 </span>
               ))}
-              {problems.length > 3 && (
-                <span className="px-3 py-1 bg-amber-100 text-amber-900 rounded-lg font-semibold border border-amber-300 shadow-sm">
-                  +{problems.length - 3} more
-                </span>
+              {activeProblems.length < problems.length && (
+                <button
+                  onClick={onOpenProblems}
+                  className="px-1.5 py-0.5 bg-amber-100 text-amber-900 rounded font-semibold hover:bg-amber-200 transition-colors whitespace-nowrap"
+                  title={`All active problems: ${problems.filter((p: any) => p.clinicalStatus?.coding?.[0]?.code === 'active').map((p: any) => p.code?.text || p.code?.coding?.[0]?.display || 'Unknown').join(', ')}`}
+                >
+                  +{problems.filter((p: any) => p.clinicalStatus?.coding?.[0]?.code === 'active').length - activeProblems.length} more
+                </button>
               )}
             </div>
           ) : (
-            <span className="px-3 py-1 bg-gray-50 text-gray-700 rounded-lg font-medium border border-gray-200">
-              TEST
-            </span>
+            <span className="text-gray-600 font-medium">None</span>
           )}
 
-          <button
-            onClick={onOpenProblems}
-            className="ml-auto p-1.5 hover:bg-amber-50 rounded-lg transition-colors group"
-          >
-            <Plus className="h-4 w-4 text-gray-400 group-hover:text-amber-600" />
-          </button>
-          <button
-            onClick={onOpenProblems}
-            className="p-1.5 hover:bg-amber-50 rounded-lg transition-colors group"
-          >
-            <Edit className="h-4 w-4 text-gray-400 group-hover:text-amber-600" />
-          </button>
+          <div className="ml-auto flex items-center gap-1">
+            <button
+              onClick={onOpenProblems}
+              className="p-0.5 hover:bg-amber-50 rounded transition-colors"
+              title="Add Problem"
+            >
+              <Plus className="h-3.5 w-3.5 text-gray-400 hover:text-amber-600" />
+            </button>
+            <button
+              onClick={onOpenProblems}
+              className="p-0.5 hover:bg-amber-50 rounded transition-colors"
+              title="View All Problems"
+            >
+              <Edit className="h-3.5 w-3.5 text-gray-400 hover:text-amber-600" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
