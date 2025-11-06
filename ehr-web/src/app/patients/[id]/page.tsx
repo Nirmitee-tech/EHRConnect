@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { User, Edit, Calendar, Pill, AlertCircle, Activity, FileText, Loader2, Shield, ChevronLeft, ChevronRight, Plus, X, ChevronDown, LayoutDashboard, Search, Syringe, TestTube, ImageIcon, History, CreditCard, DollarSign, FileCheck, UserCircle, Globe } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@nirmitee.io/design-system';
 import { useParams, useSearchParams } from 'next/navigation';
@@ -48,12 +48,14 @@ export default function PatientDetailPage() {
   const encounterIdFromQuery = searchParams.get('encounterId');
   const tabFromQuery = searchParams.get('tab'); // e.g., ?tab=care-plan
 
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(tabFromQuery || 'dashboard');
+  const [openTabs, setOpenTabs] = useState<string[]>(['dashboard']);
   const [selectedEncounter, setSelectedEncounter] = useState<string | undefined>(encounterIdFromQuery || undefined);
   const [openEncounterTabs, setOpenEncounterTabs] = useState<string[]>([]);
   const [openEncounterSubTabs, setOpenEncounterSubTabs] = useState<{ [encounterId: string]: string[] }>({});
   const [activeEncounterSubTab, setActiveEncounterSubTab] = useState<{ [encounterId: string]: string }>({});
   const [encounterSavedData, setEncounterSavedData] = useState<{ [encounterId: string]: SavedSection[] }>({});
+  const [openDropdown, setOpenDropdown] = useState<{ [encounterId: string]: string | null }>({});
   const [loading, setLoading] = useState(true);
   const [patient, setPatient] = useState<PatientDetails | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -896,7 +898,10 @@ export default function PatientDetailPage() {
                 return (
                   <button
                     key={section.id}
-                    onClick={() => setActiveTab(section.id)}
+                    onClick={() => {
+                      setActiveTab(section.id);
+                      setOpenTabs(prev => prev.includes(section.id) ? prev : [...prev, section.id]);
+                    }}
                     className={`
                       w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all
                       ${isActive
@@ -970,7 +975,98 @@ export default function PatientDetailPage() {
           </div>
 
           {/* Main Content Area */}
-          <div className="flex-1 overflow-y-auto p-2">
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Browser-Style Tab Bar */}
+            <div className="bg-gray-50 border-b-2 border-gray-300 px-2 py-1 flex items-center gap-1 overflow-x-auto shadow-sm">
+              {/* Regular Tabs */}
+              {openTabs.map(tabId => {
+                const section = sections.find(s => s.id === tabId);
+                if (!section) return null;
+                const Icon = section.icon;
+                const isActive = activeTab === tabId;
+                return (
+                  <button
+                    key={tabId}
+                    onClick={() => setActiveTab(tabId)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md text-xs font-medium transition-all ${
+                      isActive
+                        ? 'bg-white text-blue-700 border border-b-0 border-gray-300 shadow-sm -mb-0.5'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 border border-transparent'
+                    }`}
+                  >
+                    <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
+                    <span>{section.label}</span>
+                    {openTabs.length > 1 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const newTabs = openTabs.filter(id => id !== tabId);
+                          setOpenTabs(newTabs);
+                          if (isActive && newTabs.length > 0) setActiveTab(newTabs[newTabs.length - 1]);
+                        }}
+                        className="ml-1 hover:bg-gray-300 rounded p-0.5 transition-colors"
+                      >
+                        <X className="h-3 w-3 text-gray-600" />
+                      </button>
+                    )}
+                  </button>
+                );
+              })}
+
+              {/* Encounter Tabs */}
+              {openEncounterTabs.map(encounterId => {
+                const encounter = encounters.find(e => e.id === encounterId);
+                const isActive = activeTab === `encounter-${encounterId}`;
+                const encounterDate = encounter?.period?.start || encounter?.startTime;
+                const dateStr = encounterDate ? new Date(encounterDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+                const encounterLabel = `Encounter ${dateStr}`;
+
+                return (
+                  <button
+                    key={`encounter-${encounterId}`}
+                    onClick={() => {
+                      setActiveTab(`encounter-${encounterId}`);
+                      setSelectedEncounter(encounterId);
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md text-xs font-medium transition-all ${
+                      isActive
+                        ? 'bg-white text-blue-700 border border-b-0 border-gray-300 shadow-sm -mb-0.5'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 border border-transparent'
+                    }`}
+                  >
+                    <FileText className={`h-3.5 w-3.5 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
+                    <span>{encounterLabel}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newEncounterTabs = openEncounterTabs.filter(id => id !== encounterId);
+                        setOpenEncounterTabs(newEncounterTabs);
+                        if (isActive) {
+                          // Switch to last open tab
+                          if (openTabs.length > 0) {
+                            setActiveTab(openTabs[openTabs.length - 1]);
+                          } else if (newEncounterTabs.length > 0) {
+                            setActiveTab(`encounter-${newEncounterTabs[newEncounterTabs.length - 1]}`);
+                          } else {
+                            setActiveTab('dashboard');
+                          }
+                        }
+                        // Clear selection if this was the selected encounter
+                        if (selectedEncounter === encounterId) {
+                          setSelectedEncounter(undefined);
+                        }
+                      }}
+                      className="ml-1 hover:bg-gray-300 rounded p-0.5 transition-colors"
+                    >
+                      <X className="h-3 w-3 text-gray-600" />
+                    </button>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Tab Content */}
+            <div className="flex-1 overflow-y-auto p-2">
             {/* Browser-style tabs - all tabs rendered and cached, instant switching */}
             <div style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}>
               <DashboardTab
@@ -1002,6 +1098,17 @@ export default function PatientDetailPage() {
                 observations={observations}
                 onNewEncounter={() => setShowEncounterDrawer(true)}
                 selectedEncounterId={selectedEncounter}
+                onEncounterClick={async (encounterId) => {
+                  setSelectedEncounter(encounterId);
+                  // Add encounter tab if not already open
+                  if (!openEncounterTabs.includes(encounterId)) {
+                    setOpenEncounterTabs([...openEncounterTabs, encounterId]);
+                  }
+                  // Switch to the encounter tab
+                  setActiveTab(`encounter-${encounterId}`);
+                  // Load encounter documentation
+                  await loadEncounterDocumentation(encounterId);
+                }}
               />
             </div>
             <div style={{ display: activeTab === 'problems' ? 'block' : 'none' }}>
@@ -1402,23 +1509,37 @@ export default function PatientDetailPage() {
                     {/* Dropdown Menus Row */}
                     <div className="flex items-center gap-1 px-4 py-2 border-b border-gray-200">
                       {Object.entries(dropdownMenus).map(([category, items]) => (
-                        <div key={category} className="relative group">
-                          <button className="px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded flex items-center gap-1">
+                        <div key={category} className="relative">
+                          <button
+                            onClick={() => {
+                              const currentDropdown = openDropdown[encounterId];
+                              setOpenDropdown({
+                                ...openDropdown,
+                                [encounterId]: currentDropdown === category ? null : category
+                              });
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded flex items-center gap-1"
+                          >
                             {category}
                             <ChevronDown className="h-3 w-3" />
                           </button>
                           {/* Dropdown Menu */}
-                          <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded shadow-lg z-50 hidden group-hover:block">
-                            {items.map((item) => (
-                              <button
-                                key={item}
-                                onClick={() => addSubTab(item.toLowerCase().replace(/\s+/g, '-'), item)}
-                                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-                              >
-                                {item}
-                              </button>
-                            ))}
-                          </div>
+                          {openDropdown[encounterId] === category && (
+                            <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded shadow-lg z-50">
+                              {items.map((item) => (
+                                <button
+                                  key={item}
+                                  onClick={() => {
+                                    addSubTab(item.toLowerCase().replace(/\s+/g, '-'), item);
+                                    setOpenDropdown({ ...openDropdown, [encounterId]: null });
+                                  }}
+                                  className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                                >
+                                  {item}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))}
                       <div className="ml-auto flex items-center gap-2">
@@ -2439,6 +2560,7 @@ export default function PatientDetailPage() {
                 </div>
               );
             })}
+            </div>
           </div>
         </div>
 
