@@ -25,16 +25,20 @@ type AppointmentType = 'single' | 'series' | 'group';
 type TabType = 'appointment' | 'task' | 'unavailable';
 type BookingStatus = 'form' | 'confirming' | 'waitlist' | 'success';
 
-const TREATMENT_CATEGORIES = [
-  'General Checkup',
-  'Dental',
-  'Cardiology',
-  'Orthopedics',
-  'Pediatrics',
-  'Surgery',
-  'Consultation',
-  'Follow-up',
-  'Emergency'
+const APPOINTMENT_TYPES = [
+  'General Consultation',
+  'Follow-up Visit',
+  'Emergency',
+  'Routine Checkup',
+  'Specialist Consultation',
+  'Preventive Care',
+  'Annual Physical',
+  'Vaccination',
+  'Lab Work',
+  'Imaging/Radiology',
+  'Minor Procedure',
+  'Post-Operative',
+  'Chronic Care Management'
 ];
 
 const DEFAULT_LOCATIONS = [
@@ -67,7 +71,7 @@ export function AppointmentFormDrawer({
   const [showPatientDrawer, setShowPatientDrawer] = useState(false);
   const [newLocation, setNewLocation] = useState('');
   const [newCategory, setNewCategory] = useState('');
-  const [treatmentCategories, setTreatmentCategories] = useState<string[]>(TREATMENT_CATEGORIES);
+  const [appointmentTypes, setAppointmentTypes] = useState<string[]>(APPOINTMENT_TYPES);
   const pendingPatientSelectionRef = useRef<string | null>(null);
 
   const {
@@ -344,7 +348,7 @@ export function AppointmentFormDrawer({
                   formData={formData}
                   practitioners={practitioners}
                   patients={patients}
-                  treatmentCategories={treatmentCategories}
+                  treatmentCategories={appointmentTypes}
                   locations={locations}
                   isNewPatient={isNewPatient}
                   onFormDataChange={updateField}
@@ -547,7 +551,7 @@ export function AppointmentFormDrawer({
           >
             <div className="flex h-full flex-col">
               <div className="flex items-center justify-between border-b px-6 py-4">
-                <h2 className="text-lg font-semibold">Add New Category</h2>
+                <h2 className="text-lg font-semibold">Add New Appointment Type</h2>
                 <button
                   onClick={() => setShowCategoryDrawer(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -559,13 +563,13 @@ export function AppointmentFormDrawer({
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Category Name
+                      Appointment Type Name
                     </label>
                     <input
                       type="text"
                       value={newCategory}
                       onChange={(e) => setNewCategory(e.target.value)}
-                      placeholder="Enter category name"
+                      placeholder="Enter appointment type name"
                       className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       autoFocus
                     />
@@ -585,8 +589,8 @@ export function AppointmentFormDrawer({
                 <button
                   onClick={() => {
                     if (newCategory.trim()) {
-                      const updatedCategories = [...treatmentCategories, newCategory.trim()];
-                      setTreatmentCategories(updatedCategories);
+                      const updatedCategories = [...appointmentTypes, newCategory.trim()];
+                      setAppointmentTypes(updatedCategories);
                       updateField('treatmentCategory', newCategory.trim());
                       setNewCategory('');
                       setShowCategoryDrawer(false);
@@ -594,7 +598,7 @@ export function AppointmentFormDrawer({
                   }}
                   className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
                 >
-                  Add Category
+                  Add Appointment Type
                 </button>
               </div>
             </div>

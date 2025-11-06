@@ -43,14 +43,74 @@ export interface TreatmentPlanItem {
   note?: string;
 }
 
-// Prescription
+// Prescription (FHIR MedicationRequest compatible)
 export interface Prescription {
   id: string;
-  medication: string;
-  dosage: string;
-  frequency: string;
-  duration: string;
+  resourceType?: 'MedicationRequest';
+  status?: 'active' | 'stopped' | 'completed' | 'draft';
+  intent?: 'order' | 'proposal' | 'plan';
+
+  // Medication information
+  medicationCodeableConcept?: {
+    text?: string;
+    coding?: Array<{
+      system?: string;
+      code?: string;
+      display?: string;
+    }>;
+  };
+
+  // Legacy fields for backward compatibility
+  medication?: string; // Maps to medicationCodeableConcept.text
+  dosage?: string;
+  frequency?: string;
+  duration?: string;
   instructions?: string;
+
+  // FHIR dosage instruction
+  dosageInstruction?: Array<{
+    text?: string;
+    timing?: {
+      repeat?: {
+        frequency?: number;
+        period?: number;
+        periodUnit?: 'h' | 'd' | 'wk' | 'mo';
+        duration?: number;
+        durationUnit?: 'h' | 'd' | 'wk' | 'mo';
+      };
+    };
+    route?: {
+      coding?: Array<{
+        system?: string;
+        code?: string;
+        display?: string;
+      }>;
+    };
+    doseAndRate?: Array<{
+      doseQuantity?: {
+        value?: number;
+        unit?: string;
+        system?: string;
+        code?: string;
+      };
+    }>;
+  }>;
+
+  // Dates
+  authoredOn?: string;
+
+  // References
+  subject?: {
+    reference?: string;
+    display?: string;
+  };
+  requester?: {
+    reference?: string;
+    display?: string;
+  };
+  encounter?: {
+    reference?: string;
+  };
 }
 
 // Instruction

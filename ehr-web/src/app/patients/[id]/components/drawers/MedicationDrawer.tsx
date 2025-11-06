@@ -1,16 +1,28 @@
 import React, { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@nirmitee.io/design-system';
 import { MedicationFormData } from '../types';
+import { ClinicalService } from '@/services/clinical.service';
 
 interface MedicationDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (data: MedicationFormData) => Promise<void>;
+  patientId?: string;
+  patientName?: string;
+  useDirectAPI?: boolean; // If true, save directly via API instead of using onSave callback
 }
 
-export function MedicationDrawer({ open, onOpenChange, onSave }: MedicationDrawerProps) {
+export function MedicationDrawer({
+  open,
+  onOpenChange,
+  onSave,
+  patientId,
+  patientName,
+  useDirectAPI = false
+}: MedicationDrawerProps) {
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string>('');
   const [formData, setFormData] = useState<MedicationFormData>({
     medication: '',
     dosageValue: '',
@@ -22,33 +34,78 @@ export function MedicationDrawer({ open, onOpenChange, onSave }: MedicationDrawe
     instructions: ''
   });
 
+  const resetForm = () => {
+    setFormData({
+      medication: '',
+      dosageValue: '',
+      dosageUnit: 'mg',
+      route: 'oral',
+      frequency: '1',
+      period: '1',
+      periodUnit: 'd',
+      instructions: ''
+    });
+    setError('');
+  };
+
   const handleSave = async () => {
-    if (!formData.medication || !formData.dosageValue) return;
+    if (!formData.medication || !formData.dosageValue) {
+      setError('Medication name and dosage are required');
+      return;
+    }
 
     setSaving(true);
+    setError('');
+
     try {
-      await onSave(formData);
-      setFormData({
-        medication: '',
-        dosageValue: '',
-        dosageUnit: 'mg',
-        route: 'oral',
-        frequency: '1',
-        period: '1',
-        periodUnit: 'd',
-        instructions: ''
-      });
+      if (useDirectAPI && patientId && patientName) {
+        // Save directly via FHIR API
+        await ClinicalService.createMedication(patientId, patientName, formData);
+        resetForm();
+        onOpenChange(false);
+      } else {
+        // Use callback (e.g., for encounter prescriptions)
+        await onSave(formData);
+        resetForm();
+      }
+    } catch (err: any) {
+      console.error('Error saving medication:', err);
+      setError(err.message || 'Failed to save medication. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer open={open} onOpenChange={(isOpen) => {
+      onOpenChange(isOpen);
+      if (!isOpen) resetForm();
+    }}>
       <DrawerContent side="right" size="md" className="overflow-y-auto">
         <DrawerHeader>
           <DrawerTitle>Prescribe Medication</DrawerTitle>
         </DrawerHeader>
+
+        {/* API Integration Info */}
+        {useDirectAPI && (
+          <div className="mx-6 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+            <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+            <div className="text-xs text-blue-700">
+              <p className="font-medium">FHIR API Integration Active</p>
+              <p className="text-blue-600 mt-0.5">
+                Medication will be saved as a FHIR MedicationRequest resource
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Error message */}
+        {error && (
+          <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
         <div className="mt-6 space-y-4">
           <div>
             <Label>Medication Name <span className="text-red-500">*</span></Label>

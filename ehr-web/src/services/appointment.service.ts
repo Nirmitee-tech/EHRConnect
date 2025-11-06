@@ -593,6 +593,11 @@ export class AppointmentService {
         end: appointmentData.endTime ? new Date(appointmentData.endTime).toISOString() : undefined,
         minutesDuration: appointmentData.duration,
         comment: appointmentData.reason,
+        appointmentType: appointmentData.appointmentType ? {
+          coding: [{
+            display: appointmentData.appointmentType
+          }]
+        } : undefined,
         participant: [
           {
             actor: {
@@ -686,6 +691,18 @@ export class AppointmentService {
           op: 'replace',
           path: '/comment',
           value: updates.reason
+        });
+      }
+
+      if (updates.appointmentType) {
+        patchOps.push({
+          op: 'replace',
+          path: '/appointmentType',
+          value: {
+            coding: [{
+              display: updates.appointmentType
+            }]
+          }
         });
       }
 

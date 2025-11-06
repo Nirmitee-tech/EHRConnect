@@ -35,6 +35,7 @@ import { CarePlanForm } from '@/components/forms/care-plan-form';
 import { carePlanService, CarePlanFormData } from '@/services/careplan.service';
 import { ClinicalInstructionsSection } from '@/components/encounters/clinical-instructions-section';
 import { PatientInstructionsSection } from '@/components/encounters/patient-instructions-section';
+import { PrescriptionsSectionInline } from '@/components/encounters/prescriptions-section-inline';
 import { PatientDetails, VitalsFormData, ProblemFormData, MedicationFormData, SavedSection, TelecomItem, IdentifierItem, FHIRBundleEntry, EncounterFormData } from './components/types';
 import { PortalAccessDialog } from '@/components/patients/portal-access-dialog';
 
@@ -2342,6 +2343,19 @@ export default function PatientDetailPage() {
                       </div>
                     )}
 
+                    {/* Prescriptions Section */}
+                    {activeSubTab === 'prescriptions' && (
+                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <PrescriptionsSectionInline
+                          prescriptions={[]}
+                          onUpdate={(prescriptions) => {
+                            console.log('Prescriptions updated:', prescriptions);
+                            // TODO: Save prescriptions to encounter or patient
+                          }}
+                        />
+                      </div>
+                    )}
+
                     {/* Additional Clinical Sections */}
                     {activeSubTab === 'eye-exam' && (
                       <div className="bg-white border border-gray-200 rounded p-4">
@@ -2545,7 +2559,7 @@ export default function PatientDetailPage() {
                     )}
 
                     {/* Default placeholder for unmapped tabs */}
-                    {!['summary', 'care-plan', 'clinical-instructions', 'clinical-notes', 'review-of-systems', 'soap', 'vitals', 'eye-exam', 'functional-and-cognitive-status', 'observation', 'review-of-systems-checks', 'speech-dictation', 'forms', 'procedure-order', 'lab-results', 'new-questionnaire'].includes(activeSubTab) && (
+                    {!['summary', 'care-plan', 'clinical-instructions', 'clinical-notes', 'review-of-systems', 'soap', 'vitals', 'prescriptions', 'eye-exam', 'functional-and-cognitive-status', 'observation', 'review-of-systems-checks', 'speech-dictation', 'forms', 'procedure-order', 'lab-results', 'new-questionnaire'].includes(activeSubTab) && (
                       <div className="bg-white border border-gray-200 rounded p-4">
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">
                           {activeSubTab.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
