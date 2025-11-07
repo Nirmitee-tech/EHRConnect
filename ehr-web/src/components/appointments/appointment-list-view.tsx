@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, ChevronLeft, ChevronRight, Printer, Video, Plus } from 'lucide-react';
 import { Appointment } from '@/types/appointment';
 import { cn } from '@/lib/utils';
+import { AppointmentDetailSidebar } from './appointment-detail-sidebar';
 
 interface AppointmentListViewProps {
   appointments: Appointment[];
@@ -32,6 +33,11 @@ export function AppointmentListView({
   const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(currentDate);
+
+  // Sidebar state
+  const [selectedAppointmentForSidebar, setSelectedAppointmentForSidebar] = useState<Appointment | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Calendar navigation
   const handlePreviousMonth = () => {
@@ -365,7 +371,11 @@ export function AppointmentListView({
                     {apts.map(apt => (
                       <div
                         key={apt.id}
-                        onClick={() => onAppointmentClick?.(apt)}
+                        onClick={() => {
+                          setSelectedAppointmentForSidebar(apt);
+                          setIsSidebarOpen(true);
+                          onAppointmentClick?.(apt);
+                        }}
                         className="grid grid-cols-12 gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors"
                       >
                         {/* Time */}
@@ -482,6 +492,28 @@ export function AppointmentListView({
           </div>
         </div>
       </div>
+
+      {/* Appointment Detail Sidebar */}
+      <AppointmentDetailSidebar
+        appointment={selectedAppointmentForSidebar}
+        isOpen={isSidebarOpen}
+        isCollapsed={isSidebarCollapsed}
+        onClose={() => setIsSidebarOpen(false)}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        onEdit={(apt) => {
+          // Handle edit - can be implemented to open appointment form
+          console.log('Edit appointment:', apt);
+          setIsSidebarOpen(false);
+        }}
+        onDelete={(apt) => {
+          // Handle delete - can be implemented with confirmation dialog
+          console.log('Delete appointment:', apt);
+          if (window.confirm(`Are you sure you want to delete the appointment for ${apt.patientName}?`)) {
+            // Delete logic here
+            setIsSidebarOpen(false);
+          }
+        }}
+      />
     </div>
   );
 }

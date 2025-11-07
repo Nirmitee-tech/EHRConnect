@@ -32,6 +32,18 @@ export interface Appointment {
   patientAge?: string; // Patient age for display
   patientPhone?: string; // Patient phone for display
   mode?: AppointmentMode; // Appointment mode (in-person, video-call, voice-call, other)
+
+  // Recurring appointment fields
+  isRecurring?: boolean;
+  recurrenceInterval?: number; // e.g., 1, 2, 3
+  recurrencePeriod?: 'day' | 'week' | 'month' | 'year';
+  recurrenceDays?: number[]; // [0,1,2,3,4,5,6] for days of week
+  recurrenceEndDate?: string;
+
+  // Additional details
+  chiefComplaint?: string;
+  selectedForms?: string[]; // Array of form IDs to send
+  isEmergency?: boolean;
 }
 
 export interface AppointmentStats {
