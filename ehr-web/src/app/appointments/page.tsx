@@ -9,6 +9,7 @@ import { WeekViewDraggable } from '@/components/appointments/week-view-draggable
 import { MonthView } from '@/components/appointments/month-view';
 import { ProviderDashboard } from '@/components/appointments/provider-dashboard';
 import { AppointmentListView } from '@/components/appointments/appointment-list-view';
+import { MultiProviderDayView } from '@/components/appointments/multi-provider-day-view';
 import { AppointmentStatsPanel } from '@/components/appointments/appointment-stats';
 import { AppointmentFormDrawer } from '@/components/appointments/appointment-form-drawer';
 import { AppointmentDetailsDrawer } from '@/components/appointments/appointment-details-drawer';
@@ -16,6 +17,7 @@ import { MiniCalendar } from '@/components/appointments/mini-calendar';
 import { EventFilters, EventCategory } from '@/components/appointments/event-filters';
 import { AppointmentService } from '@/services/appointment.service';
 import { EncounterService } from '@/services/encounter.service';
+import { StaffService } from '@/services/staff.service';
 import { Loader2, Plus, ChevronDown, RefreshCw, Info, ArrowRight, Keyboard, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PrintAppointments } from '@/components/appointments/print-appointments';
@@ -72,6 +74,8 @@ export default function AppointmentsPage() {
   const [currentDoctorId, setCurrentDoctorId] = useState<string | null>(null); // For doctor view
   const [showLocations, setShowLocations] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [allPractitioners, setAllPractitioners] = useState<Array<{ id: string; name: string; color?: string; specialization?: string }>>([]);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -139,6 +143,38 @@ export default function AppointmentsPage() {
     const query = locationSearchQuery.toLowerCase();
     return locations.filter(l => l.name.toLowerCase().includes(query));
   }, [locations, locationSearchQuery]);
+
+  // Use all practitioners for multi-provider view (not just those with appointments)
+  const practitionersForMultiView = useMemo(() => {
+    console.log('🔄 Computing practitioners for multi-view:', {
+      loadedPractitioners: allPractitioners.length,
+      totalAppointments: allAppointments.length
+    });
+
+    // If we have loaded practitioners from the staff service, use those
+    if (allPractitioners.length > 0) {
+      console.log('✅ Using loaded practitioners:', allPractitioners);
+      return allPractitioners;
+    }
+
+    // Fallback: extract from appointments (for backwards compatibility)
+    console.log('⚠️ Fallback: Extracting practitioners from appointments');
+    const practitionerMap = new Map();
+    allAppointments.forEach(apt => {
+      if (apt.practitionerId && apt.practitionerName) {
+        if (!practitionerMap.has(apt.practitionerId)) {
+          practitionerMap.set(apt.practitionerId, {
+            id: apt.practitionerId,
+            name: apt.practitionerName,
+            color: apt.practitionerColor || '#3B82F6'
+          });
+        }
+      }
+    });
+    const extracted = Array.from(practitionerMap.values());
+    console.log('📋 Extracted practitioners:', extracted);
+    return extracted;
+  }, [allPractitioners, allAppointments]);
 
   // Calculate tab counts
   const tabCounts = useMemo(() => {
@@ -226,6 +262,11 @@ export default function AppointmentsPage() {
     });
   }, [allAppointments, categories, searchQuery, statusFilter, practitionerFilter, activeTab, viewMode, currentDoctorId, locationFilter]);
 
+  // Load all practitioners on mount (for multi-provider view)
+  useEffect(() => {
+    loadPractitioners();
+  }, []);
+
   // Track the last loaded range to avoid unnecessary reloads
   const [lastLoadedRange, setLastLoadedRange] = React.useState<{ start: string; end: string } | null>(null);
 
@@ -235,7 +276,8 @@ export default function AppointmentsPage() {
 
     // Only reload if we're viewing a different date range
     if (lastLoadedRange?.start !== startDate.toISOString() || lastLoadedRange?.end !== endDate.toISOString()) {
-      loadAppointments();
+      // Silent load for date changes (no loading spinner), only show spinner on initial load
+      loadAppointments(!isInitialLoad);
       loadStats();
       setLastLoadedRange({ start: startDate.toISOString(), end: endDate.toISOString() });
     }
@@ -246,7 +288,7 @@ export default function AppointmentsPage() {
     calculateStats(allAppointments);
   }, [activeTab]);
 
-  // Initialize Socket.IO for real-time updates
+  // Initialize Socket.IO for real-time updates (optional feature)
   useEffect(() => {
     const token = session?.accessToken;
     const orgId = session?.org_id;
@@ -255,7 +297,8 @@ export default function AppointmentsPage() {
       (session as { userId?: string | null } | undefined)?.userId ??
       null;
 
-    if (!token || !orgId) {
+    // Skip if no auth credentials or if real-time updates are disabled
+    if (!token || !orgId || process.env.NEXT_PUBLIC_ENABLE_REALTIME !== 'true') {
       return undefined;
     }
 
@@ -270,12 +313,17 @@ export default function AppointmentsPage() {
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionDelay: 1000,
-        reconnectionAttempts: 5,
+        reconnectionAttempts: 3, // Reduced attempts to fail faster
+        reconnectionDelayMax: 5000,
+        timeout: 10000,
       });
 
       socketRef.current = socket;
 
+      let hasConnected = false;
+
       socket.on('connect', () => {
+        hasConnected = true;
         console.log('✅ Connected to real-time appointment service');
       });
 
@@ -284,11 +332,18 @@ export default function AppointmentsPage() {
       });
 
       socket.on('disconnect', () => {
-        console.log('❌ Disconnected from real-time service');
+        if (hasConnected) {
+          console.log('❌ Disconnected from real-time service');
+        }
       });
 
       socket.on('connect_error', (error: any) => {
-        console.error('Socket connection error:', error.message);
+        // Only log once if authentication fails, then disable reconnection
+        if (error.message?.includes('Authentication') || error.message?.includes('authentication')) {
+          console.warn('⚠️ Real-time updates unavailable (authentication not configured)');
+          socket.disconnect();
+          socketRef.current = null;
+        }
       });
 
       // Listen for appointment events
@@ -315,7 +370,7 @@ export default function AppointmentsPage() {
         loadAppointments();
       });
     } catch (error) {
-      console.error('Failed to initialize Socket.IO:', error);
+      console.warn('Real-time updates unavailable:', error);
     }
 
     // Cleanup on unmount
@@ -327,26 +382,58 @@ export default function AppointmentsPage() {
     };
   }, [session?.accessToken, session?.org_id]);
 
-  const loadAppointments = async () => {
-    setLoading(true);
+  const loadPractitioners = async () => {
+    try {
+      const practitioners = await StaffService.getPractitioners({ active: true });
+      setAllPractitioners(practitioners.map(p => ({
+        id: p.id,
+        name: p.name,
+        color: p.color || '#3B82F6',
+        specialization: p.specialty
+      })));
+      console.log('✅ Loaded practitioners:', practitioners.length);
+    } catch (error) {
+      console.error('Error loading practitioners:', error);
+      // Don't block the app if practitioners can't be loaded
+    }
+  };
+
+  const loadAppointments = async (silent = false) => {
+    // Only show loading spinner on initial load or explicit refresh, not on date changes
+    if (!silent) {
+      setLoading(true);
+    }
     try {
       const { startDate, endDate } = getDateRange();
-      console.log('Loading appointments from:', startDate.toLocaleDateString(), 'to:', endDate.toLocaleDateString());
+      console.log('📅 Loading appointments from:', startDate.toLocaleDateString(), 'to:', endDate.toLocaleDateString());
       const data = await AppointmentService.getAppointments(startDate, endDate);
-      console.log('Loaded appointments:', data.length);
-      console.log('Appointments data:', data.map(apt => ({
-        id: apt.id,
-        patient: apt.patientName,
-        start: new Date(apt.startTime).toLocaleString(),
-        end: new Date(apt.endTime).toLocaleString()
-      })));
+      console.log('✅ Loaded appointments:', data.length);
+
+      if (data.length > 0) {
+        console.log('📋 Appointment details:', data.map(apt => ({
+          id: apt.id,
+          patient: apt.patientName,
+          practitioner: apt.practitionerName,
+          practitionerId: apt.practitionerId,
+          start: new Date(apt.startTime).toLocaleString(),
+          end: new Date(apt.endTime).toLocaleString()
+        })));
+      }
+
       setAllAppointments(data);
       calculateStats(data);
+
+      // Mark initial load as complete
+      if (isInitialLoad) {
+        setIsInitialLoad(false);
+      }
     } catch (error) {
-      console.error('Error loading appointments:', error);
+      console.error('❌ Error loading appointments:', error);
       setAllAppointments([]);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   };
 
@@ -404,7 +491,7 @@ export default function AppointmentsPage() {
     const startDate = new Date(current);
     const endDate = new Date(current);
 
-    if (view === 'day' || view === 'list' || view === 'dashboard') {
+    if (view === 'day' || view === 'list' || view === 'dashboard' || view === 'multi-provider') {
       startDate.setHours(0, 0, 0, 0);
       endDate.setHours(23, 59, 59, 999);
     } else if (view === 'week') {
@@ -760,6 +847,102 @@ export default function AppointmentsPage() {
                   onDateClick={handleDateClick}
                 />
               )}
+              {view === 'multi-provider' && (() => {
+                console.log('🎨 Rendering Multi-Provider View:', {
+                  totalAppointments: filteredAppointments.length,
+                  totalPractitioners: practitionersForMultiView.length,
+                  appointments: filteredAppointments.map(a => ({
+                    id: a.id,
+                    patient: a.patientName,
+                    practitioner: a.practitionerName,
+                    practitionerId: a.practitionerId
+                  }))
+                });
+                return (
+                  <MultiProviderDayView
+                    appointments={filteredAppointments}
+                    practitioners={practitionersForMultiView}
+                    currentDate={currentDate}
+                    onDateChange={handleDateChange}
+                  onAppointmentClick={handleAppointmentClick}
+                  onTimeSlotClick={(practitionerId, time) => {
+                    setClickedDate(time);
+                    setIsDrawerOpen(true);
+                  }}
+                  onAppointmentDrop={async (appointment, newDate, newHour, newPractitionerId) => {
+                    console.log('🎯 Drag & Drop Started:', {
+                      appointmentId: appointment.id,
+                      patientName: appointment.patientName,
+                      oldPractitionerId: appointment.practitionerId,
+                      oldPractitionerName: appointment.practitionerName,
+                      newPractitionerId,
+                      oldTime: appointment.startTime,
+                      newTime: `${Math.floor(newHour)}:${Math.round((newHour - Math.floor(newHour)) * 60)}`
+                    });
+
+                    try {
+                      // Calculate new start and end times
+                      const hours = Math.floor(newHour);
+                      const minutes = Math.round((newHour - hours) * 60);
+
+                      const newStartTime = new Date(newDate);
+                      newStartTime.setHours(hours, minutes, 0, 0);
+
+                      const duration = appointment.duration;
+                      const newEndTime = new Date(newStartTime.getTime() + duration * 60000);
+
+                      // Get the new practitioner details
+                      const newPractitioner = practitionersForMultiView.find(p => p.id === newPractitionerId);
+
+                      if (!newPractitioner) {
+                        console.error('❌ Practitioner not found:', newPractitionerId);
+                        throw new Error('Target practitioner not found');
+                      }
+
+                      const newPractitionerName = newPractitioner.name;
+
+                      console.log('📤 Sending update to backend:', {
+                        appointmentId: appointment.id,
+                        updates: {
+                          startTime: newStartTime.toISOString(),
+                          endTime: newEndTime.toISOString(),
+                          practitionerId: newPractitionerId,
+                          practitionerName: newPractitionerName
+                        }
+                      });
+
+                      // Update in backend FIRST - no optimistic update
+                      const updated = await AppointmentService.updateAppointment(appointment.id, {
+                        startTime: newStartTime,
+                        endTime: newEndTime,
+                        practitionerId: newPractitionerId,
+                        practitionerName: newPractitionerName
+                      });
+
+                      console.log('✅ Backend update successful:', {
+                        id: updated.id,
+                        practitionerId: updated.practitionerId,
+                        practitionerName: updated.practitionerName,
+                        startTime: updated.startTime,
+                        endTime: updated.endTime
+                      });
+
+                      // Now reload from backend to get the actual saved state (silent reload)
+                      console.log('🔄 Reloading appointments from backend...');
+                      await loadAppointments(true); // Silent reload - no loading spinner
+                      console.log('✅ Appointments reloaded');
+
+                    } catch (error) {
+                      console.error('❌ Error rescheduling appointment:', error);
+                      alert('Failed to reschedule appointment. Please try again.');
+                      // Reload to ensure consistency (silent reload)
+                      await loadAppointments(true);
+                    }
+                  }}
+                  onAppointmentResize={handleAppointmentResize}
+                />
+                );
+              })()}
               {view === 'dashboard' && (
                 <ProviderDashboard
                   practitionerId={currentDoctorId || ''}
@@ -790,8 +973,8 @@ export default function AppointmentsPage() {
           )}
         </div>
 
-        {/* Right Sidebar - Compact Style (hidden when dashboard or list is active) */}
-        {view !== 'dashboard' && view !== 'list' && (
+        {/* Right Sidebar - Compact Style (hidden when dashboard, list, or multi-provider is active) */}
+        {view !== 'dashboard' && view !== 'list' && view !== 'multi-provider' && (
         <div className={`border-l border-gray-200 bg-gray-50 flex flex-col transition-all duration-300 ${
           isSidebarCollapsed ? 'w-12' : 'w-80'
         }`}>

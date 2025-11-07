@@ -54,7 +54,7 @@ export interface AppointmentStats {
   cancelled: number;
 }
 
-export type CalendarView = 'day' | 'week' | 'month' | 'dashboard' | 'list';
+export type CalendarView = 'day' | 'week' | 'month' | 'dashboard' | 'list' | 'multi-provider';
 
 export interface CalendarSlot {
   time: Date;

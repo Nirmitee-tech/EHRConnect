@@ -39,7 +39,7 @@ export function CalendarToolbar({
 
   const handlePrevious = () => {
     const newDate = new Date(currentDate);
-    if (view === 'day') {
+    if (view === 'day' || view === 'multi-provider') {
       newDate.setDate(newDate.getDate() - 1);
     } else if (view === 'week') {
       newDate.setDate(newDate.getDate() - 7);
@@ -52,7 +52,7 @@ export function CalendarToolbar({
 
   const handleNext = () => {
     const newDate = new Date(currentDate);
-    if (view === 'day') {
+    if (view === 'day' || view === 'multi-provider') {
       newDate.setDate(newDate.getDate() + 1);
     } else if (view === 'week') {
       newDate.setDate(newDate.getDate() + 7);
@@ -163,6 +163,19 @@ export function CalendarToolbar({
         >
           Day
         </button>
+        {viewMode === 'admin' && (
+          <button
+            onClick={() => onViewChange('multi-provider')}
+            className={cn(
+              'h-7 px-3 text-xs font-medium rounded transition-colors border',
+              view === 'multi-provider'
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'text-gray-700 border-gray-300 hover:bg-gray-100 hover:border-gray-400'
+            )}
+          >
+            Multi-Provider
+          </button>
+        )}
         <button
           onClick={() => onViewChange('week')}
           className={cn(

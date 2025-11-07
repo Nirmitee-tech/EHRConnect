@@ -5,6 +5,7 @@ import { Search, ChevronLeft, ChevronRight, Printer, Video, Plus } from 'lucide-
 import { Appointment } from '@/types/appointment';
 import { cn } from '@/lib/utils';
 import { AppointmentDetailSidebar } from './appointment-detail-sidebar';
+import { useRouter } from 'next/navigation';
 
 interface AppointmentListViewProps {
   appointments: Appointment[];
@@ -29,6 +30,7 @@ export function AppointmentListView({
   practitioners = [],
   locations = []
 }: AppointmentListViewProps) {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
@@ -512,6 +514,14 @@ export function AppointmentListView({
             // Delete logic here
             setIsSidebarOpen(false);
           }
+        }}
+        onCreateSuperBill={(apt) => {
+          // Navigate to superbill creation page with patient info
+          router.push(`/billing/superbills/new?patientId=${apt.patientId}&appointmentId=${apt.id}&appointmentDate=${apt.startTime}`);
+        }}
+        onCreateClaim={(apt) => {
+          // Navigate to claim creation page with patient and appointment info
+          router.push(`/billing/claims/new?patientId=${apt.patientId}&appointmentId=${apt.id}&appointmentDate=${apt.startTime}`);
         }}
       />
     </div>

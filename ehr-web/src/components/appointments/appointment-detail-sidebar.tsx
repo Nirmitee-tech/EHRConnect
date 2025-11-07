@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, ChevronLeft, ChevronRight, Edit, Trash2, CalendarIcon, Clock, User, MapPin, FileText, Video, Phone, Users as UsersIcon } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Edit, Trash2, CalendarIcon, Clock, User, MapPin, FileText, Video, Phone, Users as UsersIcon, Receipt, FileCheck } from 'lucide-react';
 import { Appointment } from '@/types/appointment';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +13,8 @@ interface AppointmentDetailSidebarProps {
   onToggleCollapse: () => void;
   onEdit?: (appointment: Appointment) => void;
   onDelete?: (appointment: Appointment) => void;
+  onCreateSuperBill?: (appointment: Appointment) => void;
+  onCreateClaim?: (appointment: Appointment) => void;
 }
 
 export function AppointmentDetailSidebar({
@@ -22,7 +24,9 @@ export function AppointmentDetailSidebar({
   onClose,
   onToggleCollapse,
   onEdit,
-  onDelete
+  onDelete,
+  onCreateSuperBill,
+  onCreateClaim
 }: AppointmentDetailSidebarProps) {
   if (!isOpen || !appointment) return null;
 
@@ -275,24 +279,52 @@ export function AppointmentDetailSidebar({
             </div>
 
             {/* Footer Actions */}
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex gap-3">
-              {onEdit && (
-                <button
-                  onClick={() => onEdit(appointment)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                >
-                  <Edit className="h-4 w-4" />
-                  Edit
-                </button>
-              )}
-              {onDelete && (
-                <button
-                  onClick={() => onDelete(appointment)}
-                  className="px-4 py-2.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              )}
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 space-y-2">
+              {/* Billing Actions */}
+              <div className="grid grid-cols-2 gap-2">
+                {/* Create Super Bill Button */}
+                {onCreateSuperBill && (
+                  <button
+                    onClick={() => onCreateSuperBill(appointment)}
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+                  >
+                    <Receipt className="h-3.5 w-3.5" />
+                    Super Bill
+                  </button>
+                )}
+
+                {/* Create Claim Button */}
+                {onCreateClaim && (
+                  <button
+                    onClick={() => onCreateClaim(appointment)}
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+                  >
+                    <FileCheck className="h-3.5 w-3.5" />
+                    Create Claim
+                  </button>
+                )}
+              </div>
+
+              {/* Edit and Delete */}
+              <div className="flex gap-3">
+                {onEdit && (
+                  <button
+                    onClick={() => onEdit(appointment)}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  >
+                    <Edit className="h-4 w-4" />
+                    Edit
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={() => onDelete(appointment)}
+                    className="px-4 py-2.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}

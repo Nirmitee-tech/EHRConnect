@@ -78,6 +78,15 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
         icon: DollarSign
       },
       {
+        name: 'Superbills',
+        href: '/billing/superbills',
+        icon: Receipt,
+        children: [
+          { name: 'All Superbills', href: '/billing/superbills', icon: FileText },
+          { name: 'Create Superbill', href: '/billing/superbills/new', icon: Receipt }
+        ]
+      },
+      {
         name: 'Claims',
         href: '/billing/claims',
         icon: Send,

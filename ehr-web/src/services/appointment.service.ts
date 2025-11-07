@@ -647,7 +647,89 @@ export class AppointmentService {
    */
   static async updateAppointment(id: string, updates: Partial<Appointment>): Promise<Appointment> {
     try {
-      // Build PATCH operations array dynamically based on what's being updated
+      // If practitioner is being changed, we need to use PUT with full resource
+      // because PATCH on nested participant arrays is unreliable
+      if (updates.practitionerId || updates.practitionerName) {
+        console.log('🔄 Updating appointment with practitioner change:', {
+          id,
+          newPractitionerId: updates.practitionerId,
+          newPractitionerName: updates.practitionerName
+        });
+
+        // Get the current appointment
+        const current: any = await medplum.readResource('Appointment', id);
+
+        // Update the practitioner participant
+        const updatedParticipants = current.participant?.map((p: any) => {
+          if (p.actor?.reference?.startsWith('Practitioner/')) {
+            return {
+              ...p,
+              actor: {
+                reference: updates.practitionerId ? `Practitioner/${updates.practitionerId}` : p.actor.reference,
+                display: updates.practitionerName || p.actor.display
+              }
+            };
+          }
+          return p;
+        }) || [];
+
+        // Build updated resource
+        const updatedResource = {
+          ...current,
+          participant: updatedParticipants
+        };
+
+        // Apply other updates
+        if (updates.status) {
+          updatedResource.status = AppointmentService.mapStatusToFHIR(updates.status);
+        }
+        if (updates.startTime) {
+          updatedResource.start = updates.startTime instanceof Date
+            ? updates.startTime.toISOString()
+            : new Date(updates.startTime).toISOString();
+        }
+        if (updates.endTime) {
+          updatedResource.end = updates.endTime instanceof Date
+            ? updates.endTime.toISOString()
+            : new Date(updates.endTime).toISOString();
+        }
+        if (updates.duration !== undefined) {
+          updatedResource.minutesDuration = updates.duration;
+        }
+        if (updates.reason) {
+          updatedResource.comment = updates.reason;
+        }
+        if (updates.appointmentType) {
+          updatedResource.appointmentType = {
+            coding: [{
+              display: updates.appointmentType
+            }]
+          };
+        }
+
+        console.log('📤 Sending PUT request with updated resource');
+        console.log('Updated FHIR resource:', JSON.stringify(updatedResource, null, 2));
+
+        // Use PUT to update the entire resource
+        const result = await medplum.updateResource(updatedResource);
+
+        console.log('✅ Backend returned updated resource:', JSON.stringify(result, null, 2));
+
+        const transformed = AppointmentService.transformFHIRAppointment(result);
+
+        console.log('🔄 Transformed appointment:', {
+          id: transformed.id,
+          practitionerId: transformed.practitionerId,
+          practitionerName: transformed.practitionerName,
+          patientName: transformed.patientName,
+          startTime: transformed.startTime,
+          endTime: transformed.endTime
+        });
+
+        return transformed;
+      }
+
+      // For non-practitioner updates, use PATCH for efficiency
       const patchOps: any[] = [];
 
       if (updates.status) {
@@ -706,14 +788,14 @@ export class AppointmentService {
         });
       }
 
-      console.log('Sending PATCH operations:', patchOps);
+      console.log('📤 Sending PATCH operations:', patchOps);
 
       // Use PATCH with only the fields being updated
       const result = await medplum.patchResource('Appointment', id, patchOps);
 
       return AppointmentService.transformFHIRAppointment(result);
     } catch (error) {
-      console.error('Error updating appointment:', error);
+      console.error('❌ Error updating appointment:', error);
       throw error;
     }
   }
