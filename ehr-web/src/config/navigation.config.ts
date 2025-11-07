@@ -29,7 +29,8 @@ import {
   Bed,
   UserPlus,
   Map,
-  BedDouble
+  BedDouble,
+  ArrowRightLeft
 } from 'lucide-react';
 import { NavSection, PageInfo } from '@/types/navigation';
 
@@ -41,6 +42,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
     title: 'CLINIC',
     items: [
       { name: 'Appointments', href: '/appointments', icon: Calendar },
+      { name: 'Patient Flow', href: '/patient-flow', icon: ArrowRightLeft },
       { name: 'Encounters', href: '/encounters', icon: Activity },
       { name: 'Patients', href: '/patients', icon: Users },
       {
@@ -186,6 +188,7 @@ const PAGE_CONFIG: Record<string, PageInfo> = {
     title: 'Appointments',
     actionButton: { label: 'New Appointment', href: '/appointments/new' }
   },
+  'patient-flow': { title: 'Patient Flow Board' },
   accounts: { title: 'Accounts' },
   sales: { title: 'Sales' },
   purchases: { title: 'Purchases' },

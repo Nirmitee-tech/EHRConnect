@@ -34,7 +34,11 @@ export class MedicationService {
    */
   static async updateMedication(medicationId: string, prescription: Prescription): Promise<any> {
     // First get the existing medication
-    const existing = await fhirService.read('MedicationRequest', medicationId);
+    const existing: any = await fhirService.read('MedicationRequest', medicationId);
+
+    if (!existing) {
+      throw new Error('Medication not found');
+    }
 
     const updated = {
       ...existing,
@@ -53,7 +57,7 @@ export class MedicationService {
    */
   static async deleteMedication(medicationId: string): Promise<void> {
     // In FHIR, we typically don't delete but mark as stopped/cancelled
-    const existing = await fhirService.read('MedicationRequest', medicationId);
+    const existing: any = await fhirService.read('MedicationRequest', medicationId);
     const updated = {
       ...existing,
       status: 'stopped'

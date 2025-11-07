@@ -5,8 +5,10 @@ import { useSession } from 'next-auth/react';
 import { FileText, Plus, Search, Filter, Eye, Edit, Send, RefreshCw, DollarSign, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import billingService from '@/services/billing.service';
 import { useRouter } from 'next/navigation';
+import { BillingHeader } from '@/components/billing/billing-header';
 
 interface Claim {
   id: string;
@@ -32,6 +34,8 @@ export default function ClaimsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [dateRange, setDateRange] = useState('30d');
+  const [location, setLocation] = useState('all');
 
   useEffect(() => {
     loadClaims();
@@ -101,28 +105,27 @@ export default function ClaimsPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <FileText className="h-8 w-8 text-green-600" />
-              Claims Management
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Create, submit, and track insurance claims
-            </p>
-          </div>
-          <Button
-            onClick={() => router.push('/billing/claims/new')}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create New Claim
-          </Button>
-        </div>
-      </div>
+    <div className="h-full flex flex-col bg-gray-50 -m-6">
+      <BillingHeader
+        title="Claims Management"
+        subtitle="Create, submit, and track insurance claims"
+        dateRange={dateRange}
+        location={location}
+        onDateRangeChange={setDateRange}
+        onLocationChange={setLocation}
+      >
+        <Button
+          onClick={() => router.push('/billing/claims/new')}
+          size="sm"
+          className="bg-white text-blue-600 hover:bg-blue-50"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Create Claim
+        </Button>
+      </BillingHeader>
+
+      <div className="flex-1 overflow-y-auto bg-gray-50">
+        <div className="p-6 space-y-4">
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -343,10 +346,8 @@ export default function ClaimsPage() {
           ))
         )}
       </div>
+        </div>
+      </div>
     </div>
   );
-}
-
-function Label({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <label className={`block text-sm font-medium text-gray-700 ${className}`}>{children}</label>;
 }

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import billingService from '@/services/billing.service';
+import { BillingHeader } from '@/components/billing/billing-header';
 
 interface EligibilityResult {
   status: string;
@@ -39,6 +40,8 @@ export default function EligibilityCheckPage() {
   const [error, setError] = useState('');
   const [history, setHistory] = useState<EligibilityHistory[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [dateRange, setDateRange] = useState('30d');
+  const [location, setLocation] = useState('all');
 
   const [formData, setFormData] = useState({
     patientId: '',
@@ -123,22 +126,18 @@ export default function EligibilityCheckPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <CheckCircle className="h-8 w-8 text-blue-600" />
-              Insurance Eligibility Verification
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Real-time verification of patient insurance coverage
-            </p>
-          </div>
-        </div>
-      </div>
+    <div className="h-full flex flex-col bg-gray-50 -m-6">
+      <BillingHeader
+        title="Insurance Eligibility Verification"
+        subtitle="Check patient insurance eligibility and benefits"
+        dateRange={dateRange}
+        location={location}
+        onDateRangeChange={setDateRange}
+        onLocationChange={setLocation}
+      />
 
+      <div className="flex-1 overflow-y-auto bg-gray-50">
+        <div className="p-6 space-y-4">
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Eligibility Form */}
         <div className="lg:col-span-2">
@@ -430,6 +429,8 @@ export default function EligibilityCheckPage() {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }
