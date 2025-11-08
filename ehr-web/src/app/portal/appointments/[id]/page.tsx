@@ -53,6 +53,10 @@ type FhirAppointment = {
   participant?: FhirParticipant[]
   note?: Array<{ text?: string }>
   supportingInformation?: Array<{ display?: string; reference?: string }>
+  extension?: Array<{
+    url?: string
+    valueString?: string
+  }>
 }
 const CHECK_IN_EXTENSION_URL = 'urn:oid:ehrconnect:appointment-checkin'
 const REMINDER_EXTENSION_URL = 'urn:oid:ehrconnect:appointment-reminder'

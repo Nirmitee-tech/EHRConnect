@@ -148,6 +148,7 @@ declare module '@medplum/fhirtypes' {
     intent?: string
     medicationCodeableConcept?: FhirCodeableConcept
     authoredOn?: string
+    subject?: FhirReference
     requester?: FhirReference
     dosageInstruction?: Array<{
       text?: string
@@ -228,6 +229,30 @@ declare module '@medplum/fhirtypes' {
     sent?: string
     received?: string
   }
+
+  export type CommunicationRequest = FhirResourceBase & {
+    status?: string
+    priority?: string
+    subject?: FhirReference
+    about?: FhirReference[]
+    authoredOn?: string
+    occurrenceDateTime?: string
+    payload?: Array<{
+      contentString?: string
+      contentAttachment?: {
+        contentType?: string
+        url?: string
+        title?: string
+      }
+      contentReference?: FhirReference
+    }>
+    medium?: Array<{
+      coding?: FhirCoding[]
+      text?: string
+    }>
+    requester?: FhirReference
+    recipient?: FhirReference[]
+  }
   export type Consent = FhirResourceBase
 
   export type Coverage = FhirResourceBase & {
@@ -279,10 +304,13 @@ declare module '@medplum/fhirtypes' {
     status?: string
     type?: FhirCodeableConcept
     subject?: FhirReference
+    recipient?: FhirReference
+    payee?: FhirReference
     date?: string
     totalGross?: FhirMoney
     totalNet?: FhirMoney
     totalBalance?: FhirMoney
+    note?: FhirAnnotation[]
   }
 
   export type Questionnaire = FhirResourceBase & {
@@ -315,6 +343,40 @@ declare module '@medplum/fhirtypes' {
       valueReference?: FhirReference
     }>
     description?: string
+    note?: FhirAnnotation[]
+  }
+
+  export type Goal = FhirResourceBase & {
+    lifecycleStatus?: string
+    description?: {
+      text?: string
+    }
+    subject?: FhirReference
+    statusDate?: string
+    startDate?: string
+    target?: Array<{
+      dueDate?: string
+    }>
+    category?: Array<{
+      text?: string
+      coding?: FhirCoding[]
+    }>
+  }
+
+  export type Binary = FhirResourceBase & {
+    contentType?: string
+    data?: string
+  }
+
+  export type PaymentNotice = FhirResourceBase & {
+    status?: string
+    created?: string
+    paymentDate?: string
+    request?: FhirReference
+    paymentStatus?: FhirCodeableConcept
+    amount?: FhirMoney
+    recipient?: FhirReference
+    payee?: FhirReference
     note?: FhirAnnotation[]
   }
 

@@ -51,6 +51,7 @@ interface AppointmentType {
   display: string
   duration: number
   description?: string
+  name?: string
 }
 
 interface Location {

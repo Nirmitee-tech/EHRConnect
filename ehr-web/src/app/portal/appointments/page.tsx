@@ -32,6 +32,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 
+export const dynamic = 'force-dynamic'
+
 const CHECK_IN_EXTENSION_URL = 'urn:oid:ehrconnect:appointment-checkin'
 const REMINDER_EXTENSION_URL = 'urn:oid:ehrconnect:appointment-reminder'
 const symptomOptions = ['Cough', 'Fever', 'Pain', 'Follow-up question', 'Medication refill']

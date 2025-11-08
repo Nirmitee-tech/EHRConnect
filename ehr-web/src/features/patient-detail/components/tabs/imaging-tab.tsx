@@ -80,8 +80,11 @@ export function ImagingTab() {
             const StatusIcon = statusBadge.icon;
             const numberOfSeries = study.numberOfSeries || 0;
             const numberOfInstances = study.numberOfInstances || 0;
-            const modalities = study.series?.map((s: any) => s.modality?.code || s.modality).filter(Boolean) || [];
-            const uniqueModalities = [...new Set(modalities)];
+            const modalities =
+              study.series
+                ?.map((s: any) => s.modality?.code || s.modality)
+                .filter((code: string | undefined): code is string => Boolean(code)) || [];
+            const uniqueModalities: string[] = Array.from(new Set(modalities));
             const referrer = study.referrer?.display || '-';
             const interpreter = study.interpreter?.[0]?.display || '-';
             const reasonCode = study.reasonCode?.[0]?.text || study.reasonCode?.[0]?.coding?.[0]?.display;

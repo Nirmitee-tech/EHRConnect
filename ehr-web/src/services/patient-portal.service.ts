@@ -582,7 +582,7 @@ export class PatientPortalService {
       const nowIso = new Date().toISOString()
 
       if (goal.id) {
-        const existing = await medplum.readResource<Goal>('Goal', goal.id)
+        const existing = (await medplum.readResource('Goal', goal.id)) as Goal
         if (existing.subject?.reference !== patientReference) {
           throw new Error('Goal does not belong to this patient')
         }
@@ -641,10 +641,10 @@ export class PatientPortalService {
     payload: MedicationRefillPayload
   ): Promise<Task> {
     try {
-      const medication = await medplum.readResource<MedicationRequest>(
+      const medication = (await medplum.readResource(
         'MedicationRequest',
         payload.medicationRequestId
-      )
+      )) as MedicationRequest
       const patientReference = patientId.startsWith('Patient/') ? patientId : `Patient/${patientId}`
 
       if (medication.subject?.reference !== patientReference) {
@@ -877,7 +877,7 @@ export class PatientPortalService {
     payload: BillPaymentPayload
   ): Promise<{ invoice: Invoice; paymentNotice: PaymentNotice }> {
     try {
-      const invoice = await medplum.readResource<Invoice>('Invoice', payload.invoiceId)
+      const invoice = (await medplum.readResource('Invoice', payload.invoiceId)) as Invoice
       const patientReference = patientId.startsWith('Patient/') ? patientId : `Patient/${patientId}`
 
       if (invoice.subject?.reference !== patientReference) {
@@ -1042,10 +1042,10 @@ export class PatientPortalService {
     payload: FamilyAccessUpdatePayload
   ): Promise<RelatedPerson> {
     try {
-      const relatedPerson = await medplum.readResource<RelatedPerson>(
+      const relatedPerson = (await medplum.readResource(
         'RelatedPerson',
         payload.relatedPersonId
-      )
+      )) as RelatedPerson
 
       const patientReference = patientId.startsWith('Patient/') ? patientId : `Patient/${patientId}`
 
@@ -1054,7 +1054,7 @@ export class PatientPortalService {
       }
 
       const extensions = Array.isArray(relatedPerson.extension)
-        ? relatedPerson.extension.filter((ext) => ext.url !== FAMILY_ACCESS_EXTENSION_URL)
+        ? relatedPerson.extension.filter((ext: FhirExtension) => ext.url !== FAMILY_ACCESS_EXTENSION_URL)
         : []
 
       relatedPerson.active = payload.active
@@ -1426,7 +1426,10 @@ export class PatientPortalService {
     appointmentId: string
   ): Promise<{ appointment: Appointment; meetingCode: string; publicLink?: string }> {
     try {
-      const appointment = await medplum.readResource<Appointment>('Appointment', appointmentId)
+      const appointment = (await medplum.readResource(
+        'Appointment',
+        appointmentId
+      )) as Appointment
       const patientReference = patientId.startsWith('Patient/') ? patientId : `Patient/${patientId}`
 
       const hasPatient = appointment.participant?.some((participant: AppointmentParticipant) =>
@@ -1446,7 +1449,7 @@ export class PatientPortalService {
 
       if (!meetingCode && Array.isArray(appointment.extension)) {
         const telehealthExtension = appointment.extension.find(
-          (ext) => ext.url === TELEHEALTH_METADATA_URL
+          (ext: FhirExtension) => ext.url === TELEHEALTH_METADATA_URL
         )
         if (telehealthExtension?.valueString) {
           try {
@@ -1537,7 +1540,10 @@ export class PatientPortalService {
     }
 
     try {
-      const appointment = await medplum.readResource<Appointment>('Appointment', appointmentId)
+      const appointment = (await medplum.readResource(
+        'Appointment',
+        appointmentId
+      )) as Appointment
       const patientReference = patientId.startsWith('Patient/') ? patientId : `Patient/${patientId}`
 
       const hasPatient = appointment.participant?.some((participant: AppointmentParticipant) =>
@@ -1556,7 +1562,7 @@ export class PatientPortalService {
       }
 
       const existingExtensions = Array.isArray(appointment.extension)
-        ? appointment.extension.filter((ext) => ext.url !== CHECK_IN_EXTENSION_URL)
+        ? appointment.extension.filter((ext: FhirExtension) => ext.url !== CHECK_IN_EXTENSION_URL)
         : []
 
       const updatedAppointment = await medplum.updateResource<Appointment>({
@@ -1624,7 +1630,10 @@ export class PatientPortalService {
     }
 
     try {
-      const appointment = await medplum.readResource<Appointment>('Appointment', appointmentId)
+      const appointment = (await medplum.readResource(
+        'Appointment',
+        appointmentId
+      )) as Appointment
       const patientReference = patientId.startsWith('Patient/') ? patientId : `Patient/${patientId}`
 
       const hasPatient = appointment.participant?.some((participant: AppointmentParticipant) =>
@@ -1686,7 +1695,7 @@ export class PatientPortalService {
       })
 
       const existingExtensions = Array.isArray(appointment.extension)
-        ? appointment.extension.filter((ext) => ext.url !== REMINDER_EXTENSION_URL)
+        ? appointment.extension.filter((ext: FhirExtension) => ext.url !== REMINDER_EXTENSION_URL)
         : []
 
       await medplum.updateResource<Appointment>({
