@@ -48,7 +48,7 @@ export default function BedManagementPage() {
   const [dateRange, setDateRange] = useState('30d');
   const [location, setLocation] = useState('all');
   const [ward, setWard] = useState('all');
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
+  const [activeTab, setActiveTab] = useState(searchParams?.get('tab') || 'overview');
 
   const isLoadingSession = status === 'loading';
 

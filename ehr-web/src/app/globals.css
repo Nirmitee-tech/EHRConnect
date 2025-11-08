@@ -44,6 +44,8 @@
 }
 
 :root {
+  --font-geist-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  --font-geist-mono: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   /* EHR Connect Theme - Keycloak Purple/Green Palette */
   --radius: 0.625rem;
   

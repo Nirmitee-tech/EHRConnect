@@ -5,11 +5,11 @@ import { PatientDetailProvider } from '@/features/patient-detail/components/pati
 import { PatientDetailShell } from '@/features/patient-detail/components/patient-detail-shell';
 
 export default function PatientDetailPage() {
-  const params = useParams();
+  const params = useParams<{ id?: string }>();
   const searchParams = useSearchParams();
   const patientId = params?.id as string | undefined;
-  const encounterIdFromQuery = searchParams.get('encounterId');
-  const tabFromQuery = searchParams.get('tab');
+  const encounterIdFromQuery = searchParams?.get('encounterId');
+  const tabFromQuery = searchParams?.get('tab');
 
   if (!patientId) {
     return null;

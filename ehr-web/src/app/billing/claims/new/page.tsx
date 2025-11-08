@@ -12,9 +12,9 @@ export default function CreateClaimPage() {
   const searchParams = useSearchParams();
 
   // Get params from URL
-  const patientId = searchParams.get('patientId');
-  const appointmentId = searchParams.get('appointmentId');
-  const appointmentDate = searchParams.get('appointmentDate');
+  const patientId = searchParams?.get('patientId');
+  const appointmentId = searchParams?.get('appointmentId');
+  const appointmentDate = searchParams?.get('appointmentDate');
 
   // State
   const [loading, setLoading] = useState(true);

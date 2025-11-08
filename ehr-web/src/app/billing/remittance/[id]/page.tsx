@@ -33,19 +33,24 @@ interface RemittanceLine {
 }
 
 export default function RemittanceDetailPage() {
-  const params = useParams();
+  const params = useParams<{ id?: string }>();
   const router = useRouter();
-  const remittanceId = params.id as string;
+  const remittanceId = params?.id;
 
   const [remittance, setRemittance] = useState<RemittanceDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
 
   useEffect(() => {
-    loadRemittance();
-  }, []);
+    if (remittanceId) {
+      loadRemittance();
+    }
+  }, [remittanceId]);
 
   const loadRemittance = async () => {
+    if (!remittanceId) {
+      return;
+    }
     try {
       const data = await billingService.getRemittanceDetail(remittanceId);
       setRemittance(data);
@@ -61,6 +66,9 @@ export default function RemittanceDetailPage() {
       return;
     }
 
+    if (!remittanceId) {
+      return;
+    }
     setPosting(true);
     try {
       await billingService.postRemittance(remittanceId);

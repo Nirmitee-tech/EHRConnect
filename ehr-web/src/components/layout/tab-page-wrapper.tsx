@@ -21,7 +21,7 @@ export function TabPageWrapper({
   closeable = true,
   children,
 }: TabPageWrapperProps) {
-  const pathname = usePathname();
+  const pathname = usePathname() || '/';
   const { addTab, tabs, activeTabId } = useTabs();
 
   useEffect(() => {

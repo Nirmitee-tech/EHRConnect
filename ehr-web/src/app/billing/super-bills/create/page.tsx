@@ -44,7 +44,7 @@ const MOCK_PROVIDERS = [
 export default function CreateSuperBillPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const patientId = searchParams.get('patientId') || MOCK_PATIENT_DATA.patientId;
+  const patientId = searchParams?.get('patientId') || MOCK_PATIENT_DATA.patientId;
 
   // In real app, fetch patient data based on patientId
   // const { data: patient, loading } = useFetchPatient(patientId);

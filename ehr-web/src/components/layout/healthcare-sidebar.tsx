@@ -76,14 +76,14 @@ const Footer = () => (
 );
 
 export function HealthcareSidebar() {
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
   const { currentFacility } = useFacility();
   const { patients, staff } = useResourceCounts(currentFacility?.id);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const isActive = (href: string): boolean => 
-    pathname === href || (href !== '/dashboard' && pathname?.startsWith(href));
+  const isActive = (href: string): boolean =>
+    pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
 
   const getItemCount = (href: string): number | undefined => {
     if (href === '/patients') return patients;

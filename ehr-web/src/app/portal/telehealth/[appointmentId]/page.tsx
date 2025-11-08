@@ -22,23 +22,24 @@ type JoinResponse = {
 }
 
 export default function TelehealthJoinPage() {
-  const params = useParams<{ appointmentId: string }>()
+  const params = useParams<{ appointmentId?: string }>()
   const router = useRouter()
   const { data: session } = useSession()
+  const appointmentId = params?.appointmentId
   const [joinData, setJoinData] = useState<JoinResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchToken = async () => {
-      if (!params.appointmentId) return
+      if (!appointmentId) return
       try {
         setLoading(true)
         setError(null)
         const response = await fetch('/api/patient/telehealth/join', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ appointmentId: params.appointmentId }),
+          body: JSON.stringify({ appointmentId }),
         })
 
         if (!response.ok) {
@@ -57,7 +58,7 @@ export default function TelehealthJoinPage() {
     }
 
     fetchToken()
-  }, [params.appointmentId])
+  }, [appointmentId])
 
   if (loading) {
     return (

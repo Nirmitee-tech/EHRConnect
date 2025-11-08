@@ -11,18 +11,25 @@ import { TabPageWrapper } from '@/components/layout/tab-page-wrapper';
 
 export default function EditPatientPage() {
   const router = useRouter();
-  const params = useParams();
-  const patientId = params.id as string;
+  const params = useParams<{ id?: string }>();
+  const patientId = params?.id ?? '';
 
   const [patient, setPatient] = useState<FHIRPatient | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadPatient();
+    if (patientId) {
+      loadPatient();
+    }
   }, [patientId]);
 
   const loadPatient = async () => {
+    if (!patientId) {
+      setError('Patient not found');
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
@@ -54,7 +61,11 @@ export default function EditPatientPage() {
   };
 
   const handleCancel = () => {
-    router.push(`/patients/${patientId}`);
+    if (patientId) {
+      router.push(`/patients/${patientId}`);
+    } else {
+      router.push('/patients');
+    }
   };
 
   // Loading state

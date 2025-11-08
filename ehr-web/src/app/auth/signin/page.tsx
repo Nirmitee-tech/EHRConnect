@@ -15,8 +15,8 @@ export default function SignInPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
-  const errorParam = searchParams.get('error');
+  const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
+  const errorParam = searchParams?.get('error');
 
   useEffect(() => {
     async function checkProvider() {

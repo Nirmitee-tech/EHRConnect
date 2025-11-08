@@ -26,9 +26,9 @@ import { Encounter } from '@/types/encounter';
 import { EncounterService } from '@/services/encounter.service';
 
 export default function EncounterPage() {
-  const params = useParams();
+  const params = useParams<{ id?: string }>();
   const router = useRouter();
-  const encounterId = params.id as string;
+  const encounterId = params?.id ?? '';
 
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,10 +52,15 @@ export default function EncounterPage() {
   const [clinicalNotes, setClinicalNotes] = useState('');
 
   useEffect(() => {
-    loadEncounter();
+    if (encounterId) {
+      loadEncounter();
+    }
   }, [encounterId]);
 
   const loadEncounter = async () => {
+    if (!encounterId) {
+      return;
+    }
     try {
       setLoading(true);
       const data = await EncounterService.getById(encounterId);

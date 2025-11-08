@@ -92,8 +92,8 @@ export function PatientSidebar({
   onUpdatePatientStatus
 }: PatientSidebarProps) {
   const router = useRouter();
-  const params = useParams();
-  const encounterId = params.id as string;
+  const params = useParams<{ id?: string }>();
+  const encounterId = params?.id ?? '';
   const [addressExpanded, setAddressExpanded] = useState(false);
   const [showAddressDrawer, setShowAddressDrawer] = useState(false);
   const [patientStatus, setPatientStatus] = useState<'active' | 'inactive'>(patientActive ? 'active' : 'inactive');
@@ -104,7 +104,8 @@ export function PatientSidebar({
 
   // Navigate to patient details page with encounter ID as query param
   const navigateToPatientDetails = () => {
-    router.push(`/patients/${patientId}?encounterId=${encounterId}`);
+    const encounterQuery = encounterId ? `?encounterId=${encounterId}` : '';
+    router.push(`/patients/${patientId}${encounterQuery}`);
   };
 
   return (

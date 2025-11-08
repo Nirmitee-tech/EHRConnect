@@ -14,7 +14,7 @@ import Image from 'next/image'
 function PatientLoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get('callbackUrl') || '/portal/dashboard'
+  const callbackUrl = searchParams?.get('callbackUrl') || '/portal/dashboard'
 
   const [formData, setFormData] = useState({
     name: '',

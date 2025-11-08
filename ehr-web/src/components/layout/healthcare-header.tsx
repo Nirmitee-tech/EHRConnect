@@ -28,7 +28,7 @@ const HIDE_HEADER_ROUTES = [
 ];
 
 export function HealthcareHeader() {
-  const pathname = usePathname();
+  const pathname = usePathname() || '/';
   const pageInfo = getPageInfo(pathname);
   const { hideHeaderOnDetailPages } = useUIPreferences();
 

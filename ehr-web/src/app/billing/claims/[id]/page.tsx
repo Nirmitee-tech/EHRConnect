@@ -44,10 +44,10 @@ interface ClaimLine {
 type CoverageOption = NonNullable<AppointmentBillingContext['coverage']>;
 
 export default function ClaimEditorPage() {
-  const params = useParams();
+  const params = useParams<{ id?: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const claimId = params.id as string;
+  const claimId = params?.id ?? 'new';
   const isNew = claimId === 'new';
   const appointmentIdFromQuery = searchParams?.get('appointmentId');
 

@@ -11,9 +11,9 @@ import { useSession } from 'next-auth/react';
 type ViewState = 'loading' | 'lobby' | 'consent' | 'meeting' | 'error' | 'ended';
 
 export default function MeetingJoinPage() {
-  const params = useParams();
+  const params = useParams<{ code?: string }>();
   const router = useRouter();
-  const meetingCode = params.code as string;
+  const meetingCode = params?.code ?? '';
   const { data: session } = useSession();
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -83,6 +83,7 @@ export default function MeetingJoinPage() {
   const loadMeetingDetails = async () => {
     try {
       setViewState('loading');
+      if (!meetingCode) return;
       const meetingData = await getMeetingByCode(meetingCode);
       setMeeting(meetingData);
 

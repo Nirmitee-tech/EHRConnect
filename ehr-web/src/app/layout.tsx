@@ -1,20 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AuthSessionProvider from "@/providers/session-provider";
 import { FacilityProvider } from "@/contexts/facility-context";
 import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
 import { ToastProvider } from "@/hooks/useToast";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "EHR Connect - Healthcare Management",
@@ -28,10 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
-        suppressHydrationWarning
-      >
+      <body className="antialiased bg-gray-50" suppressHydrationWarning>
         <ToastProvider>
           <AuthSessionProvider>
             <FacilityProvider>

@@ -13,9 +13,9 @@ export default function CreateSuperbillPage() {
   const searchParams = useSearchParams();
 
   // Get params from URL
-  const urlPatientId = searchParams.get('patientId');
-  const appointmentId = searchParams.get('appointmentId');
-  const appointmentDate = searchParams.get('appointmentDate');
+  const urlPatientId = searchParams?.get('patientId');
+  const appointmentId = searchParams?.get('appointmentId');
+  const appointmentDate = searchParams?.get('appointmentDate');
 
   // State
   const [patientId, setPatientId] = useState<string | null>(urlPatientId);

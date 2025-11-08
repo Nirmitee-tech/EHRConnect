@@ -178,8 +178,8 @@ function BookingWidgetContent() {
   const socketRef = useRef<Socket | null>(null);
 
   // URL Parameters
-  const orgSlug = searchParams.get('org');
-  const providerFilter = searchParams.get('provider');
+  const orgSlug = searchParams?.get('org');
+  const providerFilter = searchParams?.get('provider');
 
   // Step Management
   const [step, setStep] = useState(1);
