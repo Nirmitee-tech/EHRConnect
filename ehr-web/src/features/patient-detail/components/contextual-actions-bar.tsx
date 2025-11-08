@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   FileText,
   Download,
@@ -21,24 +21,24 @@ interface ContextualActionsBarProps {
   encounters?: any[];
 }
 
-export function ContextualActionsBar({ activeTab, encounters = [] }: ContextualActionsBarProps) {
+function ContextualActionsBarComponent({ activeTab, encounters = [] }: ContextualActionsBarProps) {
   // Extract active encounter ID if on an encounter tab
   const activeEncounterId = getEncounterIdFromTab(activeTab);
   const isOnEncounter = isEncounterTab(activeTab);
-
-  // Get the most recent open encounter as context for clinical actions
-  // Even if we're not on an encounter tab, clinical data should be linked to an encounter
-  const contextEncounterId = activeEncounterId || (encounters.length > 0 ? encounters[0].id : null);
-  const contextEncounter = contextEncounterId
-    ? encounters.find(e => e.id === contextEncounterId)
-    : null;
 
   // Get encounter details if active
   const activeEncounter = activeEncounterId
     ? encounters.find(e => e.id === activeEncounterId)
     : null;
-  // Define actions for each tab
-  const getActionsForTab = () => {
+
+  // Only use encounter context if we're actually ON an encounter tab
+  // Don't auto-assume context from open encounters - user must explicitly select encounter
+  const contextEncounterId = activeEncounterId;
+  const contextEncounter = activeEncounter;
+
+  // Memoize actions to prevent recalculation on every render
+  const actions = useMemo(() => {
+    const getActionsForTab = () => {
     const baseActions = {
       'dashboard': [
         { label: 'Refresh', icon: RefreshCw, onClick: () => console.log('Refresh') }
@@ -120,30 +120,35 @@ export function ContextualActionsBar({ activeTab, encounters = [] }: ContextualA
     }
 
     return baseActions[activeTab as keyof typeof baseActions] || [];
-  };
+    };
 
-  const actions = getActionsForTab();
+    return getActionsForTab();
+  }, [activeTab]);
 
+  // Memoize date formatting to avoid recalculation
+  const dateStr = useMemo(() => {
+    const encounterDate = activeEncounter?.period?.start || activeEncounter?.startTime;
+    return encounterDate
+      ? new Date(encounterDate).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        })
+      : '';
+  }, [activeEncounter]);
+
+  const contextDateStr = useMemo(() => {
+    const contextEncounterDate = contextEncounter?.period?.start || contextEncounter?.startTime;
+    return contextEncounterDate
+      ? new Date(contextEncounterDate).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric'
+        })
+      : '';
+  }, [contextEncounter]);
+
+  // Early return AFTER all hooks have been called
   if (actions.length === 0) return null;
-
-  // Format encounter date for display
-  const encounterDate = activeEncounter?.period?.start || activeEncounter?.startTime;
-  const contextEncounterDate = contextEncounter?.period?.start || contextEncounter?.startTime;
-
-  const dateStr = encounterDate
-    ? new Date(encounterDate).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      })
-    : '';
-
-  const contextDateStr = contextEncounterDate
-    ? new Date(contextEncounterDate).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric'
-      })
-    : '';
 
   // Tabs where clinical data is added and should be linked to encounter
   const clinicalDataTabs = [
@@ -202,3 +207,6 @@ export function ContextualActionsBar({ activeTab, encounters = [] }: ContextualA
     </div>
   );
 }
+
+// Memoize to prevent unnecessary re-renders
+export const ContextualActionsBar = React.memo(ContextualActionsBarComponent);

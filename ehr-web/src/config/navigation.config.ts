@@ -2,16 +2,9 @@ import {
   LayoutDashboard,
   Calendar,
   Users,
-  Stethoscope,
   UserCheck,
-  CreditCard,
-  TrendingUp,
-  ShoppingCart,
-  Banknote,
   Package,
-  Cpu,
   FileText,
-  HelpCircle,
   Shield,
   ScrollText,
   DollarSign,
@@ -58,17 +51,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
           { name: 'Reports', href: '/bed-management/reports', icon: BarChart3 }
         ]
       },
-      { name: 'Treatments', href: '/treatments', icon: Stethoscope },
       { name: 'Staff List', href: '/staff', icon: UserCheck }
-    ]
-  },
-  {
-    title: 'FINANCE',
-    items: [
-      { name: 'Accounts', href: '/accounts', icon: CreditCard },
-      { name: 'Sales', href: '/sales', icon: TrendingUp },
-      { name: 'Purchases', href: '/purchases', icon: ShoppingCart },
-      { name: 'Payment Method', href: '/payment-methods', icon: Banknote }
     ]
   },
   {
@@ -136,15 +119,14 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
   {
     title: 'PHYSICAL ASSET',
     items: [
-      { name: 'Inventory', href: '/inventory', icon: Package },
-      { name: 'Peripherals', href: '/peripherals', icon: Cpu }
+      { name: 'Inventory', href: '/inventory', icon: Package }
     ]
   },
   {
     title: 'ADMINISTRATION',
     items: [
       { name: 'User Management', href: '/users', icon: Users },
-      { name: 'Roles & Permissions', href: '/settings/roles', icon: Shield },
+      { name: 'Roles & Permissions', href: '/roles', icon: Shield },
       { name: 'Integrations', href: '/integrations', icon: Plug },
       { name: 'Audit Logs', href: '/audit-logs', icon: ScrollText },
       { name: 'Settings', href: '/settings', icon: Settings }
@@ -160,11 +142,6 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
     title: 'REPORTS & ANALYTICS',
     items: [
       { name: 'Reports', href: '/reports', icon: BarChart3 }
-    ]
-  },
-  {
-    items: [
-      { name: 'Customer Support', href: '/support', icon: HelpCircle }
     ]
   }
 ];
@@ -183,23 +160,16 @@ const PAGE_CONFIG: Record<string, PageInfo> = {
     title: 'Bed Management',
     actionButton: { label: 'Admit Patient', href: '/bed-management/admit' }
   },
-  treatments: { title: 'Treatments' },
   appointments: {
     title: 'Appointments',
     actionButton: { label: 'New Appointment', href: '/appointments/new' }
   },
   'patient-flow': { title: 'Patient Flow Board' },
-  accounts: { title: 'Accounts' },
-  sales: { title: 'Sales' },
-  purchases: { title: 'Purchases' },
-  'payment-methods': { title: 'Payment Methods' },
   inventory: {
     title: 'Inventory',
     actionButton: { label: 'New Item', href: '/inventory' }
   },
-  peripherals: { title: 'Peripherals' },
   reports: { title: 'Reports' },
-  support: { title: 'Customer Support' },
   admin: { title: 'Administration' },
   rcm: { title: 'Revenue Cycle Management' }
 };

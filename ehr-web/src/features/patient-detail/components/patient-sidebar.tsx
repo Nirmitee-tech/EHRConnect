@@ -38,10 +38,10 @@ interface NavigationItem {
   encounterId?: string;
 }
 
-export function PatientSidebar() {
+function PatientSidebarComponent() {
   const [sidebarView, setSidebarView] = useState<SidebarView>('all');
 
-  // Get state from Zustand
+  // Get state from Zustand - using selectors for better performance
   const sidebarCollapsed = usePatientDetailStore((state) => state.sidebarCollapsed);
   const activeTab = usePatientDetailStore((state) => state.activeTab);
   const openEncounterTabs = usePatientDetailStore((state) => state.openEncounterTabs);
@@ -265,3 +265,6 @@ export function PatientSidebar() {
     </div>
   );
 }
+
+// Memoize the component to prevent unnecessary re-renders
+export const PatientSidebar = React.memo(PatientSidebarComponent);
