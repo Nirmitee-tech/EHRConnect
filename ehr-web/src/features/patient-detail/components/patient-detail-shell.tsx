@@ -9,6 +9,7 @@ import { AllergyForm } from '@/components/forms/allergy-form';
 import { ImmunizationForm } from '@/components/forms/immunization-form';
 import { LabForm } from '@/components/forms/lab-form';
 import { ImagingForm } from '@/components/forms/imaging-form';
+import { DocumentForm } from '@/components/forms/document-form';
 import { TabPageWrapper } from '@/components/layout/tab-page-wrapper';
 import { useTabNavigation } from '@/hooks/use-tab-navigation';
 import { PatientHeader } from '@/app/patients/[id]/components/PatientHeader';
@@ -23,7 +24,8 @@ import { EncountersTab } from '@/app/patients/[id]/components/tabs/EncountersTab
 import { ProblemsTab } from '@/app/patients/[id]/components/tabs/ProblemsTab';
 import { MedicationsTab } from '@/app/patients/[id]/components/tabs/MedicationsTab';
 import { AllergiesTab } from '@/app/patients/[id]/components/tabs/AllergiesTab';
-import { DocumentsTab } from '@/app/patients/[id]/components/tabs/DocumentsTab';
+import { DocumentsTab as OldDocumentsTab } from '@/app/patients/[id]/components/tabs/DocumentsTab';
+import { DocumentsTab } from './tabs/documents-tab';
 import { FamilyHistoryTab } from '@/app/patients/[id]/components/tabs/FamilyHistoryTab';
 import { VitalsDrawer } from '@/app/patients/[id]/components/drawers/VitalsDrawer';
 import { ProblemDrawer } from '@/app/patients/[id]/components/drawers/ProblemDrawer';
@@ -82,6 +84,7 @@ export function PatientDetailShell() {
     immunizations,
     imagingStudies,
     labResults,
+    documents,
     carePlans,
     editingCarePlanId,
     currentCarePlanData,
@@ -200,7 +203,7 @@ export function PatientDetailShell() {
     { id: 'lab', label: 'Lab', icon: TestTube, count: labResults.length },
     { id: 'imaging', label: 'Imaging', icon: ImageIcon, count: imagingStudies.length },
     { id: 'history', label: 'History', icon: History, count: null },
-    { id: 'documents', label: 'Documents', icon: FileText, count: null },
+    { id: 'documents', label: 'Documents', icon: FileText, count: documents.length },
     { id: 'encounters', label: 'Visit Details', icon: Calendar, count: null },
     { id: 'financial', label: 'Financial', icon: DollarSign, count: null },
     { id: 'billing', label: 'Billing', icon: FileCheck, count: null },
@@ -1543,67 +1546,81 @@ export function PatientDetailShell() {
 
         {/* Add Immunization Drawer */}
         <Drawer open={drawers.immunization} onOpenChange={(open) => setDrawerState('immunization', open)}>
-          <DrawerContent side="right" size="md" className="overflow-y-auto">
-            <DrawerHeader>
+          <DrawerContent side="right" size="md" className="overflow-hidden">
+            <DrawerHeader className="border-b border-gray-200">
               <DrawerTitle>Add Vaccine</DrawerTitle>
             </DrawerHeader>
-            <div className="mt-6">
-              {patient && (
-                <ImmunizationForm
-                  patientId={patient.id}
-                  patientName={patient.name}
-                  onSuccess={() => {
-                    setDrawerState('immunization', false);
-                    refreshData();
-                  }}
-                  onCancel={() => setDrawerState('immunization', false)}
-                />
-              )}
-            </div>
+            {patient && (
+              <ImmunizationForm
+                patientId={patient.id}
+                patientName={patient.name}
+                onSuccess={() => {
+                  setDrawerState('immunization', false);
+                  refreshData();
+                }}
+                onCancel={() => setDrawerState('immunization', false)}
+              />
+            )}
           </DrawerContent>
         </Drawer>
 
         {/* Add Lab Result Drawer */}
         <Drawer open={drawers.lab} onOpenChange={(open) => setDrawerState('lab', open)}>
-          <DrawerContent side="right" size="md" className="overflow-y-auto">
-            <DrawerHeader>
+          <DrawerContent side="right" size="md" className="overflow-hidden">
+            <DrawerHeader className="border-b border-gray-200">
               <DrawerTitle>Add Lab Result</DrawerTitle>
             </DrawerHeader>
-            <div className="mt-6">
-              {patient && (
-                <LabForm
-                  patientId={patient.id}
-                  patientName={patient.name}
-                  onSuccess={() => {
-                    setDrawerState('lab', false);
-                    refreshData();
-                  }}
-                  onCancel={() => setDrawerState('lab', false)}
-                />
-              )}
-            </div>
+            {patient && (
+              <LabForm
+                patientId={patient.id}
+                patientName={patient.name}
+                onSuccess={() => {
+                  setDrawerState('lab', false);
+                  refreshData();
+                }}
+                onCancel={() => setDrawerState('lab', false)}
+              />
+            )}
           </DrawerContent>
         </Drawer>
 
         {/* Add Imaging Study Drawer */}
         <Drawer open={drawers.imaging} onOpenChange={(open) => setDrawerState('imaging', open)}>
-          <DrawerContent side="right" size="md" className="overflow-y-auto">
-            <DrawerHeader>
+          <DrawerContent side="right" size="md" className="overflow-hidden">
+            <DrawerHeader className="border-b border-gray-200">
               <DrawerTitle>Add Imaging Study</DrawerTitle>
             </DrawerHeader>
-            <div className="mt-6">
-              {patient && (
-                <ImagingForm
-                  patientId={patient.id}
-                  patientName={patient.name}
-                  onSuccess={() => {
-                    setDrawerState('imaging', false);
-                    refreshData();
-                  }}
-                  onCancel={() => setDrawerState('imaging', false)}
-                />
-              )}
-            </div>
+            {patient && (
+              <ImagingForm
+                patientId={patient.id}
+                patientName={patient.name}
+                onSuccess={() => {
+                  setDrawerState('imaging', false);
+                  refreshData();
+                }}
+                onCancel={() => setDrawerState('imaging', false)}
+              />
+            )}
+          </DrawerContent>
+        </Drawer>
+
+        {/* Add Document Drawer */}
+        <Drawer open={drawers.document} onOpenChange={(open) => setDrawerState('document', open)}>
+          <DrawerContent side="right" size="md" className="overflow-hidden">
+            <DrawerHeader className="border-b border-gray-200">
+              <DrawerTitle>Add Document</DrawerTitle>
+            </DrawerHeader>
+            {patient && (
+              <DocumentForm
+                patientId={patient.id}
+                patientName={patient.name}
+                onSuccess={() => {
+                  setDrawerState('document', false);
+                  refreshData();
+                }}
+                onCancel={() => setDrawerState('document', false)}
+              />
+            )}
           </DrawerContent>
         </Drawer>
 

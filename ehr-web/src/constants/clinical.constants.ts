@@ -279,3 +279,46 @@ export const IMAGING_STUDY_STATUS = [
   { value: 'entered-in-error', label: 'Entered in Error' },
   { value: 'unknown', label: 'Unknown' }
 ] as const;
+
+/**
+ * Document types with LOINC codes
+ */
+export const DOCUMENT_TYPES = [
+  { code: '11488-4', display: 'Consult Note' },
+  { code: '11506-3', display: 'Progress Note' },
+  { code: '18842-5', display: 'Discharge Summary' },
+  { code: '34117-2', display: 'History and Physical Note' },
+  { code: '28570-0', display: 'Procedure Note' },
+  { code: '57133-1', display: 'Referral Note' },
+  { code: '11504-8', display: 'Surgical Operation Note' },
+  { code: '11490-0', display: 'Physician Discharge Summary' },
+  { code: '34133-9', display: 'Summary of Episode Note' },
+  { code: '57016-8', display: 'Privacy Policy Organization Document' },
+  { code: '64297-5', display: 'Death Certificate' },
+  { code: '55188-7', display: 'Patient Data Document' },
+  { code: '18748-4', display: 'Diagnostic Imaging Report' },
+  { code: '11502-2', display: 'Laboratory Report' }
+] as const;
+
+/**
+ * Document status
+ */
+export const DOCUMENT_STATUS = [
+  { value: 'current', label: 'Current - Most recent version' },
+  { value: 'superseded', label: 'Superseded - Replaced by newer version' },
+  { value: 'entered-in-error', label: 'Entered in Error' }
+] as const;
+
+/**
+ * Document categories
+ */
+export const DOCUMENT_CATEGORIES = [
+  { value: 'clinical-note', label: 'Clinical Note' },
+  { value: 'discharge-summary', label: 'Discharge Summary' },
+  { value: 'laboratory', label: 'Laboratory Report' },
+  { value: 'radiology', label: 'Radiology Report' },
+  { value: 'pathology', label: 'Pathology Report' },
+  { value: 'consent', label: 'Consent Form' },
+  { value: 'administrative', label: 'Administrative Document' },
+  { value: 'other', label: 'Other' }
+] as const;

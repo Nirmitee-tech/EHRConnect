@@ -334,10 +334,12 @@ export class ClinicalService {
     occurrenceDate: string;
     status: string;
     lotNumber?: string;
+    expirationDate?: string;
     manufacturer?: string;
     site?: string;
     route?: string;
     doseQuantity?: string;
+    doseNumber?: string;
     performer?: string;
     note?: string;
   }): Promise<void> {
@@ -364,6 +366,16 @@ export class ClinicalService {
     // Add optional fields if provided
     if (immunization.lotNumber) {
       immunizationResource.lotNumber = immunization.lotNumber;
+    }
+
+    if (immunization.expirationDate) {
+      immunizationResource.expirationDate = immunization.expirationDate;
+    }
+
+    if (immunization.doseNumber) {
+      immunizationResource.protocolApplied = [{
+        doseNumberPositiveInt: parseInt(immunization.doseNumber)
+      }];
     }
 
     if (immunization.manufacturer) {
@@ -530,5 +542,82 @@ export class ClinicalService {
     }
 
     await fhirService.create(imagingStudyResource);
+  }
+
+  /**
+   * Create document reference
+   */
+  static async createDocumentReference(patientId: string, patientName: string, document: {
+    typeCode: string;
+    typeDisplay: string;
+    category: string;
+    status: string;
+    title: string;
+    description?: string;
+    date: string;
+    author?: string;
+    content?: string;
+    fileAttachment?: File | null;
+  }): Promise<void> {
+    const documentResource: any = {
+      resourceType: 'DocumentReference',
+      status: document.status,
+      type: {
+        coding: [{
+          system: 'http://loinc.org',
+          code: document.typeCode,
+          display: document.typeDisplay
+        }],
+        text: document.typeDisplay
+      },
+      category: [{
+        coding: [{
+          system: 'http://hl7.org/fhir/document-relationship-type',
+          code: document.category,
+          display: document.category
+        }]
+      }],
+      subject: {
+        reference: `Patient/${patientId}`,
+        display: patientName
+      },
+      date: document.date,
+      description: document.description || document.title,
+      content: []
+    };
+
+    // Add author if provided
+    if (document.author) {
+      documentResource.author = [{
+        display: document.author
+      }];
+    }
+
+    // Add text content
+    if (document.content) {
+      documentResource.content.push({
+        attachment: {
+          contentType: 'text/plain',
+          data: btoa(document.content),
+          title: document.title
+        }
+      });
+    }
+
+    // Add file attachment if provided
+    if (document.fileAttachment) {
+      // In a real implementation, you would upload the file to a storage service
+      // and include the URL here. For now, we'll just add the metadata
+      documentResource.content.push({
+        attachment: {
+          contentType: document.fileAttachment.type,
+          title: document.fileAttachment.name,
+          size: document.fileAttachment.size
+          // url: would be added after uploading to storage
+        }
+      });
+    }
+
+    await fhirService.create(documentResource);
   }
 }

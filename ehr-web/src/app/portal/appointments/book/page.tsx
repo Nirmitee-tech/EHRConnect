@@ -9,6 +9,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { format } from 'date-fns'
 import {
   Calendar,
@@ -93,6 +94,10 @@ interface Slot {
 
 export default function BookAppointmentPage() {
   const router = useRouter()
+  const { data: session } = useSession()
+  const orgIdFromSession = (session as Record<string, unknown> | null)?.org_id as
+    | string
+    | undefined
   const { toast } = useToast()
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -170,14 +175,19 @@ export default function BookAppointmentPage() {
       })
 
       // Get organization ID from API response (from session)
-      if (data.orgId) {
-        setOrgId(data.orgId)
-      } else if (patient.managingOrganization?.reference) {
-        // Fallback: extract from patient's managing organization reference
-        const orgIdMatch = patient.managingOrganization.reference.match(/Organization\/(.+)/)
-        if (orgIdMatch) {
-          setOrgId(orgIdMatch[1])
-        }
+      const derivedOrgId =
+        data.orgId ||
+        orgIdFromSession ||
+        (patient.managingOrganization?.reference
+          ? patient.managingOrganization.reference.match(/Organization\/(.+)/)?.[1]
+          : undefined)
+
+      if (derivedOrgId) {
+        setOrgId(derivedOrgId)
+      } else {
+        setError(
+          'Your organization is not configured for online booking yet. Please contact support.'
+        )
       }
     } catch (err: any) {
       console.error('Error fetching patient profile:', err)
@@ -375,7 +385,13 @@ export default function BookAppointmentPage() {
       setLoading(false)
     }
     initialize()
-  }, [])
+  }, [orgIdFromSession])
+
+  useEffect(() => {
+    if (!orgId && orgIdFromSession) {
+      setOrgId(orgIdFromSession)
+    }
+  }, [orgId, orgIdFromSession])
 
   /**
    * Fetch appointment types and locations when org ID is loaded
@@ -449,6 +465,10 @@ export default function BookAppointmentPage() {
   }
 
   const handleNext = async () => {
+    if (!orgId) {
+      setError('We could not determine your organization. Please contact support.')
+      return
+    }
     if (step === 1) {
       // Validate Step 1 fields
       if (!preferences.appointmentType || !preferences.location) {

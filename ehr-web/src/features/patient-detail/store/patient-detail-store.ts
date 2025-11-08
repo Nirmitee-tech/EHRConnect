@@ -27,7 +27,8 @@ type DrawerKey =
   | 'insurance'
   | 'immunization'
   | 'imaging'
-  | 'lab';
+  | 'lab'
+  | 'document';
 
 type SoapForm = {
   subjective: string;
@@ -100,6 +101,7 @@ interface PatientDetailStore {
   immunizations: any[];
   imagingStudies: any[];
   labResults: any[];
+  documents: any[];
   carePlans: Record<string, any[]>;
   editingCarePlanId: Record<string, string | null>;
   currentCarePlanData: Record<string, CarePlanFormData | null>;
@@ -208,7 +210,8 @@ const initialDrawerState: Record<DrawerKey, boolean> = {
   insurance: false,
   immunization: false,
   imaging: false,
-  lab: false
+  lab: false,
+  document: false
 };
 
 const initialState = {
@@ -241,6 +244,7 @@ const initialState = {
   immunizations: [],
   imagingStudies: [],
   labResults: [],
+  documents: [],
   carePlans: {},
   editingCarePlanId: {},
   currentCarePlanData: {},
@@ -589,7 +593,7 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
 
     set({ loading: true });
     try {
-      const [patientResource, encounterRes, conditionRes, medicationRes, allergyRes, observationRes, coverageRes, immunizationRes, imagingRes, labRes] = (await Promise.all([
+      const [patientResource, encounterRes, conditionRes, medicationRes, allergyRes, observationRes, coverageRes, immunizationRes, imagingRes, labRes, documentRes] = (await Promise.all([
         fhirService.read('Patient', patientId),
         fhirService.search('Encounter', { patient: patientId, _count: 10, _sort: '-date' }),
         fhirService.search('Condition', { patient: patientId, _count: 20 }),
@@ -599,8 +603,9 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
         fhirService.search('Coverage', { patient: patientId, _count: 10 }),
         fhirService.search('Immunization', { patient: patientId, _count: 50, _sort: '-date' }),
         fhirService.search('ImagingStudy', { patient: patientId, _count: 50, _sort: '-date' }),
-        fhirService.search('DiagnosticReport', { patient: patientId, _count: 50, _sort: '-date', category: 'LAB' })
-      ])) as [any, any, any, any, any, any, any, any, any, any];
+        fhirService.search('DiagnosticReport', { patient: patientId, _count: 50, _sort: '-date', category: 'LAB' }),
+        fhirService.search('DocumentReference', { patient: patientId, _count: 50, _sort: '-date' })
+      ])) as [any, any, any, any, any, any, any, any, any, any, any];
 
       const name = patientResource.name?.[0];
       const fullName = `${name?.given?.join(' ') || ''} ${name?.family || ''}`.trim();
@@ -632,7 +637,8 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
         insurances: coverageRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || [],
         immunizations: immunizationRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || [],
         imagingStudies: imagingRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || [],
-        labResults: labRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || []
+        labResults: labRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || [],
+        documents: documentRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || []
       });
     } catch (error) {
       console.error('Error loading patient data:', error);

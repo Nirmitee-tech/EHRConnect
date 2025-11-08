@@ -22,6 +22,8 @@ export function LabForm({ patientId, patientName, onSuccess, onCancel }: LabForm
     status: 'final',
     performer: '',
     conclusion: '',
+    specimenType: '',
+    collectionDate: new Date().toISOString().split('T')[0],
     category: 'LAB'
   });
 
@@ -57,82 +59,147 @@ export function LabForm({ patientId, patientName, onSuccess, onCancel }: LabForm
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label>Test Type <span className="text-red-500">*</span></Label>
-        <Select
-          value={formData.testCode}
-          onValueChange={handleTestChange}
-          required
+    <form onSubmit={handleSubmit} className="flex flex-col h-[calc(100vh-8rem)]">
+      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        {/* Test Information Section */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Test Information</h3>
+
+          <div>
+            <Label>Test Type <span className="text-red-500">*</span></Label>
+            <Select
+              value={formData.testCode}
+              onValueChange={handleTestChange}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select test type..." />
+              </SelectTrigger>
+              <SelectContent>
+                {LAB_TEST_TYPES.map((test) => (
+                  <SelectItem key={test.code} value={test.code}>
+                    {test.display}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Test Date <span className="text-red-500">*</span></Label>
+              <Input
+                type="date"
+                value={formData.effectiveDate}
+                onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
+                max={new Date().toISOString().split('T')[0]}
+                required
+              />
+            </div>
+
+            <div>
+              <Label>Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData({ ...formData, status: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DIAGNOSTIC_REPORT_STATUS.map((status) => (
+                    <SelectItem key={status.value} value={status.value}>
+                      {status.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Specimen Details Section */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Specimen Details</h3>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Specimen Type</Label>
+              <Select
+                value={formData.specimenType}
+                onValueChange={(value) => setFormData({ ...formData, specimenType: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select specimen..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="blood">Blood</SelectItem>
+                  <SelectItem value="serum">Serum</SelectItem>
+                  <SelectItem value="plasma">Plasma</SelectItem>
+                  <SelectItem value="urine">Urine</SelectItem>
+                  <SelectItem value="saliva">Saliva</SelectItem>
+                  <SelectItem value="tissue">Tissue</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Collection Date</Label>
+              <Input
+                type="date"
+                value={formData.collectionDate}
+                onChange={(e) => setFormData({ ...formData, collectionDate: e.target.value })}
+                max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label>Performed By / Laboratory</Label>
+            <Input
+              placeholder="e.g., Quest Diagnostics, LabCorp, Hospital Laboratory"
+              value={formData.performer}
+              onChange={(e) => setFormData({ ...formData, performer: e.target.value })}
+            />
+          </div>
+        </div>
+
+        {/* Results Section */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Results & Interpretation</h3>
+
+          <div>
+            <Label>Clinical Conclusion / Results</Label>
+            <textarea
+              className="w-full p-2 border border-gray-300 rounded text-sm"
+              rows={6}
+              placeholder="Enter test results, values, interpretations, and clinical conclusions..."
+              value={formData.conclusion}
+              onChange={(e) => setFormData({ ...formData, conclusion: e.target.value })}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Include numerical values, units, reference ranges, and interpretation notes
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Sticky Footer with Buttons */}
+      <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex gap-3">
+        <Button
+          type="button"
+          onClick={onCancel}
+          variant="outline"
+          className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
         >
-          <SelectTrigger>
-            <SelectValue placeholder="Select test type..." />
-          </SelectTrigger>
-          <SelectContent>
-            {LAB_TEST_TYPES.map((test) => (
-              <SelectItem key={test.code} value={test.code}>
-                {test.display}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div>
-        <Label>Test Date <span className="text-red-500">*</span></Label>
-        <Input
-          type="date"
-          value={formData.effectiveDate}
-          onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
-          max={new Date().toISOString().split('T')[0]}
-          required
-        />
-      </div>
-
-      <div>
-        <Label>Status</Label>
-        <Select
-          value={formData.status}
-          onValueChange={(value) => setFormData({ ...formData, status: value })}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {DIAGNOSTIC_REPORT_STATUS.map((status) => (
-              <SelectItem key={status.value} value={status.value}>
-                {status.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div>
-        <Label>Performed By</Label>
-        <Input
-          placeholder="e.g., Quest Diagnostics, LabCorp"
-          value={formData.performer}
-          onChange={(e) => setFormData({ ...formData, performer: e.target.value })}
-        />
-      </div>
-
-      <div>
-        <Label>Results / Conclusion</Label>
-        <textarea
-          className="w-full p-2 border border-gray-300 rounded text-sm"
-          rows={5}
-          placeholder="Enter test results or clinical conclusion..."
-          value={formData.conclusion}
-          onChange={(e) => setFormData({ ...formData, conclusion: e.target.value })}
-        />
-      </div>
-
-      <div className="flex gap-2 pt-4">
-        <Button type="button" onClick={onCancel} variant="outline" className="flex-1">
           Cancel
         </Button>
-        <Button type="submit" disabled={saving} className="flex-1 bg-primary">
+        <Button
+          type="submit"
+          disabled={saving}
+          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+        >
           {saving ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
