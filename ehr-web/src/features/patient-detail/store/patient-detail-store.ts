@@ -4,6 +4,40 @@ import { create } from 'zustand';
 import { carePlanService, type CarePlanFormData } from '@/services/careplan.service';
 import { patientService } from '@/services/patient.service';
 import { fhirService } from '@/lib/medplum';
+import { saveDraft, clearDraft } from '../utils/form-persistence';
+
+/**
+ * Map form types to LOINC codes for FHIR DocumentReference
+ */
+const getLoincCode = (formType: string): string => {
+  const loincCodes: Record<string, string> = {
+    'soap': '34133-9',                              // SOAP note
+    'care-plan': '18776-5',                         // Plan of care
+    'clinical-notes': '11506-3',                    // Progress note
+    'clinical-instructions': '51847-2',             // Assessment and plan
+    'review-of-systems': '10187-3',                 // Review of systems
+    'eye-exam': '70936-0',                          // Ophthalmology note
+    'functional-and-cognitive-status': '47420-5',   // Functional status
+    'observation': '11506-3',                       // Clinical observation
+    'speech-dictation': '28570-0',                  // Procedure note
+    'procedure-order': '18776-5',                   // Plan of care
+    'lab-results': '11502-2',                       // Laboratory report
+    'imaging-orders': '18748-4',                    // Diagnostic imaging study
+    'new-questionnaire': '74468-0',                 // Questionnaire
+    'questionnaire-responses': '74468-0',           // Questionnaire
+    'forms': '51855-5',                             // Patient note
+    'track-anything': '51855-5',                    // Patient note
+    'patient-reminders': '51855-5',                 // Patient note
+    'clinical-reminders': '51855-5',                // Patient note
+    'amendments': '51855-5',                        // Patient note
+    'letters': '51855-5',                           // Patient note
+    'review-of-systems-checks': '10187-3',          // Review of systems
+    'vitals': '8716-3',                             // Vital signs
+    'prescriptions': '57833-6'                      // Prescription
+  };
+
+  return loincCodes[formType] || '11506-3'; // Default to progress note
+};
 import type {
   EncounterFormData,
   FHIRBundleEntry,
@@ -43,6 +77,115 @@ type ClinicalInstructionsForm = {
 };
 
 type ClinicalNotesForm = {
+  notes: string;
+};
+
+type EyeExamForm = {
+  visualAcuityOD: string;
+  visualAcuityOS: string;
+  intraocularPressureOD: string;
+  intraocularPressureOS: string;
+  pupilsOD: string;
+  pupilsOS: string;
+  externalExam: string;
+  anteriorSegment: string;
+  posteriorSegment: string;
+  fundusOD: string;
+  fundusOS: string;
+  notes: string;
+};
+
+type FunctionalCognitiveForm = {
+  functionalStatus: string;
+  mobility: string;
+  adlIndependence: string;
+  cognitiveStatus: string;
+  orientation: string;
+  memory: string;
+  attention: string;
+  language: string;
+  executiveFunction: string;
+  behavioralObservations: string;
+  notes: string;
+};
+
+type ObservationForm = {
+  observationType: string;
+  observationCode: string;
+  value: string;
+  unit: string;
+  interpretation: string;
+  method: string;
+  bodySite: string;
+  notes: string;
+};
+
+type SpeechDictationForm = {
+  transcription: string;
+  category: string;
+};
+
+type ProcedureOrderForm = {
+  procedureCode: string;
+  procedureName: string;
+  priority: string;
+  status: string;
+  reasonCode: string;
+  reasonDescription: string;
+  bodySite: string;
+  performerType: string;
+  scheduledDate: string;
+  instructions: string;
+  notes: string;
+};
+
+type LabResultsForm = {
+  testName: string;
+  testCode: string;
+  result: string;
+  unit: string;
+  referenceRange: string;
+  interpretation: string;
+  specimenType: string;
+  collectionDate: string;
+  resultDate: string;
+  performingLab: string;
+  notes: string;
+};
+
+type ImagingOrdersForm = {
+  imagingType: string;
+  procedureCode: string;
+  bodySite: string;
+  laterality: string;
+  priority: string;
+  indication: string;
+  clinicalQuestion: string;
+  contrast: string;
+  scheduledDate: string;
+  performingFacility: string;
+  specialInstructions: string;
+  notes: string;
+};
+
+type QuestionnaireForm = {
+  questionnaireTitle: string;
+  questionnaireType: string;
+  responses: Array<{
+    question: string;
+    answer: string;
+  }>;
+  notes: string;
+};
+
+type GenericAdministrativeForm = {
+  title: string;
+  category: string;
+  content: string;
+  dueDate?: string;
+  priority?: string;
+  status?: string;
+  assignedTo?: string;
   notes: string;
 };
 
@@ -91,6 +234,15 @@ interface PatientDetailStore {
   clinicalInstructionsForms: Record<string, ClinicalInstructionsForm>;
   clinicalNotesForms: Record<string, ClinicalNotesForm>;
   rosForms: Record<string, Record<string, string>>;
+  eyeExamForms: Record<string, EyeExamForm>;
+  functionalCognitiveForms: Record<string, FunctionalCognitiveForm>;
+  observationForms: Record<string, ObservationForm>;
+  speechDictationForms: Record<string, SpeechDictationForm>;
+  procedureOrderForms: Record<string, ProcedureOrderForm>;
+  labResultsForms: Record<string, LabResultsForm>;
+  imagingOrdersForms: Record<string, ImagingOrdersForm>;
+  questionnaireForms: Record<string, QuestionnaireForm>;
+  genericAdminForms: Record<string, GenericAdministrativeForm>;
 
   encounters: any[];
   problems: any[];
@@ -143,6 +295,25 @@ interface PatientDetailStore {
   setClinicalNotesForm: (encounterId: string, form: ClinicalNotesForm) => void;
   updateRosForm: (encounterId: string, system: string, value: string) => void;
   setRosForm: (encounterId: string, form: Record<string, string>) => void;
+
+  updateEyeExamForm: (encounterId: string, field: keyof EyeExamForm, value: string) => void;
+  setEyeExamForm: (encounterId: string, form: EyeExamForm) => void;
+  updateFunctionalCognitiveForm: (encounterId: string, field: keyof FunctionalCognitiveForm, value: string) => void;
+  setFunctionalCognitiveForm: (encounterId: string, form: FunctionalCognitiveForm) => void;
+  updateObservationForm: (encounterId: string, field: keyof ObservationForm, value: string) => void;
+  setObservationForm: (encounterId: string, form: ObservationForm) => void;
+  updateSpeechDictationForm: (encounterId: string, field: keyof SpeechDictationForm, value: string) => void;
+  setSpeechDictationForm: (encounterId: string, form: SpeechDictationForm) => void;
+  updateProcedureOrderForm: (encounterId: string, field: keyof ProcedureOrderForm, value: string) => void;
+  setProcedureOrderForm: (encounterId: string, form: ProcedureOrderForm) => void;
+  updateLabResultsForm: (encounterId: string, field: keyof LabResultsForm, value: string) => void;
+  setLabResultsForm: (encounterId: string, form: LabResultsForm) => void;
+  updateImagingOrdersForm: (encounterId: string, field: keyof ImagingOrdersForm, value: string) => void;
+  setImagingOrdersForm: (encounterId: string, form: ImagingOrdersForm) => void;
+  updateQuestionnaireForm: (encounterId: string, field: keyof QuestionnaireForm, value: any) => void;
+  setQuestionnaireForm: (encounterId: string, form: QuestionnaireForm) => void;
+  updateGenericAdminForm: (encounterId: string, field: keyof GenericAdministrativeForm, value: any) => void;
+  setGenericAdminForm: (encounterId: string, form: GenericAdministrativeForm) => void;
   setEditingCarePlanId: (encounterId: string, carePlanId: string | null) => void;
   setCurrentCarePlanData: (encounterId: string, data: CarePlanFormData | null) => void;
 
@@ -177,6 +348,108 @@ const defaultSoapForm: SoapForm = {
   objective: '',
   assessment: '',
   plan: ''
+};
+
+const defaultEyeExamForm: EyeExamForm = {
+  visualAcuityOD: '',
+  visualAcuityOS: '',
+  intraocularPressureOD: '',
+  intraocularPressureOS: '',
+  pupilsOD: '',
+  pupilsOS: '',
+  externalExam: '',
+  anteriorSegment: '',
+  posteriorSegment: '',
+  fundusOD: '',
+  fundusOS: '',
+  notes: ''
+};
+
+const defaultFunctionalCognitiveForm: FunctionalCognitiveForm = {
+  functionalStatus: '',
+  mobility: '',
+  adlIndependence: '',
+  cognitiveStatus: '',
+  orientation: '',
+  memory: '',
+  attention: '',
+  language: '',
+  executiveFunction: '',
+  behavioralObservations: '',
+  notes: ''
+};
+
+const defaultObservationForm: ObservationForm = {
+  observationType: '',
+  observationCode: '',
+  value: '',
+  unit: '',
+  interpretation: '',
+  method: '',
+  bodySite: '',
+  notes: ''
+};
+
+const defaultSpeechDictationForm: SpeechDictationForm = {
+  transcription: '',
+  category: ''
+};
+
+const defaultProcedureOrderForm: ProcedureOrderForm = {
+  procedureCode: '',
+  procedureName: '',
+  priority: '',
+  status: '',
+  reasonCode: '',
+  reasonDescription: '',
+  bodySite: '',
+  performerType: '',
+  scheduledDate: '',
+  instructions: '',
+  notes: ''
+};
+
+const defaultLabResultsForm: LabResultsForm = {
+  testName: '',
+  testCode: '',
+  result: '',
+  unit: '',
+  referenceRange: '',
+  interpretation: '',
+  specimenType: '',
+  collectionDate: '',
+  resultDate: '',
+  performingLab: '',
+  notes: ''
+};
+
+const defaultImagingOrdersForm: ImagingOrdersForm = {
+  imagingType: '',
+  procedureCode: '',
+  bodySite: '',
+  laterality: '',
+  priority: '',
+  indication: '',
+  clinicalQuestion: '',
+  contrast: '',
+  scheduledDate: '',
+  performingFacility: '',
+  specialInstructions: '',
+  notes: ''
+};
+
+const defaultQuestionnaireForm: QuestionnaireForm = {
+  questionnaireTitle: '',
+  questionnaireType: '',
+  responses: [],
+  notes: ''
+};
+
+const defaultGenericAdminForm: GenericAdministrativeForm = {
+  title: '',
+  category: '',
+  content: '',
+  notes: ''
 };
 
 const defaultCarePlanForm: CarePlanFormData = {
@@ -235,6 +508,15 @@ const initialState = {
   clinicalInstructionsForms: {},
   clinicalNotesForms: {},
   rosForms: {},
+  eyeExamForms: {},
+  functionalCognitiveForms: {},
+  observationForms: {},
+  speechDictationForms: {},
+  procedureOrderForms: {},
+  labResultsForms: {},
+  imagingOrdersForms: {},
+  questionnaireForms: {},
+  genericAdminForms: {},
   encounters: [],
   problems: [],
   medications: [],
@@ -538,6 +820,203 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
       }
     }));
   },
+
+  // Eye Exam Form
+  updateEyeExamForm: (encounterId, field, value) => {
+    set((state) => {
+      const current = state.eyeExamForms[encounterId] || defaultEyeExamForm;
+      if (current[field] === value) return state;
+      const updatedForm = { ...current, [field]: value };
+      saveDraft(encounterId, 'eye-exam', updatedForm);
+      return {
+        ...state,
+        eyeExamForms: {
+          ...state.eyeExamForms,
+          [encounterId]: updatedForm
+        }
+      };
+    });
+  },
+  setEyeExamForm: (encounterId, form) => {
+    set((state) => ({
+      eyeExamForms: { ...state.eyeExamForms, [encounterId]: form }
+    }));
+  },
+
+  // Functional Cognitive Form
+  updateFunctionalCognitiveForm: (encounterId, field, value) => {
+    set((state) => {
+      const current = state.functionalCognitiveForms[encounterId] || defaultFunctionalCognitiveForm;
+      if (current[field] === value) return state;
+      const updatedForm = { ...current, [field]: value };
+      saveDraft(encounterId, 'functional-and-cognitive-status', updatedForm);
+      return {
+        ...state,
+        functionalCognitiveForms: {
+          ...state.functionalCognitiveForms,
+          [encounterId]: updatedForm
+        }
+      };
+    });
+  },
+  setFunctionalCognitiveForm: (encounterId, form) => {
+    set((state) => ({
+      functionalCognitiveForms: { ...state.functionalCognitiveForms, [encounterId]: form }
+    }));
+  },
+
+  // Observation Form
+  updateObservationForm: (encounterId, field, value) => {
+    set((state) => {
+      const current = state.observationForms[encounterId] || defaultObservationForm;
+      if (current[field] === value) return state;
+      const updatedForm = { ...current, [field]: value };
+      saveDraft(encounterId, 'observation', updatedForm);
+      return {
+        ...state,
+        observationForms: {
+          ...state.observationForms,
+          [encounterId]: updatedForm
+        }
+      };
+    });
+  },
+  setObservationForm: (encounterId, form) => {
+    set((state) => ({
+      observationForms: { ...state.observationForms, [encounterId]: form }
+    }));
+  },
+
+  // Speech Dictation Form
+  updateSpeechDictationForm: (encounterId, field, value) => {
+    set((state) => {
+      const current = state.speechDictationForms[encounterId] || defaultSpeechDictationForm;
+      if (current[field] === value) return state;
+      const updatedForm = { ...current, [field]: value };
+      saveDraft(encounterId, 'speech-dictation', updatedForm);
+      return {
+        ...state,
+        speechDictationForms: {
+          ...state.speechDictationForms,
+          [encounterId]: updatedForm
+        }
+      };
+    });
+  },
+  setSpeechDictationForm: (encounterId, form) => {
+    set((state) => ({
+      speechDictationForms: { ...state.speechDictationForms, [encounterId]: form }
+    }));
+  },
+
+  // Procedure Order Form
+  updateProcedureOrderForm: (encounterId, field, value) => {
+    set((state) => {
+      const current = state.procedureOrderForms[encounterId] || defaultProcedureOrderForm;
+      if (current[field] === value) return state;
+      const updatedForm = { ...current, [field]: value };
+      saveDraft(encounterId, 'procedure-order', updatedForm);
+      return {
+        ...state,
+        procedureOrderForms: {
+          ...state.procedureOrderForms,
+          [encounterId]: updatedForm
+        }
+      };
+    });
+  },
+  setProcedureOrderForm: (encounterId, form) => {
+    set((state) => ({
+      procedureOrderForms: { ...state.procedureOrderForms, [encounterId]: form }
+    }));
+  },
+
+  // Lab Results Form
+  updateLabResultsForm: (encounterId, field, value) => {
+    set((state) => {
+      const current = state.labResultsForms[encounterId] || defaultLabResultsForm;
+      if (current[field] === value) return state;
+      const updatedForm = { ...current, [field]: value };
+      saveDraft(encounterId, 'lab-results', updatedForm);
+      return {
+        ...state,
+        labResultsForms: {
+          ...state.labResultsForms,
+          [encounterId]: updatedForm
+        }
+      };
+    });
+  },
+  setLabResultsForm: (encounterId, form) => {
+    set((state) => ({
+      labResultsForms: { ...state.labResultsForms, [encounterId]: form }
+    }));
+  },
+
+  // Imaging Orders Form
+  updateImagingOrdersForm: (encounterId, field, value) => {
+    set((state) => {
+      const current = state.imagingOrdersForms[encounterId] || defaultImagingOrdersForm;
+      if (current[field] === value) return state;
+      const updatedForm = { ...current, [field]: value };
+      saveDraft(encounterId, 'imaging-orders', updatedForm);
+      return {
+        ...state,
+        imagingOrdersForms: {
+          ...state.imagingOrdersForms,
+          [encounterId]: updatedForm
+        }
+      };
+    });
+  },
+  setImagingOrdersForm: (encounterId, form) => {
+    set((state) => ({
+      imagingOrdersForms: { ...state.imagingOrdersForms, [encounterId]: form }
+    }));
+  },
+
+  // Questionnaire Form
+  updateQuestionnaireForm: (encounterId, field, value) => {
+    set((state) => {
+      const current = state.questionnaireForms[encounterId] || defaultQuestionnaireForm;
+      const updatedForm = { ...current, [field]: value };
+      saveDraft(encounterId, 'questionnaire', updatedForm);
+      return {
+        ...state,
+        questionnaireForms: {
+          ...state.questionnaireForms,
+          [encounterId]: updatedForm
+        }
+      };
+    });
+  },
+  setQuestionnaireForm: (encounterId, form) => {
+    set((state) => ({
+      questionnaireForms: { ...state.questionnaireForms, [encounterId]: form }
+    }));
+  },
+
+  // Generic Administrative Form
+  updateGenericAdminForm: (encounterId, field, value) => {
+    set((state) => {
+      const current = state.genericAdminForms[encounterId] || defaultGenericAdminForm;
+      const updatedForm = { ...current, [field]: value };
+      saveDraft(encounterId, 'generic-admin', updatedForm);
+      return {
+        ...state,
+        genericAdminForms: {
+          ...state.genericAdminForms,
+          [encounterId]: updatedForm
+        }
+      };
+    });
+  },
+  setGenericAdminForm: (encounterId, form) => {
+    set((state) => ({
+      genericAdminForms: { ...state.genericAdminForms, [encounterId]: form }
+    }));
+  },
+
   setEditingCarePlanId: (encounterId, carePlanId) => {
     set((state) => ({
       editingCarePlanId: {
@@ -773,12 +1252,7 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
         type: {
           coding: [{
             system: 'http://loinc.org',
-            code:
-              section.type === 'soap' ? '34133-9' :
-              section.type === 'care-plan' ? '18776-5' :
-              section.type === 'clinical-notes' ? '11506-3' :
-              section.type === 'clinical-instructions' ? '51847-2' :
-              section.type === 'review-of-systems' ? '10187-3' : '11506-3',
+            code: getLoincCode(section.type),
             display: section.title
           }],
           text: section.title
