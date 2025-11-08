@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   LayoutDashboard,
   AlertCircle,
@@ -21,11 +21,26 @@ import {
   Globe,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  ChevronDown,
+  LucideIcon
 } from 'lucide-react';
 import { usePatientDetailStore } from '../store/patient-detail-store';
 
+type SidebarView = 'all' | 'clinical' | 'administrative' | 'financial';
+
+interface NavigationItem {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  count: number | null;
+  category: string;
+  encounterId?: string;
+}
+
 export function PatientSidebar() {
+  const [sidebarView, setSidebarView] = useState<SidebarView>('all');
+
   // Get state from Zustand
   const sidebarCollapsed = usePatientDetailStore((state) => state.sidebarCollapsed);
   const activeTab = usePatientDetailStore((state) => state.activeTab);
@@ -40,125 +55,212 @@ export function PatientSidebar() {
   const setActiveTab = usePatientDetailStore((state) => state.setActiveTab);
   const closeEncounterTab = usePatientDetailStore((state) => state.closeEncounterTab);
 
-  // Navigation sections - same as original
-  const sections = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, count: null },
-    { id: 'allergies', label: 'Allergies', icon: AlertCircle, count: allergies.length },
-    { id: 'problems', label: 'Diagnoses', icon: Search, count: problems.length },
-    { id: 'medications', label: 'Medications', icon: Pill, count: medications.length },
-    { id: 'vaccines', label: 'Vaccines', icon: Syringe, count: null },
-    { id: 'vitals', label: 'Vitals', icon: Activity, count: null },
-    { id: 'lab', label: 'Lab', icon: TestTube, count: null },
-    { id: 'imaging', label: 'Imaging', icon: ImageIcon, count: null },
-    { id: 'history', label: 'History', icon: History, count: null },
-    { id: 'documents', label: 'Documents', icon: FileText, count: null },
-    { id: 'encounters', label: 'Visit Details', icon: Calendar, count: null },
-    { id: 'financial', label: 'Financial', icon: DollarSign, count: null },
-    { id: 'billing', label: 'Billing', icon: FileCheck, count: null },
-    { id: 'insurance', label: 'Insurance', icon: Shield, count: null },
-    { id: 'card-details', label: 'Card Details', icon: CreditCard, count: null },
-    { id: 'profile', label: 'Profile', icon: UserCircle, count: null },
-    { id: 'portal-access', label: 'Portal Access', icon: Globe, count: null }
+  // All navigation sections organized by category
+  const allSections = {
+    general: [
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, count: null, category: 'general' }
+    ],
+    clinical: [
+      { id: 'allergies', label: 'Allergies', icon: AlertCircle, count: allergies.length, category: 'clinical' },
+      { id: 'problems', label: 'Diagnoses', icon: Search, count: problems.length, category: 'clinical' },
+      { id: 'medications', label: 'Medications', icon: Pill, count: medications.length, category: 'clinical' },
+      { id: 'vaccines', label: 'Vaccines', icon: Syringe, count: null, category: 'clinical' },
+      { id: 'vitals', label: 'Vitals', icon: Activity, count: null, category: 'clinical' },
+      { id: 'lab', label: 'Lab', icon: TestTube, count: null, category: 'clinical' },
+      { id: 'imaging', label: 'Imaging', icon: ImageIcon, count: null, category: 'clinical' },
+      { id: 'history', label: 'History', icon: History, count: null, category: 'clinical' },
+      { id: 'encounters', label: 'Visit Details', icon: Calendar, count: null, category: 'clinical' }
+    ],
+    administrative: [
+      { id: 'documents', label: 'Documents', icon: FileText, count: null, category: 'administrative' },
+      { id: 'profile', label: 'Profile', icon: UserCircle, count: null, category: 'administrative' },
+      { id: 'portal-access', label: 'Portal Access', icon: Globe, count: null, category: 'administrative' }
+    ],
+    financial: [
+      { id: 'financial', label: 'Financial', icon: DollarSign, count: null, category: 'financial' },
+      { id: 'billing', label: 'Billing', icon: FileCheck, count: null, category: 'financial' },
+      { id: 'insurance', label: 'Insurance', icon: Shield, count: null, category: 'financial' },
+      { id: 'card-details', label: 'Card Details', icon: CreditCard, count: null, category: 'financial' }
+    ]
+  };
+
+  // Filter sections based on selected view
+  const getFilteredSections = () => {
+    if (sidebarView === 'all') {
+      return [
+        ...allSections.general,
+        ...allSections.clinical,
+        ...allSections.administrative,
+        ...allSections.financial
+      ];
+    }
+    if (sidebarView === 'clinical') {
+      return [...allSections.general, ...allSections.clinical];
+    }
+    if (sidebarView === 'administrative') {
+      return [...allSections.general, ...allSections.administrative];
+    }
+    if (sidebarView === 'financial') {
+      return [...allSections.general, ...allSections.financial];
+    }
+    return [];
+  };
+
+  const sections = getFilteredSections();
+
+  // Add open encounters at the TOP - they're the active work items
+  const allNavigationItems: NavigationItem[] = [
+    ...openEncounterTabs.map((encounterId): NavigationItem => {
+      const encounter = encounters.find(e => e.id === encounterId);
+      const encounterDate = encounter?.period?.start || encounter?.startTime;
+      const dateStr = encounterDate
+        ? new Date(encounterDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : 'Encounter';
+
+      return {
+        id: `encounter-${encounterId}`,
+        label: dateStr,
+        icon: Calendar,
+        count: null,
+        category: 'encounter',
+        encounterId
+      };
+    }),
+    ...sections
   ];
 
   return (
     <div
       className={`bg-white border-r border-gray-200 overflow-y-auto transition-all duration-300 ease-in-out flex-shrink-0 ${
-        sidebarCollapsed ? 'w-14' : 'w-48'
+        sidebarCollapsed ? 'w-12' : 'w-44'
       }`}
     >
-      {/* Toggle Button */}
-      <div className="sticky top-0 bg-white z-10 p-3 border-b border-gray-200">
-        <button
-          onClick={toggleSidebar}
-          className="w-full flex items-center justify-center p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors border border-gray-200 hover:border-gray-300"
-          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {sidebarCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </button>
+      {/* Header with View Selector and Toggle */}
+      <div className="sticky top-0 bg-white/95 backdrop-blur-sm z-10 border-b border-gray-100">
+        {!sidebarCollapsed ? (
+          <div className="px-2 py-2">
+            {/* Combined Row: View Dropdown + Toggle */}
+            <div className="flex items-center gap-1">
+              {/* View Dropdown */}
+              <div className="relative flex-1">
+                <select
+                  value={sidebarView}
+                  onChange={(e) => setSidebarView(e.target.value as SidebarView)}
+                  className="w-full pl-2 pr-6 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white cursor-pointer appearance-none hover:bg-white transition-colors"
+                >
+                  <option value="all">All Sections</option>
+                  <option value="clinical">Clinical</option>
+                  <option value="administrative">Admin</option>
+                  <option value="financial">Financial</option>
+                </select>
+                <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-500 pointer-events-none" />
+              </div>
+
+              {/* Toggle Button */}
+              <button
+                onClick={toggleSidebar}
+                className="flex items-center justify-center p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
+                title="Collapse sidebar"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="px-2 py-2">
+            {/* Toggle Button (Collapsed) */}
+            <button
+              onClick={toggleSidebar}
+              className="w-full flex items-center justify-center p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
+              title="Expand sidebar"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
-      <nav className="p-2 space-y-1">
-        {sections.map((section) => {
-          const Icon = section.icon;
-          const isActive = activeTab === section.id;
-          const hasCount = section.count !== null && section.count > 0;
-          return (
-            <button
-              key={section.id}
-              onClick={() => {
-                setActiveTab(section.id);
-              }}
-              className={`
-                w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all
-                ${isActive
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'text-gray-700 hover:bg-gray-50'
-                }
-                ${sidebarCollapsed ? 'justify-center px-2' : 'justify-between'}
-              `}
-              title={sidebarCollapsed ? section.label : ''}
-            >
-              <div className="flex items-center gap-3">
-                <Icon className="h-4 w-4 flex-shrink-0" />
-                {!sidebarCollapsed && <span className="truncate">{section.label}</span>}
-              </div>
-              {!sidebarCollapsed && hasCount && (
-                <span className={`inline-flex items-center justify-center w-5 h-5 text-xs font-semibold rounded-full ${
-                  isActive ? 'bg-white text-primary' : 'bg-green-100 text-green-700'
-                }`}>
-                  {section.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-
-        {/* Dynamic Encounter Tabs */}
+      <nav className="px-2 py-3 space-y-0.5">
+        {/* Open Encounters Header */}
         {openEncounterTabs.length > 0 && !sidebarCollapsed && (
-          <>
-            <div className="pt-2 mt-2 border-t border-gray-200">
-              <p className="px-3 text-xs font-semibold text-gray-500 mb-1">ENCOUNTERS</p>
-            </div>
-            {openEncounterTabs.map((encounterId) => {
-              const encounter = encounters.find(e => e.id === encounterId);
-              const isActive = activeTab === `encounter-${encounterId}`;
-              const encounterDate = encounter?.period?.start || encounter?.startTime;
-              const dateStr = encounterDate ? new Date(encounterDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+          <div className="px-2.5 pb-2">
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+              Open Encounters
+            </p>
+          </div>
+        )}
 
-              return (
-                <div key={encounterId} className="relative group">
-                  <button
-                    onClick={() => setActiveTab(`encounter-${encounterId}`)}
-                    className={`
-                      w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all
-                      ${isActive
-                        ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-700'
-                        : 'text-gray-700 hover:bg-gray-50'
-                      }
-                    `}
-                  >
-                    <Calendar className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate flex-1 text-left text-xs">{dateStr}</span>
-                  </button>
+        {allNavigationItems.map((item, index) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          const hasCount = item.count !== null && item.count > 0;
+          const isEncounter = item.category === 'encounter';
+
+          // Check if this is the last encounter item (to add separator after)
+          const isLastEncounter = isEncounter &&
+            index === openEncounterTabs.length - 1 &&
+            openEncounterTabs.length > 0;
+
+          return (
+            <React.Fragment key={item.id}>
+              <div className="relative group">
+                <button
+                  onClick={() => {
+                    setActiveTab(item.id);
+                  }}
+                  className={`
+                    w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-all relative
+                    ${isActive && isEncounter
+                      ? 'text-blue-700 bg-blue-50 ring-2 ring-blue-500 ring-opacity-50'
+                      : isActive
+                      ? 'text-blue-700 bg-blue-50'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                    }
+                    ${sidebarCollapsed ? 'justify-center px-2' : 'justify-between'}
+                  `}
+                  title={sidebarCollapsed ? item.label : ''}
+                >
+                  {/* Active indicator */}
+                  {isActive && !sidebarCollapsed && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-blue-600 rounded-r" />
+                  )}
+
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <Icon className={`flex-shrink-0 ${isActive ? 'h-4 w-4' : 'h-3.5 w-3.5'}`} />
+                    {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+                  </div>
+
+                  {!sidebarCollapsed && hasCount && (
+                    <span className={`
+                      inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-semibold rounded-full
+                      ${isActive ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}
+                    `}>
+                      {item.count}
+                    </span>
+                  )}
+                </button>
+
+                {/* Close button for encounters */}
+                {isEncounter && !sidebarCollapsed && item.encounterId && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      closeEncounterTab(encounterId);
+                      closeEncounterTab(item.encounterId!);
                     }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-opacity"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-0.5 hover:bg-gray-200 rounded transition-opacity z-10"
                   >
-                    <X className="h-3 w-3 text-gray-600" />
+                    <X className="h-3 w-3 text-gray-500" />
                   </button>
-                </div>
-              );
-            })}
-          </>
-        )}
+                )}
+              </div>
+
+              {/* Separator after last encounter */}
+              {isLastEncounter && !sidebarCollapsed && (
+                <div className="my-2 border-t border-gray-200" />
+              )}
+            </React.Fragment>
+          );
+        })}
       </nav>
     </div>
   );

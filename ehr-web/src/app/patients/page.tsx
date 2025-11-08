@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { User, Users, Filter, Grid, List, Plus, Search, Calendar, AlertCircle, Loader2, Download, Edit2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { useFacility } from '@/contexts/facility-context';
 import { PatientDrawer } from '@/components/patients/patient-drawer';
 import { useTabNavigation } from '@/hooks/use-tab-navigation';
@@ -41,6 +43,7 @@ export default function PatientsPage() {
   const [pageSize, setPageSize] = useState(10);
   const [editingPatient, setEditingPatient] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [skipEncounterFlow, setSkipEncounterFlow] = useState(false);
 
   // Load patients from FHIR API
   const loadPatients = async (search: string = '', page: number = 1) => {
@@ -241,6 +244,21 @@ export default function PatientsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
+            <Checkbox
+              id="skip-encounter"
+              checked={skipEncounterFlow}
+              onCheckedChange={(checked) => setSkipEncounterFlow(Boolean(checked))}
+            />
+            <div className="flex flex-col">
+              <Label htmlFor="skip-encounter" className="text-xs font-medium text-gray-700">
+                Skip encounter
+              </Label>
+              <span className="text-[11px] text-gray-500">
+                Off = continue to encounter after creation
+              </span>
+            </div>
+          </div>
           <Button
             onClick={exportToCSV}
             variant="outline"
@@ -679,7 +697,7 @@ export default function PatientsPage() {
         }}
         patient={editingPatient}
         isEditing={isEditing}
-        skipEncounter={true}
+        skipEncounter={skipEncounterFlow}
         onSuccess={() => {
           loadPatients(searchQuery, currentPage);
           setEditingPatient(null);

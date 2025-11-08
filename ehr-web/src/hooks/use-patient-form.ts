@@ -1,176 +1,588 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FHIRPatient } from '@/types/fhir';
-import { ValidationError, validatePatientForm } from '@/utils/form-validation';
+import { ValidationError } from '@/utils/form-validation';
+import { CreatePatientRequest } from '@/services/patient.service';
 
-interface Address {
-  line: string[];
+export type FieldErrors = ValidationError;
+
+export interface ProviderInfoForm {
+  primaryProviderId: string;
+  providerLocationId: string;
+  registrationDate: string;
+  referredBy: string;
+}
+
+export interface DemographicsForm {
+  photo: string;
+  prefix: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  preferredName: string;
+  dateOfBirth: string;
+  gender: 'male' | 'female' | 'other' | 'unknown';
+  pronouns: string;
+  maritalStatus: string;
+  occupation: string;
+  employer: string;
+  timeZone: string;
+  language: string;
+  race: string;
+  ethnicity: string;
+  religion: string;
+  bloodGroup: string;
+  ssn: string;
+  hospitalId: string;
+  healthId: string;
+  mrn: string;
+  preferredCommunication: string;
+  disabilityStatus: string;
+}
+
+export interface PostalAddress {
+  line1: string;
+  line2: string;
   city: string;
   state: string;
   postalCode: string;
   country: string;
 }
 
-export interface PatientFormData {
-  photo: string;
-  prefix: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  gender: 'male' | 'female' | 'other' | 'unknown';
-  relation: string;
-  hospitalId: string;
-  healthId: string;
+export interface ContactForm {
+  mobileNumber: string;
+  homeNumber: string;
   email: string;
-  phone: string;
-  mrn: string;
-  address: Address;
+  faxNumber: string;
+  address: PostalAddress;
+  preferredContactTime: string;
 }
 
-const initialFormData: PatientFormData = {
-  photo: '',
-  prefix: 'Mr',
+export interface EmergencyContactForm {
+  relationship: string;
+  firstName: string;
+  lastName: string;
+  mobileNumber: string;
+  email: string;
+}
+
+export interface InsuranceForm {
+  insuranceType: string;
+  insuranceName: string;
+  planType: string;
+  planName: string;
+  memberId: string;
+  groupId: string;
+  groupName: string;
+  effectiveStart: string;
+  effectiveEnd: string;
+  relationshipToInsured: string;
+  insuredFirstName: string;
+  insuredLastName: string;
+  insuredAddress: PostalAddress;
+  insuredPhone: string;
+  insuredEmail: string;
+  cardImage: string;
+}
+
+export interface PreferencesForm {
+  pharmacy: string;
+  lab: string;
+  radiology: string;
+  preferredDoctorGender: string;
+  preferredHospital: string;
+  preferredContactMethod: string;
+}
+
+export type PatientStatus = 'active' | 'inactive';
+
+export interface ConsentForm {
+  consentEmail: boolean;
+  consentCall: boolean;
+  consentMessage: boolean;
+  allowDataSharing: boolean;
+  patientStatus: PatientStatus;
+  dataCaptureDate: string;
+  signature: string;
+}
+
+export interface ClinicalForm {
+  allergies: string;
+  chronicConditions: string;
+  smokingStatus: string;
+  alcoholUse: string;
+  heightCm: string;
+  weightKg: string;
+  bmi: string;
+}
+
+export interface PatientFormData {
+  provider: ProviderInfoForm;
+  demographics: DemographicsForm;
+  contact: ContactForm;
+  emergencyContacts: EmergencyContactForm[];
+  insurance: InsuranceForm;
+  preferences: PreferencesForm;
+  consent: ConsentForm;
+  clinical: ClinicalForm;
+}
+
+const today = new Date().toISOString().split('T')[0];
+
+const blankAddress: PostalAddress = {
+  line1: '',
+  line2: '',
+  city: '',
+  state: '',
+  postalCode: '',
+  country: 'US'
+};
+
+const blankEmergencyContact: EmergencyContactForm = {
+  relationship: '',
   firstName: '',
   lastName: '',
-  dateOfBirth: '',
-  gender: 'male',
-  relation: 'S/o',
-  hospitalId: '',
-  healthId: '',
-  email: '',
-  phone: '',
-  mrn: '',
-  address: {
-    line: [''],
-    city: '',
-    state: '',
-    postalCode: '',
-    country: 'US'
+  mobileNumber: '',
+  email: ''
+};
+
+const detectedTimezone =
+  typeof Intl !== 'undefined' && Intl.DateTimeFormat().resolvedOptions().timeZone
+    ? Intl.DateTimeFormat().resolvedOptions().timeZone
+    : 'UTC';
+
+const initialFormData: PatientFormData = {
+  provider: {
+    primaryProviderId: '',
+    providerLocationId: '',
+    registrationDate: today,
+    referredBy: ''
+  },
+  demographics: {
+    photo: '',
+    prefix: 'Mr',
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    preferredName: '',
+    dateOfBirth: '',
+    gender: 'male',
+    pronouns: '',
+    maritalStatus: '',
+    occupation: '',
+    employer: '',
+    timeZone: detectedTimezone,
+    language: 'en',
+    race: '',
+    ethnicity: '',
+    religion: '',
+    bloodGroup: '',
+    ssn: '',
+    hospitalId: '',
+    healthId: '',
+    mrn: '',
+    preferredCommunication: 'email',
+    disabilityStatus: ''
+  },
+  contact: {
+    mobileNumber: '',
+    homeNumber: '',
+    email: '',
+    faxNumber: '',
+    address: { ...blankAddress },
+    preferredContactTime: ''
+  },
+  emergencyContacts: [{ ...blankEmergencyContact }],
+  insurance: {
+    insuranceType: '',
+    insuranceName: '',
+    planType: '',
+    planName: '',
+    memberId: '',
+    groupId: '',
+    groupName: '',
+    effectiveStart: '',
+    effectiveEnd: '',
+    relationshipToInsured: 'self',
+    insuredFirstName: '',
+    insuredLastName: '',
+    insuredAddress: { ...blankAddress },
+    insuredPhone: '',
+    insuredEmail: '',
+    cardImage: ''
+  },
+  preferences: {
+    pharmacy: '',
+    lab: '',
+    radiology: '',
+    preferredDoctorGender: '',
+    preferredHospital: '',
+    preferredContactMethod: 'email'
+  },
+  consent: {
+    consentEmail: true,
+    consentCall: true,
+    consentMessage: false,
+    allowDataSharing: false,
+    patientStatus: 'active',
+    dataCaptureDate: today,
+    signature: ''
+  },
+  clinical: {
+    allergies: '',
+    chronicConditions: '',
+    smokingStatus: '',
+    alcoholUse: '',
+    heightCm: '',
+    weightKg: '',
+    bmi: ''
   }
+};
+
+const splitList = (value: string): string[] =>
+  value
+    .split(',')
+    .map(entry => entry.trim())
+    .filter(Boolean);
+
+const calculateAge = (dob: string): string => {
+  if (!dob) return '';
+  const birth = new Date(dob);
+  if (Number.isNaN(birth.getTime())) return '';
+  const todayDate = new Date();
+  let age = todayDate.getFullYear() - birth.getFullYear();
+  const monthDiff = todayDate.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && todayDate.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return age >= 0 ? `${age}` : '';
+};
+
+const calculateBMI = (heightCm: string, weightKg: string): string => {
+  const height = parseFloat(heightCm);
+  const weight = parseFloat(weightKg);
+  if (!height || !weight) return '';
+  const meters = height / 100;
+  if (!meters) return '';
+  const bmi = weight / (meters * meters);
+  return Number.isFinite(bmi) ? bmi.toFixed(1) : '';
 };
 
 export function usePatientForm(patient?: FHIRPatient, facilityId?: string) {
   const [formData, setFormData] = useState<PatientFormData>(initialFormData);
-  const [errors, setErrors] = useState<ValidationError>({});
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (patient) {
       const name = patient.name?.find(n => n.use === 'official') || patient.name?.[0];
-      const address = patient.address?.[0];
       const email = patient.telecom?.find(t => t.system === 'email')?.value;
       const phone = patient.telecom?.find(t => t.system === 'phone')?.value;
-      const mrn = patient.identifier?.find(
-        id => id.type?.coding?.some(c => c.code === 'MR')
-      )?.value;
+      const homePhone = patient.telecom?.find(t => t.system === 'phone' && t.use === 'home')?.value;
+      const mrn = patient.identifier?.find(id => id.type?.coding?.some(c => c.code === 'MR'))?.value;
+      const address = patient.address?.[0];
       const photo = patient.photo?.[0]?.url || patient.photo?.[0]?.data || '';
 
-      setFormData({
-        photo: photo,
-        prefix: name?.prefix?.[0] || 'Mr',
-        firstName: name?.given?.[0] || '',
-        lastName: name?.family || '',
-        dateOfBirth: patient.birthDate || '',
-        gender: patient.gender || 'male',
-        relation: 'S/o',
-        hospitalId: '',
-        healthId: '',
-        email: email || '',
-        phone: phone || '',
-        mrn: mrn || '',
-        address: {
-          line: address?.line || [''],
-          city: address?.city || '',
-          state: address?.state || '',
-          postalCode: address?.postalCode || '',
-          country: address?.country || 'US'
+      setFormData(prev => ({
+        ...prev,
+        demographics: {
+          ...prev.demographics,
+          photo,
+          prefix: name?.prefix?.[0] || prev.demographics.prefix,
+          firstName: name?.given?.[0] || '',
+          middleName: name?.given?.[1] || '',
+          lastName: name?.family || '',
+          dateOfBirth: patient.birthDate || '',
+          gender: patient.gender || prev.demographics.gender,
+          mrn: mrn || ''
+        },
+        contact: {
+          ...prev.contact,
+          mobileNumber: phone || '',
+          homeNumber: homePhone || '',
+          email: email || '',
+          address: {
+            line1: address?.line?.[0] || '',
+            line2: address?.line?.[1] || '',
+            city: address?.city || '',
+            state: address?.state || '',
+            postalCode: address?.postalCode || '',
+            country: address?.country || 'US'
+          }
         }
-      });
+      }));
     }
   }, [patient]);
 
-  const updateField = <K extends keyof PatientFormData>(
-    field: K,
-    value: PatientFormData[K]
-  ) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
+  const calculatedAge = useMemo(
+    () => calculateAge(formData.demographics.dateOfBirth),
+    [formData.demographics.dateOfBirth]
+  );
+
+  const calculatedBMI = useMemo(
+    () => calculateBMI(formData.clinical.heightCm, formData.clinical.weightKg),
+    [formData.clinical.heightCm, formData.clinical.weightKg]
+  );
+
+  useEffect(() => {
+    setFormData(prev =>
+      prev.clinical.bmi === calculatedBMI
+        ? prev
+        : { ...prev, clinical: { ...prev.clinical, bmi: calculatedBMI } }
+    );
+  }, [calculatedBMI]);
+
+  const clearError = (field: string) => {
+    setErrors(prev => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   };
 
-  const updateAddress = <K extends keyof Address>(field: K, value: string) => {
-    if (field === 'line') {
-      setFormData(prev => ({
-        ...prev,
-        address: { ...prev.address, line: [value] }
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        address: { ...prev.address, [field]: value }
-      }));
-    }
+  const updateProviderField = <K extends keyof ProviderInfoForm>(field: K, value: ProviderInfoForm[K]) => {
+    setFormData(prev => ({
+      ...prev,
+      provider: { ...prev.provider, [field]: value }
+    }));
+    clearError(`provider.${String(field)}`);
+  };
+
+  const updateDemographicsField = <K extends keyof DemographicsForm>(
+    field: K,
+    value: DemographicsForm[K]
+  ) => {
+    setFormData(prev => ({
+      ...prev,
+      demographics: { ...prev.demographics, [field]: value }
+    }));
+    clearError(`demographics.${String(field)}`);
+  };
+
+  const updateContactField = <K extends keyof ContactForm>(field: K, value: ContactForm[K]) => {
+    if (field === 'address') return;
+    setFormData(prev => ({
+      ...prev,
+      contact: { ...prev.contact, [field]: value }
+    }));
+    clearError(`contact.${String(field)}`);
+  };
+
+  const updateContactAddress = <K extends keyof PostalAddress>(field: K, value: PostalAddress[K]) => {
+    setFormData(prev => ({
+      ...prev,
+      contact: {
+        ...prev.contact,
+        address: { ...prev.contact.address, [field]: value }
+      }
+    }));
+    clearError(`contact.address.${String(field)}`);
+  };
+
+  const addEmergencyContact = () => {
+    setFormData(prev => ({
+      ...prev,
+      emergencyContacts: [...prev.emergencyContacts, { ...blankEmergencyContact }]
+    }));
+  };
+
+  const updateEmergencyContact = <K extends keyof EmergencyContactForm>(
+    index: number,
+    field: K,
+    value: EmergencyContactForm[K]
+  ) => {
+    setFormData(prev => {
+      const contacts = [...prev.emergencyContacts];
+      contacts[index] = { ...contacts[index], [field]: value };
+      return { ...prev, emergencyContacts: contacts };
+    });
+    clearError(`emergencyContacts.${index}.${String(field)}`);
+  };
+
+  const removeEmergencyContact = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      emergencyContacts: prev.emergencyContacts.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateInsuranceField = <K extends keyof InsuranceForm>(field: K, value: InsuranceForm[K]) => {
+    if (field === 'insuredAddress') return;
+    setFormData(prev => ({
+      ...prev,
+      insurance: { ...prev.insurance, [field]: value }
+    }));
+    clearError(`insurance.${String(field)}`);
+  };
+
+  const updateInsuranceAddress = <K extends keyof PostalAddress>(
+    field: K,
+    value: PostalAddress[K]
+  ) => {
+    setFormData(prev => ({
+      ...prev,
+      insurance: {
+        ...prev.insurance,
+        insuredAddress: { ...prev.insurance.insuredAddress, [field]: value }
+      }
+    }));
+    clearError(`insurance.insuredAddress.${String(field)}`);
+  };
+
+  const updatePreferencesField = <K extends keyof PreferencesForm>(
+    field: K,
+    value: PreferencesForm[K]
+  ) => {
+    setFormData(prev => ({
+      ...prev,
+      preferences: { ...prev.preferences, [field]: value }
+    }));
+    clearError(`preferences.${String(field)}`);
+  };
+
+  const updateConsentField = <K extends keyof ConsentForm>(field: K, value: ConsentForm[K]) => {
+    setFormData(prev => ({
+      ...prev,
+      consent: { ...prev.consent, [field]: value }
+    }));
+    clearError(`consent.${String(field)}`);
+  };
+
+  const updateClinicalField = <K extends keyof ClinicalForm>(field: K, value: ClinicalForm[K]) => {
+    setFormData(prev => ({
+      ...prev,
+      clinical: { ...prev.clinical, [field]: value }
+    }));
+    clearError(`clinical.${String(field)}`);
+  };
+
+  const updatePhoto = (photo: string) => {
+    updateDemographicsField('photo', photo);
+  };
+
+  const updateInsuranceCardImage = (cardImage: string) => {
+    updateInsuranceField('cardImage', cardImage);
   };
 
   const validate = (): boolean => {
-    const validationErrors = validatePatientForm({
-      firstName: formData.firstName,
-      lastName: formData.relation || 'Unknown',
-      dateOfBirth: formData.dateOfBirth,
-      email: formData.email,
-      facilityId
+    const nextErrors: FieldErrors = {};
+
+    if (!facilityId) {
+      nextErrors.facility = 'Please select a facility before registering patients.';
+    }
+
+    if (!formData.provider.primaryProviderId) {
+      nextErrors['provider.primaryProviderId'] = 'Primary provider is required';
+    }
+    if (!formData.provider.providerLocationId) {
+      nextErrors['provider.providerLocationId'] = 'Provider location is required';
+    }
+    if (!formData.provider.registrationDate) {
+      nextErrors['provider.registrationDate'] = 'Registration date is required';
+    }
+
+    if (!formData.demographics.firstName) {
+      nextErrors['demographics.firstName'] = 'First name is required';
+    }
+    if (!formData.demographics.lastName) {
+      nextErrors['demographics.lastName'] = 'Last name is required';
+    }
+    if (!formData.demographics.dateOfBirth) {
+      nextErrors['demographics.dateOfBirth'] = 'Date of birth is required';
+    }
+    if (!formData.demographics.gender) {
+      nextErrors['demographics.gender'] = 'Gender is required';
+    }
+
+    if (!formData.contact.mobileNumber) {
+      nextErrors['contact.mobileNumber'] = 'Mobile number is required';
+    }
+    if (!formData.contact.email) {
+      nextErrors['contact.email'] = 'Email is required';
+    }
+    if (!formData.contact.address.line1) {
+      nextErrors['contact.address.line1'] = 'Address line 1 is required';
+    }
+    if (!formData.contact.address.city) {
+      nextErrors['contact.address.city'] = 'City is required';
+    }
+    if (!formData.contact.address.state) {
+      nextErrors['contact.address.state'] = 'State is required';
+    }
+    if (!formData.contact.address.postalCode) {
+      nextErrors['contact.address.postalCode'] = 'Postal code is required';
+    }
+    if (!formData.contact.address.country) {
+      nextErrors['contact.address.country'] = 'Country is required';
+    }
+
+    formData.emergencyContacts.forEach((contact, index) => {
+      if (!contact.relationship) {
+        nextErrors[`emergencyContacts.${index}.relationship`] = 'Relationship is required';
+      }
+      if (!contact.firstName) {
+        nextErrors[`emergencyContacts.${index}.firstName`] = 'First name is required';
+      }
+      if (!contact.lastName) {
+        nextErrors[`emergencyContacts.${index}.lastName`] = 'Last name is required';
+      }
+      if (!contact.mobileNumber) {
+        nextErrors[`emergencyContacts.${index}.mobileNumber`] = 'Mobile number is required';
+      }
     });
 
-    setErrors(validationErrors);
-    return Object.keys(validationErrors).length === 0;
+    if (!formData.insurance.insuranceType) {
+      nextErrors['insurance.insuranceType'] = 'Insurance type is required';
+    }
+    if (!formData.insurance.insuranceName) {
+      nextErrors['insurance.insuranceName'] = 'Insurance name is required';
+    }
+    if (!formData.insurance.memberId) {
+      nextErrors['insurance.memberId'] = 'Member ID is required';
+    }
+    if (!formData.insurance.effectiveStart) {
+      nextErrors['insurance.effectiveStart'] = 'Start date is required';
+    }
+    if (!formData.insurance.effectiveEnd) {
+      nextErrors['insurance.effectiveEnd'] = 'End date is required';
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
-  const prepareSubmitData = () => {
-    const hasAddress = formData.address.line[0] || formData.address.city || formData.address.state;
-    
-    // Build full name with prefix
-    const fullName = `${formData.prefix} ${formData.firstName}`.trim();
+  const prepareSubmitData = (): CreatePatientRequest => {
+    if (!facilityId) {
+      throw new Error('No facility selected');
+    }
 
-    const identifiers = [];
-    
-    // Add hospital ID if provided
-    if (formData.hospitalId) {
-      identifiers.push({
-        system: 'http://hospital.org/identifiers',
-        value: formData.hospitalId.trim(),
-        type: 'hospital-id'
-      });
-    }
-    
-    // Add health ID if provided
-    if (formData.healthId) {
-      identifiers.push({
-        system: 'http://health.gov/identifiers',
-        value: formData.healthId.trim(),
-        type: 'health-id'
-      });
-    }
+    const filteredContacts = formData.emergencyContacts.filter(
+      contact => contact.firstName || contact.lastName || contact.mobileNumber
+    );
 
     return {
-      firstName: fullName,
-      lastName: formData.relation || '',
-      dateOfBirth: formData.dateOfBirth,
-      gender: formData.gender,
-      email: formData.email.trim() || undefined,
-      phone: formData.phone.trim() || undefined,
-      mrn: formData.mrn.trim() || formData.hospitalId.trim() || undefined,
-      facilityId: facilityId!,
-      photo: formData.photo || undefined,
-      address: hasAddress ? {
-        line: formData.address.line.filter(l => l.trim()),
-        city: formData.address.city.trim(),
-        state: formData.address.state.trim(),
-        postalCode: formData.address.postalCode.trim(),
-        country: formData.address.country
-      } : undefined,
-      identifiers: identifiers.length > 0 ? identifiers : undefined
+      facilityId,
+      provider: formData.provider,
+      demographics: {
+        ...formData.demographics,
+        age: calculatedAge
+      },
+      contact: formData.contact,
+      emergencyContacts: filteredContacts.length ? filteredContacts : [{ ...blankEmergencyContact }],
+      insurance: formData.insurance,
+      preferences: formData.preferences,
+      consent: {
+        ...formData.consent,
+        dataCaptureDate: formData.consent.dataCaptureDate || today
+      },
+      clinical: {
+        ...formData.clinical,
+        allergiesList: splitList(formData.clinical.allergies),
+        chronicConditionsList: splitList(formData.clinical.chronicConditions),
+        bmi: calculatedBMI
+      }
     };
   };
 
@@ -178,10 +590,25 @@ export function usePatientForm(patient?: FHIRPatient, facilityId?: string) {
     formData,
     errors,
     loading,
+    calculatedAge,
+    calculatedBMI,
     setLoading,
     setErrors,
-    updateField,
-    updateAddress,
+    setFormData,
+    updateProviderField,
+    updateDemographicsField,
+    updateContactField,
+    updateContactAddress,
+    addEmergencyContact,
+    updateEmergencyContact,
+    removeEmergencyContact,
+    updateInsuranceField,
+    updateInsuranceAddress,
+    updatePreferencesField,
+    updateConsentField,
+    updateClinicalField,
+    updatePhoto,
+    updateInsuranceCardImage,
     validate,
     prepareSubmitData
   };

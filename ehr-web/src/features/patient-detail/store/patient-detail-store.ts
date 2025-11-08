@@ -336,10 +336,10 @@ interface PatientDetailStore {
   loadEncounterDocumentation: (encounterId: string) => Promise<void>;
   saveDocumentReference: (encounterId: string, section: SavedSection, documentId?: string) => Promise<void>;
   handleStartVisit: (encounterData: EncounterFormData) => Promise<void>;
-  handleSaveVitals: (vitalsData: VitalsFormData) => Promise<void>;
-  handleSaveProblem: (problemData: ProblemFormData) => Promise<void>;
-  handleSaveMedication: (medicationData: MedicationFormData) => Promise<void>;
-  handleSaveInsurance: (insuranceData: any) => Promise<void>;
+  handleSaveVitals: (vitalsData: VitalsFormData, encounterContext?: string) => Promise<void>;
+  handleSaveProblem: (problemData: ProblemFormData, encounterContext?: string) => Promise<void>;
+  handleSaveMedication: (medicationData: MedicationFormData, encounterContext?: string) => Promise<void>;
+  handleSaveInsurance: (insuranceData: any, encounterContext?: string) => Promise<void>;
   handleEditPatient: (data: any) => Promise<void>;
 }
 
@@ -1353,11 +1353,16 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
       throw error;
     }
   },
-  handleSaveVitals: async (vitalsData) => {
+  handleSaveVitals: async (vitalsData, encounterContext) => {
     const patientId = get().patientId;
     if (!patientId) return;
 
     const observations: any[] = [];
+
+    // Add encounter reference if context is provided
+    const encounterReference = encounterContext
+      ? { encounter: { reference: `Encounter/${encounterContext}` } }
+      : {};
 
     if (vitalsData.bloodPressureSystolic && vitalsData.bloodPressureDiastolic) {
       observations.push({
@@ -1379,6 +1384,7 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
           text: 'Blood Pressure'
         },
         subject: { reference: `Patient/${patientId}` },
+        ...encounterReference,
         effectiveDateTime: new Date().toISOString(),
         component: [
           {
@@ -1445,6 +1451,7 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
             text: display
           },
           subject: { reference: `Patient/${patientId}` },
+          ...encounterReference,
           effectiveDateTime: new Date().toISOString(),
           valueQuantity: {
             value: parseFloat(value),
@@ -1465,10 +1472,15 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
     }));
     await get().refreshData();
   },
-  handleSaveProblem: async (problemData) => {
+  handleSaveProblem: async (problemData, encounterContext) => {
     const patientId = get().patientId;
     const patient = get().patient;
     if (!patientId) return;
+
+    // Add encounter reference if context is provided
+    const encounterReference = encounterContext
+      ? { encounter: { reference: `Encounter/${encounterContext}` } }
+      : {};
 
     const conditionResource = {
       resourceType: 'Condition',
@@ -1514,6 +1526,7 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
         reference: `Patient/${patientId}`,
         display: patient?.name
       },
+      ...encounterReference,
       onsetDateTime: problemData.onsetDate,
       recordedDate: new Date().toISOString()
     };
@@ -1527,10 +1540,15 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
     }));
     await get().refreshData();
   },
-  handleSaveMedication: async (medicationData) => {
+  handleSaveMedication: async (medicationData, encounterContext) => {
     const patientId = get().patientId;
     const patient = get().patient;
     if (!patientId) return;
+
+    // Add encounter reference if context is provided
+    const encounterReference = encounterContext
+      ? { context: { reference: `Encounter/${encounterContext}` } }
+      : {};
 
     const medicationResource = {
       resourceType: 'MedicationRequest',
@@ -1543,6 +1561,7 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
         reference: `Patient/${patientId}`,
         display: patient?.name
       },
+      ...encounterReference,
       authoredOn: new Date().toISOString(),
       dosageInstruction: [{
         text: medicationData.instructions || undefined,
@@ -1578,10 +1597,13 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
     }));
     await get().refreshData();
   },
-  handleSaveInsurance: async (insuranceData) => {
+  handleSaveInsurance: async (insuranceData, encounterContext) => {
     const patientId = get().patientId;
     const patient = get().patient;
     if (!patientId) return;
+
+    // Note: Insurance/Coverage typically doesn't link to encounter as it's patient-level data
+    // but we accept the parameter for API consistency
 
     try {
       const coverageResource = {

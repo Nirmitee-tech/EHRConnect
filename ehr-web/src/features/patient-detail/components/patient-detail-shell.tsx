@@ -45,6 +45,7 @@ import { usePatientDetailStore } from '../store/patient-detail-store';
 import { setCachedUserName } from '../utils/form-save-handlers';
 import { PatientSidebar } from './patient-sidebar';
 import { PatientTabsBar } from './patient-tabs-bar';
+import { ContextualActionsBar } from './contextual-actions-bar';
 import { EncounterDetailView } from './encounter-detail-view';
 import { EncounterTab } from './encounter/EncounterTab';
 import { PortalAccessTab } from './tabs/portal-access-tab';
@@ -277,6 +278,9 @@ export function PatientDetailShell() {
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Browser-Style Tab Bar */}
             <PatientTabsBar />
+
+            {/* Contextual Actions Bar */}
+            <ContextualActionsBar activeTab={activeTab} encounters={encounters} />
 
             {/* Tab Content */}
             <div className="flex-1 overflow-y-auto p-2">

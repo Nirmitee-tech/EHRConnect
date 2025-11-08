@@ -123,6 +123,108 @@ export interface FHIRPatient extends FHIRResource {
   }>;
 }
 
+export interface FHIRRelatedPerson extends FHIRResource {
+  resourceType: 'RelatedPerson';
+  patient: FHIRReference;
+  relationship?: Array<{
+    coding?: Array<{
+      system?: string;
+      code?: string;
+      display?: string;
+    }>;
+    text?: string;
+  }>;
+  name?: FHIRHumanName;
+  telecom?: FHIRContactPoint[];
+}
+
+export interface FHIRCoverage extends FHIRResource {
+  resourceType: 'Coverage';
+  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
+  type?: {
+    coding?: Array<{
+      system?: string;
+      code?: string;
+      display?: string;
+    }>;
+    text?: string;
+  };
+  subscriber?: FHIRReference & { display?: string };
+  subscriberId?: string;
+  beneficiary: FHIRReference;
+  relationship?: {
+    coding?: Array<{
+      system?: string;
+      code?: string;
+      display?: string;
+    }>;
+    text?: string;
+  };
+  period?: {
+    start?: string;
+    end?: string;
+  };
+  payor?: FHIRReference[];
+  class?: Array<{
+    type: {
+      coding?: Array<{
+        system?: string;
+        code?: string;
+        display?: string;
+      }>;
+      text?: string;
+    };
+    value: string;
+    name?: string;
+  }>;
+  extension?: Array<{
+    url: string;
+    valueAttachment?: {
+      contentType?: string;
+      data?: string;
+      url?: string;
+    };
+    valueBoolean?: boolean;
+    valueString?: string;
+  }>;
+}
+
+export interface FHIRConsent extends FHIRResource {
+  resourceType: 'Consent';
+  status: 'draft' | 'proposed' | 'active' | 'rejected' | 'inactive' | 'entered-in-error';
+  category: Array<{
+    coding?: Array<{
+      system?: string;
+      code?: string;
+      display?: string;
+    }>;
+    text?: string;
+  }>;
+  patient: FHIRReference;
+  dateTime?: string;
+  performer?: FHIRReference[];
+  organization?: FHIRReference[];
+  provision?: {
+    type?: 'deny' | 'permit';
+    period?: {
+      start?: string;
+      end?: string;
+    };
+    code?: Array<{
+      coding?: Array<{
+        system?: string;
+        code?: string;
+        display?: string;
+      }>;
+    }>;
+  };
+  extension?: Array<{
+    url: string;
+    valueBoolean?: boolean;
+    valueCode?: string;
+  }>;
+}
+
 export interface FHIROrganization extends FHIRResource {
   resourceType: 'Organization';
   identifier?: FHIRIdentifier[];
