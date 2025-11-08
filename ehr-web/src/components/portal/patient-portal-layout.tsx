@@ -66,7 +66,7 @@ interface OrgBranding {
 
 export default function PatientPortalLayoutV2({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
-  const pathname = usePathname()
+  const pathname = usePathname() || ''
   const [notificationsCount] = useState(5)
   const [synapseOpen, setSynapseOpen] = useState(false)
   const [orgBranding, setOrgBranding] = useState<OrgBranding | undefined>(undefined)
