@@ -94,6 +94,14 @@ export default function TelehealthPage() {
       .find((session) => (session.start ? new Date(session.start) > new Date() : false))
   }, [sessions])
 
+  const canJoinSession = (session?: TelehealthSession | null) => {
+    if (!session?.start) return false
+    const start = new Date(session.start)
+    const now = new Date()
+    const diffMinutes = (start.getTime() - now.getTime()) / (1000 * 60)
+    return diffMinutes <= 15 && diffMinutes > -120
+  }
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -207,8 +215,16 @@ export default function TelehealthPage() {
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <Button asChild>
-                    <Link href={`/portal/appointments/${nextSession.id}/join`}>Join visit</Link>
+                  <Button
+                    asChild
+                    disabled={!canJoinSession(nextSession)}
+                    title={
+                      canJoinSession(nextSession)
+                        ? 'Join visit'
+                        : 'Join link available 15 minutes before start'
+                    }
+                  >
+                    <Link href={`/portal/telehealth/${nextSession.id}`}>Join visit</Link>
                   </Button>
                   <Button variant="outline" asChild>
                     <Link href={`/portal/appointments/${nextSession.id}`}>View details</Link>
@@ -261,8 +277,16 @@ export default function TelehealthPage() {
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 min-w-[220px]">
-                    <Button asChild>
-                      <Link href={`/portal/appointments/${session.id}/join`}>Join visit</Link>
+                    <Button
+                      asChild
+                      disabled={!canJoinSession(session)}
+                      title={
+                        canJoinSession(session)
+                          ? 'Join visit'
+                          : 'Join link available 15 minutes before start'
+                      }
+                    >
+                      <Link href={`/portal/telehealth/${session.id}`}>Join visit</Link>
                     </Button>
                     <Button variant="outline" asChild>
                       <Link href={`/portal/appointments/${session.id}`}>View details</Link>

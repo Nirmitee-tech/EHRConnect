@@ -24,7 +24,10 @@ type DrawerKey =
   | 'medication'
   | 'allergy'
   | 'medicalInfo'
-  | 'insurance';
+  | 'insurance'
+  | 'immunization'
+  | 'imaging'
+  | 'lab';
 
 type SoapForm = {
   subjective: string;
@@ -94,6 +97,9 @@ interface PatientDetailStore {
   allergies: any[];
   observations: any[];
   insurances: any[];
+  immunizations: any[];
+  imagingStudies: any[];
+  labResults: any[];
   carePlans: Record<string, any[]>;
   editingCarePlanId: Record<string, string | null>;
   currentCarePlanData: Record<string, CarePlanFormData | null>;
@@ -199,7 +205,10 @@ const initialDrawerState: Record<DrawerKey, boolean> = {
   medication: false,
   allergy: false,
   medicalInfo: false,
-  insurance: false
+  insurance: false,
+  immunization: false,
+  imaging: false,
+  lab: false
 };
 
 const initialState = {
@@ -229,6 +238,9 @@ const initialState = {
   allergies: [],
   observations: [],
   insurances: [],
+  immunizations: [],
+  imagingStudies: [],
+  labResults: [],
   carePlans: {},
   editingCarePlanId: {},
   currentCarePlanData: {},
@@ -250,7 +262,6 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
 
     // Only fully reset if patient ID changes, otherwise just update query params
     if (currentState.patientId !== patientId) {
-      console.log('🔄 initialize: Patient changed, full reset');
       set({
         ...initialState,
         patientId,
@@ -261,7 +272,6 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
         loading: true
       });
     } else {
-      console.log('🔄 initialize: Same patient, updating query params only');
       // Same patient, just update query params without resetting patient data
       set({
         encounterIdFromQuery,
@@ -575,25 +585,22 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
   },
   loadAllPatientData: async () => {
     const patientId = get().patientId;
-    if (!patientId) {
-      console.log('❌ loadAllPatientData: No patientId provided');
-      return;
-    }
+    if (!patientId) return;
 
-    console.log('🔄 loadAllPatientData: Starting for patient', patientId);
     set({ loading: true });
     try {
-      console.log('📡 Fetching patient data from FHIR...');
-      const [patientResource, encounterRes, conditionRes, medicationRes, allergyRes, observationRes, coverageRes] = (await Promise.all([
+      const [patientResource, encounterRes, conditionRes, medicationRes, allergyRes, observationRes, coverageRes, immunizationRes, imagingRes, labRes] = (await Promise.all([
         fhirService.read('Patient', patientId),
         fhirService.search('Encounter', { patient: patientId, _count: 10, _sort: '-date' }),
         fhirService.search('Condition', { patient: patientId, _count: 20 }),
         fhirService.search('MedicationRequest', { patient: patientId, _count: 20, status: 'active' }),
         fhirService.search('AllergyIntolerance', { patient: patientId, _count: 20 }),
         fhirService.search('Observation', { patient: patientId, _count: 50, _sort: '-date', category: 'vital-signs' }),
-        fhirService.search('Coverage', { patient: patientId, _count: 10 })
-      ])) as [any, any, any, any, any, any, any];
-      console.log('✅ Patient data loaded successfully:', patientResource);
+        fhirService.search('Coverage', { patient: patientId, _count: 10 }),
+        fhirService.search('Immunization', { patient: patientId, _count: 50, _sort: '-date' }),
+        fhirService.search('ImagingStudy', { patient: patientId, _count: 50, _sort: '-date' }),
+        fhirService.search('DiagnosticReport', { patient: patientId, _count: 50, _sort: '-date', category: 'LAB' })
+      ])) as [any, any, any, any, any, any, any, any, any, any];
 
       const name = patientResource.name?.[0];
       const fullName = `${name?.given?.join(' ') || ''} ${name?.family || ''}`.trim();
@@ -622,14 +629,14 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
         medications: medicationRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || [],
         allergies: allergyRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || [],
         observations: observationRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || [],
-        insurances: coverageRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || []
+        insurances: coverageRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || [],
+        immunizations: immunizationRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || [],
+        imagingStudies: imagingRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || [],
+        labResults: labRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || []
       });
-      console.log('✅ Store updated with patient data');
     } catch (error) {
-      console.error('❌ Error loading patient data:', error);
-      console.error('❌ Error details:', JSON.stringify(error, null, 2));
+      console.error('Error loading patient data:', error);
     } finally {
-      console.log('🏁 loadAllPatientData: Complete, setting loading = false');
       set({ loading: false });
     }
   },

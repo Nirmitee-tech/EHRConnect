@@ -324,4 +324,211 @@ export class ClinicalService {
 
     await fhirService.create(allergyResource);
   }
+
+  /**
+   * Create immunization record
+   */
+  static async createImmunization(patientId: string, patientName: string, immunization: {
+    vaccineCode: string;
+    vaccineDisplay: string;
+    occurrenceDate: string;
+    status: string;
+    lotNumber?: string;
+    manufacturer?: string;
+    site?: string;
+    route?: string;
+    doseQuantity?: string;
+    performer?: string;
+    note?: string;
+  }): Promise<void> {
+    const immunizationResource: any = {
+      resourceType: 'Immunization',
+      status: immunization.status || 'completed',
+      vaccineCode: {
+        coding: [{
+          system: 'http://hl7.org/fhir/sid/cvx',
+          code: immunization.vaccineCode,
+          display: immunization.vaccineDisplay
+        }],
+        text: immunization.vaccineDisplay
+      },
+      patient: {
+        reference: `Patient/${patientId}`,
+        display: patientName
+      },
+      occurrenceDateTime: immunization.occurrenceDate,
+      recorded: new Date().toISOString(),
+      primarySource: true
+    };
+
+    // Add optional fields if provided
+    if (immunization.lotNumber) {
+      immunizationResource.lotNumber = immunization.lotNumber;
+    }
+
+    if (immunization.manufacturer) {
+      immunizationResource.manufacturer = {
+        display: immunization.manufacturer
+      };
+    }
+
+    if (immunization.site) {
+      immunizationResource.site = {
+        coding: [{
+          system: 'http://terminology.hl7.org/CodeSystem/v3-ActSite',
+          code: immunization.site,
+          display: immunization.site
+        }],
+        text: immunization.site
+      };
+    }
+
+    if (immunization.route) {
+      immunizationResource.route = {
+        coding: [{
+          system: 'http://snomed.info/sct',
+          code: immunization.route,
+          display: immunization.route
+        }],
+        text: immunization.route
+      };
+    }
+
+    if (immunization.doseQuantity) {
+      immunizationResource.doseQuantity = {
+        value: parseFloat(immunization.doseQuantity),
+        unit: 'mL',
+        system: 'http://unitsofmeasure.org',
+        code: 'mL'
+      };
+    }
+
+    if (immunization.performer) {
+      immunizationResource.performer = [{
+        actor: {
+          display: immunization.performer
+        }
+      }];
+    }
+
+    if (immunization.note) {
+      immunizationResource.note = [{
+        text: immunization.note
+      }];
+    }
+
+    await fhirService.create(immunizationResource);
+  }
+
+  /**
+   * Create diagnostic report (lab results)
+   */
+  static async createDiagnosticReport(patientId: string, patientName: string, report: {
+    testCode: string;
+    testDisplay: string;
+    effectiveDate: string;
+    status: string;
+    performer?: string;
+    conclusion?: string;
+    category: string;
+  }): Promise<void> {
+    const diagnosticReportResource: any = {
+      resourceType: 'DiagnosticReport',
+      status: report.status,
+      category: [{
+        coding: [{
+          system: 'http://terminology.hl7.org/CodeSystem/v2-0074',
+          code: report.category,
+          display: 'Laboratory'
+        }]
+      }],
+      code: {
+        coding: [{
+          system: 'http://loinc.org',
+          code: report.testCode,
+          display: report.testDisplay
+        }],
+        text: report.testDisplay
+      },
+      subject: {
+        reference: `Patient/${patientId}`,
+        display: patientName
+      },
+      effectiveDateTime: report.effectiveDate,
+      issued: new Date().toISOString()
+    };
+
+    if (report.performer) {
+      diagnosticReportResource.performer = [{
+        display: report.performer
+      }];
+    }
+
+    if (report.conclusion) {
+      diagnosticReportResource.conclusion = report.conclusion;
+    }
+
+    await fhirService.create(diagnosticReportResource);
+  }
+
+  /**
+   * Create imaging study
+   */
+  static async createImagingStudy(patientId: string, patientName: string, study: {
+    modality: string;
+    modalityDisplay: string;
+    description: string;
+    startedDate: string;
+    status: string;
+    numberOfSeries?: string;
+    numberOfInstances?: string;
+    referrer?: string;
+    interpreter?: string;
+    reasonCode?: string;
+  }): Promise<void> {
+    const imagingStudyResource: any = {
+      resourceType: 'ImagingStudy',
+      status: study.status,
+      subject: {
+        reference: `Patient/${patientId}`,
+        display: patientName
+      },
+      started: study.startedDate,
+      description: study.description,
+      numberOfSeries: parseInt(study.numberOfSeries || '1'),
+      numberOfInstances: parseInt(study.numberOfInstances || '1'),
+      series: [{
+        uid: `${Date.now()}.1`,
+        number: 1,
+        modality: {
+          system: 'http://dicom.nema.org/resources/ontology/DCM',
+          code: study.modality,
+          display: study.modalityDisplay
+        },
+        description: study.description,
+        numberOfInstances: parseInt(study.numberOfInstances || '1'),
+        started: study.startedDate
+      }]
+    };
+
+    if (study.referrer) {
+      imagingStudyResource.referrer = {
+        display: study.referrer
+      };
+    }
+
+    if (study.interpreter) {
+      imagingStudyResource.interpreter = [{
+        display: study.interpreter
+      }];
+    }
+
+    if (study.reasonCode) {
+      imagingStudyResource.reasonCode = [{
+        text: study.reasonCode
+      }];
+    }
+
+    await fhirService.create(imagingStudyResource);
+  }
 }

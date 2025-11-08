@@ -29,16 +29,11 @@ export function PatientDetailProvider({
   const hasHydratedFromQuery = usePatientDetailStore((state) => state.hasHydratedFromQuery);
 
   useEffect(() => {
-    console.log('🎬 PatientDetailProvider: Initializing with', { patientId, encounterIdFromQuery, tabFromQuery });
     initialize({ patientId, encounterIdFromQuery, tabFromQuery });
   }, [initialize, patientId, encounterIdFromQuery, tabFromQuery]);
 
   useEffect(() => {
-    if (!storePatientId) {
-      console.log('⏸️  PatientDetailProvider: No storePatientId, skipping loadAllPatientData');
-      return;
-    }
-    console.log('📥 PatientDetailProvider: Calling loadAllPatientData for', storePatientId);
+    if (!storePatientId) return;
     void loadAllPatientData();
   }, [storePatientId, loadAllPatientData]);
 

@@ -160,3 +160,122 @@ export const REACTION_SEVERITY = [
   { value: 'moderate', label: 'Moderate' },
   { value: 'severe', label: 'Severe' }
 ] as const;
+
+/**
+ * Common vaccine types with CVX codes
+ */
+export const VACCINE_TYPES = [
+  { code: '03', display: 'MMR (Measles, Mumps, Rubella)' },
+  { code: '08', display: 'Hepatitis B' },
+  { code: '10', display: 'IPV (Polio)' },
+  { code: '20', display: 'DTaP (Diphtheria, Tetanus, Pertussis)' },
+  { code: '21', display: 'Varicella (Chickenpox)' },
+  { code: '33', display: 'Pneumococcal' },
+  { code: '49', display: 'Hib (Haemophilus influenzae type b)' },
+  { code: '88', display: 'Influenza (Flu)' },
+  { code: '94', display: 'MMRV (Measles, Mumps, Rubella, Varicella)' },
+  { code: '106', display: 'DTaP-HepB-IPV' },
+  { code: '115', display: 'Tdap (Tetanus, Diphtheria, Pertussis)' },
+  { code: '121', display: 'Zoster (Shingles)' },
+  { code: '213', display: 'SARS-COV-2 (COVID-19) Pfizer' },
+  { code: '207', display: 'SARS-COV-2 (COVID-19) Moderna' },
+  { code: '212', display: 'SARS-COV-2 (COVID-19) Janssen' }
+] as const;
+
+/**
+ * Body sites for immunization administration
+ */
+export const IMMUNIZATION_SITES = [
+  { code: 'LA', display: 'Left Arm' },
+  { code: 'RA', display: 'Right Arm' },
+  { code: 'LT', display: 'Left Thigh' },
+  { code: 'RT', display: 'Right Thigh' },
+  { code: 'LD', display: 'Left Deltoid' },
+  { code: 'RD', display: 'Right Deltoid' }
+] as const;
+
+/**
+ * Routes of administration
+ */
+export const IMMUNIZATION_ROUTES = [
+  { code: '20035000', display: 'Intramuscular' },
+  { code: '34206005', display: 'Subcutaneous' },
+  { code: '26643006', display: 'Oral' },
+  { code: '46713006', display: 'Nasal' },
+  { code: '372449004', display: 'Intradermal' }
+] as const;
+
+/**
+ * Immunization status
+ */
+export const IMMUNIZATION_STATUS = [
+  { value: 'completed', label: 'Completed' },
+  { value: 'not-done', label: 'Not Done' },
+  { value: 'entered-in-error', label: 'Entered in Error' }
+] as const;
+
+/**
+ * Common lab test types with LOINC codes
+ */
+export const LAB_TEST_TYPES = [
+  { code: '58410-2', display: 'Complete Blood Count (CBC)' },
+  { code: '24323-8', display: 'Comprehensive Metabolic Panel (CMP)' },
+  { code: '24331-1', display: 'Lipid Panel' },
+  { code: '24356-8', display: 'Urinalysis' },
+  { code: '57698-3', display: 'Lipid Panel with Direct LDL' },
+  { code: '1988-5', display: 'C-Reactive Protein (CRP)' },
+  { code: '4548-4', display: 'Hemoglobin A1c' },
+  { code: '2339-0', display: 'Glucose' },
+  { code: '2571-8', display: 'Triglycerides' },
+  { code: '2085-9', display: 'HDL Cholesterol' },
+  { code: '2089-1', display: 'LDL Cholesterol' },
+  { code: '2160-0', display: 'Creatinine' },
+  { code: '3094-0', display: 'BUN (Blood Urea Nitrogen)' },
+  { code: '2951-2', display: 'Sodium' },
+  { code: '2823-3', display: 'Potassium' },
+  { code: '6690-2', display: 'White Blood Cell Count' },
+  { code: '789-8', display: 'Red Blood Cell Count' },
+  { code: '718-7', display: 'Hemoglobin' },
+  { code: '4544-3', display: 'Hematocrit' },
+  { code: '777-3', display: 'Platelet Count' }
+] as const;
+
+/**
+ * Diagnostic report status
+ */
+export const DIAGNOSTIC_REPORT_STATUS = [
+  { value: 'registered', label: 'Registered - Test ordered' },
+  { value: 'partial', label: 'Partial - Some results available' },
+  { value: 'preliminary', label: 'Preliminary - Initial results' },
+  { value: 'final', label: 'Final - Verified results' },
+  { value: 'amended', label: 'Amended - Corrected results' },
+  { value: 'corrected', label: 'Corrected - Modified results' },
+  { value: 'cancelled', label: 'Cancelled - Test cancelled' }
+] as const;
+
+/**
+ * Imaging modality types
+ */
+export const IMAGING_MODALITIES = [
+  { code: 'CT', display: 'CT Scan (Computed Tomography)' },
+  { code: 'MR', display: 'MRI (Magnetic Resonance Imaging)' },
+  { code: 'XR', display: 'X-Ray (Radiography)' },
+  { code: 'US', display: 'Ultrasound' },
+  { code: 'NM', display: 'Nuclear Medicine' },
+  { code: 'PET', display: 'PET Scan' },
+  { code: 'DX', display: 'Digital Radiography' },
+  { code: 'CR', display: 'Computed Radiography' },
+  { code: 'MG', display: 'Mammography' },
+  { code: 'FL', display: 'Fluoroscopy' }
+] as const;
+
+/**
+ * Imaging study status
+ */
+export const IMAGING_STUDY_STATUS = [
+  { value: 'registered', label: 'Registered - Ordered' },
+  { value: 'available', label: 'Available - Ready for review' },
+  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'entered-in-error', label: 'Entered in Error' },
+  { value: 'unknown', label: 'Unknown' }
+] as const;

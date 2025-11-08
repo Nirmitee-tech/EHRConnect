@@ -28,3 +28,31 @@ export async function GET(_request: NextRequest) {
     )
   }
 }
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    const patientId = session.patientId
+
+    if (!patientId) {
+      return NextResponse.json({ message: 'Patient ID not found' }, { status: 400 })
+    }
+
+    const body = await request.json()
+
+    const relatedPerson = await PatientPortalService.inviteFamilyMember(patientId, body)
+
+    return NextResponse.json({ familyMember: relatedPerson }, { status: 201 })
+  } catch (error: any) {
+    console.error('Error inviting family member:', error)
+    return NextResponse.json(
+      { message: error.message || 'Failed to invite caregiver' },
+      { status: 500 }
+    )
+  }
+}

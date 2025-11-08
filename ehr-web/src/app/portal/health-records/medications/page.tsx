@@ -7,6 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { useToast } from '@/hooks/use-toast'
 
 type FhirIdentifier = {
   value?: string
@@ -54,6 +59,14 @@ export default function MedicationsPage() {
   const [medications, setMedications] = useState<MedicationRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [refillDialogOpen, setRefillDialogOpen] = useState(false)
+  const [refillMedication, setRefillMedication] = useState<MedicationRequest | null>(null)
+  const [refillPharmacy, setRefillPharmacy] = useState('')
+  const [refillPhone, setRefillPhone] = useState('')
+  const [refillNotes, setRefillNotes] = useState('')
+  const [refillQuantity, setRefillQuantity] = useState('')
+  const [submittingRefill, setSubmittingRefill] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     loadMedications()
@@ -79,6 +92,60 @@ export default function MedicationsPage() {
       setError(message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const openRefillDialog = (medication: MedicationRequest) => {
+    setRefillMedication(medication)
+    setRefillDialogOpen(true)
+    setRefillPharmacy('')
+    setRefillPhone('')
+    setRefillNotes('')
+    setRefillQuantity('')
+  }
+
+  const submitRefillRequest = async () => {
+    if (!refillMedication?.id) {
+      toast({
+        title: 'Medication missing',
+        description: 'Unable to locate medication details.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      setSubmittingRefill(true)
+      const response = await fetch('/api/patient/medications/refill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          medicationRequestId: refillMedication.id,
+          pharmacyName: refillPharmacy,
+          pharmacyPhone: refillPhone,
+          notes: refillNotes,
+          quantityRequested: refillQuantity ? Number(refillQuantity) : undefined,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.message || 'Unable to submit refill request')
+      }
+
+      toast({
+        title: 'Refill requested',
+        description: 'Your care team will review the request shortly.',
+      })
+      setRefillDialogOpen(false)
+    } catch (error: any) {
+      toast({
+        title: 'Request failed',
+        description: error.message || 'Unable to submit refill request.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSubmittingRefill(false)
     }
   }
 
@@ -175,11 +242,93 @@ export default function MedicationsPage() {
                     </div>
                   )}
                 </div>
+                {medication.status === 'active' && (
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => openRefillDialog(medication)}
+                    >
+                      <RefreshCcw className="w-4 h-4 mr-2" />
+                      Request refill
+                    </Button>
+                    <Button asChild size="sm" variant="ghost">
+                      <a
+                        href={`/portal/documents?search=${encodeURIComponent(
+                          medication.medicationCodeableConcept?.text || ''
+                        )}`}
+                      >
+                        View documents
+                      </a>
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <Dialog open={refillDialogOpen} onOpenChange={setRefillDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Request refill{' '}
+              {refillMedication?.medicationCodeableConcept?.text
+                ? `for ${refillMedication.medicationCodeableConcept.text}`
+                : ''}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="refill-pharmacy">Preferred pharmacy</Label>
+              <Input
+                id="refill-pharmacy"
+                value={refillPharmacy}
+                onChange={(event) => setRefillPharmacy(event.target.value)}
+                placeholder="Pharmacy name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="refill-phone">Pharmacy phone</Label>
+              <Input
+                id="refill-phone"
+                value={refillPhone}
+                onChange={(event) => setRefillPhone(event.target.value)}
+                placeholder="(555) 000-0000"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="refill-quantity">Quantity requested</Label>
+              <Input
+                id="refill-quantity"
+                type="number"
+                min="0"
+                value={refillQuantity}
+                onChange={(event) => setRefillQuantity(event.target.value)}
+                placeholder="30"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="refill-notes">Notes</Label>
+              <Textarea
+                id="refill-notes"
+                value={refillNotes}
+                onChange={(event) => setRefillNotes(event.target.value)}
+                placeholder="Any additional instructions for your care team"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+            <Button variant="outline" onClick={() => setRefillDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={submitRefillRequest} disabled={submittingRefill}>
+              {submittingRefill ? 'Sending...' : 'Submit request'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

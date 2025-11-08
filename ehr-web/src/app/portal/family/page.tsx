@@ -10,11 +10,18 @@ import {
   MapPin,
   RefreshCcw,
   HeartHandshake,
+  Loader2,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useToast } from '@/hooks/use-toast'
 
 type FhirIdentifier = {
   value?: string
@@ -60,9 +67,21 @@ type RelatedPerson = {
 type FamilyMember = RelatedPerson
 
 export default function FamilyAccessPage() {
+  const { toast } = useToast()
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
+  const [inviteForm, setInviteForm] = useState({
+    fullName: '',
+    relationship: '',
+    email: '',
+    phone: '',
+    accessLevel: 'view',
+    notes: '',
+  })
+  const [inviteSubmitting, setInviteSubmitting] = useState(false)
+  const [changingAccessId, setChangingAccessId] = useState<string | null>(null)
 
   useEffect(() => {
     loadFamilyMembers()
@@ -91,6 +110,87 @@ export default function FamilyAccessPage() {
     }
   }
 
+  const handleInviteSubmit = async () => {
+    if (!inviteForm.fullName.trim() || !inviteForm.relationship.trim()) {
+      toast({
+        title: 'Missing information',
+        description: 'Name and relationship are required.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      setInviteSubmitting(true)
+      const response = await fetch('/api/patient/family', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(inviteForm),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.message || 'Unable to invite caregiver')
+      }
+
+      await loadFamilyMembers()
+      setInviteDialogOpen(false)
+      setInviteForm({
+        fullName: '',
+        relationship: '',
+        email: '',
+        phone: '',
+        accessLevel: 'view',
+        notes: '',
+      })
+      toast({ title: 'Invitation sent', description: 'We emailed the caregiver instructions.' })
+    } catch (err) {
+      console.error('Invite caregiver failed:', err)
+      toast({
+        title: 'Invite failed',
+        description:
+          err instanceof Error ? err.message : 'Unable to invite caregiver right now.',
+        variant: 'destructive',
+      })
+    } finally {
+      setInviteSubmitting(false)
+    }
+  }
+
+  const handleAccessToggle = async (member: FamilyMember, active: boolean) => {
+    const relatedPersonId = member.id || member.identifier?.[0]?.value
+    if (!relatedPersonId) return
+
+    try {
+      setChangingAccessId(relatedPersonId)
+      const response = await fetch(`/api/patient/family/${relatedPersonId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active, notes: 'Updated via patient portal' }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.message || 'Unable to update access')
+      }
+
+      await loadFamilyMembers()
+      toast({
+        title: active ? 'Access restored' : 'Access revoked',
+        description: member.name?.[0]?.text || 'Caregiver access updated.',
+      })
+    } catch (err) {
+      console.error('Update caregiver access failed:', err)
+      toast({
+        title: 'Update failed',
+        description: err instanceof Error ? err.message : 'Unable to update access right now.',
+        variant: 'destructive',
+      })
+    } finally {
+      setChangingAccessId(null)
+    }
+  }
+
   const activeMembers = useMemo(
     () => familyMembers.filter((member) => member.active !== false),
     [familyMembers]
@@ -110,7 +210,7 @@ export default function FamilyAccessPage() {
             <RefreshCcw className="w-4 h-4 mr-2" />
             Refresh
           </Button>
-          <Button>
+          <Button onClick={() => setInviteDialogOpen(true)}>
             <UserPlus className="w-4 h-4 mr-2" />
             Invite caregiver
           </Button>
@@ -155,7 +255,7 @@ export default function FamilyAccessPage() {
             <p className="text-gray-600 mb-4">
               Invite a trusted family member or caregiver to view your records and help manage your health.
             </p>
-            <Button>
+            <Button onClick={() => setInviteDialogOpen(true)}>
               <UserPlus className="w-4 h-4 mr-2" />
               Invite caregiver
             </Button>
@@ -163,8 +263,13 @@ export default function FamilyAccessPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {familyMembers.map((member) => (
-            <Card key={member.id || member.identifier?.[0]?.value}>
+          {familyMembers.map((member, index) => {
+            const memberId = member.id || member.identifier?.[0]?.value || `member-${index}`
+            const isActive = member.active !== false
+            const phoneContact = member.telecom?.find((contact) => contact.system === 'phone')
+            const emailContact = member.telecom?.find((contact) => contact.system === 'email')
+            return (
+            <Card key={memberId}>
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                   <div className="space-y-3">
@@ -220,21 +325,143 @@ export default function FamilyAccessPage() {
                       </p>
                     )}
                   </div>
-                  <div className="flex flex-col gap-2 min-w-[200px]">
-                    <Button variant="outline" size="sm">
-                      <HeartHandshake className="w-4 h-4 mr-2" />
-                      Update permissions
+                  <div className="flex flex-col gap-2 min-w-[220px]">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={
+                        isActive
+                          ? 'border-red-200 text-red-600 hover:text-red-700'
+                          : 'border-emerald-200 text-emerald-700 hover:text-emerald-800'
+                      }
+                      disabled={changingAccessId === memberId}
+                      onClick={() => handleAccessToggle(member, !isActive)}
+                    >
+                      {changingAccessId === memberId ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <HeartHandshake className="w-4 h-4 mr-2" />
+                      )}
+                      {isActive ? 'Revoke access' : 'Restore access'}
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                      Revoke access
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setInviteForm({
+                          fullName: member.name?.[0]?.text || member.name?.[0]?.family || '',
+                          relationship: member.relationship?.[0]?.text || '',
+                          email: emailContact?.value || '',
+                          phone: phoneContact?.value || '',
+                          accessLevel: isActive ? 'full' : 'view',
+                          notes: '',
+                        })
+                        setInviteDialogOpen(true)
+                      }}
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Resend invitation
                     </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
+            )})}
         </div>
       )}
+
+      <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite caregiver</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="caregiver-name">Full name</Label>
+              <Input
+                id="caregiver-name"
+                value={inviteForm.fullName}
+                onChange={(event) =>
+                  setInviteForm((prev) => ({ ...prev, fullName: event.target.value }))
+                }
+                placeholder="Caregiver name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="caregiver-relationship">Relationship</Label>
+              <Input
+                id="caregiver-relationship"
+                value={inviteForm.relationship}
+                onChange={(event) =>
+                  setInviteForm((prev) => ({ ...prev, relationship: event.target.value }))
+                }
+                placeholder="Parent, spouse, friend..."
+              />
+            </div>
+            <div className="grid gap-2 md:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="caregiver-email">Email</Label>
+                <Input
+                  id="caregiver-email"
+                  type="email"
+                  value={inviteForm.email}
+                  onChange={(event) =>
+                    setInviteForm((prev) => ({ ...prev, email: event.target.value }))
+                  }
+                  placeholder="caregiver@email.com"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="caregiver-phone">Phone</Label>
+                <Input
+                  id="caregiver-phone"
+                  value={inviteForm.phone}
+                  onChange={(event) =>
+                    setInviteForm((prev) => ({ ...prev, phone: event.target.value }))
+                  }
+                  placeholder="(555) 000-0000"
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>Access level</Label>
+              <Select
+                value={inviteForm.accessLevel}
+                onValueChange={(value) =>
+                  setInviteForm((prev) => ({ ...prev, accessLevel: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose access level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="view">View only (medical records)</SelectItem>
+                  <SelectItem value="full">Full access (messages & scheduling)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="caregiver-notes">Notes (optional)</Label>
+              <Textarea
+                id="caregiver-notes"
+                value={inviteForm.notes}
+                onChange={(event) =>
+                  setInviteForm((prev) => ({ ...prev, notes: event.target.value }))
+                }
+                placeholder="Any special instructions for your caregiver"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+            <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleInviteSubmit} disabled={inviteSubmitting}>
+              {inviteSubmitting ? 'Sending...' : 'Send invitation'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -6,9 +6,6 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@nirmitee.io/d
 import { PatientForm } from '@/components/forms/patient-form';
 import { EncounterForm } from '@/components/forms/encounter-form';
 import { AllergyForm } from '@/components/forms/allergy-form';
-import { ImmunizationForm } from '@/components/forms/immunization-form';
-import { LabForm } from '@/components/forms/lab-form';
-import { ImagingForm } from '@/components/forms/imaging-form';
 import { TabPageWrapper } from '@/components/layout/tab-page-wrapper';
 import { useTabNavigation } from '@/hooks/use-tab-navigation';
 import { PatientHeader } from '@/app/patients/[id]/components/PatientHeader';
@@ -39,16 +36,6 @@ import { PrescriptionsSectionInline } from '@/components/encounters/prescription
 import { SavedSection } from '@/app/patients/[id]/components/types';
 import { PortalAccessDialog } from '@/components/patients/portal-access-dialog';
 import { usePatientDetailStore } from '../store/patient-detail-store';
-import { PatientSidebar } from './patient-sidebar';
-import { PatientTabsBar } from './patient-tabs-bar';
-import { EncounterDetailView } from './encounter-detail-view';
-import { PortalAccessTab } from './tabs/portal-access-tab';
-import { InsuranceTab } from './tabs/insurance-tab';
-import { ProfileTab } from './tabs/profile-tab';
-import { PlaceholderTab } from './tabs/placeholder-tab';
-import { VaccinesTab } from './tabs/vaccines-tab';
-import { LabTab } from './tabs/lab-tab';
-import { ImagingTab } from './tabs/imaging-tab';
 
 export function PatientDetailShell() {
   const { openPatientEditTab } = useTabNavigation();
@@ -79,9 +66,6 @@ export function PatientDetailShell() {
     allergies,
     observations,
     insurances,
-    immunizations,
-    imagingStudies,
-    labResults,
     carePlans,
     editingCarePlanId,
     currentCarePlanData,
@@ -133,6 +117,8 @@ export function PatientDetailShell() {
     handleSaveInsurance,
     handleEditPatient
   } = store;
+
+  console.log('🔍 PatientDetailShell render:', { patientId, patient, loading, patientName: patient?.name });
 
   const refreshData = () => {
     loadAllPatientData();
@@ -195,10 +181,10 @@ export function PatientDetailShell() {
     { id: 'allergies', label: 'Allergies', icon: AlertCircle, count: allergies.length },
     { id: 'problems', label: 'Diagnoses', icon: Search, count: problems.length },
     { id: 'medications', label: 'Medications', icon: Pill, count: medications.length },
-    { id: 'vaccines', label: 'Vaccines', icon: Syringe, count: immunizations.length },
+    { id: 'vaccines', label: 'Vaccines', icon: Syringe, count: null },
     { id: 'vitals', label: 'Vitals', icon: Activity, count: null },
-    { id: 'lab', label: 'Lab', icon: TestTube, count: labResults.length },
-    { id: 'imaging', label: 'Imaging', icon: ImageIcon, count: imagingStudies.length },
+    { id: 'lab', label: 'Lab', icon: TestTube, count: null },
+    { id: 'imaging', label: 'Imaging', icon: ImageIcon, count: null },
     { id: 'history', label: 'History', icon: History, count: null },
     { id: 'documents', label: 'Documents', icon: FileText, count: null },
     { id: 'encounters', label: 'Visit Details', icon: Calendar, count: null },
@@ -248,12 +234,179 @@ export function PatientDetailShell() {
 
         <div className="flex flex-1 overflow-hidden">
           {/* Left Sidebar Navigation */}
-          <PatientSidebar />
+          <div
+            className={`bg-white border-r border-gray-200 overflow-y-auto transition-all duration-300 ease-in-out flex-shrink-0 ${
+              sidebarCollapsed ? 'w-14' : 'w-48'
+            }`}
+          >
+            {/* Toggle Button */}
+            <div className="sticky top-0 bg-white z-10 p-3 border-b border-gray-200">
+              <button
+                onClick={toggleSidebar}
+                className="w-full flex items-center justify-center p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors border border-gray-200 hover:border-gray-300"
+                title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {sidebarCollapsed ? (
+                  <ChevronRight className="h-4 w-4" />
+                ) : (
+                  <ChevronLeft className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+
+            <nav className="p-2 space-y-1">
+              {sections.map((section) => {
+                const Icon = section.icon;
+                const isActive = activeTab === section.id;
+                const hasCount = section.count !== null && section.count > 0;
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => {
+                      setActiveTab(section.id);
+                    }}
+                    className={`
+                      w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all
+                      ${isActive
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'text-gray-700 hover:bg-gray-50'
+                      }
+                      ${sidebarCollapsed ? 'justify-center px-2' : 'justify-between'}
+                    `}
+                    title={sidebarCollapsed ? section.label : ''}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon className="h-4 w-4 flex-shrink-0" />
+                      {!sidebarCollapsed && <span className="truncate">{section.label}</span>}
+                    </div>
+                    {!sidebarCollapsed && hasCount && (
+                      <span className={`inline-flex items-center justify-center w-5 h-5 text-xs font-semibold rounded-full ${
+                        isActive ? 'bg-white text-primary' : 'bg-green-100 text-green-700'
+                      }`}>
+                        {section.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+
+              {/* Dynamic Encounter Tabs */}
+              {openEncounterTabs.length > 0 && !sidebarCollapsed && (
+                <>
+                  <div className="pt-2 mt-2 border-t border-gray-200">
+                    <p className="px-3 text-xs font-semibold text-gray-500 mb-1">ENCOUNTERS</p>
+                  </div>
+                  {openEncounterTabs.map((encounterId) => {
+                    const encounter = encounters.find(e => e.id === encounterId);
+                    const isActive = activeTab === `encounter-${encounterId}`;
+                    const encounterDate = encounter?.period?.start || encounter?.startTime;
+                    const dateStr = encounterDate ? new Date(encounterDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+
+                    return (
+                      <div key={encounterId} className="relative group">
+                        <button
+                          onClick={() => setActiveTab(`encounter-${encounterId}`)}
+                          className={`
+                            w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all
+                            ${isActive
+                              ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-700'
+                              : 'text-gray-700 hover:bg-gray-50'
+                            }
+                          `}
+                        >
+                          <Calendar className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate flex-1 text-left text-xs">{dateStr}</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            closeEncounterTab(encounterId);
+                          }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-opacity"
+                        >
+                          <X className="h-3 w-3 text-gray-600" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+            </nav>
+          </div>
 
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Browser-Style Tab Bar */}
-            <PatientTabsBar />
+            <div className="bg-gray-50 border-b-2 border-gray-300 px-2 py-1 flex items-center gap-1 overflow-x-auto shadow-sm">
+              {/* Regular Tabs */}
+              {openTabs.map(tabId => {
+                const section = sections.find(s => s.id === tabId);
+                if (!section) return null;
+                const Icon = section.icon;
+                const isActive = activeTab === tabId;
+                return (
+                  <button
+                    key={tabId}
+                    onClick={() => setActiveTab(tabId)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md text-xs font-medium transition-all ${
+                      isActive
+                        ? 'bg-white text-blue-700 border border-b-0 border-gray-300 shadow-sm -mb-0.5'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 border border-transparent'
+                    }`}
+                  >
+                    <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
+                    <span>{section.label}</span>
+                    {openTabs.length > 1 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          closeTab(tabId);
+                        }}
+                        className="ml-1 hover:bg-gray-300 rounded p-0.5 transition-colors"
+                      >
+                        <X className="h-3 w-3 text-gray-600" />
+                      </button>
+                    )}
+                  </button>
+                );
+              })}
+
+              {/* Encounter Tabs */}
+              {openEncounterTabs.map(encounterId => {
+                const encounter = encounters.find(e => e.id === encounterId);
+                const isActive = activeTab === `encounter-${encounterId}`;
+                const encounterDate = encounter?.period?.start || encounter?.startTime;
+                const dateStr = encounterDate ? new Date(encounterDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+                const encounterLabel = `Encounter ${dateStr}`;
+
+                return (
+                  <button
+                    key={`encounter-${encounterId}`}
+                    onClick={() => {
+                      setActiveTab(`encounter-${encounterId}`);
+                      setSelectedEncounter(encounterId);
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md text-xs font-medium transition-all ${
+                      isActive
+                        ? 'bg-white text-blue-700 border border-b-0 border-gray-300 shadow-sm -mb-0.5'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 border border-transparent'
+                    }`}
+                  >
+                    <FileText className={`h-3.5 w-3.5 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
+                    <span>{encounterLabel}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        closeEncounterTab(encounterId);
+                      }}
+                      className="ml-1 hover:bg-gray-300 rounded p-0.5 transition-colors"
+                    >
+                      <X className="h-3 w-3 text-gray-600" />
+                    </button>
+                  </button>
+                );
+              })}
+            </div>
 
             {/* Tab Content */}
             <div className="flex-1 overflow-y-auto p-2">
@@ -321,7 +474,80 @@ export function PatientDetailShell() {
               <FamilyHistoryTab patientId={patientId} />
             </div>
             <div style={{ display: activeTab === 'insurance' ? 'block' : 'none' }}>
-              <InsuranceTab />
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Insurance Information</h2>
+                  <button
+                    onClick={() => setDrawerState('insurance', true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Insurance
+                  </button>
+                </div>
+
+                {insurances.length > 0 ? (
+                  <div className="space-y-3">
+                    {insurances.map((insurance, idx) => {
+                      const payorName = insurance.payor?.[0]?.display || 'Unknown Provider';
+                      const policyNumber = insurance.subscriberId || '-';
+                      const planName = insurance.type?.text || insurance.class?.[0]?.name || '-';
+                      const orderBadge = insurance.order === 1 ? 'Primary' : insurance.order === 2 ? 'Secondary' : 'Tertiary';
+                      const orderColor = insurance.order === 1 ? 'bg-blue-100 text-blue-800' : insurance.order === 2 ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800';
+
+                      return (
+                        <div key={idx} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Shield className="h-5 w-5 text-green-600" />
+                                <h3 className="text-base font-semibold text-gray-900">{payorName}</h3>
+                                <span className={`px-2 py-0.5 text-xs font-medium rounded ${orderColor}`}>
+                                  {orderBadge}
+                                </span>
+                                <span className={`px-2 py-0.5 text-xs font-medium rounded ${insurance.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                  {insurance.status}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                <div>
+                                  <span className="text-gray-500">Policy Number:</span>
+                                  <span className="ml-2 text-gray-900 font-medium">{policyNumber}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Plan:</span>
+                                  <span className="ml-2 text-gray-900 font-medium">{planName}</span>
+                                </div>
+                                {insurance.subscriber?.display && (
+                                  <div>
+                                    <span className="text-gray-500">Subscriber:</span>
+                                    <span className="ml-2 text-gray-900 font-medium">{insurance.subscriber.display}</span>
+                                  </div>
+                                )}
+                                {insurance.relationship?.coding?.[0]?.display && (
+                                  <div>
+                                    <span className="text-gray-500">Relationship:</span>
+                                    <span className="ml-2 text-gray-900 font-medium">{insurance.relationship.coding[0].display}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <button className="p-2 hover:bg-gray-100 rounded transition-colors">
+                              <Edit className="h-4 w-4 text-gray-400" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                    <Shield className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-sm font-medium">No insurance information available</p>
+                    <p className="text-xs mt-1">Click "Add Insurance" to get started</p>
+                  </div>
+                )}
+              </div>
             </div>
             <div style={{ display: activeTab === 'documents' ? 'block' : 'none' }}>
               <DocumentsTab />
@@ -329,66 +555,231 @@ export function PatientDetailShell() {
 
             {/* Vaccines Tab */}
             <div style={{ display: activeTab === 'vaccines' ? 'block' : 'none' }}>
-              <VaccinesTab />
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900">Vaccines</h2>
+                  <button className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Vaccine
+                  </button>
+                </div>
+                <div className="text-center py-12 text-gray-500">
+                  <Syringe className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm">No vaccines recorded</p>
+                </div>
+              </div>
             </div>
 
             {/* Lab Tab */}
             <div style={{ display: activeTab === 'lab' ? 'block' : 'none' }}>
-              <LabTab />
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900">Lab Results</h2>
+                  <button className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Lab Result
+                  </button>
+                </div>
+                <div className="text-center py-12 text-gray-500">
+                  <TestTube className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm">No lab results available</p>
+                </div>
+              </div>
             </div>
 
             {/* Imaging Tab */}
             <div style={{ display: activeTab === 'imaging' ? 'block' : 'none' }}>
-              <ImagingTab />
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900">Imaging</h2>
+                  <button className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Imaging
+                  </button>
+                </div>
+                <div className="text-center py-12 text-gray-500">
+                  <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm">No imaging studies available</p>
+                </div>
+              </div>
             </div>
 
             {/* History Tab */}
             <div style={{ display: activeTab === 'history' ? 'block' : 'none' }}>
-              <PlaceholderTab
-                title="Medical History"
-                icon={History}
-                message="No medical history recorded"
-              />
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-6">Medical History</h2>
+                <div className="text-center py-12 text-gray-500">
+                  <History className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm">No medical history recorded</p>
+                </div>
+              </div>
             </div>
 
             {/* Financial Tab */}
             <div style={{ display: activeTab === 'financial' ? 'block' : 'none' }}>
-              <PlaceholderTab
-                title="Financial Information"
-                icon={DollarSign}
-                message="No financial information available"
-              />
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-6">Financial Information</h2>
+                <div className="text-center py-12 text-gray-500">
+                  <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm">No financial information available</p>
+                </div>
+              </div>
             </div>
 
             {/* Billing Tab */}
             <div style={{ display: activeTab === 'billing' ? 'block' : 'none' }}>
-              <PlaceholderTab
-                title="Billing"
-                icon={FileCheck}
-                message="No billing information available"
-              />
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-6">Billing</h2>
+                <div className="text-center py-12 text-gray-500">
+                  <FileCheck className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm">No billing information available</p>
+                </div>
+              </div>
             </div>
 
             {/* Card Details Tab */}
             <div style={{ display: activeTab === 'card-details' ? 'block' : 'none' }}>
-              <PlaceholderTab
-                title="Payment Methods"
-                icon={CreditCard}
-                message="No payment methods on file"
-                showButton={true}
-                buttonLabel="Add Card"
-                onButtonClick={() => console.log('Add card clicked')}
-              />
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900">Payment Methods</h2>
+                  <button className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Card
+                  </button>
+                </div>
+                <div className="text-center py-12 text-gray-500">
+                  <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm">No payment methods on file</p>
+                </div>
+              </div>
             </div>
 
             {/* Profile Tab */}
             <div style={{ display: activeTab === 'profile' ? 'block' : 'none' }}>
-              <ProfileTab />
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-6">Patient Profile</h2>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Name</label>
+                      <p className="text-sm text-gray-900 mt-1">{patient?.name}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Date of Birth</label>
+                      <p className="text-sm text-gray-900 mt-1">{patient?.dob || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Gender</label>
+                      <p className="text-sm text-gray-900 mt-1 capitalize">{patient?.gender}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Contact</label>
+                      <p className="text-sm text-gray-900 mt-1">{patient?.phone || patient?.email || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Portal Access Tab */}
             <div style={{ display: activeTab === 'portal-access' ? 'block' : 'none' }}>
-              <PortalAccessTab />
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900">Portal Access</h2>
+                  {!portalAccessStatus.hasAccess && (
+                    <button
+                      onClick={() => setPortalAccessDialogOpen(true)}
+                      className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Enable Portal
+                    </button>
+                  )}
+                </div>
+
+                {loadingPortalAccess ? (
+                  <div className="text-center py-12">
+                    <Loader2 className="h-12 w-12 text-gray-400 mx-auto mb-3 animate-spin" />
+                    <p className="text-sm text-gray-500">Loading portal access status...</p>
+                  </div>
+                ) : portalAccessStatus.hasAccess ? (
+                  <div className="space-y-6">
+                    {/* Access Granted */}
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <Shield className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <h3 className="text-sm font-semibold text-green-900 mb-1">Portal Access Enabled</h3>
+                          <p className="text-sm text-green-700">
+                            This patient has been granted access to the patient portal.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Access Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Email Address</label>
+                        <p className="text-sm text-gray-900 mt-1">{portalAccessStatus.email || '-'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Access Granted On</label>
+                        <p className="text-sm text-gray-900 mt-1">
+                          {portalAccessStatus.grantedAt
+                            ? new Date(portalAccessStatus.grantedAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              })
+                            : '-'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Portal Login Link */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <label className="text-sm font-medium text-gray-600 block mb-2">Patient Portal Link</label>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 text-sm bg-white px-3 py-2 rounded border border-gray-300 text-gray-700">
+                          {typeof window !== 'undefined' ? `${window.location.origin}/patient-login` : '/patient-login'}
+                        </code>
+                        <button
+                          onClick={() => {
+                            const link = typeof window !== 'undefined' ? `${window.location.origin}/patient-login` : '/patient-login';
+                            navigator.clipboard.writeText(link);
+                            // Could add a toast notification here
+                          }}
+                          className="px-3 py-2 bg-white border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Share this link with the patient to access their portal.
+                      </p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => setPortalAccessDialogOpen(true)}
+                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        Update Access
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-gray-500">
+                    <Globe className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-sm font-medium mb-1">Portal Access Not Configured</p>
+                    <p className="text-xs text-gray-400">
+                      Click "Enable Portal" to grant this patient access to the patient portal.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Dynamic Encounter Tabs */}
@@ -431,8 +822,7 @@ export function PatientDetailShell() {
 
               return (
                 <div key={encounterId} style={{ display: isActive ? 'block' : 'none' }}>
-                  <EncounterDetailView encounterId={encounterId}>
-                    {/* Top Bar with Dropdowns - OpenEMR Style */}
+                  {/* Top Bar with Dropdowns - OpenEMR Style */}
                   <div className="bg-white border-b border-gray-200">
                     {/* Dropdown Menus Row */}
                     <div className="flex items-center gap-1 px-4 py-2 border-b border-gray-200">
@@ -1450,7 +1840,6 @@ export function PatientDetailShell() {
                       </div>
                     )}
                   </div>
-                  </EncounterDetailView>
                 </div>
               );
             })}
@@ -1535,72 +1924,6 @@ export function PatientDetailShell() {
                     refreshData();
                   }}
                   onCancel={() => setDrawerState('allergy', false)}
-                />
-              )}
-            </div>
-          </DrawerContent>
-        </Drawer>
-
-        {/* Add Immunization Drawer */}
-        <Drawer open={drawers.immunization} onOpenChange={(open) => setDrawerState('immunization', open)}>
-          <DrawerContent side="right" size="md" className="overflow-y-auto">
-            <DrawerHeader>
-              <DrawerTitle>Add Vaccine</DrawerTitle>
-            </DrawerHeader>
-            <div className="mt-6">
-              {patient && (
-                <ImmunizationForm
-                  patientId={patient.id}
-                  patientName={patient.name}
-                  onSuccess={() => {
-                    setDrawerState('immunization', false);
-                    refreshData();
-                  }}
-                  onCancel={() => setDrawerState('immunization', false)}
-                />
-              )}
-            </div>
-          </DrawerContent>
-        </Drawer>
-
-        {/* Add Lab Result Drawer */}
-        <Drawer open={drawers.lab} onOpenChange={(open) => setDrawerState('lab', open)}>
-          <DrawerContent side="right" size="md" className="overflow-y-auto">
-            <DrawerHeader>
-              <DrawerTitle>Add Lab Result</DrawerTitle>
-            </DrawerHeader>
-            <div className="mt-6">
-              {patient && (
-                <LabForm
-                  patientId={patient.id}
-                  patientName={patient.name}
-                  onSuccess={() => {
-                    setDrawerState('lab', false);
-                    refreshData();
-                  }}
-                  onCancel={() => setDrawerState('lab', false)}
-                />
-              )}
-            </div>
-          </DrawerContent>
-        </Drawer>
-
-        {/* Add Imaging Study Drawer */}
-        <Drawer open={drawers.imaging} onOpenChange={(open) => setDrawerState('imaging', open)}>
-          <DrawerContent side="right" size="md" className="overflow-y-auto">
-            <DrawerHeader>
-              <DrawerTitle>Add Imaging Study</DrawerTitle>
-            </DrawerHeader>
-            <div className="mt-6">
-              {patient && (
-                <ImagingForm
-                  patientId={patient.id}
-                  patientName={patient.name}
-                  onSuccess={() => {
-                    setDrawerState('imaging', false);
-                    refreshData();
-                  }}
-                  onCancel={() => setDrawerState('imaging', false)}
                 />
               )}
             </div>

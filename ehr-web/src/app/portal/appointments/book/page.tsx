@@ -300,34 +300,48 @@ export default function BookAppointmentPage() {
         throw new Error('Selected slot not found')
       }
 
+      const serviceTypeText =
+        appointmentTypes.find((type) => type.code === preferences.appointmentType)?.name ||
+        preferences.appointmentType
+
       const response = await fetch('/api/patient/appointments/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           practitionerId: selectedProvider,
-          startTime: selectedSlotObj.start,
-          endTime: selectedSlotObj.end,
-          appointmentType: preferences.appointmentType,
+          serviceType: serviceTypeText,
+          start: selectedSlotObj.start,
+          end: selectedSlotObj.end,
           reason: reason,
         }),
       })
 
-      const data = await response.json()
+      const appointment = await response.json()
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to create appointment')
+      if (!response.ok) {
+        throw new Error(appointment?.message || 'Failed to create appointment')
       }
 
       // Success! Show confirmation screen
       setBookingDetails({
-        appointmentId: data.appointmentId,
+        appointmentId: appointment.id,
         patientName: patientInfo.name,
         patientEmail: patientInfo.email,
         providerName: providers.find((p) => p.id === selectedProvider)?.name,
-        date: new Date(currentYear, currentMonth, selectedDate),
-        time: selectedSlot,
-        location: locations.find((l) => l.id === preferences.location)?.name,
-        duration: preferences.duration,
+        date: appointment.start ? new Date(appointment.start) : new Date(currentYear, currentMonth, selectedDate),
+        time: appointment.start || selectedSlot,
+        location:
+          locations.find((l) => l.id === preferences.location)?.name ||
+          appointment.participant?.find((participant: any) =>
+            participant.actor?.reference?.startsWith('Location/')
+          )?.actor?.display ||
+          'To be announced',
+        duration:
+          appointment.minutesDuration?.toString() ||
+          preferences.duration ||
+          (selectedSlotObj.end && selectedSlotObj.start
+            ? `${(new Date(selectedSlotObj.end).getTime() - new Date(selectedSlotObj.start).getTime()) / 60000}`
+            : '30'),
       })
       setBookingSuccess(true)
 

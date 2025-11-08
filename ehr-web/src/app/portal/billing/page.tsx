@@ -16,6 +16,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useToast } from '@/hooks/use-toast'
 
 type FhirIdentifier = {
   value?: string
@@ -118,6 +123,14 @@ export default function PatientBillingPage() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+  const [paymentAmount, setPaymentAmount] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'ach'>('card')
+  const [paymentCardLast4, setPaymentCardLast4] = useState('')
+  const [paymentBrand, setPaymentBrand] = useState('')
+  const [paying, setPaying] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     loadBilling()
@@ -155,6 +168,59 @@ export default function PatientBillingPage() {
       return total
     }, 0)
   }, [summary.invoices])
+
+  const openPaymentDialog = (invoice?: Invoice) => {
+    const invoiceBalance = invoice?.totalBalance?.value ?? invoice?.totalGross?.value ?? 0
+    setSelectedInvoice(invoice || null)
+    setPaymentAmount(invoiceBalance > 0 ? invoiceBalance.toString() : '')
+    setPaymentCardLast4('')
+    setPaymentBrand('')
+    setPaymentDialogOpen(true)
+  }
+
+  const handlePayment = async () => {
+    const amountNumber = Number(paymentAmount)
+    if (!selectedInvoice) {
+      toast({ title: 'Invoice required', description: 'Choose an invoice to pay.', variant: 'destructive' })
+      return
+    }
+    if (!amountNumber || amountNumber <= 0) {
+      toast({ title: 'Invalid amount', description: 'Enter a payment amount.', variant: 'destructive' })
+      return
+    }
+
+    try {
+      setPaying(true)
+      const response = await fetch('/api/patient/billing/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          invoiceId: selectedInvoice.id,
+          amount: amountNumber,
+          method: paymentMethod,
+          last4: paymentCardLast4,
+          brand: paymentBrand,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.message || 'Unable to record payment')
+      }
+
+      await loadBilling()
+      setPaymentDialogOpen(false)
+      toast({ title: 'Payment successful', description: 'Thanks for taking care of your balance.' })
+    } catch (err: any) {
+      toast({
+        title: 'Payment failed',
+        description: err.message || 'Unable to process payment right now.',
+        variant: 'destructive',
+      })
+    } finally {
+      setPaying(false)
+    }
+  }
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -195,7 +261,7 @@ export default function PatientBillingPage() {
                 <p className="text-sm text-gray-600">
                   Total balance across all invoices. Contact billing for payment options.
                 </p>
-                <Button size="sm" variant="default" className="mt-2">
+                <Button size="sm" variant="default" className="mt-2" onClick={() => openPaymentDialog()}>
                   <CreditCard className="w-4 h-4 mr-2" />
                   Make a payment
                 </Button>
@@ -443,19 +509,17 @@ export default function PatientBillingPage() {
                               {formatCurrency(balance)}
                             </p>
                           </div>
-                          <Button variant="default" size="sm">
-                            {balance && balance > 0 ? (
-                              <>
-                                <DollarSign className="w-4 h-4 mr-2" />
-                                Pay now
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle2 className="w-4 h-4 mr-2" />
-                                Paid
-                              </>
-                            )}
-                          </Button>
+                          {balance && balance > 0 ? (
+                            <Button variant="default" size="sm" onClick={() => openPaymentDialog(invoice)}>
+                              <DollarSign className="w-4 h-4 mr-2" />
+                              Pay now
+                            </Button>
+                          ) : (
+                            <Button variant="outline" size="sm" disabled>
+                              <CheckCircle2 className="w-4 h-4 mr-2" />
+                              Paid
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -483,6 +547,94 @@ export default function PatientBillingPage() {
           </Card>
         </>
       )}
+
+      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Pay invoice</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedInvoice && (
+              <div className="rounded-lg border border-gray-200 p-3 text-sm text-gray-700">
+                <p className="font-semibold text-gray-900">
+                  {selectedInvoice.type?.text || 'Invoice'} ·{' '}
+                  {selectedInvoice.identifier?.[0]?.value || selectedInvoice.id}
+                </p>
+                {selectedInvoice.date && (
+                  <p>Issued on {format(new Date(selectedInvoice.date), 'MMMM d, yyyy')}</p>
+                )}
+                <p>
+                  Balance:{' '}
+                  <span className="font-semibold">
+                    {formatCurrency(
+                      selectedInvoice.totalBalance?.value ?? selectedInvoice.totalGross?.value
+                    )}
+                  </span>
+                </p>
+              </div>
+            )}
+            <div className="grid gap-2">
+              <Label htmlFor="payment-amount">Amount</Label>
+              <Input
+                id="payment-amount"
+                type="number"
+                min="1"
+                step="0.01"
+                value={paymentAmount}
+                onChange={(event) => setPaymentAmount(event.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Payment method</Label>
+              <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as 'card' | 'ach')}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="card">Credit / Debit Card</SelectItem>
+                  <SelectItem value="ach">Bank transfer (ACH)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {paymentMethod === 'card' ? (
+              <div className="grid gap-2 md:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="payment-brand">Card brand</Label>
+                  <Input
+                    id="payment-brand"
+                    value={paymentBrand}
+                    onChange={(event) => setPaymentBrand(event.target.value)}
+                    placeholder="Visa, Mastercard..."
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="payment-last4">Last 4 digits</Label>
+                  <Input
+                    id="payment-last4"
+                    value={paymentCardLast4}
+                    onChange={(event) => setPaymentCardLast4(event.target.value)}
+                    placeholder="1234"
+                    maxLength={4}
+                  />
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">
+                We will debit the bank account you have on file. Contact billing to update details.
+              </p>
+            )}
+          </div>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+            <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handlePayment} disabled={paying}>
+              {paying ? 'Processing...' : 'Submit payment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

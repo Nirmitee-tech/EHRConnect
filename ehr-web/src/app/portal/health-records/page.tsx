@@ -16,6 +16,7 @@ import {
   Download,
   Share2,
   Eye,
+  Target,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,6 +29,7 @@ export default function HealthRecordsPage() {
   const [healthData, setHealthData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [goals, setGoals] = useState<any[]>([])
 
   useEffect(() => {
     fetchHealthRecords()
@@ -40,6 +42,14 @@ export default function HealthRecordsPage() {
       if (!response.ok) throw new Error('Failed to fetch health records')
       const data = await response.json()
       setHealthData(data)
+
+      const goalsResponse = await fetch('/api/patient/goals')
+      if (goalsResponse.ok) {
+        const goalsData = await goalsResponse.json()
+        setGoals(goalsData.goals || [])
+      } else {
+        setGoals([])
+      }
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -140,6 +150,25 @@ export default function HealthRecordsPage() {
               <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                 <Syringe className="w-6 h-6 text-green-600" />
               </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-rose-500">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Active Goals</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">
+                  {goals.filter((goal) => goal.lifecycleStatus !== 'completed').length}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Tap to manage care goals</p>
+              </div>
+              <Link
+                href="/portal/health-records/goals"
+                className="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center"
+              >
+                <Target className="w-6 h-6 text-rose-600" />
+              </Link>
             </div>
           </CardContent>
         </Card>
@@ -466,6 +495,50 @@ export default function HealthRecordsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Card>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="w-5 h-5 text-rose-600" />
+              Care Goals preview
+            </CardTitle>
+            <CardDescription>
+              Keep track of shared goals with your clinicians. View all goals for more detail.
+            </CardDescription>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/portal/health-records/goals">Open goals</Link>
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {goals.length === 0 ? (
+            <p className="text-sm text-gray-600">No goals recorded yet. Create one to get started.</p>
+          ) : (
+            goals.slice(0, 3).map((goal) => (
+              <div
+                key={goal.id || goal.description?.text}
+                className="rounded-lg border border-gray-200 p-3 flex items-center justify-between"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {goal.description?.text || 'Goal'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Target{' '}
+                    {goal.target?.[0]?.dueDate
+                      ? format(new Date(goal.target[0].dueDate), 'MMM d, yyyy')
+                      : 'TBD'}
+                  </p>
+                </div>
+                <Badge className="bg-rose-50 text-rose-700 border-rose-200 uppercase">
+                  {goal.lifecycleStatus || 'active'}
+                </Badge>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { ChangeEvent, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import {
   FileText,
@@ -11,12 +11,17 @@ import {
   ShieldCheck,
   Folder,
   Link as LinkIcon,
+  UploadCloud,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { useToast } from '@/hooks/use-toast'
 
 type FhirIdentifier = {
   value?: string
@@ -70,6 +75,12 @@ export default function PatientDocumentsPage() {
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [file, setFile] = useState<File | null>(null)
+  const [uploadCategory, setUploadCategory] = useState('')
+  const [uploadDescription, setUploadDescription] = useState('')
+  const { toast } = useToast()
 
   useEffect(() => {
     loadDocuments()
@@ -128,6 +139,55 @@ export default function PatientDocumentsPage() {
     })
   }, [documents, search, selectedCategory])
 
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const selected = event.target.files?.[0]
+    setFile(selected || null)
+  }
+
+  const handleUpload = async () => {
+    if (!file) {
+      toast({
+        title: 'Document required',
+        description: 'Select a file to upload.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      setUploading(true)
+      const formData = new FormData()
+      formData.append('file', file)
+      if (uploadCategory) formData.append('category', uploadCategory)
+      if (uploadDescription) formData.append('description', uploadDescription)
+
+      const response = await fetch('/api/patient/documents', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.message || 'Unable to upload document')
+      }
+
+      await loadDocuments()
+      setUploadDialogOpen(false)
+      setFile(null)
+      setUploadCategory('')
+      setUploadDescription('')
+      toast({ title: 'Document uploaded', description: 'Your file is now available.' })
+    } catch (error: any) {
+      toast({
+        title: 'Upload failed',
+        description: error.message || 'Unable to upload document right now.',
+        variant: 'destructive',
+      })
+    } finally {
+      setUploading(false)
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex flex-col md:flex-row justify-between gap-4 md:items-center">
@@ -141,6 +201,10 @@ export default function PatientDocumentsPage() {
           <Button variant="outline" size="sm" onClick={loadDocuments}>
             <RefreshCcw className="w-4 h-4 mr-2" />
             Refresh
+          </Button>
+          <Button variant="default" size="sm" onClick={() => setUploadDialogOpen(true)}>
+            <UploadCloud className="w-4 h-4 mr-2" />
+            Upload Document
           </Button>
           <Button variant="default" size="sm" className="hidden sm:inline-flex">
             <ShieldCheck className="w-4 h-4 mr-2" />
@@ -276,6 +340,54 @@ export default function PatientDocumentsPage() {
           })}
         </div>
       )}
+
+      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload patient document</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="document-file">File</Label>
+              <Input
+                id="document-file"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.txt,.rtf"
+                onChange={handleFileChange}
+              />
+              <p className="text-xs text-gray-500">
+                Accepted formats: PDF, images, text up to 10MB.
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="document-category">Category (optional)</Label>
+              <Input
+                id="document-category"
+                value={uploadCategory}
+                onChange={(event) => setUploadCategory(event.target.value)}
+                placeholder="lab-report, prescription, discharge..."
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="document-description">Description</Label>
+              <Textarea
+                id="document-description"
+                value={uploadDescription}
+                onChange={(event) => setUploadDescription(event.target.value)}
+                placeholder="Add context for your care team"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+            <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpload} disabled={uploading}>
+              {uploading ? 'Uploading...' : 'Upload'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

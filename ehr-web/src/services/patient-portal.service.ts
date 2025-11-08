@@ -12,6 +12,7 @@ import type {
   Encounter,
   DocumentReference,
   Communication,
+  CommunicationRequest,
   Consent,
   Coverage,
   RelatedPerson,
@@ -20,6 +21,9 @@ import type {
   Questionnaire,
   QuestionnaireResponse,
   Task,
+  Goal,
+  Binary,
+  PaymentNotice,
   FhirExtension,
   FhirContactPoint,
   FhirIdentifier,
@@ -78,6 +82,81 @@ export interface PatientNotification {
   link?: string
 }
 
+export interface AppointmentCheckInPayload {
+  appointmentId: string
+  contactPhone?: string
+  contactEmail?: string
+  arrivalMethod?: 'in-person' | 'car' | 'virtual'
+  symptoms?: string[]
+  medicationsUpdated?: boolean
+  pharmacyPreference?: string
+  requiresAssistance?: boolean
+  questions?: string
+  insuranceConfirmed?: boolean
+  consentsAccepted?: boolean
+}
+
+export interface AppointmentReminderPayload {
+  appointmentId: string
+  channel: 'sms' | 'email'
+  sendAt?: string
+  message?: string
+}
+
+export interface FamilyInvitePayload {
+  fullName: string
+  relationship: string
+  email?: string
+  phone?: string
+  accessLevel: 'view' | 'full'
+  notes?: string
+}
+
+export interface FamilyAccessUpdatePayload {
+  relatedPersonId: string
+  active: boolean
+  notes?: string
+}
+
+export interface BillPaymentPayload {
+  invoiceId: string
+  amount: number
+  method: 'card' | 'ach'
+  last4?: string
+  brand?: string
+  memo?: string
+}
+
+export interface PatientGoalInput {
+  description: string
+  category?: string
+  targetDate?: string
+  status?: Goal['lifecycleStatus']
+  outcomeCode?: string
+}
+
+export interface MedicationRefillPayload {
+  medicationRequestId: string
+  pharmacyName: string
+  pharmacyPhone?: string
+  notes?: string
+  quantityRequested?: number
+}
+
+export interface DocumentUploadPayload {
+  fileName: string
+  contentType: string
+  data: ArrayBuffer | Buffer
+  categoryCode?: string
+  description?: string
+}
+
+export interface TelehealthJoinPayload {
+  appointmentId: string
+  meetingCode: string
+  displayName: string
+}
+
 export interface PatientFormAssignment {
   id: string
   title: string
@@ -98,6 +177,13 @@ export const DEFAULT_PATIENT_PREFERENCES: PatientPreferences = {
   shareHealthData: false,
   telehealthReminders: true,
 }
+
+const CHECK_IN_EXTENSION_URL = 'urn:oid:ehrconnect:appointment-checkin'
+const REMINDER_EXTENSION_URL = 'urn:oid:ehrconnect:appointment-reminder'
+const FAMILY_ACCESS_EXTENSION_URL = 'urn:oid:ehrconnect:family-access'
+const TELEHEALTH_METADATA_URL = 'urn:oid:ehrconnect:telehealth'
+const DOCUMENT_CATEGORY_SYSTEM = 'urn:oid:ehrconnect:patient-document-category'
+const REFILL_EXTENSION_URL = 'urn:oid:ehrconnect:refill-request'
 
 export class PatientPortalService {
   /**
@@ -467,6 +553,144 @@ export class PatientPortalService {
   }
 
   /**
+   * Retrieve patient-defined care goals
+   */
+  static async getPatientGoals(patientId: string): Promise<Goal[]> {
+    try {
+      const bundle = await medplum.search('Goal', {
+        subject: `Patient/${patientId}`,
+        _sort: '-start-date',
+        _count: 50,
+      })
+
+      return bundle.entry?.map((entry) => entry.resource as Goal) || []
+    } catch (error) {
+      console.error('Error fetching patient goals:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Create or update a patient goal
+   */
+  static async savePatientGoal(
+    patientId: string,
+    goal: PatientGoalInput & { id?: string }
+  ): Promise<Goal> {
+    try {
+      const patientReference = patientId.startsWith('Patient/') ? patientId : `Patient/${patientId}`
+      const nowIso = new Date().toISOString()
+
+      if (goal.id) {
+        const existing = await medplum.readResource<Goal>('Goal', goal.id)
+        if (existing.subject?.reference !== patientReference) {
+          throw new Error('Goal does not belong to this patient')
+        }
+
+        return await medplum.updateResource<Goal>({
+          ...existing,
+          description: {
+            text: goal.description,
+          },
+          statusDate: nowIso,
+          target: [
+            {
+              dueDate: goal.targetDate,
+            },
+          ],
+          lifecycleStatus: goal.status || existing.lifecycleStatus || 'active',
+        })
+      }
+
+      return await medplum.createResource<Goal>({
+        resourceType: 'Goal',
+        subject: {
+          reference: patientReference,
+        },
+        description: {
+          text: goal.description,
+        },
+        startDate: nowIso.split('T')[0],
+        lifecycleStatus: goal.status || 'active',
+        target: goal.targetDate
+          ? [
+              {
+                dueDate: goal.targetDate,
+              },
+            ]
+          : undefined,
+        category: goal.category
+          ? [
+              {
+                text: goal.category,
+              },
+            ]
+          : undefined,
+      })
+    } catch (error) {
+      console.error('Error saving patient goal:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Submit a refill request for a medication
+   */
+  static async requestMedicationRefill(
+    patientId: string,
+    payload: MedicationRefillPayload
+  ): Promise<Task> {
+    try {
+      const medication = await medplum.readResource<MedicationRequest>(
+        'MedicationRequest',
+        payload.medicationRequestId
+      )
+      const patientReference = patientId.startsWith('Patient/') ? patientId : `Patient/${patientId}`
+
+      if (medication.subject?.reference !== patientReference) {
+        throw new Error('Medication does not belong to this patient')
+      }
+
+      const nowIso = new Date().toISOString()
+
+      return await medplum.createResource<Task>({
+        resourceType: 'Task',
+        status: 'requested',
+        intent: 'order',
+        code: {
+          text: 'Medication refill request',
+        },
+        focus: {
+          reference: `MedicationRequest/${payload.medicationRequestId}`,
+        },
+        for: {
+          reference: patientReference,
+        },
+        description:
+          payload.notes ||
+          `Refill requested for ${medication.medicationCodeableConcept?.text || 'medication'}`,
+        authoredOn: nowIso,
+        lastModified: nowIso,
+        requester: medication.requester,
+        extension: [
+          {
+            url: REFILL_EXTENSION_URL,
+            valueString: JSON.stringify({
+              pharmacyName: payload.pharmacyName,
+              pharmacyPhone: payload.pharmacyPhone,
+              quantityRequested: payload.quantityRequested,
+              requestedAt: nowIso,
+            }),
+          },
+        ],
+      })
+    } catch (error) {
+      console.error('Error requesting medication refill:', error)
+      throw error
+    }
+  }
+
+  /**
    * Get patient messages
    */
   static async getPatientMessages(patientId: string): Promise<Communication[]> {
@@ -541,6 +765,72 @@ export class PatientPortalService {
   }
 
   /**
+   * Upload a patient-authored document
+   */
+  static async uploadPatientDocument(
+    patientId: string,
+    payload: DocumentUploadPayload
+  ): Promise<DocumentReference> {
+    try {
+      const patientReference = patientId.startsWith('Patient/') ? patientId : `Patient/${patientId}`
+      const buffer = Buffer.isBuffer(payload.data)
+        ? payload.data
+        : Buffer.from(payload.data as ArrayBuffer)
+
+      const binary = await medplum.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: payload.contentType,
+        data: buffer.toString('base64'),
+      })
+
+      const nowIso = new Date().toISOString()
+
+      const document: DocumentReference = {
+        resourceType: 'DocumentReference',
+        status: 'current',
+        type: payload.categoryCode
+          ? {
+              text: payload.categoryCode.replace(/-/g, ' '),
+            }
+          : undefined,
+        subject: {
+          reference: patientReference,
+        },
+        date: nowIso,
+        description: payload.description || payload.fileName,
+        category: payload.categoryCode
+          ? [
+              {
+                coding: [
+                  {
+                    system: DOCUMENT_CATEGORY_SYSTEM,
+                    code: payload.categoryCode,
+                    display: payload.categoryCode.replace(/-/g, ' '),
+                  },
+                ],
+                text: payload.categoryCode.replace(/-/g, ' '),
+              },
+            ]
+          : undefined,
+        content: [
+          {
+            attachment: {
+              contentType: payload.contentType,
+              title: payload.fileName,
+              url: binary.id ? `Binary/${binary.id}` : undefined,
+            },
+          },
+        ],
+      }
+
+      return await medplum.createResource(document)
+    } catch (error) {
+      console.error('Error uploading patient document:', error)
+      throw error
+    }
+  }
+
+  /**
    * Get patient billing summary including coverage, explanations of benefits, and invoices
    */
   static async getPatientBillingSummary(patientId: string): Promise<{
@@ -580,6 +870,93 @@ export class PatientPortalService {
   }
 
   /**
+   * Record a payment made through the patient portal
+   */
+  static async recordInvoicePayment(
+    patientId: string,
+    payload: BillPaymentPayload
+  ): Promise<{ invoice: Invoice; paymentNotice: PaymentNotice }> {
+    try {
+      const invoice = await medplum.readResource<Invoice>('Invoice', payload.invoiceId)
+      const patientReference = patientId.startsWith('Patient/') ? patientId : `Patient/${patientId}`
+
+      if (invoice.subject?.reference !== patientReference) {
+        throw new Error('Invoice does not belong to the authenticated patient')
+      }
+
+      const currency =
+        invoice.totalBalance?.currency ||
+        invoice.totalGross?.currency ||
+        invoice.totalNet?.currency ||
+        'USD'
+
+      const currentBalance =
+        invoice.totalBalance?.value ??
+        invoice.totalGross?.value ??
+        invoice.totalNet?.value ??
+        0
+      const remainingBalance = Math.max(0, currentBalance - payload.amount)
+      const nowIso = new Date().toISOString()
+
+      const updatedInvoice = await medplum.updateResource<Invoice>({
+        ...invoice,
+        status: remainingBalance === 0 ? 'balanced' : invoice.status || 'issued',
+        totalBalance: {
+          value: remainingBalance,
+          currency,
+        },
+        note: [
+          ...(invoice.note || []),
+          {
+            text: `Portal payment of ${payload.amount.toFixed(2)} ${currency} via ${
+              payload.method
+            } ${payload.last4 ? `ending in ${payload.last4}` : ''}`,
+            time: nowIso,
+          },
+        ],
+      })
+
+      const paymentNotice = await medplum.createResource<PaymentNotice>({
+        resourceType: 'PaymentNotice',
+        status: 'active',
+        created: nowIso,
+        paymentDate: nowIso,
+        request: {
+          reference: `Invoice/${payload.invoiceId}`,
+        },
+        paymentStatus: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/paymentstatus',
+              code: 'paid',
+              display: 'Paid',
+            },
+          ],
+          text: 'Paid',
+        },
+        amount: {
+          value: payload.amount,
+          currency,
+        },
+        recipient: updatedInvoice.recipient,
+        payee: updatedInvoice.subject,
+        note: [
+          {
+            text: `Method: ${payload.method.toUpperCase()} ${payload.brand || ''} ${
+              payload.last4 ? `••••${payload.last4}` : ''
+            }`,
+          },
+        ],
+      })
+
+      return { invoice: updatedInvoice, paymentNotice }
+    } catch (error) {
+      console.error('Error recording patient payment:', error)
+      throw error
+    }
+  }
+
+  /**
    * Get patient family/authorized contacts (RelatedPerson resources)
    */
   static async getPatientFamilyMembers(patientId: string): Promise<RelatedPerson[]> {
@@ -593,6 +970,109 @@ export class PatientPortalService {
       return bundle.entry?.map((e) => e.resource as RelatedPerson) || []
     } catch (error) {
       console.error('Error fetching patient family members:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Invite a caregiver/related person
+   */
+  static async inviteFamilyMember(
+    patientId: string,
+    payload: FamilyInvitePayload
+  ): Promise<RelatedPerson> {
+    try {
+      const telecom = []
+      if (payload.email) {
+        telecom.push({
+          system: 'email',
+          value: payload.email,
+          use: 'home',
+        })
+      }
+      if (payload.phone) {
+        telecom.push({
+          system: 'phone',
+          value: payload.phone,
+          use: 'mobile',
+        })
+      }
+
+      const relatedPerson: RelatedPerson = {
+        resourceType: 'RelatedPerson',
+        active: true,
+        patient: {
+          reference: patientId.startsWith('Patient/') ? patientId : `Patient/${patientId}`,
+        },
+        name: [
+          {
+            text: payload.fullName,
+          },
+        ],
+        relationship: [
+          {
+            text: payload.relationship,
+          },
+        ],
+        telecom,
+        extension: [
+          {
+            url: FAMILY_ACCESS_EXTENSION_URL,
+            valueString: JSON.stringify({
+              accessLevel: payload.accessLevel,
+              invitedOn: new Date().toISOString(),
+              notes: payload.notes,
+            }),
+          },
+        ],
+      }
+
+      return await medplum.createResource(relatedPerson)
+    } catch (error) {
+      console.error('Error inviting family member:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Toggle caregiver access or update metadata
+   */
+  static async updateFamilyMemberAccess(
+    patientId: string,
+    payload: FamilyAccessUpdatePayload
+  ): Promise<RelatedPerson> {
+    try {
+      const relatedPerson = await medplum.readResource<RelatedPerson>(
+        'RelatedPerson',
+        payload.relatedPersonId
+      )
+
+      const patientReference = patientId.startsWith('Patient/') ? patientId : `Patient/${patientId}`
+
+      if (relatedPerson.patient?.reference !== patientReference) {
+        throw new Error('Family member does not belong to this patient')
+      }
+
+      const extensions = Array.isArray(relatedPerson.extension)
+        ? relatedPerson.extension.filter((ext) => ext.url !== FAMILY_ACCESS_EXTENSION_URL)
+        : []
+
+      relatedPerson.active = payload.active
+      relatedPerson.extension = [
+        ...extensions,
+        {
+          url: FAMILY_ACCESS_EXTENSION_URL,
+          valueString: JSON.stringify({
+            active: payload.active,
+            updatedAt: new Date().toISOString(),
+            notes: payload.notes,
+          }),
+        },
+      ]
+
+      return await medplum.updateResource(relatedPerson)
+    } catch (error) {
+      console.error('Error updating family member access:', error)
       throw error
     }
   }
@@ -939,6 +1419,58 @@ export class PatientPortalService {
   }
 
   /**
+   * Retrieve telehealth metadata (meeting code, links) for an appointment
+   */
+  static async getTelehealthMetadata(
+    patientId: string,
+    appointmentId: string
+  ): Promise<{ appointment: Appointment; meetingCode: string; publicLink?: string }> {
+    try {
+      const appointment = await medplum.readResource<Appointment>('Appointment', appointmentId)
+      const patientReference = patientId.startsWith('Patient/') ? patientId : `Patient/${patientId}`
+
+      const hasPatient = appointment.participant?.some((participant: AppointmentParticipant) =>
+        participant.actor?.reference === patientReference
+      )
+
+      if (!hasPatient) {
+        throw new Error('Appointment does not belong to the authenticated patient')
+      }
+
+      const rawTelehealth = (appointment as Record<string, unknown>).telehealth as
+        | { meetingCode?: string; publicLink?: string }
+        | undefined
+
+      let meetingCode = rawTelehealth?.meetingCode
+      let publicLink = rawTelehealth?.publicLink
+
+      if (!meetingCode && Array.isArray(appointment.extension)) {
+        const telehealthExtension = appointment.extension.find(
+          (ext) => ext.url === TELEHEALTH_METADATA_URL
+        )
+        if (telehealthExtension?.valueString) {
+          try {
+            const parsed = JSON.parse(telehealthExtension.valueString as string)
+            meetingCode = meetingCode || parsed.meetingCode
+            publicLink = publicLink || parsed.publicLink
+          } catch (err) {
+            console.warn('Unable to parse telehealth extension payload', err)
+          }
+        }
+      }
+
+      if (!meetingCode) {
+        throw new Error('Telehealth room is not ready for this appointment yet')
+      }
+
+      return { appointment, meetingCode, publicLink }
+    } catch (error) {
+      console.error('Error retrieving telehealth metadata:', error)
+      throw error
+    }
+  }
+
+  /**
    * Book appointment for patient
    */
   static async bookAppointment(
@@ -988,6 +1520,194 @@ export class PatientPortalService {
       return await medplum.createResource(appointment)
     } catch (error) {
       console.error('Error booking appointment:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Complete digital check-in for an appointment
+   */
+  static async checkInForAppointment(
+    patientId: string,
+    payload: AppointmentCheckInPayload
+  ): Promise<{ appointment: Appointment; task: Task }> {
+    const { appointmentId } = payload
+    if (!appointmentId) {
+      throw new Error('Appointment ID is required for check-in')
+    }
+
+    try {
+      const appointment = await medplum.readResource<Appointment>('Appointment', appointmentId)
+      const patientReference = patientId.startsWith('Patient/') ? patientId : `Patient/${patientId}`
+
+      const hasPatient = appointment.participant?.some((participant: AppointmentParticipant) =>
+        participant.actor?.reference === patientReference
+      )
+
+      if (!hasPatient) {
+        throw new Error('Appointment does not belong to the authenticated patient')
+      }
+
+      const nowIso = new Date().toISOString()
+      const checkInData = {
+        ...payload,
+        patientId,
+        checkedInAt: nowIso,
+      }
+
+      const existingExtensions = Array.isArray(appointment.extension)
+        ? appointment.extension.filter((ext) => ext.url !== CHECK_IN_EXTENSION_URL)
+        : []
+
+      const updatedAppointment = await medplum.updateResource<Appointment>({
+        ...appointment,
+        status:
+          appointment.status && ['cancelled', 'noshow'].includes(appointment.status)
+            ? appointment.status
+            : 'arrived',
+        comment: [appointment.comment, `Digital check-in completed ${new Date(nowIso).toLocaleString()}`]
+          .filter(Boolean)
+          .join('\n'),
+        extension: [
+          ...existingExtensions,
+          {
+            url: CHECK_IN_EXTENSION_URL,
+            valueString: JSON.stringify(checkInData),
+          },
+        ],
+      })
+
+      const task: Task = await medplum.createResource({
+        resourceType: 'Task',
+        status: 'completed',
+        intent: 'plan',
+        code: {
+          text: 'Patient digital check-in',
+        },
+        description: payload.questions || 'Patient confirmed demographic and insurance information.',
+        focus: {
+          reference: `Appointment/${appointmentId}`,
+        },
+        for: {
+          reference: patientReference,
+        },
+        authoredOn: nowIso,
+        lastModified: nowIso,
+        note: [
+          {
+            text: `Arrival method: ${payload.arrivalMethod || 'in-person'}${
+              payload.symptoms?.length ? ` | Symptoms: ${payload.symptoms.join(', ')}` : ''
+            }`,
+            time: nowIso,
+          },
+        ],
+      })
+
+      return { appointment: updatedAppointment, task }
+    } catch (error) {
+      console.error('Error completing digital check-in:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Schedule an omni-channel appointment reminder
+   */
+  static async scheduleAppointmentReminder(
+    patientId: string,
+    payload: AppointmentReminderPayload
+  ): Promise<CommunicationRequest> {
+    const { appointmentId, channel } = payload
+
+    if (!appointmentId) {
+      throw new Error('Appointment ID is required for reminders')
+    }
+
+    try {
+      const appointment = await medplum.readResource<Appointment>('Appointment', appointmentId)
+      const patientReference = patientId.startsWith('Patient/') ? patientId : `Patient/${patientId}`
+
+      const hasPatient = appointment.participant?.some((participant: AppointmentParticipant) =>
+        participant.actor?.reference === patientReference
+      )
+
+      if (!hasPatient) {
+        throw new Error('Appointment does not belong to the authenticated patient')
+      }
+
+      const nowIso = new Date().toISOString()
+      const appointmentStart = appointment.start ? new Date(appointment.start) : null
+      const sendAt = payload.sendAt || appointment.start || nowIso
+
+      const readableDate = appointmentStart
+        ? appointmentStart.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+        : 'your upcoming visit'
+
+      const message =
+        payload.message ||
+        `Reminder: you have an appointment scheduled for ${readableDate}. Reply if you need to make changes.`
+
+      const mediumCoding =
+        channel === 'sms'
+          ? { code: 'SMSWRIT', display: 'SMS' }
+          : { code: 'WRIT', display: 'Email' }
+
+      const reminder: CommunicationRequest = await medplum.createResource({
+        resourceType: 'CommunicationRequest',
+        status: 'active',
+        priority: 'routine',
+        subject: {
+          reference: patientReference,
+        },
+        about: [
+          {
+            reference: `Appointment/${appointmentId}`,
+          },
+        ],
+        authoredOn: nowIso,
+        occurrenceDateTime: sendAt,
+        payload: [
+          {
+            contentString: message,
+          },
+        ],
+        medium: [
+          {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode',
+                code: mediumCoding.code,
+                display: mediumCoding.display,
+              },
+            ],
+            text: mediumCoding.display,
+          },
+        ],
+      })
+
+      const existingExtensions = Array.isArray(appointment.extension)
+        ? appointment.extension.filter((ext) => ext.url !== REMINDER_EXTENSION_URL)
+        : []
+
+      await medplum.updateResource<Appointment>({
+        ...appointment,
+        extension: [
+          ...existingExtensions,
+          {
+            url: REMINDER_EXTENSION_URL,
+            valueString: JSON.stringify({
+              channel,
+              sendAt,
+              message,
+              createdAt: nowIso,
+            }),
+          },
+        ],
+      })
+
+      return reminder
+    } catch (error) {
+      console.error('Error scheduling appointment reminder:', error)
       throw error
     }
   }

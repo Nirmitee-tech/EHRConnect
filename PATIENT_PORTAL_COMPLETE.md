@@ -189,16 +189,24 @@ src/
 - [x] Clean, modern UI
 - [x] 100% FHIR R4 compliant
 - [x] Multi-tenancy support
+- [x] Digital check-in with arrival preferences
+- [x] Appointment reminders (SMS/email)
+- [x] Caregiver & delegated access invites
+- [x] Document uploads & secure sharing
+- [x] Integrated bill pay (invoice payments)
+- [x] Health goal tracking dashboard
+- [x] Medication refill requests
+- [x] Embedded 100ms telehealth experience
 
 ### 🚧 Future Enhancements
-- [ ] Digital check-in (QR code at facility)
 - [ ] Multi-patient access (parent/guardian)
-- [ ] Appointment reminders (SMS/email)
-- [ ] Bill pay integration
-- [ ] Health goals tracking
-- [ ] Prescription refill requests
-- [ ] Document upload (insurance cards, etc.)
-- [ ] Video visits integration
+- [ ] Digital check-in QR codes for on-site kiosks
+- [ ] Caregiver auditing & access expiry policies
+- [ ] Saved payment instruments & autopay
+- [ ] Wearable data + goal automation
+- [ ] eRx refill approvals & fulfillment tracking
+- [ ] Bulk document upload + OCR extraction
+- [ ] Multi-party video visits & waiting room experiences
 
 ---
 
