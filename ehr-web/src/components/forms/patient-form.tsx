@@ -17,7 +17,7 @@ import {
   Trash2,
   User
 } from 'lucide-react';
-import { FHIRPatient, PatientSummary } from '@/types/fhir';
+import { FHIRPatient, PatientSummary, FacilitySummary } from '@/types/fhir';
 import { CreatePatientRequest, UpdatePatientRequest } from '@/services/patient.service';
 import { useFacility } from '@/contexts/facility-context';
 import { usePatientForm } from '@/hooks/use-patient-form';
@@ -33,6 +33,18 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { SearchableSelect, SelectOption } from '@/components/ui/searchable-select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
+import { staffService } from '@/services/staff.service';
+import { facilityService } from '@/services/facility.service';
+import { StaffMember, PROVIDER_COLORS } from '@/types/staff';
 import { NoFacilityNotice } from './patient-form-components/NoFacilityNotice';
 import { PatientSearch } from './patient-form-components/PatientSearch';
 import { PhotoUpload } from './patient-form-components/PhotoUpload';
@@ -40,6 +52,7 @@ import { PhotoUpload } from './patient-form-components/PhotoUpload';
 interface PatientFormProps {
   patient?: FHIRPatient;
   isEditing?: boolean;
+  compactMode?: boolean;
   onSubmit: (
     data: CreatePatientRequest | UpdatePatientRequest,
     isUpdate?: boolean,
@@ -96,10 +109,29 @@ const SectionConfig = [
   { id: 'clinical', title: 'Clinical Context', icon: Activity }
 ];
 
-const InlineAddButton = ({ label }: { label: string }) => (
+type FacilityTypeOption = 'clinic' | 'hospital' | 'lab' | 'pharmacy';
+
+const locationTypeOptions: { value: FacilityTypeOption; label: string }[] = [
+  { value: 'clinic', label: 'Clinic' },
+  { value: 'hospital', label: 'Hospital' },
+  { value: 'lab', label: 'Laboratory' },
+  { value: 'pharmacy', label: 'Pharmacy' }
+];
+
+const providerSpecialtyOptions = [
+  'Family Medicine',
+  'Internal Medicine',
+  'Cardiology',
+  'Pediatrics',
+  'Orthopedics',
+  'Dermatology'
+];
+
+const InlineAddButton = ({ label, onClick }: { label: string; onClick?: () => void }) => (
   <button
     type="button"
-    className="text-xs font-medium text-primary hover:text-primary/80"
+    onClick={onClick}
+    className="text-xs font-medium text-[#3342a5] hover:text-[#2a3686]"
   >
     + Add {label}
   </button>
@@ -107,6 +139,13 @@ const InlineAddButton = ({ label }: { label: string }) => (
 
 const FieldError = ({ message }: { message?: string }) =>
   message ? <p className="text-xs text-red-600 mt-1">{message}</p> : null;
+
+const RequiredLabel = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+  <Label className={`text-sm font-medium ${className}`}>
+    {children}
+    <span className="text-red-600 ml-1">*</span>
+  </Label>
+);
 
 interface AccordionSectionProps {
   id: string;
@@ -127,57 +166,60 @@ const AccordionSection = ({
   onToggle,
   children
 }: AccordionSectionProps) => (
-  <div className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+  <div className="border border-gray-200 rounded-lg bg-white shadow-sm">
     <button
       type="button"
       onClick={() => onToggle(id)}
-      className={`w-full flex items-center justify-between px-4 py-3 transition-colors ${
+      className={`w-full flex items-center justify-between px-3 py-2.5 transition-colors rounded-t-lg ${
         isOpen ? 'bg-gray-50' : 'bg-white hover:bg-gray-50'
       }`}
     >
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Icon className="h-4 w-4 text-primary" />
+      <div className="flex items-center gap-2.5">
+        <div className="w-7 h-7 rounded-lg bg-[#3342a5]/10 flex items-center justify-center flex-shrink-0">
+          <Icon className="h-3.5 w-3.5 text-[#3342a5]" />
         </div>
         <div className="text-left">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-gray-900">{title}</p>
             {required && (
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-red-600">
+              <span className="text-[9px] font-bold uppercase tracking-wide text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
                 Required
               </span>
             )}
           </div>
-          <p className="text-xs text-gray-500">Click to {isOpen ? 'collapse' : 'expand'}</p>
+          {!isOpen && <p className="text-[11px] text-gray-500">Click to expand</p>}
         </div>
       </div>
       <ChevronDown
-        className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
+        className={`h-4 w-4 text-gray-500 transition-transform duration-200 flex-shrink-0 ${
           isOpen ? 'rotate-180' : ''
         }`}
       />
     </button>
-    {isOpen && <div className="px-4 py-5">{children}</div>}
+    {isOpen && <div className="px-3 py-3">{children}</div>}
   </div>
 );
 
 export function PatientForm({
   patient,
   isEditing = false,
+  compactMode = false,
   onSubmit,
   onCancel
 }: PatientFormProps) {
   const { currentFacility } = useFacility();
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>(undefined);
   const [isUpdatingExisting, setIsUpdatingExisting] = useState(false);
+
+  // In compact mode, auto-expand all required sections for quick entry
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     provider: true,
     patient: true,
     contact: true,
-    emergency: false,
-    insurance: false,
+    emergency: compactMode ? true : false,
+    insurance: false, // Optional in compact mode
     preferences: false,
-    consent: false,
+    consent: compactMode ? true : false,
     clinical: false
   });
 
@@ -208,6 +250,198 @@ export function PatientForm({
   } = usePatientForm(patient, currentFacility?.id);
 
   const photoPreview = formData.demographics.photo;
+  const compactHiddenSections = compactMode ? new Set(['preferences', 'clinical']) : null;
+  const [providerOptions, setProviderOptions] = useState<SelectOption[]>([]);
+  const [providersLoading, setProvidersLoading] = useState(false);
+  const [providerDialogOpen, setProviderDialogOpen] = useState(false);
+  const [providerSaving, setProviderSaving] = useState(false);
+  const [providerForm, setProviderForm] = useState({
+    prefix: 'Dr',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    specialty: providerSpecialtyOptions[0],
+    color: PROVIDER_COLORS[0]
+  });
+
+  const [locationOptions, setLocationOptions] = useState<SelectOption[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(false);
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [locationSaving, setLocationSaving] = useState(false);
+  const [locationForm, setLocationForm] = useState({
+    name: '',
+    type: 'clinic' as FacilityTypeOption,
+    line1: '',
+    line2: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    phone: '',
+    email: ''
+  });
+
+  const mapStaffToOption = (provider: StaffMember): SelectOption => ({
+    value: provider.id,
+    label: provider.name,
+    subtitle: provider.specialty,
+    color: provider.color,
+    textColor: provider.color ? '#ffffff' : undefined
+  });
+
+  const mapFacilityToOption = (facility: FacilitySummary | { id?: string; name?: string }): SelectOption => ({
+    value: facility.id || '',
+    label: facility.name || 'Unnamed Location'
+  });
+
+  useEffect(() => {
+    const fetchProviders = async () => {
+      if (!currentFacility?.id) {
+        console.log('No facility selected, skipping provider fetch');
+        return;
+      }
+
+      try {
+        setProvidersLoading(true);
+        console.log('Fetching providers for org:', currentFacility.id);
+
+        // Use the public API endpoint which is more reliable
+        const response = await fetch(`/api/public/v2/practitioners?org_id=${currentFacility.id}`);
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch practitioners: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Practitioners response:', data);
+
+        const practitioners = data.practitioners || [];
+        console.log('Found practitioners:', practitioners.length);
+
+        const options = practitioners.map((p: any) => ({
+          value: p.id,
+          label: p.name,
+          subtitle: p.specialty || 'General Practitioner',
+          color: p.color || '#3B82F6',
+          textColor: '#ffffff'
+        }));
+
+        console.log('Mapped provider options:', options);
+        setProviderOptions(options);
+      } catch (error) {
+        console.error('Error loading providers:', error);
+        setProviderOptions([]);
+      } finally {
+        setProvidersLoading(false);
+      }
+    };
+
+    const fetchLocations = async () => {
+      try {
+        setLocationsLoading(true);
+        const { facilities } = await facilityService.searchFacilities({
+          active: true,
+          parentOrgId: currentFacility?.id
+        });
+        setLocationOptions(facilities.map(mapFacilityToOption));
+      } catch (error) {
+        console.error('Error loading locations:', error);
+      } finally {
+        setLocationsLoading(false);
+      }
+    };
+
+    fetchProviders();
+    fetchLocations();
+  }, [currentFacility?.id]);
+
+  const handleCreateProvider = async () => {
+    if (!providerForm.firstName || !providerForm.lastName) {
+      return;
+    }
+
+    setProviderSaving(true);
+    try {
+      const payload: Omit<StaffMember, 'id'> = {
+        name: `${providerForm.prefix} ${providerForm.firstName} ${providerForm.lastName}`.trim(),
+        specialty: providerForm.specialty,
+        phone: providerForm.phone,
+        email: providerForm.email,
+        qualification: 'Medical Doctor',
+        active: true,
+        resourceType: 'Practitioner',
+        color: providerForm.color,
+        employmentType: 'full-time'
+      };
+
+      const created = await staffService.createPractitioner(payload);
+      const option = mapStaffToOption(created);
+      setProviderOptions(prev => [...prev, option]);
+      updateProviderField('primaryProviderId', option.value);
+      setProviderDialogOpen(false);
+      setProviderForm({
+        prefix: 'Dr',
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        specialty: providerSpecialtyOptions[0],
+        color: PROVIDER_COLORS[0]
+      });
+    } catch (error) {
+      console.error('Error creating provider:', error);
+    } finally {
+      setProviderSaving(false);
+    }
+  };
+
+  const handleCreateLocation = async () => {
+    if (!locationForm.name) {
+      return;
+    }
+
+    setLocationSaving(true);
+    try {
+      const payload = {
+        name: locationForm.name,
+        type: locationForm.type,
+        address:
+          locationForm.line1 || locationForm.city || locationForm.state || locationForm.postalCode
+            ? {
+                line: [locationForm.line1, locationForm.line2].filter(Boolean),
+                city: locationForm.city,
+                state: locationForm.state,
+                postalCode: locationForm.postalCode,
+                country: 'US'
+              }
+            : undefined,
+        phone: locationForm.phone || undefined,
+        email: locationForm.email || undefined
+      };
+
+      const created = await facilityService.createFacility(payload, 'current-user');
+      const option = mapFacilityToOption({ id: created.id, name: created.name });
+      setLocationOptions(prev => [...prev, option]);
+      updateProviderField('providerLocationId', option.value);
+      setLocationDialogOpen(false);
+      setLocationForm({
+        name: '',
+        type: 'clinic',
+        line1: '',
+        line2: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        phone: '',
+        email: ''
+      });
+    } catch (error) {
+      console.error('Error creating location:', error);
+    } finally {
+      setLocationSaving(false);
+    }
+  };
+
 
   const toggleSection = (id: string) => {
     setExpandedSections(prev => ({
@@ -317,13 +551,24 @@ export function PatientForm({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {!currentFacility && <NoFacilityNotice />}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3">
         <PatientSearch onSelectPatient={handleSelectPatient} />
 
-        {SectionConfig.map(section => (
+        {compactMode && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900 flex items-center gap-2">
+            <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+            <span>Quick entry mode - only required fields shown</span>
+          </div>
+        )}
+
+        {SectionConfig.map(section => {
+          if (compactMode && compactHiddenSections?.has(section.id)) {
+            return null;
+          }
+          return (
           <AccordionSection
             key={section.id}
             id={section.id}
@@ -334,36 +579,54 @@ export function PatientForm({
             onToggle={toggleSection}
           >
             {section.id === 'provider' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Primary Provider</Label>
-                      <InlineAddButton label="Provider" />
+                      <RequiredLabel>Primary Provider</RequiredLabel>
+                      <InlineAddButton label="Provider" onClick={() => setProviderDialogOpen(true)} />
                     </div>
-                    <Input
-                      placeholder="Search provider"
+                    <SearchableSelect
+                      options={providerOptions}
                       value={formData.provider.primaryProviderId}
-                      onChange={e => updateProviderField('primaryProviderId', e.target.value)}
+                      onChange={(value) => updateProviderField('primaryProviderId', value)}
+                      placeholder={providersLoading ? 'Loading providers...' : 'Select provider'}
+                      disabled={providersLoading && providerOptions.length === 0}
+                      showColorInButton
+                      onAddNew={() => setProviderDialogOpen(true)}
+                      addNewLabel="Add Provider"
                     />
+                    {providersLoading && (
+                      <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Syncing providers...
+                      </p>
+                    )}
                     <FieldError message={errors['provider.primaryProviderId']} />
                   </div>
                   <div>
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Provider Group Location</Label>
-                      <InlineAddButton label="Location" />
+                      <RequiredLabel>Provider Group Location</RequiredLabel>
+                      <InlineAddButton label="Location" onClick={() => setLocationDialogOpen(true)} />
                     </div>
-                    <Input
-                      placeholder="Select clinic location"
+                    <SearchableSelect
+                      options={locationOptions}
                       value={formData.provider.providerLocationId}
-                      onChange={e => updateProviderField('providerLocationId', e.target.value)}
+                      onChange={(value) => updateProviderField('providerLocationId', value)}
+                      placeholder={locationsLoading ? 'Loading locations...' : 'Select location'}
+                      onAddNew={() => setLocationDialogOpen(true)}
+                      addNewLabel="Add Location"
                     />
+                    {locationsLoading && (
+                      <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Fetching locations...
+                      </p>
+                    )}
                     <FieldError message={errors['provider.providerLocationId']} />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-sm font-medium">Registration Date</Label>
+                    <RequiredLabel>Registration Date</RequiredLabel>
                     <Input
                       type="date"
                       value={formData.provider.registrationDate}
@@ -371,57 +634,69 @@ export function PatientForm({
                     />
                     <FieldError message={errors['provider.registrationDate']} />
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium">Referred By</Label>
-                    <Input
-                      placeholder="Referral source"
-                      value={formData.provider.referredBy}
-                      onChange={e => updateProviderField('referredBy', e.target.value)}
-                    />
-                  </div>
+                  {!compactMode && (
+                    <div>
+                      <Label className="text-sm font-medium">Referred By</Label>
+                      <Input
+                        placeholder="Referral source"
+                        value={formData.provider.referredBy}
+                        onChange={e => updateProviderField('referredBy', e.target.value)}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
             {section.id === 'patient' && (
-              <div className="space-y-4">
-                <PhotoUpload photoPreview={photoPreview} onPhotoChange={handlePhotoChange} />
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-3">
+                {!compactMode && (
+                  <PhotoUpload photoPreview={photoPreview} onPhotoChange={handlePhotoChange} />
+                )}
+                <div
+                  className={`grid grid-cols-1 gap-3 ${
+                    compactMode ? 'md:grid-cols-2' : 'md:grid-cols-4'
+                  }`}
+                >
+                  {!compactMode && (
+                    <div>
+                      <Label className="text-sm font-medium">Prefix</Label>
+                      <Select
+                        value={formData.demographics.prefix}
+                        onValueChange={value => updateDemographicsField('prefix', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Prefix" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {['Mr', 'Mrs', 'Ms', 'Dr'].map(prefix => (
+                            <SelectItem key={prefix} value={prefix}>
+                              {prefix}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <div>
-                    <Label className="text-sm font-medium">Prefix</Label>
-                    <Select
-                      value={formData.demographics.prefix}
-                      onValueChange={value => updateDemographicsField('prefix', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Prefix" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {['Mr', 'Mrs', 'Ms', 'Dr'].map(prefix => (
-                          <SelectItem key={prefix} value={prefix}>
-                            {prefix}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">First Name</Label>
+                    <RequiredLabel>First Name</RequiredLabel>
                     <Input
                       value={formData.demographics.firstName}
                       onChange={e => updateDemographicsField('firstName', e.target.value)}
                     />
                     <FieldError message={errors['demographics.firstName']} />
                   </div>
+                  {!compactMode && (
+                    <div>
+                      <Label className="text-sm font-medium">Middle Name</Label>
+                      <Input
+                        value={formData.demographics.middleName}
+                        onChange={e => updateDemographicsField('middleName', e.target.value)}
+                      />
+                    </div>
+                  )}
                   <div>
-                    <Label className="text-sm font-medium">Middle Name</Label>
-                    <Input
-                      value={formData.demographics.middleName}
-                      onChange={e => updateDemographicsField('middleName', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Last Name</Label>
+                    <RequiredLabel>Last Name</RequiredLabel>
                     <Input
                       value={formData.demographics.lastName}
                       onChange={e => updateDemographicsField('lastName', e.target.value)}
@@ -429,16 +704,22 @@ export function PatientForm({
                     <FieldError message={errors['demographics.lastName']} />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div
+                  className={`grid grid-cols-1 gap-3 ${
+                    compactMode ? 'md:grid-cols-2' : 'md:grid-cols-4'
+                  }`}
+                >
+                  {!compactMode && (
+                    <div>
+                      <Label className="text-sm font-medium">Preferred Name</Label>
+                      <Input
+                        value={formData.demographics.preferredName}
+                        onChange={e => updateDemographicsField('preferredName', e.target.value)}
+                      />
+                    </div>
+                  )}
                   <div>
-                    <Label className="text-sm font-medium">Preferred Name</Label>
-                    <Input
-                      value={formData.demographics.preferredName}
-                      onChange={e => updateDemographicsField('preferredName', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Date of Birth</Label>
+                    <RequiredLabel>Date of Birth</RequiredLabel>
                     <Input
                       type="date"
                       value={formData.demographics.dateOfBirth}
@@ -446,12 +727,14 @@ export function PatientForm({
                     />
                     <FieldError message={errors['demographics.dateOfBirth']} />
                   </div>
+                  {!compactMode && (
+                    <div>
+                      <Label className="text-sm font-medium">Age</Label>
+                      <Input value={calculatedAge || '--'} readOnly />
+                    </div>
+                  )}
                   <div>
-                    <Label className="text-sm font-medium">Age</Label>
-                    <Input value={calculatedAge || '--'} readOnly />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Gender</Label>
+                    <RequiredLabel>Gender</RequiredLabel>
                     <Select
                       value={formData.demographics.gender}
                       onValueChange={value =>
@@ -472,223 +755,152 @@ export function PatientForm({
                     <FieldError message={errors['demographics.gender']} />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">Pronouns</Label>
-                    <Select
-                      value={formData.demographics.pronouns}
-                      onValueChange={value => updateDemographicsField('pronouns', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select pronouns" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {pronounOptions.map(option => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Marital Status</Label>
-                    <Select
-                      value={formData.demographics.maritalStatus}
-                      onValueChange={value => updateDemographicsField('maritalStatus', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {maritalStatusOptions.map(option => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Occupation</Label>
-                    <Input
-                      value={formData.demographics.occupation}
-                      onChange={e => updateDemographicsField('occupation', e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">Employer</Label>
-                    <Input
-                      value={formData.demographics.employer}
-                      onChange={e => updateDemographicsField('employer', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Language</Label>
-                      <InlineAddButton label="Language" />
+                {!compactMode && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-sm font-medium">Pronouns</Label>
+                        <Select
+                          value={formData.demographics.pronouns}
+                          onValueChange={value => updateDemographicsField('pronouns', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select pronouns" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {pronounOptions.map(option => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Marital Status</Label>
+                        <Select
+                          value={formData.demographics.maritalStatus}
+                          onValueChange={value => updateDemographicsField('maritalStatus', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {maritalStatusOptions.map(option => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Occupation</Label>
+                        <Input
+                          value={formData.demographics.occupation}
+                          onChange={e => updateDemographicsField('occupation', e.target.value)}
+                        />
+                      </div>
                     </div>
-                    <Select
-                      value={formData.demographics.language}
-                      onValueChange={value => updateDemographicsField('language', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Preferred language" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {languageOptions.map(option => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Time Zone</Label>
-                    <Input
-                      value={formData.demographics.timeZone}
-                      onChange={e => updateDemographicsField('timeZone', e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Race</Label>
-                      <InlineAddButton label="Race" />
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div>
+                        <Label className="text-sm font-medium">Employer</Label>
+                        <Input
+                          value={formData.demographics.employer}
+                          onChange={e => updateDemographicsField('employer', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">Language</Label>
+                          <InlineAddButton label="Language" />
+                        </div>
+                        <Select
+                          value={formData.demographics.language}
+                          onValueChange={value => updateDemographicsField('language', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Preferred language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {languageOptions.map(option => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Time Zone</Label>
+                        <Input
+                          value={formData.demographics.timeZone}
+                          onChange={e => updateDemographicsField('timeZone', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Preferred Communication</Label>
+                        <Select
+                          value={formData.demographics.preferredCommunication}
+                          onValueChange={value => updateDemographicsField('preferredCommunication', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select preference" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {contactMethodOptions.map(option => (
+                              <SelectItem key={option} value={option}>
+                                {option.toUpperCase()}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                    <Select
-                      value={formData.demographics.race}
-                      onValueChange={value => updateDemographicsField('race', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select race" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {raceOptions.map(option => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Ethnicity</Label>
-                      <InlineAddButton label="Ethnicity" />
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div>
+                        <Label className="text-sm font-medium">Disability Status</Label>
+                        <Input
+                          value={formData.demographics.disabilityStatus}
+                          onChange={e => updateDemographicsField('disabilityStatus', e.target.value)}
+                        />
+                      </div>
                     </div>
-                    <Select
-                      value={formData.demographics.ethnicity}
-                      onValueChange={value => updateDemographicsField('ethnicity', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select ethnicity" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ethnicityOptions.map(option => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Religion</Label>
-                    <Input
-                      value={formData.demographics.religion}
-                      onChange={e => updateDemographicsField('religion', e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">Blood Group</Label>
-                    <Select
-                      value={formData.demographics.bloodGroup}
-                      onValueChange={value => updateDemographicsField('bloodGroup', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select blood group" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {bloodGroupOptions.map(option => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">SSN / National ID</Label>
-                    <Input
-                      value={formData.demographics.ssn}
-                      onChange={e => updateDemographicsField('ssn', e.target.value)}
-                      placeholder="***-**-****"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Preferred Communication</Label>
-                    <Select
-                      value={formData.demographics.preferredCommunication}
-                      onValueChange={value => updateDemographicsField('preferredCommunication', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select preference" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {contactMethodOptions.map(option => (
-                          <SelectItem key={option} value={option}>
-                            {option.toUpperCase()}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Disability Status</Label>
-                    <Input
-                      value={formData.demographics.disabilityStatus}
-                      onChange={e => updateDemographicsField('disabilityStatus', e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">Hospital ID</Label>
-                    <Input
-                      value={formData.demographics.hospitalId}
-                      onChange={e => updateDemographicsField('hospitalId', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Health ID</Label>
-                    <Input
-                      value={formData.demographics.healthId}
-                      onChange={e => updateDemographicsField('healthId', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">MRN</Label>
-                    <Input
-                      value={formData.demographics.mrn}
-                      onChange={e => updateDemographicsField('mrn', e.target.value)}
-                    />
-                  </div>
-                </div>
+                    {!compactMode && (
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div>
+                          <Label className="text-sm font-medium">Hospital ID</Label>
+                          <Input
+                            value={formData.demographics.hospitalId}
+                            onChange={e => updateDemographicsField('hospitalId', e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">Health ID</Label>
+                          <Input
+                            value={formData.demographics.healthId}
+                            onChange={e => updateDemographicsField('healthId', e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">MRN</Label>
+                          <Input
+                            value={formData.demographics.mrn}
+                            onChange={e => updateDemographicsField('mrn', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
             {section.id === 'contact' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-3">
+                <div className={`grid grid-cols-1 gap-3 ${compactMode ? 'md:grid-cols-2' : 'md:grid-cols-4'}`}>
                   <div>
-                    <Label className="text-sm font-medium">Mobile Number</Label>
+                    <RequiredLabel>Mobile Number</RequiredLabel>
                     <Input
                       value={formData.contact.mobileNumber}
                       onChange={e => updateContactField('mobileNumber', e.target.value)}
@@ -696,14 +908,7 @@ export function PatientForm({
                     <FieldError message={errors['contact.mobileNumber']} />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Home Number</Label>
-                    <Input
-                      value={formData.contact.homeNumber}
-                      onChange={e => updateContactField('homeNumber', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Email</Label>
+                    <RequiredLabel>Email</RequiredLabel>
                     <Input
                       type="email"
                       value={formData.contact.email}
@@ -711,34 +916,58 @@ export function PatientForm({
                     />
                     <FieldError message={errors['contact.email']} />
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium">Fax</Label>
-                    <Input
-                      value={formData.contact.faxNumber}
-                      onChange={e => updateContactField('faxNumber', e.target.value)}
-                    />
-                  </div>
+                  {!compactMode && (
+                    <>
+                      <div>
+                        <Label className="text-sm font-medium">Home Number</Label>
+                        <Input
+                          value={formData.contact.homeNumber}
+                          onChange={e => updateContactField('homeNumber', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Fax</Label>
+                        <Input
+                          value={formData.contact.faxNumber}
+                          onChange={e => updateContactField('faxNumber', e.target.value)}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {!compactMode && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <RequiredLabel>Address Line 1</RequiredLabel>
+                      <Input
+                        value={formData.contact.address.line1}
+                        onChange={e => updateContactAddress('line1', e.target.value)}
+                      />
+                      <FieldError message={errors['contact.address.line1']} />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Address Line 2</Label>
+                      <Input
+                        value={formData.contact.address.line2}
+                        onChange={e => updateContactAddress('line2', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+                {compactMode && (
                   <div>
-                    <Label className="text-sm font-medium">Address Line 1</Label>
+                    <RequiredLabel>Address</RequiredLabel>
                     <Input
+                      placeholder="Street address"
                       value={formData.contact.address.line1}
                       onChange={e => updateContactAddress('line1', e.target.value)}
                     />
                     <FieldError message={errors['contact.address.line1']} />
                   </div>
+                )}
+                <div className={`grid grid-cols-1 gap-3 ${compactMode ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
                   <div>
-                    <Label className="text-sm font-medium">Address Line 2</Label>
-                    <Input
-                      value={formData.contact.address.line2}
-                      onChange={e => updateContactAddress('line2', e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">City</Label>
+                    <RequiredLabel>City</RequiredLabel>
                     <Input
                       value={formData.contact.address.city}
                       onChange={e => updateContactAddress('city', e.target.value)}
@@ -746,23 +975,25 @@ export function PatientForm({
                     <FieldError message={errors['contact.address.city']} />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">State</Label>
+                    <RequiredLabel>State</RequiredLabel>
                     <Input
                       value={formData.contact.address.state}
                       onChange={e => updateContactAddress('state', e.target.value)}
                     />
                     <FieldError message={errors['contact.address.state']} />
                   </div>
+                  {!compactMode && (
+                    <div>
+                      <RequiredLabel>Country</RequiredLabel>
+                      <Input
+                        value={formData.contact.address.country}
+                        onChange={e => updateContactAddress('country', e.target.value)}
+                      />
+                      <FieldError message={errors['contact.address.country']} />
+                    </div>
+                  )}
                   <div>
-                    <Label className="text-sm font-medium">Country</Label>
-                    <Input
-                      value={formData.contact.address.country}
-                      onChange={e => updateContactAddress('country', e.target.value)}
-                    />
-                    <FieldError message={errors['contact.address.country']} />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Zip Code</Label>
+                    <RequiredLabel>Zip Code</RequiredLabel>
                     <Input
                       value={formData.contact.address.postalCode}
                       onChange={e => updateContactAddress('postalCode', e.target.value)}
@@ -770,14 +1001,16 @@ export function PatientForm({
                     <FieldError message={errors['contact.address.postalCode']} />
                   </div>
                 </div>
-                <div>
-                  <Label className="text-sm font-medium">Preferred Contact Time</Label>
-                  <Input
-                    placeholder="Morning / Afternoon / Evening"
-                    value={formData.contact.preferredContactTime}
-                    onChange={e => updateContactField('preferredContactTime', e.target.value)}
-                  />
-                </div>
+                {!compactMode && (
+                  <div>
+                    <Label className="text-sm font-medium">Preferred Contact Time</Label>
+                    <Input
+                      placeholder="Morning / Afternoon / Evening"
+                      value={formData.contact.preferredContactTime}
+                      onChange={e => updateContactField('preferredContactTime', e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
             )}
 
@@ -787,7 +1020,7 @@ export function PatientForm({
                   <div key={`contact-${index}`} className="rounded-xl border border-gray-200 p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                        <Phone className="h-4 w-4 text-primary" />
+                        <Phone className="h-4 w-4 text-[#3342a5]" />
                         Contact #{index + 1}
                       </div>
                       {formData.emergencyContacts.length > 1 && (
@@ -801,7 +1034,7 @@ export function PatientForm({
                         </button>
                       )}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div>
                         <Label className="text-sm font-medium">Relationship</Label>
                         <Select
@@ -846,15 +1079,17 @@ export function PatientForm({
                         <FieldError message={errors[`emergencyContacts.${index}.mobileNumber`]} />
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm font-medium">Email</Label>
-                        <Input
-                          value={contact.email}
-                          onChange={e => updateEmergencyContact(index, 'email', e.target.value)}
-                        />
+                    {!compactMode && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-sm font-medium">Email</Label>
+                          <Input
+                            value={contact.email}
+                            onChange={e => updateEmergencyContact(index, 'email', e.target.value)}
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 ))}
                 <Button
@@ -870,8 +1105,8 @@ export function PatientForm({
             )}
 
             {section.id === 'insurance' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-medium">Insurance Type</Label>
@@ -892,22 +1127,26 @@ export function PatientForm({
                     />
                     <FieldError message={errors['insurance.insuranceName']} />
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium">Plan Type</Label>
-                    <Input
-                      value={formData.insurance.planType}
-                      onChange={e => updateInsuranceField('planType', e.target.value)}
-                    />
-                  </div>
+                  {!compactMode && (
+                    <div>
+                      <Label className="text-sm font-medium">Plan Type</Label>
+                      <Input
+                        value={formData.insurance.planType}
+                        onChange={e => updateInsuranceField('planType', e.target.value)}
+                      />
+                    </div>
+                  )}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">Plan Name</Label>
-                    <Input
-                      value={formData.insurance.planName}
-                      onChange={e => updateInsuranceField('planName', e.target.value)}
-                    />
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {!compactMode && (
+                    <div>
+                      <Label className="text-sm font-medium">Plan Name</Label>
+                      <Input
+                        value={formData.insurance.planName}
+                        onChange={e => updateInsuranceField('planName', e.target.value)}
+                      />
+                    </div>
+                  )}
                   <div>
                     <Label className="text-sm font-medium">Member ID</Label>
                     <Input
@@ -916,22 +1155,28 @@ export function PatientForm({
                     />
                     <FieldError message={errors['insurance.memberId']} />
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium">Group ID</Label>
-                    <Input
-                      value={formData.insurance.groupId}
-                      onChange={e => updateInsuranceField('groupId', e.target.value)}
-                    />
-                  </div>
+                  {!compactMode && (
+                    <div>
+                      <Label className="text-sm font-medium">Group ID</Label>
+                      <Input
+                        value={formData.insurance.groupId}
+                        onChange={e => updateInsuranceField('groupId', e.target.value)}
+                      />
+                    </div>
+                  )}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">Group Name</Label>
-                    <Input
-                      value={formData.insurance.groupName}
-                      onChange={e => updateInsuranceField('groupName', e.target.value)}
-                    />
+                {!compactMode && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <Label className="text-sm font-medium">Group Name</Label>
+                      <Input
+                        value={formData.insurance.groupName}
+                        onChange={e => updateInsuranceField('groupName', e.target.value)}
+                      />
+                    </div>
                   </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <Label className="text-sm font-medium">Effective Start Date</Label>
                     <Input
@@ -951,7 +1196,7 @@ export function PatientForm({
                     <FieldError message={errors['insurance.effectiveEnd']} />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <Label className="text-sm font-medium">Relationship to Insured</Label>
                     <Select
@@ -985,99 +1230,103 @@ export function PatientForm({
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">Insured Phone</Label>
-                    <Input
-                      value={formData.insurance.insuredPhone}
-                      onChange={e => updateInsuranceField('insuredPhone', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Insured Email</Label>
-                    <Input
-                      value={formData.insurance.insuredEmail}
-                      onChange={e => updateInsuranceField('insuredEmail', e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">Insured Address Line 1</Label>
-                    <Input
-                      value={formData.insurance.insuredAddress.line1}
-                      onChange={e => updateInsuranceAddress('line1', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Insured Address Line 2</Label>
-                    <Input
-                      value={formData.insurance.insuredAddress.line2}
-                      onChange={e => updateInsuranceAddress('line2', e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">City</Label>
-                    <Input
-                      value={formData.insurance.insuredAddress.city}
-                      onChange={e => updateInsuranceAddress('city', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">State</Label>
-                    <Input
-                      value={formData.insurance.insuredAddress.state}
-                      onChange={e => updateInsuranceAddress('state', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Country</Label>
-                    <Input
-                      value={formData.insurance.insuredAddress.country}
-                      onChange={e => updateInsuranceAddress('country', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Zip Code</Label>
-                    <Input
-                      value={formData.insurance.insuredAddress.postalCode}
-                      onChange={e => updateInsuranceAddress('postalCode', e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Upload Insurance Card</Label>
-                  <div className="flex items-center gap-3">
-                    <label
-                      htmlFor="insurance-card-upload"
-                      className="flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 cursor-pointer hover:bg-gray-50"
-                    >
-                      <FileUp className="h-4 w-4" />
-                      Upload Card
-                    </label>
-                    <input
-                      id="insurance-card-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleInsuranceCardUpload}
-                    />
-                    {formData.insurance.cardImage && (
-                      <span className="text-xs text-green-600 flex items-center gap-1">
-                        <Check className="h-3 w-3" />
-                        Uploaded
-                      </span>
-                    )}
-                  </div>
-                </div>
+                {!compactMode && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-sm font-medium">Insured Phone</Label>
+                        <Input
+                          value={formData.insurance.insuredPhone}
+                          onChange={e => updateInsuranceField('insuredPhone', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Insured Email</Label>
+                        <Input
+                          value={formData.insurance.insuredEmail}
+                          onChange={e => updateInsuranceField('insuredEmail', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-sm font-medium">Insured Address Line 1</Label>
+                        <Input
+                          value={formData.insurance.insuredAddress.line1}
+                          onChange={e => updateInsuranceAddress('line1', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Insured Address Line 2</Label>
+                        <Input
+                          value={formData.insurance.insuredAddress.line2}
+                          onChange={e => updateInsuranceAddress('line2', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div>
+                        <Label className="text-sm font-medium">City</Label>
+                        <Input
+                          value={formData.insurance.insuredAddress.city}
+                          onChange={e => updateInsuranceAddress('city', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">State</Label>
+                        <Input
+                          value={formData.insurance.insuredAddress.state}
+                          onChange={e => updateInsuranceAddress('state', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Country</Label>
+                        <Input
+                          value={formData.insurance.insuredAddress.country}
+                          onChange={e => updateInsuranceAddress('country', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Zip Code</Label>
+                        <Input
+                          value={formData.insurance.insuredAddress.postalCode}
+                          onChange={e => updateInsuranceAddress('postalCode', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Upload Insurance Card</Label>
+                      <div className="flex items-center gap-3">
+                        <label
+                          htmlFor="insurance-card-upload"
+                          className="flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 cursor-pointer hover:bg-gray-50"
+                        >
+                          <FileUp className="h-4 w-4" />
+                          Upload Card
+                        </label>
+                        <input
+                          id="insurance-card-upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleInsuranceCardUpload}
+                        />
+                        {formData.insurance.cardImage && (
+                          <span className="text-xs text-green-600 flex items-center gap-1">
+                            <Check className="h-3 w-3" />
+                            Uploaded
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
             {section.id === 'preferences' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-medium">Preferred Pharmacy</Label>
@@ -1106,7 +1355,7 @@ export function PatientForm({
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <Label className="text-sm font-medium">Preferred Doctor Gender</Label>
                     <Select
@@ -1155,8 +1404,8 @@ export function PatientForm({
             )}
 
             {section.id === 'consent' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {consentDetails.map(item => (
                     <div key={item.key} className="flex items-start gap-3 rounded-xl border border-gray-200 p-3">
                       <Checkbox
@@ -1175,7 +1424,7 @@ export function PatientForm({
                     </div>
                   ))}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <Label className="text-sm font-medium">Patient Status</Label>
                     <Select
@@ -1215,8 +1464,8 @@ export function PatientForm({
             )}
 
             {section.id === 'clinical' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <Label className="text-sm font-medium">Allergies</Label>
                     <Textarea
@@ -1236,7 +1485,7 @@ export function PatientForm({
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <Label className="text-sm font-medium">Smoking Status</Label>
                     <Select
@@ -1274,7 +1523,7 @@ export function PatientForm({
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <Label className="text-sm font-medium">Height (cm)</Label>
                     <Input
@@ -1299,7 +1548,8 @@ export function PatientForm({
               </div>
             )}
           </AccordionSection>
-        ))}
+        );
+        })}
 
         {(errors.submit || errors.facility) && (
           <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -1308,6 +1558,253 @@ export function PatientForm({
           </div>
         )}
       </form>
+
+      <Dialog
+        open={providerDialogOpen}
+        onOpenChange={(open) => {
+          if (!providerSaving) {
+            setProviderDialogOpen(open);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>Add Provider</DialogTitle>
+            <DialogDescription>
+              Capture minimal practitioner info without leaving the registration workflow.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label className="text-sm font-medium">Prefix</Label>
+              <Select
+                value={providerForm.prefix}
+                onValueChange={(value) => setProviderForm((prev) => ({ ...prev, prefix: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {['Dr', 'Mr', 'Ms', 'Mrs'].map((prefix) => (
+                    <SelectItem key={prefix} value={prefix}>
+                      {prefix}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Specialty</Label>
+              <Select
+                value={providerForm.specialty}
+                onValueChange={(value) => setProviderForm((prev) => ({ ...prev, specialty: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {providerSpecialtyOptions.map((specialty) => (
+                    <SelectItem key={specialty} value={specialty}>
+                      {specialty}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm font-medium">First Name</Label>
+              <Input
+                value={providerForm.firstName}
+                onChange={(e) => setProviderForm((prev) => ({ ...prev, firstName: e.target.value }))}
+                placeholder="Jane"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Last Name</Label>
+              <Input
+                value={providerForm.lastName}
+                onChange={(e) => setProviderForm((prev) => ({ ...prev, lastName: e.target.value }))}
+                placeholder="Doe"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Email</Label>
+              <Input
+                type="email"
+                value={providerForm.email}
+                onChange={(e) => setProviderForm((prev) => ({ ...prev, email: e.target.value }))}
+                placeholder="jane@example.com"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Phone</Label>
+              <Input
+                value={providerForm.phone}
+                onChange={(e) => setProviderForm((prev) => ({ ...prev, phone: e.target.value }))}
+                placeholder="+1 555-123-4567"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Label className="text-sm font-medium">Calendar Color</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {PROVIDER_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setProviderForm((prev) => ({ ...prev, color }))}
+                    className={`h-8 w-8 rounded-full border-2 ${
+                      providerForm.color === color ? 'border-[#3342a5]' : 'border-transparent'
+                    }`}
+                    style={{ backgroundColor: color }}
+                    aria-label={`Select ${color}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setProviderDialogOpen(false)}
+              disabled={providerSaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleCreateProvider}
+              disabled={providerSaving}
+              className="bg-[#3342a5] hover:bg-[#2a3686] text-white"
+            >
+              {providerSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Provider
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={locationDialogOpen}
+        onOpenChange={(open) => {
+          if (!locationSaving) {
+            setLocationDialogOpen(open);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>Add Location</DialogTitle>
+            <DialogDescription>
+              Capture clinic or ward details without leaving the intake flow.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label className="text-sm font-medium">Location Name</Label>
+              <Input
+                value={locationForm.name}
+                onChange={(e) => setLocationForm((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="Downtown Clinic"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Type</Label>
+              <Select
+                value={locationForm.type}
+                onValueChange={(value: FacilityTypeOption) =>
+                  setLocationForm((prev) => ({ ...prev, type: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {locationTypeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Phone</Label>
+              <Input
+                value={locationForm.phone}
+                onChange={(e) => setLocationForm((prev) => ({ ...prev, phone: e.target.value }))}
+                placeholder="+1 555-987-6543"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Email</Label>
+              <Input
+                value={locationForm.email}
+                onChange={(e) => setLocationForm((prev) => ({ ...prev, email: e.target.value }))}
+                placeholder="frontdesk@clinic.com"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Label className="text-sm font-medium">Address Line 1</Label>
+              <Input
+                value={locationForm.line1}
+                onChange={(e) => setLocationForm((prev) => ({ ...prev, line1: e.target.value }))}
+                placeholder="123 Health St."
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Label className="text-sm font-medium">Address Line 2</Label>
+              <Input
+                value={locationForm.line2}
+                onChange={(e) => setLocationForm((prev) => ({ ...prev, line2: e.target.value }))}
+                placeholder="Suite 200"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">City</Label>
+              <Input
+                value={locationForm.city}
+                onChange={(e) => setLocationForm((prev) => ({ ...prev, city: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">State</Label>
+              <Input
+                value={locationForm.state}
+                onChange={(e) => setLocationForm((prev) => ({ ...prev, state: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Postal Code</Label>
+              <Input
+                value={locationForm.postalCode}
+                onChange={(e) =>
+                  setLocationForm((prev) => ({ ...prev, postalCode: e.target.value }))
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setLocationDialogOpen(false)}
+              disabled={locationSaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleCreateLocation}
+              disabled={locationSaving}
+              className="bg-[#3342a5] hover:bg-[#2a3686] text-white"
+            >
+              {locationSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Location
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 mt-4">
         <div className="flex flex-col md:flex-row md:items-center gap-3">
@@ -1323,7 +1820,7 @@ export function PatientForm({
           <Button
             onClick={handleSubmit}
             disabled={loading || !currentFacility}
-            className="flex-1 bg-primary text-white"
+            className="flex-1 bg-[#3342a5] hover:bg-[#2a3686] text-white"
           >
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             {isUpdatingExisting || isEditing ? 'Update Patient' : 'Create Patient'}

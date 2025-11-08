@@ -26,6 +26,7 @@ const dataMapperRoutes = require('./routes/data-mapper');
 const notificationRoutes = require('./routes/notifications');
 const virtualMeetingsRoutes = require('./routes/virtual-meetings.routes');
 const patientPortalRoutes = require('./routes/patient-portal');
+const specialtyRoutes = require('./routes/specialties');
 const { initializeDatabase } = require('./database/init');
 const socketService = require('./services/socket.service');
 const billingJobs = require('./services/billing.jobs');
@@ -87,7 +88,9 @@ app.use(cors({
     'x-org-id',
     'x-user-id',
     'x-user-roles',
+    'x-location-id',
     'x-location-ids',
+    'x-department-id',
     'x-request-id',
     'x-practitioner-id',
     'x-patient-id',
@@ -231,6 +234,7 @@ app.use('/api/data-mapper', dataMapperRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/virtual-meetings', virtualMeetingsRoutes);
 app.use('/api/patient-portal', patientPortalRoutes);
+app.use('/api/specialties', specialtyRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

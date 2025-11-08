@@ -1,0 +1,19 @@
+{
+  "slug": "general",
+  "version": "1.0.0",
+  "name": "General Primary Care",
+  "description": "Default specialty pack for general primary care practice",
+  "dependencies": [],
+  "templates": [
+    "templates/general-intake.json",
+    "templates/general-encounter.json"
+  ],
+  "visitTypes": "visit-types.json",
+  "workflows": null,
+  "reports": "reports/general-kpis.json",
+  "featureFlags": {
+    "enableAdvancedEncounters": true,
+    "enableTelehealth": true
+  },
+  "devices": []
+}

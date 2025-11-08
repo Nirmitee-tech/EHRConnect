@@ -1,0 +1,95 @@
+{
+  "reports": [
+    {
+      "id": "patient-volume",
+      "name": "Patient Volume",
+      "description": "Daily, weekly, monthly patient visit counts",
+      "type": "metric",
+      "metrics": [
+        {
+          "key": "daily_visits",
+          "name": "Daily Visits",
+          "aggregation": "count",
+          "dimension": "day"
+        },
+        {
+          "key": "weekly_visits",
+          "name": "Weekly Visits",
+          "aggregation": "count",
+          "dimension": "week"
+        },
+        {
+          "key": "monthly_visits",
+          "name": "Monthly Visits",
+          "aggregation": "count",
+          "dimension": "month"
+        }
+      ]
+    },
+    {
+      "id": "provider-productivity",
+      "name": "Provider Productivity",
+      "description": "Encounters per provider, average visit duration",
+      "type": "dashboard",
+      "metrics": [
+        {
+          "key": "encounters_per_provider",
+          "name": "Encounters per Provider",
+          "aggregation": "count",
+          "groupBy": "practitioner_id"
+        },
+        {
+          "key": "avg_visit_duration",
+          "name": "Average Visit Duration",
+          "aggregation": "avg",
+          "field": "duration_minutes"
+        }
+      ]
+    },
+    {
+      "id": "appointment-efficiency",
+      "name": "Appointment Efficiency",
+      "description": "No-show rates, wait times, on-time starts",
+      "type": "dashboard",
+      "metrics": [
+        {
+          "key": "no_show_rate",
+          "name": "No-Show Rate",
+          "aggregation": "percentage",
+          "filter": "status = 'noshow'"
+        },
+        {
+          "key": "avg_wait_time",
+          "name": "Average Wait Time",
+          "aggregation": "avg",
+          "field": "wait_time_minutes"
+        },
+        {
+          "key": "on_time_start_rate",
+          "name": "On-Time Start Rate",
+          "aggregation": "percentage",
+          "filter": "delay_minutes <= 5"
+        }
+      ]
+    },
+    {
+      "id": "clinical-quality",
+      "name": "Clinical Quality Measures",
+      "description": "Preventive care completion, chronic disease management",
+      "type": "quality",
+      "metrics": [
+        {
+          "key": "annual_checkup_rate",
+          "name": "Annual Checkup Completion Rate",
+          "aggregation": "percentage",
+          "filter": "visit_type = 'annual-checkup'"
+        },
+        {
+          "key": "medication_adherence",
+          "name": "Medication Adherence Rate",
+          "aggregation": "percentage"
+        }
+      ]
+    }
+  ]
+}

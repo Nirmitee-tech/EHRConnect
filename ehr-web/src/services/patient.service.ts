@@ -1,4 +1,4 @@
-import { fhirService } from '@/lib/medplum';
+import { fhirService, FHIRResourceType } from '@/lib/medplum';
 import {
   FHIRPatient,
   FHIRBundle,
@@ -322,6 +322,7 @@ export class PatientService {
       };
 
       const result = await fhirService.update(updatedPatient) as FHIRPatient;
+      await this.syncAncillaryResources(rebuildPayload, request.id, { replace: true });
 
       // Log audit entry
       this.logAudit({
@@ -779,23 +780,6 @@ export class PatientService {
     };
   }
 
-  private async syncAncillaryResources(request: CreatePatientRequest, patientId: string): Promise<void> {
-    const relatedPersons = this.buildRelatedPersonResources(request, patientId);
-    for (const related of relatedPersons) {
-      await fhirService.create(related);
-    }
-
-    const coverage = this.buildCoverageResource(request, patientId);
-    if (coverage) {
-      await fhirService.create(coverage);
-    }
-
-    const consent = this.buildConsentResource(request, patientId);
-    if (consent) {
-      await fhirService.create(consent);
-    }
-  }
-
   private buildRelatedPersonResources(
     request: CreatePatientRequest,
     patientId: string
@@ -983,6 +967,54 @@ export class PatientService {
         }
       ]
     };
+  }
+
+  private async syncAncillaryResources(
+    request: CreatePatientRequest,
+    patientId: string,
+    options: { replace?: boolean } = {}
+  ): Promise<void> {
+    if (options.replace) {
+      await this.deleteAncillaryResources(patientId);
+    }
+
+    const relatedPersons = this.buildRelatedPersonResources(request, patientId);
+    for (const related of relatedPersons) {
+      await fhirService.create(related);
+    }
+
+    const coverage = this.buildCoverageResource(request, patientId);
+    if (coverage) {
+      await fhirService.create(coverage);
+    }
+
+    const consent = this.buildConsentResource(request, patientId);
+    if (consent) {
+      await fhirService.create(consent);
+    }
+  }
+
+  private async deleteAncillaryResources(patientId: string): Promise<void> {
+    await this.deleteResourceCollection('RelatedPerson', { patient: patientId });
+    await this.deleteResourceCollection('Coverage', { beneficiary: `Patient/${patientId}` });
+    await this.deleteResourceCollection('Consent', { patient: patientId });
+  }
+
+  private async deleteResourceCollection(
+    resourceType: FHIRResourceType,
+    searchParams: Record<string, string>
+  ): Promise<void> {
+    const response = await fhirService.search(resourceType, {
+      _count: 200,
+      ...searchParams
+    });
+
+    const deletions = (response.entry || [])
+      .map(entry => entry.resource as { id?: string })
+      .filter(resource => Boolean(resource.id))
+      .map(resource => fhirService.delete(resourceType, resource.id!));
+
+    await Promise.all(deletions);
   }
 
   private mapMaritalStatusDisplay(code?: string): string | undefined {

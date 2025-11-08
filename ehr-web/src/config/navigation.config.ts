@@ -3,7 +3,7 @@ import {
   Calendar,
   Users,
   UserCheck,
-  Package,
+  Package as PackageIcon,
   FileText,
   Shield,
   ScrollText,
@@ -119,7 +119,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
   {
     title: 'PHYSICAL ASSET',
     items: [
-      { name: 'Inventory', href: '/inventory', icon: Package }
+      { name: 'Inventory', href: '/inventory', icon: PackageIcon }
     ]
   },
   {
@@ -127,6 +127,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
     items: [
       { name: 'User Management', href: '/users', icon: Users },
       { name: 'Roles & Permissions', href: '/roles', icon: Shield },
+      { name: 'Specialty Packs', href: '/admin/specialties', icon: PackageIcon },
       { name: 'Integrations', href: '/integrations', icon: Plug },
       { name: 'Audit Logs', href: '/audit-logs', icon: ScrollText },
       { name: 'Settings', href: '/settings', icon: Settings }
@@ -176,7 +177,8 @@ const PAGE_CONFIG: Record<string, PageInfo> = {
 
 const ADMIN_PAGES: Record<string, string> = {
   facilities: 'Facilities Management',
-  users: 'User Management'
+  users: 'User Management',
+  specialties: 'Specialty Pack Management'
 };
 
 export const getPageInfo = (pathname: string): PageInfo => {

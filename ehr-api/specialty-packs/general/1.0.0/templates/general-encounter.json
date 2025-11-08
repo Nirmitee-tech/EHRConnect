@@ -1,0 +1,88 @@
+{
+  "resourceType": "Questionnaire",
+  "id": "general-encounter",
+  "name": "General Encounter Form",
+  "title": "General Encounter Documentation",
+  "status": "active",
+  "version": "1.0.0",
+  "description": "Standard encounter documentation for general primary care visits",
+  "item": [
+    {
+      "linkId": "subjective",
+      "text": "Subjective (S)",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "subjective.chief-complaint",
+          "text": "Chief Complaint",
+          "type": "text",
+          "required": true
+        },
+        {
+          "linkId": "subjective.hpi",
+          "text": "History of Present Illness",
+          "type": "text",
+          "required": true
+        },
+        {
+          "linkId": "subjective.ros",
+          "text": "Review of Systems",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "linkId": "objective",
+      "text": "Objective (O)",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "objective.vitals",
+          "text": "Vital Signs",
+          "type": "group",
+          "item": [
+            {
+              "linkId": "objective.vitals.bp",
+              "text": "Blood Pressure (mmHg)",
+              "type": "string"
+            },
+            {
+              "linkId": "objective.vitals.hr",
+              "text": "Heart Rate (bpm)",
+              "type": "integer"
+            },
+            {
+              "linkId": "objective.vitals.temp",
+              "text": "Temperature (°F)",
+              "type": "decimal"
+            },
+            {
+              "linkId": "objective.vitals.o2sat",
+              "text": "O2 Saturation (%)",
+              "type": "integer"
+            }
+          ]
+        },
+        {
+          "linkId": "objective.exam",
+          "text": "Physical Examination",
+          "type": "text",
+          "required": true
+        }
+      ]
+    },
+    {
+      "linkId": "assessment",
+      "text": "Assessment (A)",
+      "type": "text",
+      "required": true
+    },
+    {
+      "linkId": "plan",
+      "text": "Plan (P)",
+      "type": "text",
+      "required": true
+    }
+  ]
+}

@@ -43,6 +43,15 @@ export function PatientDrawer({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('patient-form');
   const [createdPatient, setCreatedPatient] = useState<CreatedPatientData | null>(null);
+  const [compactMode, setCompactMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const stored = localStorage.getItem('patientFormCompactMode');
+      return stored ? JSON.parse(stored) : false;
+    } catch {
+      return false;
+    }
+  });
 
   // Generate MRN (Medical Record Number)
   const generateMRN = (): string => {
@@ -180,7 +189,7 @@ export function PatientDrawer({
     }}>
       <DrawerContent side="right" size="3xl" className="overflow-y-auto p-0">
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <User className="h-4 w-4 text-white" />
@@ -188,6 +197,23 @@ export function PatientDrawer({
               <h2 className="text-sm font-bold text-gray-900">
                 {currentStep === 'encounter-form' ? 'Create Encounter' : (isEditing ? 'Edit Patient' : 'New Patient')}
               </h2>
+            </div>
+            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
+              <input
+                id="compact-mode-toggle"
+                type="checkbox"
+                className="h-4 w-4 rounded border-gray-300 text-[#3342a5] focus:ring-[#3342a5]"
+                checked={compactMode}
+                onChange={(e) => {
+                  setCompactMode(e.target.checked);
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('patientFormCompactMode', JSON.stringify(e.target.checked));
+                  }
+                }}
+              />
+              <label htmlFor="compact-mode-toggle" className="text-xs font-medium text-gray-700">
+                Compact Mode
+              </label>
             </div>
           </div>
         </div>
@@ -197,6 +223,7 @@ export function PatientDrawer({
             <PatientForm
               patient={patient}
               isEditing={isEditing}
+              compactMode={compactMode}
               onSubmit={handleSubmit}
               onCancel={handleCancel}
             />

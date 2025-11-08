@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import AuthSessionProvider from "@/providers/session-provider";
 import { FacilityProvider } from "@/contexts/facility-context";
+import { SpecialtyProvider } from "@/contexts/specialty-context";
 import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
 import { ToastProvider } from "@/hooks/useToast";
 
@@ -20,11 +21,13 @@ export default function RootLayout({
       <body className="antialiased bg-gray-50" suppressHydrationWarning>
         <ToastProvider>
           <AuthSessionProvider>
-            <FacilityProvider>
-              <AuthenticatedLayout>
-                {children}
-              </AuthenticatedLayout>
-            </FacilityProvider>
+            <SpecialtyProvider>
+              <FacilityProvider>
+                <AuthenticatedLayout>
+                  {children}
+                </AuthenticatedLayout>
+              </FacilityProvider>
+            </SpecialtyProvider>
           </AuthSessionProvider>
         </ToastProvider>
       </body>

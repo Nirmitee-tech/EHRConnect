@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Loader2, Activity, Heart, Thermometer, Wind, Droplet, Weight as WeightIcon, Ruler, AlertCircle, Info, Sparkles, TrendingUp, Calendar, Clock } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, Button, Input, Label } from '@nirmitee.io/design-system';
 import { VitalsFormData } from '../types';
@@ -33,13 +33,35 @@ export function VitalsDrawer({ open, onOpenChange, onSave, editData, mode = 'cre
     height: ''
   });
 
+  // Debounced form data for validation
+  const [debouncedFormData, setDebouncedFormData] = useState(formData);
+  const debounceTimerRef = useRef<NodeJS.Timeout>();
+
+  // Debounce form data updates for validation
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedFormData(formData);
+    }, 300); // 300ms debounce
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [formData]);
+
   // Load edit data when provided
   useEffect(() => {
     if (editData && mode === 'edit') {
       setFormData(editData);
+      setDebouncedFormData(editData);
     } else if (!open) {
       // Reset form when drawer closes
-      setFormData({
+      const emptyForm = {
         bloodPressureSystolic: '',
         bloodPressureDiastolic: '',
         heartRate: '',
@@ -48,7 +70,9 @@ export function VitalsDrawer({ open, onOpenChange, onSave, editData, mode = 'cre
         oxygenSaturation: '',
         weight: '',
         height: ''
-      });
+      };
+      setFormData(emptyForm);
+      setDebouncedFormData(emptyForm);
       setNotes('');
       setRecordedAt(new Date().toISOString().slice(0, 16));
     }
@@ -125,23 +149,23 @@ export function VitalsDrawer({ open, onOpenChange, onSave, editData, mode = 'cre
     return { isValid: true, status: 'normal', message: 'Normal range' };
   };
 
-  // Get validation results
-  const bpValidation = validateBP(formData.bloodPressureSystolic, formData.bloodPressureDiastolic);
-  const hrValidation = validateHeartRate(formData.heartRate);
-  const tempValidation = validateTemperature(formData.temperature);
-  const rrValidation = validateRespiratoryRate(formData.respiratoryRate);
-  const o2Validation = validateOxygenSat(formData.oxygenSaturation);
+  // Get validation results (using debounced data)
+  const bpValidation = validateBP(debouncedFormData.bloodPressureSystolic, debouncedFormData.bloodPressureDiastolic);
+  const hrValidation = validateHeartRate(debouncedFormData.heartRate);
+  const tempValidation = validateTemperature(debouncedFormData.temperature);
+  const rrValidation = validateRespiratoryRate(debouncedFormData.respiratoryRate);
+  const o2Validation = validateOxygenSat(debouncedFormData.oxygenSaturation);
 
-  // Calculate BMI
+  // Calculate BMI (using debounced data)
   const bmi = useMemo(() => {
-    const weight = parseFloat(formData.weight);
-    const height = parseFloat(formData.height);
+    const weight = parseFloat(debouncedFormData.weight);
+    const height = parseFloat(debouncedFormData.height);
     if (weight && height && height > 0) {
       const heightInMeters = height / 100;
       return (weight / (heightInMeters * heightInMeters)).toFixed(1);
     }
     return null;
-  }, [formData.weight, formData.height]);
+  }, [debouncedFormData.weight, debouncedFormData.height]);
 
   const getBMIStatus = (bmiValue: number) => {
     if (bmiValue < 16) return { status: 'critical', label: 'Severely Underweight' };
