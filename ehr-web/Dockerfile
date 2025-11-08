@@ -1,5 +1,5 @@
 # Multi-stage Dockerfile for Next.js EHR Web Application
-FROM node:20-alpine AS base
+FROM node:24-slim AS base
 
 # Install dependencies only when needed
 FROM base AS deps

@@ -29,7 +29,7 @@ interface Encounter {
 }
 
 interface PatientHeaderProps {
-  patient: PatientDetails;
+  patient?: PatientDetails | null;
   onEdit: () => void;
   onNewVisit: () => void;
   encounters?: Encounter[];
@@ -116,9 +116,16 @@ export function PatientHeader({
 
   // Check if patient has portal access
   React.useEffect(() => {
+    const patientId = patient?.id;
+    if (!patientId) {
+      setHasPortalAccess(false);
+      setCheckingPortalAccess(false);
+      return;
+    }
+
     const checkPortalAccess = async () => {
       try {
-        const response = await fetch(`/api/patient/check-portal-access?patientId=${patient.id}`);
+        const response = await fetch(`/api/patient/check-portal-access?patientId=${patientId}`);
         const data = await response.json();
         setHasPortalAccess(data.hasAccess || false);
       } catch (error) {
@@ -128,10 +135,8 @@ export function PatientHeader({
       }
     };
 
-    if (patient.id) {
-      checkPortalAccess();
-    }
-  }, [patient.id]);
+    checkPortalAccess();
+  }, [patient?.id]);
 
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -213,6 +218,20 @@ export function PatientHeader({
     setEditingInternalNote(false);
     // TODO: Save to backend
   };
+
+  // Early return if patient data not loaded yet
+  if (!patient) {
+    return (
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-screen-2xl mx-auto px-6 py-4">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/6"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const activeEncounters = encounters.filter(e => e.status === 'in-progress');
   const activeProblems = problems.filter((p: any) =>

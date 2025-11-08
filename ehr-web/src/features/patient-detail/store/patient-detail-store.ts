@@ -60,6 +60,10 @@ type ClinicalNote = {
   tags?: string[];
 };
 
+type CarePlanFormStringField = {
+  [K in keyof CarePlanFormData]: CarePlanFormData[K] extends string | undefined ? K : never;
+}[keyof CarePlanFormData];
+
 interface PatientDetailStore {
   patientId: string | null;
   encounterIdFromQuery: string | null;
@@ -111,6 +115,7 @@ interface PatientDetailStore {
     tabFromQuery?: string | null;
   }) => void;
   setActiveTab: (tabId: string) => void;
+  closeTab: (tabId: string) => void;
   toggleSidebar: () => void;
   setSelectedEncounter: (encounterId?: string) => void;
   setOpenEncounterTab: (encounterId: string) => void;
@@ -122,7 +127,7 @@ interface PatientDetailStore {
 
   updateSoapForm: (encounterId: string, field: keyof SoapForm, value: string) => void;
   setSoapForm: (encounterId: string, form: SoapForm) => void;
-  updateCarePlanForm: (encounterId: string, field: keyof CarePlanFormData, value: string) => void;
+  updateCarePlanForm: (encounterId: string, field: CarePlanFormStringField, value: string) => void;
   setCarePlanForm: (encounterId: string, form: CarePlanFormData) => void;
   updateClinicalInstructionsForm: (encounterId: string, field: keyof ClinicalInstructionsForm, value: string) => void;
   setClinicalInstructionsForm: (encounterId: string, form: ClinicalInstructionsForm) => void;
@@ -167,6 +172,11 @@ const defaultSoapForm: SoapForm = {
 };
 
 const defaultCarePlanForm: CarePlanFormData = {
+  title: '',
+  description: '',
+  status: 'draft',
+  intent: 'plan',
+  activities: [],
   goals: '',
   interventions: '',
   outcomes: ''
@@ -236,15 +246,29 @@ const initialState = {
 export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
   ...initialState,
   initialize: ({ patientId, encounterIdFromQuery = null, tabFromQuery = null }) => {
-    set({
-      ...initialState,
-      patientId,
-      encounterIdFromQuery,
-      tabFromQuery,
-      activeTab: tabFromQuery || 'dashboard',
-      openTabs: [tabFromQuery || 'dashboard'],
-      loading: true
-    });
+    const currentState = get();
+
+    // Only fully reset if patient ID changes, otherwise just update query params
+    if (currentState.patientId !== patientId) {
+      console.log('🔄 initialize: Patient changed, full reset');
+      set({
+        ...initialState,
+        patientId,
+        encounterIdFromQuery,
+        tabFromQuery,
+        activeTab: tabFromQuery || 'dashboard',
+        openTabs: [tabFromQuery || 'dashboard'],
+        loading: true
+      });
+    } else {
+      console.log('🔄 initialize: Same patient, updating query params only');
+      // Same patient, just update query params without resetting patient data
+      set({
+        encounterIdFromQuery,
+        tabFromQuery,
+        hasHydratedFromQuery: false // Reset this so hydration can happen again
+      });
+    }
   },
   setActiveTab: (tabId) => {
     set((state) => {
@@ -258,6 +282,24 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
         ...state,
         activeTab: tabId,
         openTabs
+      };
+    });
+  },
+  closeTab: (tabId) => {
+    set((state) => {
+      const openTabs = state.openTabs.filter((id) => id !== tabId);
+      if (!openTabs.length) {
+        return {
+          ...state,
+          openTabs: ['dashboard'],
+          activeTab: 'dashboard'
+        };
+      }
+      const nextActiveTab = state.activeTab === tabId ? openTabs[openTabs.length - 1] : state.activeTab;
+      return {
+        ...state,
+        openTabs,
+        activeTab: nextActiveTab
       };
     });
   },
@@ -381,7 +423,9 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
   updateCarePlanForm: (encounterId, field, value) => {
     set((state) => {
       const current = state.carePlanForms[encounterId] || defaultCarePlanForm;
-      if ((current as Record<string, string>)[field] === value) {
+      const key = field as keyof CarePlanFormData;
+      const currentValue = current[key];
+      if ((currentValue ?? '') === value) {
         return state;
       }
       return {
@@ -390,7 +434,7 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
           ...state.carePlanForms,
           [encounterId]: {
             ...current,
-            [field]: value
+            [key]: value
           }
         }
       };
@@ -531,10 +575,15 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
   },
   loadAllPatientData: async () => {
     const patientId = get().patientId;
-    if (!patientId) return;
+    if (!patientId) {
+      console.log('❌ loadAllPatientData: No patientId provided');
+      return;
+    }
 
+    console.log('🔄 loadAllPatientData: Starting for patient', patientId);
     set({ loading: true });
     try {
+      console.log('📡 Fetching patient data from FHIR...');
       const [patientResource, encounterRes, conditionRes, medicationRes, allergyRes, observationRes, coverageRes] = (await Promise.all([
         fhirService.read('Patient', patientId),
         fhirService.search('Encounter', { patient: patientId, _count: 10, _sort: '-date' }),
@@ -544,6 +593,7 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
         fhirService.search('Observation', { patient: patientId, _count: 50, _sort: '-date', category: 'vital-signs' }),
         fhirService.search('Coverage', { patient: patientId, _count: 10 })
       ])) as [any, any, any, any, any, any, any];
+      console.log('✅ Patient data loaded successfully:', patientResource);
 
       const name = patientResource.name?.[0];
       const fullName = `${name?.given?.join(' ') || ''} ${name?.family || ''}`.trim();
@@ -574,9 +624,12 @@ export const usePatientDetailStore = create<PatientDetailStore>((set, get) => ({
         observations: observationRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || [],
         insurances: coverageRes.entry?.map((e: FHIRBundleEntry<any>) => e.resource) || []
       });
+      console.log('✅ Store updated with patient data');
     } catch (error) {
-      console.error('Error loading patient data:', error);
+      console.error('❌ Error loading patient data:', error);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
     } finally {
+      console.log('🏁 loadAllPatientData: Complete, setting loading = false');
       set({ loading: false });
     }
   },

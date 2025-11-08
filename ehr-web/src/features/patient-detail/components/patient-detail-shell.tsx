@@ -38,11 +38,10 @@ import { PortalAccessDialog } from '@/components/patients/portal-access-dialog';
 import { usePatientDetailStore } from '../store/patient-detail-store';
 
 export function PatientDetailShell() {
-  const params = useParams();
-  const searchParams = useSearchParams();
-  const patientId = params?.id as string;
   const { openPatientEditTab } = useTabNavigation();
 
+  // Get all store state - Zustand handles reactivity automatically
+  const store = usePatientDetailStore();
   const {
     patientId,
     patient,
@@ -81,6 +80,7 @@ export function PatientDetailShell() {
     currentEditingEncounterId,
     encounterIdFromQuery,
     setActiveTab,
+    closeTab,
     toggleSidebar,
     setSelectedEncounter,
     setOpenEncounterTab,
@@ -116,7 +116,9 @@ export function PatientDetailShell() {
     handleSaveMedication,
     handleSaveInsurance,
     handleEditPatient
-  } = usePatientDetailStore();
+  } = store;
+
+  console.log('🔍 PatientDetailShell render:', { patientId, patient, loading, patientName: patient?.name });
 
   const refreshData = () => {
     loadAllPatientData();
@@ -144,13 +146,36 @@ export function PatientDetailShell() {
   // AMC Requires popover state - per encounter
   const [showAmcPopover, setShowAmcPopover] = useState<{ [encounterId: string]: boolean }>({});
 
-  // Load ALL data upfront in parallel - browser-style tabs
-  const loadAllPatientData = useCallback(async () => {
-    if (!patientId) return;
+  // Patient data is loaded via zustand in parent, child components handle their own loading states
 
-    try {
-      setLoading(true);
+  // Show loading state if patient is not loaded yet
+  if (!patient) {
+    return (
+      <TabPageWrapper title="Patient Details" icon={<User className="h-4 w-4" />}>
+        <div className="h-screen flex flex-col bg-gray-50">
+          <div className="flex h-64 flex-col items-center justify-center gap-2 text-gray-500">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm">Loading patient details...</p>
+          </div>
+        </div>
+      </TabPageWrapper>
+    );
+  }
 
+  if (!patientId) {
+    return (
+      <TabPageWrapper title="Patient Details" icon={<User className="h-4 w-4" />}>
+        <div className="h-screen flex flex-col bg-gray-50">
+          <div className="flex h-64 flex-col items-center justify-center gap-2 text-gray-500">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm">Loading patient ID...</p>
+          </div>
+        </div>
+      </TabPageWrapper>
+    );
+  }
+
+  // Navigation sections used for the sidebar and browser-style tabs
   const sections = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, count: null },
     { id: 'allergies', label: 'Allergies', icon: AlertCircle, count: allergies.length },
@@ -171,12 +196,20 @@ export function PatientDetailShell() {
     { id: 'portal-access', label: 'Portal Access', icon: Globe, count: null }
   ];
 
+  const handleOpenEditTab = () => {
+    if (!patientId || !patient?.name) {
+      console.warn('Cannot open patient edit tab without patient id and name');
+      return;
+    }
+    openPatientEditTab(patientId, patient.name);
+  };
+
   return (
     <TabPageWrapper title={patient.name} icon={<User className="h-4 w-4" />}>
       <div className="h-screen flex flex-col bg-gray-50">
         <PatientHeader
           patient={patient}
-          onEdit={() => openPatientEditTab(patientId, patient.name)}
+          onEdit={handleOpenEditTab}
           onNewVisit={() => setDrawerState('encounter', true)}
           encounters={encounters}
           selectedEncounter={selectedEncounter}
@@ -327,9 +360,7 @@ export function PatientDetailShell() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          const newTabs = openTabs.filter(id => id !== tabId);
-                          setOpenTabs(newTabs);
-                          if (isActive && newTabs.length > 0) setActiveTab(newTabs[newTabs.length - 1]);
+                          closeTab(tabId);
                         }}
                         className="ml-1 hover:bg-gray-300 rounded p-0.5 transition-colors"
                       >
@@ -814,7 +845,7 @@ export function PatientDetailShell() {
                                 <button
                                   key={item}
                                   onClick={() => {
-                                    addSubTab(item.toLowerCase().replace(/\s+/g, '-'), item);
+                                    addSubTab(item.toLowerCase().replace(/\s+/g, '-'));
                                     setEncounterDropdown(encounterId, null);
                                   }}
                                   className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
