@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { User, Edit, Calendar, Pill, AlertCircle, Activity, FileText, Loader2, Shield, ChevronLeft, ChevronRight, Plus, X, ChevronDown, LayoutDashboard, Search, Syringe, TestTube, ImageIcon, History, CreditCard, DollarSign, FileCheck, UserCircle, Globe } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@nirmitee.io/design-system';
@@ -55,6 +55,11 @@ import { PlaceholderTab } from './tabs/placeholder-tab';
 import { VaccinesTab } from './tabs/vaccines-tab';
 import { LabTab } from './tabs/lab-tab';
 import { ImagingTab } from './tabs/imaging-tab';
+import { FormsTab } from './tabs/forms-tab';
+// Phase 2: Specialty system imports
+import { specialtyRegistry } from '@/features/specialties';
+import { useSpecialtyNavigation } from '@/features/specialties/shared/hooks/useSpecialtyNavigation';
+import { EpisodeProvider } from '@/contexts/episode-context';
 
 export function PatientDetailShell() {
   const { openPatientEditTab } = useTabNavigation();
@@ -369,6 +374,11 @@ export function PatientDetailShell() {
               <ImagingTab />
             </div>
 
+            {/* Forms Tab */}
+            <div style={{ display: activeTab === 'forms' ? 'block' : 'none' }}>
+              <FormsTab patientId={patientId} encounterId={selectedEncounter?.id} />
+            </div>
+
             {/* History Tab */}
             <div style={{ display: activeTab === 'history' ? 'block' : 'none' }}>
               <PlaceholderTab
@@ -417,6 +427,9 @@ export function PatientDetailShell() {
             <div style={{ display: activeTab === 'portal-access' ? 'block' : 'none' }}>
               <PortalAccessTab />
             </div>
+
+            {/* Phase 2: Dynamic Specialty Component Renderer */}
+            <SpecialtyComponentRenderer activeTab={activeTab} patientId={patientId} />
 
             {/* Dynamic Encounter Tabs */}
             {openEncounterTabs.map((encounterId) => {
@@ -934,5 +947,88 @@ export function PatientDetailShell() {
         }}
       />
     </TabPageWrapper>
+  );
+}
+
+/**
+ * Phase 2: Dynamic Specialty Component Renderer
+ * Dynamically loads and renders specialty components based on active tab
+ */
+interface SpecialtyComponentRendererProps {
+  activeTab: string;
+  patientId: string;
+}
+
+function SpecialtyComponentRenderer({ activeTab, patientId }: SpecialtyComponentRendererProps) {
+  // Get specialty navigation to find component mappings
+  const { navigation } = useSpecialtyNavigation('all');
+
+  console.log('🔍 SpecialtyComponentRenderer - activeTab:', activeTab);
+  console.log('🔍 Navigation sections:', navigation.map(n => ({ id: n.id, componentName: n.componentName })));
+
+  // Find matching navigation section
+  const matchingSection = navigation.find(section => section.id === activeTab && section.componentName);
+
+  if (!matchingSection || !matchingSection.componentName) {
+    console.log('❌ No matching section for activeTab:', activeTab);
+    return null; // Not a specialty tab
+  }
+
+  console.log('✅ Found matching section:', matchingSection);
+
+  // Find specialty module that has this component
+  const allModules = specialtyRegistry.getAll();
+  console.log('📦 Registry modules:', allModules.map(m => ({
+    slug: m.slug,
+    components: m.components ? Object.keys(m.components) : 'NO COMPONENTS',
+    hasComponents: !!m.components
+  })));
+  console.log('🔎 Looking for component:', matchingSection.componentName);
+
+  let SpecialtyComponent = null;
+  let moduleSlug = null;
+
+  for (const module of allModules) {
+    console.log('🔍 Checking module:', module.slug, 'components:', module.components);
+    if (module.components && module.components[matchingSection.componentName]) {
+      console.log('✅ Found component in module:', module.slug);
+      SpecialtyComponent = module.components[matchingSection.componentName];
+      moduleSlug = module.slug;
+      break;
+    } else {
+      console.log('❌ Component not in module:', module.slug);
+    }
+  }
+
+  console.log('🎯 Final result - Found component:', !!SpecialtyComponent, 'from module:', moduleSlug);
+
+  if (!SpecialtyComponent || !moduleSlug) {
+    return (
+      <div style={{ display: activeTab === matchingSection.id ? 'block' : 'none' }}>
+        <div className="p-8 text-center text-gray-500">
+          <p>Component "{matchingSection.componentName}" not found</p>
+          <p className="text-sm mt-2">Please ensure the specialty module is properly registered</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Render the specialty component wrapped in EpisodeProvider
+  // IMPORTANT: Only show when this tab is active (same pattern as other tabs)
+  return (
+    <div style={{ display: activeTab === matchingSection.id ? 'block' : 'none' }}>
+      <EpisodeProvider patientId={patientId} autoLoad={true}>
+        <Suspense
+          fallback={
+            <div className="p-8 flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+              <span className="ml-2 text-gray-600">Loading specialty component...</span>
+            </div>
+          }
+        >
+          <SpecialtyComponent patientId={patientId} />
+        </Suspense>
+      </EpisodeProvider>
+    </div>
   );
 }

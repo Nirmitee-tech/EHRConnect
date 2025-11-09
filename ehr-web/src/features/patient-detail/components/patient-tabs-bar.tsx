@@ -81,15 +81,15 @@ export function PatientTabsBar() {
             <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
             <span>{section.label}</span>
             {openTabs.length > 1 && (
-              <button
+              <span
                 onClick={(e) => {
                   e.stopPropagation();
                   closeTab(tabId);
                 }}
-                className="ml-1 hover:bg-gray-300 rounded p-0.5 transition-colors"
+                className="ml-1 hover:bg-gray-300 rounded p-0.5 transition-colors cursor-pointer inline-flex items-center"
               >
                 <X className="h-3 w-3 text-gray-600" />
-              </button>
+              </span>
             )}
           </button>
         );
@@ -118,15 +118,15 @@ export function PatientTabsBar() {
           >
             <FileText className={`h-3.5 w-3.5 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
             <span>{encounterLabel}</span>
-            <button
+            <span
               onClick={(e) => {
                 e.stopPropagation();
                 closeEncounterTab(encounterId);
               }}
-              className="ml-1 hover:bg-gray-300 rounded p-0.5 transition-colors"
+              className="ml-1 hover:bg-gray-300 rounded p-0.5 transition-colors cursor-pointer inline-flex items-center"
             >
               <X className="h-3 w-3 text-gray-600" />
-            </button>
+            </span>
           </button>
         );
       })}

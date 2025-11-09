@@ -1,0 +1,94 @@
+[
+  {
+    "code": "prenatal-initial",
+    "name": "Initial Prenatal Visit",
+    "description": "Comprehensive initial prenatal assessment and history",
+    "duration_min": 60,
+    "buffer_before_min": 10,
+    "buffer_after_min": 10,
+    "required_roles": ["ob_nurse", "obstetrician"],
+    "required_resources": ["exam_room", "ultrasound_machine"],
+    "category": "consultation",
+    "color": "#EC4899",
+    "intake_template_id": "prenatal-intake",
+    "recurrence_template": null
+  },
+  {
+    "code": "prenatal-followup",
+    "name": "Prenatal Follow-up",
+    "description": "Routine prenatal check-up with vitals and fetal monitoring",
+    "duration_min": 30,
+    "buffer_before_min": 5,
+    "buffer_after_min": 5,
+    "required_roles": ["ob_nurse"],
+    "required_resources": ["exam_room", "fetal_doppler"],
+    "category": "follow-up",
+    "color": "#EC4899",
+    "intake_template_id": "prenatal-visit",
+    "recurrence_template": {
+      "frequency": "WEEKLY",
+      "interval": 4,
+      "description": "Monthly visits until 28 weeks, then weekly"
+    }
+  },
+  {
+    "code": "ultrasound",
+    "name": "Ultrasound Examination",
+    "description": "Fetal ultrasound imaging and assessment",
+    "duration_min": 45,
+    "buffer_before_min": 10,
+    "buffer_after_min": 5,
+    "required_roles": ["ultrasound_tech", "radiologist"],
+    "required_resources": ["ultrasound_room", "ultrasound_machine"],
+    "category": "imaging",
+    "color": "#8B5CF6",
+    "intake_template_id": null,
+    "recurrence_template": null
+  },
+  {
+    "code": "nst",
+    "name": "Non-Stress Test (NST)",
+    "description": "Fetal heart rate monitoring and assessment",
+    "duration_min": 30,
+    "buffer_before_min": 5,
+    "buffer_after_min": 5,
+    "required_roles": ["ob_nurse"],
+    "required_resources": ["monitoring_room", "fetal_monitor"],
+    "category": "monitoring",
+    "color": "#F59E0B",
+    "intake_template_id": null,
+    "recurrence_template": {
+      "frequency": "WEEKLY",
+      "interval": 1,
+      "description": "Weekly NST for high-risk pregnancies"
+    }
+  },
+  {
+    "code": "genetic-counseling",
+    "name": "Genetic Counseling",
+    "description": "Genetic screening and counseling session",
+    "duration_min": 60,
+    "buffer_before_min": 10,
+    "buffer_after_min": 10,
+    "required_roles": ["genetic_counselor"],
+    "required_resources": ["counseling_room"],
+    "category": "consultation",
+    "color": "#10B981",
+    "intake_template_id": null,
+    "recurrence_template": null
+  },
+  {
+    "code": "postpartum-checkup",
+    "name": "Postpartum Check-up",
+    "description": "6-week postpartum examination and assessment",
+    "duration_min": 30,
+    "buffer_before_min": 5,
+    "buffer_after_min": 5,
+    "required_roles": ["ob_nurse", "obstetrician"],
+    "required_resources": ["exam_room"],
+    "category": "follow-up",
+    "color": "#EC4899",
+    "intake_template_id": "postpartum",
+    "recurrence_template": null
+  }
+]

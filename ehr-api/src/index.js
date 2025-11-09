@@ -27,6 +27,8 @@ const notificationRoutes = require('./routes/notifications');
 const virtualMeetingsRoutes = require('./routes/virtual-meetings.routes');
 const patientPortalRoutes = require('./routes/patient-portal');
 const specialtyRoutes = require('./routes/specialties');
+const initializeEpisodeRoutes = require('./routes/episodes');
+const formsRoutes = require('./routes/forms');
 const { initializeDatabase } = require('./database/init');
 const socketService = require('./services/socket.service');
 const billingJobs = require('./services/billing.jobs');
@@ -235,6 +237,8 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/virtual-meetings', virtualMeetingsRoutes);
 app.use('/api/patient-portal', patientPortalRoutes);
 app.use('/api/specialties', specialtyRoutes);
+app.use('/api', initializeEpisodeRoutes(dbPool)); // Episode routes (FHIR EpisodeOfCare)
+app.use('/api/forms', formsRoutes); // Forms/Questionnaire Builder routes
 
 // Health check
 app.get('/health', (req, res) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   LayoutDashboard,
   AlertCircle,
@@ -23,11 +23,14 @@ import {
   ChevronRight,
   X,
   ChevronDown,
+  ClipboardList,
+  Users,
   LucideIcon
 } from 'lucide-react';
 import { usePatientDetailStore } from '../store/patient-detail-store';
+import { useSpecialtyNavigation, useHasSpecialtyNavigation } from '@/features/specialties/shared/hooks/useSpecialtyNavigation';
 
-type SidebarView = 'all' | 'clinical' | 'administrative' | 'financial';
+type SidebarView = 'all' | 'clinical' | 'administrative' | 'financial' | string;
 
 interface NavigationItem {
   id: string;
@@ -36,6 +39,7 @@ interface NavigationItem {
   count: number | null;
   category: string;
   encounterId?: string;
+  specialtySlug?: string;
 }
 
 function PatientSidebarComponent() {
@@ -49,11 +53,19 @@ function PatientSidebarComponent() {
   const allergies = usePatientDetailStore((state) => state.allergies);
   const problems = usePatientDetailStore((state) => state.problems);
   const medications = usePatientDetailStore((state) => state.medications);
+  const immunizations = usePatientDetailStore((state) => state.immunizations);
+  const labResults = usePatientDetailStore((state) => state.labResults);
+  const imagingStudies = usePatientDetailStore((state) => state.imagingStudies);
+  const documents = usePatientDetailStore((state) => state.documents);
 
   // Get actions from Zustand
   const toggleSidebar = usePatientDetailStore((state) => state.toggleSidebar);
   const setActiveTab = usePatientDetailStore((state) => state.setActiveTab);
   const closeEncounterTab = usePatientDetailStore((state) => state.closeEncounterTab);
+
+  // Try to use specialty navigation (Phase 2 enhancement)
+  const hasSpecialtyNav = useHasSpecialtyNavigation();
+  const { navigation: specialtyNavigation, viewOptions: specialtyViewOptions } = useSpecialtyNavigation(sidebarView);
 
   // All navigation sections organized by category
   const allSections = {
@@ -68,6 +80,8 @@ function PatientSidebarComponent() {
       { id: 'vitals', label: 'Vitals', icon: Activity, count: null, category: 'clinical' },
       { id: 'lab', label: 'Lab', icon: TestTube, count: null, category: 'clinical' },
       { id: 'imaging', label: 'Imaging', icon: ImageIcon, count: null, category: 'clinical' },
+      { id: 'forms', label: 'Forms', icon: ClipboardList, count: null, category: 'clinical' },
+      { id: 'family-history', label: 'Family History', icon: Users, count: null, category: 'clinical' },
       { id: 'history', label: 'History', icon: History, count: null, category: 'clinical' },
       { id: 'encounters', label: 'Visit Details', icon: Calendar, count: null, category: 'clinical' }
     ],
@@ -84,32 +98,101 @@ function PatientSidebarComponent() {
     ]
   };
 
-  // Filter sections based on selected view
-  const getFilteredSections = () => {
-    if (sidebarView === 'all') {
-      return [
-        ...allSections.general,
-        ...allSections.clinical,
-        ...allSections.administrative,
-        ...allSections.financial
-      ];
-    }
-    if (sidebarView === 'clinical') {
-      return [...allSections.general, ...allSections.clinical];
-    }
-    if (sidebarView === 'administrative') {
-      return [...allSections.general, ...allSections.administrative];
-    }
-    if (sidebarView === 'financial') {
-      return [...allSections.general, ...allSections.financial];
-    }
-    return [];
-  };
+  /**
+   * Get final navigation sections
+   * MERGES base sections WITH specialty sections (not replace!)
+   */
+  const sections = useMemo(() => {
+    // Filter base sections based on selected view
+    const getBaseSections = () => {
+      if (sidebarView === 'all') {
+        return [
+          ...allSections.general,
+          ...allSections.clinical,
+          ...allSections.administrative,
+          ...allSections.financial
+        ];
+      }
+      if (sidebarView === 'clinical') {
+        return [...allSections.general, ...allSections.clinical];
+      }
+      if (sidebarView === 'administrative') {
+        return [...allSections.general, ...allSections.administrative];
+      }
+      if (sidebarView === 'financial') {
+        return [...allSections.general, ...allSections.financial];
+      }
+      return [];
+    };
 
-  const sections = getFilteredSections();
+    // Always start with base sections (allergies, medications, etc.)
+    const baseSections = getBaseSections();
+
+    // Phase 2 Enhancement: If specialty navigation available, MERGE it with base
+    if (hasSpecialtyNav && specialtyNavigation.length > 0) {
+      // Create merged array starting with base sections
+      const merged = [...baseSections];
+
+      // Add specialty-specific sections that don't exist in base
+      for (const specialtyItem of specialtyNavigation) {
+        const existsInBase = baseSections.some(base => base.id === specialtyItem.id);
+        if (!existsInBase) {
+          // This is a specialty-specific section (like prenatal-overview), add it
+          merged.push(specialtyItem);
+        }
+      }
+
+      // Add dynamic counts from Zustand state
+      return merged.map(item => ({
+        ...item,
+        count:
+          item.id === 'allergies' ? allergies.length :
+          item.id === 'problems' ? problems.length :
+          item.id === 'medications' ? medications.length :
+          item.id === 'vaccines' ? immunizations.length :
+          item.id === 'lab' ? labResults.length :
+          item.id === 'imaging' ? imagingStudies.length :
+          item.id === 'documents' ? documents.length :
+          item.count ?? null
+      }));
+    }
+
+    // No specialty navigation: Use base sections only
+    return baseSections.map(item => ({
+      ...item,
+      count:
+        item.id === 'allergies' ? allergies.length :
+        item.id === 'problems' ? problems.length :
+        item.id === 'medications' ? medications.length :
+        item.id === 'vaccines' ? immunizations.length :
+        item.id === 'lab' ? labResults.length :
+        item.id === 'imaging' ? imagingStudies.length :
+        item.id === 'documents' ? documents.length :
+        item.count ?? null
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSpecialtyNav, specialtyNavigation, sidebarView, allergies.length, problems.length, medications.length, immunizations.length, labResults.length, imagingStudies.length, documents.length]);
+
+  /**
+   * Get view options for dropdown
+   * Uses specialty view options if available, otherwise uses default options
+   */
+  const viewOptions = useMemo(() => {
+    if (hasSpecialtyNav && specialtyViewOptions.length > 0) {
+      return specialtyViewOptions;
+    }
+
+    // Fallback: Default view options (backwards compatible)
+    return [
+      { value: 'all', label: 'All Sections' },
+      { value: 'clinical', label: 'Clinical' },
+      { value: 'administrative', label: 'Admin' },
+      { value: 'financial', label: 'Financial' },
+    ];
+  }, [hasSpecialtyNav, specialtyViewOptions]);
 
   // Add open encounters at the TOP - they're the active work items
-  const allNavigationItems: NavigationItem[] = [
+  const allNavigationItems: NavigationItem[] = useMemo(() => [
     ...openEncounterTabs.map((encounterId): NavigationItem => {
       const encounter = encounters.find(e => e.id === encounterId);
       const encounterDate = encounter?.period?.start || encounter?.startTime;
@@ -127,7 +210,7 @@ function PatientSidebarComponent() {
       };
     }),
     ...sections
-  ];
+  ], [openEncounterTabs, encounters, sections]);
 
   return (
     <div
@@ -141,17 +224,24 @@ function PatientSidebarComponent() {
           <div className="px-2 py-2">
             {/* Combined Row: View Dropdown + Toggle */}
             <div className="flex items-center gap-1">
-              {/* View Dropdown */}
+              {/* View Dropdown - Enhanced with specialty options */}
               <div className="relative flex-1">
                 <select
                   value={sidebarView}
                   onChange={(e) => setSidebarView(e.target.value as SidebarView)}
                   className="w-full pl-2 pr-6 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white cursor-pointer appearance-none hover:bg-white transition-colors"
                 >
-                  <option value="all">All Sections</option>
-                  <option value="clinical">Clinical</option>
-                  <option value="administrative">Admin</option>
-                  <option value="financial">Financial</option>
+                  {viewOptions.map((option) =>
+                    option.isDivider ? (
+                      <option key={option.value} disabled className="text-gray-400">
+                        {option.label}
+                      </option>
+                    ) : (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    )
+                  )}
                 </select>
                 <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-500 pointer-events-none" />
               </div>

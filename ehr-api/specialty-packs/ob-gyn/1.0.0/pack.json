@@ -1,0 +1,127 @@
+{
+  "slug": "ob-gyn",
+  "version": "1.0.0",
+  "name": "OB/GYN & Prenatal Care",
+  "description": "Comprehensive obstetric and gynecological care with prenatal monitoring",
+  "category": "clinical",
+  "icon": "Baby",
+  "color": "#EC4899",
+  "dependencies": ["general"],
+
+  "navigation": {
+    "sections": [
+      {
+        "id": "dashboard",
+        "label": "Dashboard",
+        "icon": "LayoutDashboard",
+        "category": "general",
+        "order": 1
+      },
+      {
+        "id": "prenatal-overview",
+        "label": "Prenatal Overview",
+        "icon": "Heart",
+        "category": "clinical",
+        "order": 2,
+        "componentName": "PrenatalOverview"
+      },
+      {
+        "id": "prenatal-flowsheet",
+        "label": "Prenatal Flowsheet",
+        "icon": "ClipboardList",
+        "category": "clinical",
+        "order": 3,
+        "componentName": "PrenatalFlowsheet"
+      },
+      {
+        "id": "ultrasounds",
+        "label": "Ultrasounds",
+        "icon": "ImageIcon",
+        "category": "clinical",
+        "order": 4
+      },
+      {
+        "id": "labor-delivery",
+        "label": "Labor & Delivery",
+        "icon": "Activity",
+        "category": "clinical",
+        "order": 5
+      },
+      {
+        "id": "postpartum",
+        "label": "Postpartum Care",
+        "icon": "Baby",
+        "category": "clinical",
+        "order": 6
+      },
+      {
+        "id": "medications",
+        "label": "Medications",
+        "icon": "Pill",
+        "category": "clinical",
+        "order": 7
+      },
+      {
+        "id": "lab",
+        "label": "Lab Results",
+        "icon": "TestTube",
+        "category": "clinical",
+        "order": 8
+      },
+      {
+        "id": "encounters",
+        "label": "Visit Details",
+        "icon": "Calendar",
+        "category": "clinical",
+        "order": 9
+      }
+    ],
+    "replaceSections": false,
+    "mergeWith": "general"
+  },
+
+  "templates": [
+    "templates/prenatal-intake.json",
+    "templates/prenatal-visit.json",
+    "templates/labor-delivery.json",
+    "templates/postpartum.json"
+  ],
+
+  "visitTypes": "visit-types.json",
+
+  "workflows": "workflows/prenatal.json",
+
+  "reports": "reports/prenatal-kpis.json",
+
+  "featureFlags": {
+    "enableHighRiskPregnancy": true,
+    "enableFetalMonitoring": true,
+    "enableGeneticScreening": true,
+    "enableTTTSMonitoring": false
+  },
+
+  "devices": [
+    {
+      "type": "fetal_monitor",
+      "required": false,
+      "integration": "hl7"
+    },
+    {
+      "type": "ultrasound",
+      "required": false,
+      "integration": "dicom"
+    }
+  ],
+
+  "episodeConfig": {
+    "allowConcurrent": false,
+    "defaultState": "active",
+    "requiredFields": ["edd", "lmp", "gravida", "para"],
+    "stateTransitions": {
+      "planned": ["active", "cancelled"],
+      "active": ["finished", "cancelled"],
+      "finished": [],
+      "cancelled": []
+    }
+  }
+}

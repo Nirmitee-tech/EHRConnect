@@ -1,0 +1,94 @@
+{
+  "dashboards": [
+    {
+      "id": "prenatal-overview",
+      "name": "Prenatal Care Overview",
+      "description": "Key metrics for prenatal care management",
+      "kpis": [
+        {
+          "id": "active-pregnancies",
+          "name": "Active Pregnancies",
+          "description": "Total number of active prenatal episodes",
+          "type": "count",
+          "query": "SELECT COUNT(*) FROM patient_specialty_episodes WHERE specialty_slug = 'ob-gyn' AND active = true"
+        },
+        {
+          "id": "high-risk-count",
+          "name": "High-Risk Pregnancies",
+          "description": "Number of high-risk pregnancy cases",
+          "type": "count",
+          "query": "SELECT COUNT(*) FROM patient_specialty_episodes WHERE specialty_slug = 'ob-gyn' AND metadata->>'highRisk' = 'true'"
+        },
+        {
+          "id": "upcoming-deliveries",
+          "name": "Deliveries This Month",
+          "description": "Expected deliveries in the current month",
+          "type": "count",
+          "query": "SELECT COUNT(*) FROM patient_specialty_episodes WHERE specialty_slug = 'ob-gyn' AND metadata->>'edd' BETWEEN current_date AND current_date + interval '30 days'"
+        },
+        {
+          "id": "prenatal-adherence",
+          "name": "Prenatal Visit Adherence",
+          "description": "Percentage of patients meeting recommended visit schedule",
+          "type": "percentage",
+          "target": 90
+        }
+      ]
+    },
+    {
+      "id": "labor-delivery",
+      "name": "Labor & Delivery Metrics",
+      "description": "Delivery outcomes and statistics",
+      "kpis": [
+        {
+          "id": "deliveries-ytd",
+          "name": "Deliveries Year-to-Date",
+          "description": "Total deliveries this year",
+          "type": "count"
+        },
+        {
+          "id": "cesarean-rate",
+          "name": "C-Section Rate",
+          "description": "Percentage of cesarean deliveries",
+          "type": "percentage",
+          "target": 25
+        },
+        {
+          "id": "avg-gestational-age",
+          "name": "Average Gestational Age",
+          "description": "Average gestational age at delivery (weeks)",
+          "type": "average",
+          "target": 39
+        },
+        {
+          "id": "preterm-rate",
+          "name": "Preterm Birth Rate",
+          "description": "Percentage of births before 37 weeks",
+          "type": "percentage",
+          "target": 10
+        }
+      ]
+    },
+    {
+      "id": "postpartum-care",
+      "name": "Postpartum Care Metrics",
+      "description": "Postpartum follow-up and outcomes",
+      "kpis": [
+        {
+          "id": "postpartum-visits",
+          "name": "6-Week Visit Compliance",
+          "description": "Percentage completing 6-week postpartum visit",
+          "type": "percentage",
+          "target": 85
+        },
+        {
+          "id": "postpartum-depression-screen",
+          "name": "PPD Screening Rate",
+          "description": "Percentage screened for postpartum depression",
+          "type": "percentage",
+          "target": 95
+        }
+      ]
+    }
+  ]
+}

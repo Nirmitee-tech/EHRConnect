@@ -41,6 +41,64 @@ class SpecialtyRegistryService {
         description: {
           type: 'string' // Pack description
         },
+        // Phase 2 Enhancement: Metadata fields
+        category: {
+          type: 'string',
+          enum: ['clinical', 'administrative', 'financial', 'general']
+        },
+        icon: {
+          type: 'string' // Lucide icon name
+        },
+        color: {
+          type: 'string' // Hex color code
+        },
+        // Phase 2 Enhancement: Navigation configuration
+        navigation: {
+          type: 'object',
+          properties: {
+            sections: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['id', 'label'],
+                properties: {
+                  id: { type: 'string' },
+                  label: { type: 'string' },
+                  icon: { type: 'string' },
+                  category: {
+                    type: 'string',
+                    enum: ['general', 'clinical', 'administrative', 'financial', 'specialty']
+                  },
+                  order: { type: 'number' },
+                  requiresEpisode: { type: 'boolean' },
+                  badge: { type: 'string' },
+                  componentName: { type: 'string' }, // Component to render (e.g., 'PrenatalOverview')
+                  hidden: { type: 'boolean' }
+                }
+              }
+            },
+            replaceSections: { type: 'boolean' },
+            mergeWith: { type: 'string' }
+          }
+        },
+        // Phase 2 Enhancement: Episode configuration
+        episodeConfig: {
+          type: 'object',
+          properties: {
+            allowConcurrent: { type: 'boolean' },
+            defaultState: {
+              type: 'string',
+              enum: ['planned', 'waitlist', 'active', 'on-hold', 'finished', 'cancelled']
+            },
+            requiredFields: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            stateTransitions: { type: 'object' },
+            autoClose: { type: 'boolean' },
+            maxDuration: { type: 'number' }
+          }
+        },
         dependencies: {
           type: 'array',
           items: { type: 'string' }
@@ -224,6 +282,48 @@ class SpecialtyRegistryService {
     } catch (error) {
       console.error('Error fetching enabled packs:', error);
       throw new Error('Failed to retrieve enabled packs');
+    }
+  }
+
+  /**
+   * Get ALL pack settings for an organization (both enabled and disabled)
+   * Used by admin UI to show all pack states
+   * @param {string} orgId - Organization UUID
+   * @param {string} scope - 'org', 'location', 'department', 'service_line'
+   * @param {string} scopeRefId - Reference ID for the scope
+   * @returns {Promise<Array>} Array of all pack settings
+   */
+  async getAllPackSettings(orgId, scope = 'org', scopeRefId = null) {
+    try {
+      const result = await query(`
+        SELECT DISTINCT ON (pack_slug)
+          pack_slug,
+          pack_version,
+          enabled,
+          scope,
+          scope_ref_id,
+          overrides,
+          created_at,
+          updated_at
+        FROM org_specialty_settings
+        WHERE org_id = $1
+          AND (
+            (scope = 'org' AND scope_ref_id IS NULL) OR
+            (scope = $2 AND scope_ref_id = $3)
+          )
+        ORDER BY pack_slug,
+          CASE scope
+            WHEN 'service_line' THEN 4
+            WHEN 'department' THEN 3
+            WHEN 'location' THEN 2
+            WHEN 'org' THEN 1
+          END DESC
+      `, [orgId, scope, scopeRefId]);
+
+      return result.rows;
+    } catch (error) {
+      console.error('Error fetching all pack settings:', error);
+      throw new Error('Failed to retrieve pack settings');
     }
   }
 

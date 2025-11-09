@@ -188,7 +188,7 @@ router.get('/packs/:slug/components', checkOrgAccess, async (req, res) => {
 
 /**
  * GET /api/admin/orgs/:orgId/specialties
- * List all specialty pack settings for an organization
+ * List all specialty pack settings for an organization (both enabled and disabled)
  * Admin only
  */
 router.get('/admin/orgs/:orgId/specialties', checkOrgAccess, async (req, res) => {
@@ -196,7 +196,8 @@ router.get('/admin/orgs/:orgId/specialties', checkOrgAccess, async (req, res) =>
     const { orgId } = req.params;
     const { scope = 'org', scopeRefId = null } = req.query;
 
-    const packs = await specialtyRegistry.getEnabledPacks(orgId, scope, scopeRefId);
+    // Use getAllPackSettings to include both enabled and disabled packs
+    const packs = await specialtyRegistry.getAllPackSettings(orgId, scope, scopeRefId);
 
     res.json({
       success: true,

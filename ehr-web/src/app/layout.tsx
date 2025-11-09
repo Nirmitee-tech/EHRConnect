@@ -5,6 +5,8 @@ import { FacilityProvider } from "@/contexts/facility-context";
 import { SpecialtyProvider } from "@/contexts/specialty-context";
 import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
 import { ToastProvider } from "@/hooks/useToast";
+// Phase 2: Initialize specialty modules (client-side)
+import { SpecialtyInitializer } from "./specialty-init-client";
 
 export const metadata: Metadata = {
   title: "EHR Connect - Healthcare Management",
@@ -19,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased bg-gray-50" suppressHydrationWarning>
+        <SpecialtyInitializer />
         <ToastProvider>
           <AuthSessionProvider>
             <SpecialtyProvider>

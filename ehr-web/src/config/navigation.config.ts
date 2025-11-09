@@ -23,7 +23,8 @@ import {
   UserPlus,
   Map,
   BedDouble,
-  ArrowRightLeft
+  ArrowRightLeft,
+  ClipboardList
 } from 'lucide-react';
 import { NavSection, PageInfo } from '@/types/navigation';
 
@@ -127,6 +128,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
     items: [
       { name: 'User Management', href: '/users', icon: Users },
       { name: 'Roles & Permissions', href: '/roles', icon: Shield },
+      { name: 'Forms Builder', href: '/forms', icon: ClipboardList },
       { name: 'Specialty Packs', href: '/admin/specialties', icon: PackageIcon },
       { name: 'Integrations', href: '/integrations', icon: Plug },
       { name: 'Audit Logs', href: '/audit-logs', icon: ScrollText },

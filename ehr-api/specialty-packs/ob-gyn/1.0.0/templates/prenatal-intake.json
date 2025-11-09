@@ -1,0 +1,147 @@
+{
+  "resourceType": "Questionnaire",
+  "id": "prenatal-intake",
+  "name": "PrenatalIntake",
+  "title": "Initial Prenatal Intake",
+  "status": "active",
+  "version": "1.0.0",
+  "description": "Comprehensive initial prenatal assessment questionnaire",
+  "item": [
+    {
+      "linkId": "1",
+      "text": "Pregnancy Information",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "1.1",
+          "text": "Last Menstrual Period (LMP)",
+          "type": "date",
+          "required": true
+        },
+        {
+          "linkId": "1.2",
+          "text": "Estimated Due Date (EDD)",
+          "type": "date",
+          "required": true
+        },
+        {
+          "linkId": "1.3",
+          "text": "Gravida (Total Pregnancies)",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "linkId": "1.4",
+          "text": "Para (Live Births)",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "linkId": "1.5",
+          "text": "Previous Pregnancy Complications",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "linkId": "2",
+      "text": "Medical History",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "2.1",
+          "text": "Pre-existing Conditions",
+          "type": "choice",
+          "required": false,
+          "answerOption": [
+            { "valueString": "Diabetes" },
+            { "valueString": "Hypertension" },
+            { "valueString": "Thyroid disorder" },
+            { "valueString": "Cardiac disease" },
+            { "valueString": "Asthma" },
+            { "valueString": "None" }
+          ]
+        },
+        {
+          "linkId": "2.2",
+          "text": "Current Medications",
+          "type": "text",
+          "required": false
+        },
+        {
+          "linkId": "2.3",
+          "text": "Known Drug Allergies",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "linkId": "3",
+      "text": "Obstetric Risk Factors",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "3.1",
+          "text": "Maternal Age",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "linkId": "3.2",
+          "text": "Multiple Gestation",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "linkId": "3.3",
+          "text": "High-Risk Pregnancy",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "linkId": "3.4",
+          "text": "Risk Factors (if high-risk)",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "linkId": "4",
+      "text": "Social History",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "4.1",
+          "text": "Tobacco Use",
+          "type": "choice",
+          "required": true,
+          "answerOption": [
+            { "valueString": "Never" },
+            { "valueString": "Former" },
+            { "valueString": "Current" }
+          ]
+        },
+        {
+          "linkId": "4.2",
+          "text": "Alcohol Use",
+          "type": "choice",
+          "required": true,
+          "answerOption": [
+            { "valueString": "None" },
+            { "valueString": "Occasional" },
+            { "valueString": "Regular" }
+          ]
+        },
+        {
+          "linkId": "4.3",
+          "text": "Support System",
+          "type": "text",
+          "required": false
+        }
+      ]
+    }
+  ]
+}
