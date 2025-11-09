@@ -65,7 +65,7 @@ interface EncounterTabProps {
   clinicalNotes: any[];
 
   // Form handlers
-  onSoapFieldChange: (field: string, value: string) => void;
+  onSoapFieldChange: (field: 'subjective' | 'objective' | 'assessment' | 'plan', value: string) => void;
   onRosFieldChange: (system: string, value: string) => void;
   onSoapSave: () => void;
   onRosSave: () => void;

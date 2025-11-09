@@ -70,18 +70,18 @@ export function PatientDrawer({
         // If updating from search, move to encounter form with existing patient data
         if (isUpdate && patientId) {
           const updateData = data as UpdatePatientRequest;
-          const age = updateData.dateOfBirth 
-            ? Math.floor((Date.now() - new Date(updateData.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+          const age = updateData.demographics?.dateOfBirth 
+            ? Math.floor((Date.now() - new Date(updateData.demographics.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
             : undefined;
 
           setCreatedPatient({
             id: patientId,
-            name: updateData.firstName || '',
+            name: updateData.demographics?.firstName || '',
             age,
-            gender: updateData.gender,
-            mrn: updateData.mrn || undefined,
-            phone: updateData.phone || undefined,
-            email: updateData.email || undefined
+            gender: updateData.demographics?.gender,
+            mrn: updateData.demographics?.mrn || undefined,
+            phone: updateData.contact?.mobileNumber || undefined,
+            email: updateData.contact?.email || undefined
           });
 
           setCurrentStep('encounter-form');
@@ -107,19 +107,19 @@ export function PatientDrawer({
         const createdPatientResponse = await patientService.createPatient(patientData as CreatePatientRequest, 'current-user');
 
         // Calculate age from date of birth
-        const age = patientData.dateOfBirth
-          ? Math.floor((Date.now() - new Date(patientData.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+        const age = patientData.demographics?.dateOfBirth
+          ? Math.floor((Date.now() - new Date(patientData.demographics.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
           : undefined;
 
         // Store created patient data for encounter form
         setCreatedPatient({
           id: createdPatientResponse.id || '',
-          name: patientData.firstName,
+          name: patientData.demographics?.firstName || '',
           age,
-          gender: patientData.gender,
+          gender: patientData.demographics?.gender,
           mrn: patientData.hospitalId,
-          phone: patientData.phone,
-          email: patientData.email
+          phone: patientData.contact?.mobileNumber,
+          email: patientData.contact?.email
         });
 
         // If skipEncounter flag is set, close drawer and call onSuccess

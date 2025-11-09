@@ -3,6 +3,12 @@
 -- Version: 1.0
 
 -- =====================================================
+-- ENABLE UUID EXTENSION
+-- Required for uuid_generate_v4() function
+-- =====================================================
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- =====================================================
 -- ORG SPECIALTY SETTINGS
 -- Stores which specialty packs are enabled for each org/location/department
 -- =====================================================

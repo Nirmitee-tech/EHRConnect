@@ -263,4 +263,4 @@ export class StaffService {
   }
 }
 
-export const staffService = new StaffService();
+export const staffService = StaffService;

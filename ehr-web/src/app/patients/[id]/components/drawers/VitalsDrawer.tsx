@@ -35,7 +35,7 @@ export function VitalsDrawer({ open, onOpenChange, onSave, editData, mode = 'cre
 
   // Debounced form data for validation
   const [debouncedFormData, setDebouncedFormData] = useState(formData);
-  const debounceTimerRef = useRef<NodeJS.Timeout>();
+  const debounceTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Debounce form data updates for validation
   useEffect(() => {

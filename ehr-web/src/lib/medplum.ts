@@ -40,6 +40,7 @@ export type FHIRResourceType =
   | 'Questionnaire'
   | 'QuestionnaireResponse'
   | 'RelatedPerson'
+  | 'Consent'
   | 'ExplanationOfBenefit'
   | 'Invoice'
   | 'PaymentNotice'

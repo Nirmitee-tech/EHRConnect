@@ -23,15 +23,19 @@ interface APIHeaders {
   'x-department-id'?: string;
 }
 
-function getHeaders(session: any): APIHeaders {
-  return {
+function getHeaders(session: any): Record<string, string> {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'x-org-id': session?.org_id || '',
     'x-user-id': session?.user?.id || '',
-    'x-user-roles': JSON.stringify(session?.roles || []),
-    'x-location-id': session?.location_ids?.[0] || '',
-    'x-department-id': ''
+    'x-user-roles': JSON.stringify(session?.roles || [])
   };
+  
+  if (session?.location_ids?.[0]) {
+    headers['x-location-id'] = session.location_ids[0];
+  }
+  
+  return headers;
 }
 
 export const specialtyService = {

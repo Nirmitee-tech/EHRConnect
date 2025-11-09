@@ -260,7 +260,7 @@ export class PatientService {
   async createPatient(request: CreatePatientRequest, userId: string): Promise<FHIRPatient> {
     try {
       const patientResource = this.buildPatientResource(request);
-      console.log('Creating patient with enhanced demographics:', patientResource.id ?? 'pending assignment');
+      console.log('Creating patient with enhanced demographics');
 
       const createdPatient = await fhirService.createPatient(patientResource) as FHIRPatient;
       if (createdPatient.id) {
@@ -451,7 +451,7 @@ export class PatientService {
   /**
    * Build FHIR Patient resource from request
    */
-  private buildPatientResource(request: CreatePatientRequest): Omit<FHIRPatient, 'id'> {
+  private buildPatientResource(request: CreatePatientRequest): Omit<FHIRPatient, 'id'> & { extension?: any[] } {
     const { demographics, contact, consent, preferences, clinical, provider } = request;
 
     const identifiers: FHIRIdentifier[] = [];
@@ -704,15 +704,15 @@ export class PatientService {
           : undefined,
         name: {
           family: contactEntry.lastName,
-          given: [contactEntry.firstName].filter(Boolean)
+          given: [contactEntry.firstName].filter((x): x is string => Boolean(x))
         },
         telecom: [
           contactEntry.mobileNumber
-            ? { system: 'phone', value: contactEntry.mobileNumber, use: 'mobile' }
+            ? { system: 'phone' as const, value: contactEntry.mobileNumber, use: 'mobile' as const }
             : undefined,
-          contactEntry.email ? { system: 'email', value: contactEntry.email, use: 'home' } : undefined
-        ].filter(Boolean),
-        gender: 'unknown'
+          contactEntry.email ? { system: 'email' as const, value: contactEntry.email, use: 'home' as const } : undefined
+        ].filter((x): x is NonNullable<typeof x> => Boolean(x)),
+        gender: 'unknown' as const
       }));
 
     return {
@@ -723,9 +723,9 @@ export class PatientService {
         {
           use: 'official',
           family: demographics.lastName,
-          given: [demographics.firstName, demographics.middleName].filter(Boolean),
+          given: [demographics.firstName, demographics.middleName].filter((x): x is string => Boolean(x)),
           text: demographics.preferredName || undefined,
-          prefix: [demographics.prefix].filter(Boolean)
+          prefix: [demographics.prefix].filter((x): x is string => Boolean(x))
         }
       ],
       telecom: telecom.length ? telecom : undefined,
@@ -765,8 +765,7 @@ export class PatientService {
                     code: demographics.language,
                     display: demographics.language
                   }
-                ],
-                text: demographics.language
+                ]
               },
               preferred: true
             }
@@ -805,14 +804,14 @@ export class PatientService {
           : undefined,
         name: {
           family: contact.lastName,
-          given: [contact.firstName].filter(Boolean)
+          given: [contact.firstName].filter((x): x is string => Boolean(x))
         },
         telecom: [
           contact.mobileNumber
-            ? { system: 'phone', value: contact.mobileNumber, use: 'mobile' }
+            ? { system: 'phone' as const, value: contact.mobileNumber, use: 'mobile' as const }
             : undefined,
-          contact.email ? { system: 'email', value: contact.email, use: 'home' } : undefined
-        ].filter(Boolean)
+          contact.email ? { system: 'email' as const, value: contact.email, use: 'home' as const } : undefined
+        ].filter((x): x is NonNullable<typeof x> => Boolean(x))
       }));
   }
 
