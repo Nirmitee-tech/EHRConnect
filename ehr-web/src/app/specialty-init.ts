@@ -5,7 +5,7 @@
  * Import this file in your root layout to initialize specialties
  */
 
-import { specialtyRegistry, ObGynSpecialty } from '@/features/specialties';
+import { specialtyRegistry, GeneralSpecialty, ObGynSpecialty } from '@/features/specialties';
 
 /**
  * Initialize all specialty modules
@@ -13,6 +13,9 @@ import { specialtyRegistry, ObGynSpecialty } from '@/features/specialties';
  */
 export function initializeSpecialties() {
   console.log('🚀 Initializing specialty modules...');
+
+  // Register General specialty (Primary Care)
+  specialtyRegistry.register(GeneralSpecialty);
 
   // Register OB/GYN specialty
   specialtyRegistry.register(ObGynSpecialty);

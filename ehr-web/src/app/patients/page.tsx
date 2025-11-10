@@ -452,6 +452,128 @@ export default function PatientsPage() {
                 Add First Patient
               </Button>
             </div>
+          ) : viewMode === 'grid' ? (
+            <div className="p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {patients.map((patient, index) => (
+                  <div
+                    key={patient.id}
+                    onClick={() => openPatientTab(patient.id, patient.name)}
+                    className="relative bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-200 cursor-pointer hover:border-blue-300"
+                    style={{
+                      animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both`
+                    }}
+                  >
+                    {/* Status Badge */}
+                    <div className="absolute top-3 right-3">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                          patient.active
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {patient.active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+
+                    {/* Patient Photo and Name */}
+                    <div className="flex flex-col items-center mb-4 pt-2">
+                      {patient.photo ? (
+                        <img
+                          src={patient.photo}
+                          alt={patient.name}
+                          className="h-20 w-20 rounded-full object-cover border-2 border-gray-200 mb-3"
+                        />
+                      ) : (
+                        <div className="h-20 w-20 rounded-full bg-primary flex items-center justify-center text-white text-xl font-semibold mb-3">
+                          {patient.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <h3 className="text-sm font-semibold text-gray-900 text-center">
+                        {patient.name}
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {patient.mrn ? `#${patient.mrn}` : `#${patient.id.substring(0, 8)}`}
+                      </p>
+                    </div>
+
+                    {/* Patient Info */}
+                    <div className="space-y-2 border-t border-gray-100 pt-3">
+                      {/* Age and Gender */}
+                      {patient.birthDate && (
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">Age:</span>
+                          <span className="text-gray-900 font-medium">
+                            {getAge(patient.birthDate)} years ({patient.gender})
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Phone */}
+                      {patient.phone && (
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">Phone:</span>
+                          <span className="text-gray-900 font-medium truncate ml-2">
+                            {patient.phone}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Email */}
+                      {patient.email && (
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">Email:</span>
+                          <a
+                            href={`mailto:${patient.email}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-blue-600 hover:text-blue-800 hover:underline truncate ml-2"
+                          >
+                            {patient.email}
+                          </a>
+                        </div>
+                      )}
+
+                      {/* Primary Care Provider */}
+                      {patient.primaryCareProvider && (
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">PCP:</span>
+                          <span className="text-gray-900 font-medium truncate ml-2">
+                            {patient.primaryCareProvider}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Last Visit */}
+                      {patient.lastVisit && formatDate(patient.lastVisit) && (
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">Last Visit:</span>
+                          <span className="text-gray-900 font-medium">
+                            {formatDate(patient.lastVisit)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Button */}
+                    <div className="mt-4 pt-3 border-t border-gray-100">
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditPatient(patient);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="w-full hover:bg-gray-50"
+                      >
+                        <Edit2 className="h-3 w-3 mr-2" />
+                        Edit Patient
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">

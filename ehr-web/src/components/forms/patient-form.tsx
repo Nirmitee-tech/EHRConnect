@@ -44,7 +44,8 @@ import {
 } from '@/components/ui/dialog';
 import { staffService } from '@/services/staff.service';
 import { facilityService } from '@/services/facility.service';
-import { StaffMember, PROVIDER_COLORS } from '@/types/staff';
+import { StaffMember, PROVIDER_COLORS, DEFAULT_OFFICE_HOURS } from '@/types/staff';
+import { StaffDetailDrawer } from '@/components/staff/staff-detail-drawer';
 import { NoFacilityNotice } from './patient-form-components/NoFacilityNotice';
 import { PatientSearch } from './patient-form-components/PatientSearch';
 import { PhotoUpload } from './patient-form-components/PhotoUpload';
@@ -102,8 +103,8 @@ const SectionConfig = [
   { id: 'provider', title: 'Provider Information', icon: Stethoscope, required: true },
   { id: 'patient', title: 'Patient Details', icon: User, required: true },
   { id: 'contact', title: 'Contact Information', icon: Phone, required: true },
-  { id: 'emergency', title: 'Emergency Contact', icon: AlertCircle, required: true },
-  { id: 'insurance', title: 'Insurance', icon: Shield, required: true },
+  { id: 'emergency', title: 'Emergency Contact (Optional)', icon: AlertCircle, required: false },
+  { id: 'insurance', title: 'Insurance (Optional)', icon: Shield, required: false },
   { id: 'preferences', title: 'Preferences', icon: Sparkles },
   { id: 'consent', title: 'Privacy & Consent', icon: Lock, required: true },
   { id: 'clinical', title: 'Clinical Context', icon: Activity }
@@ -252,18 +253,9 @@ export function PatientForm({
   const photoPreview = formData.demographics.photo;
   const compactHiddenSections = compactMode ? new Set(['preferences', 'clinical']) : null;
   const [providerOptions, setProviderOptions] = useState<SelectOption[]>([]);
-  const [providersLoading, setProvidersLoading] = useState(false);
-  const [providerDialogOpen, setProviderDialogOpen] = useState(false);
-  const [providerSaving, setProviderSaving] = useState(false);
-  const [providerForm, setProviderForm] = useState({
-    prefix: 'Dr',
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    specialty: providerSpecialtyOptions[0],
-    color: PROVIDER_COLORS[0]
-  });
+  const [providersLoading, setProvidersLoading] = useState(true); // Start as true since we fetch immediately
+  const [providerDrawerOpen, setProviderDrawerOpen] = useState(false);
+  const [editingProvider, setEditingProvider] = useState<StaffMember | null>(null);
 
   const [locationOptions, setLocationOptions] = useState<SelectOption[]>([]);
   const [locationsLoading, setLocationsLoading] = useState(false);
@@ -298,6 +290,13 @@ export function PatientForm({
     const fetchProviders = async () => {
       if (!currentFacility?.id) {
         console.log('No facility selected, skipping provider fetch');
+        setProvidersLoading(false);
+        return;
+      }
+
+      // Skip if already loaded
+      if (providerOptions.length > 0) {
+        setProvidersLoading(false);
         return;
       }
 
@@ -305,20 +304,15 @@ export function PatientForm({
         setProvidersLoading(true);
         console.log('Fetching providers for org:', currentFacility.id);
 
-        // Use the public API endpoint which is more reliable
-        const response = await fetch(`/api/public/v2/practitioners?org_id=${currentFacility.id}`);
+        // Use StaffService to fetch practitioners (same as staff page)
+        const practitioners = await staffService.getPractitioners({
+          active: true,
+          count: 100
+        });
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch practitioners: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log('Practitioners response:', data);
-
-        const practitioners = data.practitioners || [];
         console.log('Found practitioners:', practitioners.length);
 
-        const options = practitioners.map((p: any) => ({
+        const options = practitioners.map((p: StaffMember) => ({
           value: p.id,
           label: p.name,
           subtitle: p.specialty || 'General Practitioner',
@@ -355,43 +349,53 @@ export function PatientForm({
     fetchLocations();
   }, [currentFacility?.id]);
 
-  const handleCreateProvider = async () => {
-    if (!providerForm.firstName || !providerForm.lastName) {
-      return;
-    }
+  const handleAddProvider = () => {
+    // Create new empty staff member
+    const newProvider: StaffMember = {
+      resourceType: 'Practitioner',
+      id: '',
+      name: '',
+      specialty: '',
+      phone: '',
+      email: '',
+      qualification: 'Medical Doctor',
+      active: true,
+      employmentType: 'full-time',
+      color: PROVIDER_COLORS[0],
+      officeHours: DEFAULT_OFFICE_HOURS,
+      vacationSchedules: []
+    };
+    setEditingProvider(newProvider);
+    setProviderDrawerOpen(true);
+  };
 
-    setProviderSaving(true);
+  const handleSaveProvider = async (updatedProvider: StaffMember) => {
     try {
-      const payload: Omit<StaffMember, 'id'> = {
-        name: `${providerForm.prefix} ${providerForm.firstName} ${providerForm.lastName}`.trim(),
-        specialty: providerForm.specialty,
-        phone: providerForm.phone,
-        email: providerForm.email,
-        qualification: 'Medical Doctor',
-        active: true,
-        resourceType: 'Practitioner',
-        color: providerForm.color,
-        employmentType: 'full-time'
-      };
+      let savedProvider: StaffMember;
 
-      const created = await staffService.createPractitioner(payload);
-      const option = mapStaffToOption(created);
-      setProviderOptions(prev => [...prev, option]);
-      updateProviderField('primaryProviderId', option.value);
-      setProviderDialogOpen(false);
-      setProviderForm({
-        prefix: 'Dr',
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        specialty: providerSpecialtyOptions[0],
-        color: PROVIDER_COLORS[0]
+      if (updatedProvider.id) {
+        // Update existing provider
+        savedProvider = await staffService.updatePractitioner(updatedProvider.id, updatedProvider);
+      } else {
+        // Create new provider
+        savedProvider = await staffService.createPractitioner(updatedProvider);
+      }
+
+      const option = mapStaffToOption(savedProvider);
+      setProviderOptions(prev => {
+        const existing = prev.find(p => p.value === savedProvider.id);
+        if (existing) {
+          return prev.map(p => p.value === savedProvider.id ? option : p);
+        }
+        return [...prev, option];
       });
+
+      updateProviderField('primaryProviderId', option.value);
+      setProviderDrawerOpen(false);
+      setEditingProvider(null);
     } catch (error) {
-      console.error('Error creating provider:', error);
-    } finally {
-      setProviderSaving(false);
+      console.error('Error saving provider:', error);
+      alert('Failed to save provider. Please try again.');
     }
   };
 
@@ -494,13 +498,35 @@ export function PatientForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate() || !currentFacility) return;
+
+    console.log('Form submission started');
+    console.log('Current facility:', currentFacility);
+
+    // Check facility first
+    if (!currentFacility) {
+      console.error('No facility selected');
+      setErrors({ facility: 'Please select a facility before creating a patient.' });
+      // Scroll to top to show error
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    const isValid = validate();
+    console.log('Validation result:', isValid);
+
+    if (!isValid) {
+      console.error('Validation failed with errors:', errors);
+      // Scroll to top to show error summary
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
 
     setLoading(true);
     setErrors({});
 
     try {
       const payload = prepareSubmitData();
+      console.log('Payload prepared:', payload);
       if (isUpdatingExisting && selectedPatientId) {
         await onSubmit(
           {
@@ -557,6 +583,38 @@ export function PatientForm({
       <form onSubmit={handleSubmit} className="space-y-3">
         <PatientSearch onSelectPatient={handleSelectPatient} />
 
+        {/* Error Summary Banner */}
+        {Object.keys(errors).length > 0 && (
+          <div className="rounded-lg border-2 border-red-300 bg-red-50 p-4 animate-pulse">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-red-900 mb-2">
+                  Cannot Create Patient - Please Fix Errors
+                </h3>
+                {errors.facility && (
+                  <div className="text-sm text-red-800 mb-2 font-medium">{errors.facility}</div>
+                )}
+                {errors.submit && (
+                  <div className="text-sm text-red-800 mb-2 font-medium">{errors.submit}</div>
+                )}
+                {!errors.facility && !errors.submit && (
+                  <div className="text-sm text-red-800">
+                    <p className="mb-2">Please complete the following required fields:</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs bg-white bg-opacity-50 rounded p-2">
+                      {Object.entries(errors).map(([key, value]) => (
+                        <li key={key} className="text-red-700">
+                          <span className="font-medium">{value}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {compactMode && (
           <div className="rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900 flex items-center gap-2">
             <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
@@ -584,7 +642,7 @@ export function PatientForm({
                   <div>
                     <div className="flex items-center justify-between">
                       <RequiredLabel>Primary Provider</RequiredLabel>
-                      <InlineAddButton label="Provider" onClick={() => setProviderDialogOpen(true)} />
+                      <InlineAddButton label="Provider" onClick={handleAddProvider} />
                     </div>
                     <SearchableSelect
                       options={providerOptions}
@@ -593,12 +651,12 @@ export function PatientForm({
                       placeholder={providersLoading ? 'Loading providers...' : 'Select provider'}
                       disabled={providersLoading && providerOptions.length === 0}
                       showColorInButton
-                      onAddNew={() => setProviderDialogOpen(true)}
+                      onAddNew={handleAddProvider}
                       addNewLabel="Add Provider"
                     />
-                    {providersLoading && (
+                    {providersLoading && providerOptions.length === 0 && (
                       <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                        <Loader2 className="h-3 w-3 animate-spin" /> Syncing providers...
+                        <Loader2 className="h-3 w-3 animate-spin" /> Loading staff list...
                       </p>
                     )}
                     <FieldError message={errors['provider.primaryProviderId']} />
@@ -1016,6 +1074,15 @@ export function PatientForm({
 
             {section.id === 'emergency' && (
               <div className="space-y-6">
+                {formData.emergencyContacts.length === 0 && (
+                  <div className="text-center py-8 px-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                    <AlertCircle className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                    <p className="text-sm font-medium text-gray-900 mb-1">No emergency contacts added</p>
+                    <p className="text-xs text-gray-600 mb-4">
+                      Emergency contacts are optional but recommended in case of emergencies
+                    </p>
+                  </div>
+                )}
                 {formData.emergencyContacts.map((contact, index) => (
                   <div key={`contact-${index}`} className="rounded-xl border border-gray-200 p-4 space-y-3">
                     <div className="flex items-center justify-between">
@@ -1023,16 +1090,14 @@ export function PatientForm({
                         <Phone className="h-4 w-4 text-[#3342a5]" />
                         Contact #{index + 1}
                       </div>
-                      {formData.emergencyContacts.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeEmergencyContact(index)}
-                          className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                          Remove
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeEmergencyContact(index)}
+                        className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        Remove
+                      </button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div>
@@ -1106,6 +1171,10 @@ export function PatientForm({
 
             {section.id === 'insurance' && (
               <div className="space-y-3">
+                <div className="text-xs text-gray-600 bg-blue-50 border border-blue-200 rounded px-3 py-2 flex items-center gap-2">
+                  <Shield className="h-3.5 w-3.5 text-blue-600 flex-shrink-0" />
+                  <span>Insurance information is optional. You can add it now or update later.</span>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <div className="flex items-center justify-between">
@@ -1551,138 +1620,18 @@ export function PatientForm({
         );
         })}
 
-        {(errors.submit || errors.facility) && (
-          <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-            <span>{errors.submit || errors.facility}</span>
-          </div>
-        )}
       </form>
 
-      <Dialog
-        open={providerDialogOpen}
-        onOpenChange={(open) => {
-          if (!providerSaving) {
-            setProviderDialogOpen(open);
-          }
+      {/* Staff Detail Drawer for adding/editing providers */}
+      <StaffDetailDrawer
+        isOpen={providerDrawerOpen}
+        onClose={() => {
+          setProviderDrawerOpen(false);
+          setEditingProvider(null);
         }}
-      >
-        <DialogContent className="sm:max-w-[520px]">
-          <DialogHeader>
-            <DialogTitle>Add Provider</DialogTitle>
-            <DialogDescription>
-              Capture minimal practitioner info without leaving the registration workflow.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <Label className="text-sm font-medium">Prefix</Label>
-              <Select
-                value={providerForm.prefix}
-                onValueChange={(value) => setProviderForm((prev) => ({ ...prev, prefix: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {['Dr', 'Mr', 'Ms', 'Mrs'].map((prefix) => (
-                    <SelectItem key={prefix} value={prefix}>
-                      {prefix}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-sm font-medium">Specialty</Label>
-              <Select
-                value={providerForm.specialty}
-                onValueChange={(value) => setProviderForm((prev) => ({ ...prev, specialty: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {providerSpecialtyOptions.map((specialty) => (
-                    <SelectItem key={specialty} value={specialty}>
-                      {specialty}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-sm font-medium">First Name</Label>
-              <Input
-                value={providerForm.firstName}
-                onChange={(e) => setProviderForm((prev) => ({ ...prev, firstName: e.target.value }))}
-                placeholder="Jane"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">Last Name</Label>
-              <Input
-                value={providerForm.lastName}
-                onChange={(e) => setProviderForm((prev) => ({ ...prev, lastName: e.target.value }))}
-                placeholder="Doe"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">Email</Label>
-              <Input
-                type="email"
-                value={providerForm.email}
-                onChange={(e) => setProviderForm((prev) => ({ ...prev, email: e.target.value }))}
-                placeholder="jane@example.com"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">Phone</Label>
-              <Input
-                value={providerForm.phone}
-                onChange={(e) => setProviderForm((prev) => ({ ...prev, phone: e.target.value }))}
-                placeholder="+1 555-123-4567"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Label className="text-sm font-medium">Calendar Color</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {PROVIDER_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setProviderForm((prev) => ({ ...prev, color }))}
-                    className={`h-8 w-8 rounded-full border-2 ${
-                      providerForm.color === color ? 'border-[#3342a5]' : 'border-transparent'
-                    }`}
-                    style={{ backgroundColor: color }}
-                    aria-label={`Select ${color}`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setProviderDialogOpen(false)}
-              disabled={providerSaving}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleCreateProvider}
-              disabled={providerSaving}
-              className="bg-[#3342a5] hover:bg-[#2a3686] text-white"
-            >
-              {providerSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Save Provider
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        staff={editingProvider}
+        onSave={handleSaveProvider}
+      />
 
       <Dialog
         open={locationDialogOpen}
@@ -1807,24 +1756,33 @@ export function PatientForm({
       </Dialog>
 
       <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 mt-4">
-        <div className="flex flex-col md:flex-row md:items-center gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={loading}
-            className="flex-1"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={loading || !currentFacility}
-            className="flex-1 bg-[#3342a5] hover:bg-[#2a3686] text-white"
-          >
-            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {isUpdatingExisting || isEditing ? 'Update Patient' : 'Create Patient'}
-          </Button>
+        <div className="flex flex-col gap-2">
+          {!currentFacility && (
+            <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <span>Please select a facility to enable patient creation</span>
+            </div>
+          )}
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={loading}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={loading || !currentFacility}
+              className="flex-1 bg-[#3342a5] hover:bg-[#2a3686] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              title={!currentFacility ? 'Please select a facility first' : ''}
+            >
+              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isUpdatingExisting || isEditing ? 'Update Patient' : 'Create Patient'}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

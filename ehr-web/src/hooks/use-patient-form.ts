@@ -193,7 +193,7 @@ const initialFormData: PatientFormData = {
     address: { ...blankAddress },
     preferredContactTime: ''
   },
-  emergencyContacts: [{ ...blankEmergencyContact }],
+  emergencyContacts: [], // Optional - start with empty array
   insurance: {
     insuranceType: '',
     insuranceName: '',
@@ -518,35 +518,46 @@ export function usePatientForm(patient?: FHIRPatient, facilityId?: string) {
       nextErrors['contact.address.country'] = 'Country is required';
     }
 
+    // Emergency contacts are optional, but if any field is filled, validate the contact
     formData.emergencyContacts.forEach((contact, index) => {
-      if (!contact.relationship) {
-        nextErrors[`emergencyContacts.${index}.relationship`] = 'Relationship is required';
-      }
-      if (!contact.firstName) {
-        nextErrors[`emergencyContacts.${index}.firstName`] = 'First name is required';
-      }
-      if (!contact.lastName) {
-        nextErrors[`emergencyContacts.${index}.lastName`] = 'Last name is required';
-      }
-      if (!contact.mobileNumber) {
-        nextErrors[`emergencyContacts.${index}.mobileNumber`] = 'Mobile number is required';
+      const hasAnyField = contact.relationship || contact.firstName || contact.lastName ||
+                          contact.mobileNumber || contact.email;
+
+      // Only validate if user has started filling out this contact
+      if (hasAnyField) {
+        if (!contact.relationship) {
+          nextErrors[`emergencyContacts.${index}.relationship`] = 'Relationship is required';
+        }
+        if (!contact.firstName) {
+          nextErrors[`emergencyContacts.${index}.firstName`] = 'First name is required';
+        }
+        if (!contact.lastName) {
+          nextErrors[`emergencyContacts.${index}.lastName`] = 'Last name is required';
+        }
+        if (!contact.mobileNumber) {
+          nextErrors[`emergencyContacts.${index}.mobileNumber`] = 'Mobile number is required';
+        }
       }
     });
 
-    if (!formData.insurance.insuranceType) {
-      nextErrors['insurance.insuranceType'] = 'Insurance type is required';
-    }
-    if (!formData.insurance.insuranceName) {
-      nextErrors['insurance.insuranceName'] = 'Insurance name is required';
-    }
-    if (!formData.insurance.memberId) {
-      nextErrors['insurance.memberId'] = 'Member ID is required';
-    }
-    if (!formData.insurance.effectiveStart) {
-      nextErrors['insurance.effectiveStart'] = 'Start date is required';
-    }
-    if (!formData.insurance.effectiveEnd) {
-      nextErrors['insurance.effectiveEnd'] = 'End date is required';
+    // Insurance is optional, but if any field is filled, validate the insurance section
+    const hasAnyInsuranceField = formData.insurance.insuranceType ||
+                                  formData.insurance.insuranceName ||
+                                  formData.insurance.memberId ||
+                                  formData.insurance.effectiveStart ||
+                                  formData.insurance.effectiveEnd;
+
+    if (hasAnyInsuranceField) {
+      if (!formData.insurance.insuranceType) {
+        nextErrors['insurance.insuranceType'] = 'Insurance type is required';
+      }
+      if (!formData.insurance.insuranceName) {
+        nextErrors['insurance.insuranceName'] = 'Insurance name is required';
+      }
+      if (!formData.insurance.memberId) {
+        nextErrors['insurance.memberId'] = 'Member ID is required';
+      }
+      // Start and end dates are optional even if insurance is provided
     }
 
     setErrors(nextErrors);
@@ -558,6 +569,7 @@ export function usePatientForm(patient?: FHIRPatient, facilityId?: string) {
       throw new Error('No facility selected');
     }
 
+    // Filter out empty emergency contacts - only include contacts with actual data
     const filteredContacts = formData.emergencyContacts.filter(
       contact => contact.firstName || contact.lastName || contact.mobileNumber
     );
@@ -570,7 +582,7 @@ export function usePatientForm(patient?: FHIRPatient, facilityId?: string) {
         age: calculatedAge
       },
       contact: formData.contact,
-      emergencyContacts: filteredContacts.length ? filteredContacts : [{ ...blankEmergencyContact }],
+      emergencyContacts: filteredContacts, // Optional - can be empty array
       insurance: formData.insurance,
       preferences: formData.preferences,
       consent: {

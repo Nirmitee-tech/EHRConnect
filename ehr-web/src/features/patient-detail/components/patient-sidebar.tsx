@@ -25,6 +25,7 @@ import {
   ChevronDown,
   ClipboardList,
   Users,
+  Baby,
   LucideIcon
 } from 'lucide-react';
 import { usePatientDetailStore } from '../store/patient-detail-store';
@@ -70,7 +71,10 @@ function PatientSidebarComponent() {
   // All navigation sections organized by category
   const allSections = {
     general: [
-      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, count: null, category: 'general' }
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, count: null, category: 'general' },
+      { id: 'facesheet', label: 'Facesheet', icon: FileText, count: null, category: 'general' },
+      { id: 'facesheet-pregnancy', label: 'Facesheet - Pregnancy', icon: Baby, count: null, category: 'general' },
+      { id: 'flowsheet-prenatal', label: 'Prenatal Flowsheet', icon: Activity, count: null, category: 'general' }
     ],
     clinical: [
       { id: 'allergies', label: 'Allergies', icon: AlertCircle, count: allergies.length, category: 'clinical' },

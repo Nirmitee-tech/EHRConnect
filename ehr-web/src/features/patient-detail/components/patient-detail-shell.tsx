@@ -56,6 +56,9 @@ import { VaccinesTab } from './tabs/vaccines-tab';
 import { LabTab } from './tabs/lab-tab';
 import { ImagingTab } from './tabs/imaging-tab';
 import { FormsTab } from './tabs/forms-tab';
+import { FacesheetTab } from './tabs/facesheet-tab';
+import { PrenatalFacesheetTab } from './tabs/prenatal-facesheet-tab';
+import { PrenatalFlowsheet } from '@/features/specialties/ob-gyn/components';
 // Phase 2: Specialty system imports
 import { specialtyRegistry } from '@/features/specialties';
 import { useSpecialtyNavigation } from '@/features/specialties/shared/hooks/useSpecialtyNavigation';
@@ -376,7 +379,22 @@ export function PatientDetailShell() {
 
             {/* Forms Tab */}
             <div style={{ display: activeTab === 'forms' ? 'block' : 'none' }}>
-              <FormsTab patientId={patientId} encounterId={selectedEncounter?.id} />
+              <FormsTab patientId={patientId} encounterId={selectedEncounter?.id || undefined} />
+            </div>
+
+            {/* Facesheet Tab */}
+            <div style={{ display: activeTab === 'facesheet' ? 'block' : 'none' }}>
+              <FacesheetTab patientId={patientId} />
+            </div>
+
+            {/* Prenatal Facesheet Tab */}
+            <div style={{ display: activeTab === 'facesheet-pregnancy' ? 'block' : 'none' }}>
+              <PrenatalFacesheetTab patientId={patientId} />
+            </div>
+
+            {/* Prenatal Flowsheet Tab */}
+            <div style={{ display: activeTab === 'flowsheet-prenatal' ? 'block' : 'none' }}>
+              <PrenatalFlowsheet patientId={patientId} />
             </div>
 
             {/* History Tab */}

@@ -18,11 +18,19 @@
         "order": 1
       },
       {
+        "id": "facesheet",
+        "label": "Facesheet",
+        "icon": "FileText",
+        "category": "clinical",
+        "order": 2,
+        "componentName": "ObGynFacesheet"
+      },
+      {
         "id": "prenatal-overview",
         "label": "Prenatal Overview",
         "icon": "Heart",
         "category": "clinical",
-        "order": 2,
+        "order": 3,
         "componentName": "PrenatalOverview"
       },
       {
@@ -30,7 +38,7 @@
         "label": "Prenatal Flowsheet",
         "icon": "ClipboardList",
         "category": "clinical",
-        "order": 3,
+        "order": 4,
         "componentName": "PrenatalFlowsheet"
       },
       {
@@ -38,42 +46,42 @@
         "label": "Ultrasounds",
         "icon": "ImageIcon",
         "category": "clinical",
-        "order": 4
+        "order": 5
       },
       {
         "id": "labor-delivery",
         "label": "Labor & Delivery",
         "icon": "Activity",
         "category": "clinical",
-        "order": 5
+        "order": 6
       },
       {
         "id": "postpartum",
         "label": "Postpartum Care",
         "icon": "Baby",
         "category": "clinical",
-        "order": 6
+        "order": 7
       },
       {
         "id": "medications",
         "label": "Medications",
         "icon": "Pill",
         "category": "clinical",
-        "order": 7
+        "order": 8
       },
       {
         "id": "lab",
         "label": "Lab Results",
         "icon": "TestTube",
         "category": "clinical",
-        "order": 8
+        "order": 9
       },
       {
         "id": "encounters",
         "label": "Visit Details",
         "icon": "Calendar",
         "category": "clinical",
-        "order": 9
+        "order": 10
       }
     ],
     "replaceSections": false,

@@ -11,6 +11,7 @@ export type { SpecialtyRegistry } from './registry';
 export * from './shared';
 
 // Individual specialty modules
+export { GeneralSpecialty } from './general';
 export { ObGynSpecialty } from './ob-gyn';
 
 // Future specialty modules:

@@ -8,3 +8,4 @@ export { PrenatalFlowsheet } from './PrenatalFlowsheet';
 export { CreatePrenatalEpisodeDialog } from './CreatePrenatalEpisodeDialog';
 export { PrenatalVisitDialog } from './PrenatalVisitDialog';
 export { PrenatalVisitsList } from './PrenatalVisitsList';
+export { ObGynFacesheet } from './ObGynFacesheet';

@@ -141,8 +141,13 @@ export const formsService = {
     page?: number;
     pageSize?: number;
   }): Promise<{ responses: any[]; total: number }> {
-    const response = await apiClient.get('/forms/responses', { params });
-    return response.data;
+    try {
+      const response = await apiClient.get('/forms/responses', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching form responses:', error);
+      return { responses: [], total: 0 };
+    }
   },
 
   /**
