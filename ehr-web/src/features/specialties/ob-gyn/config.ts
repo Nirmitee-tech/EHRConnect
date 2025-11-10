@@ -31,6 +31,11 @@ export const ObGynSpecialty: SpecialtyModule = {
         default: m.PrenatalFlowsheet,
       }))
     ),
+    PrenatalVitals: lazy(() =>
+      import('./components/PrenatalVitals').then(m => ({
+        default: m.PrenatalVitals,
+      }))
+    ),
     ObGynFacesheet: lazy(() =>
       import('./components/ObGynFacesheet').then(m => ({
         default: m.ObGynFacesheet,

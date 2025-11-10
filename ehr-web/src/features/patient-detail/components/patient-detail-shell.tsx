@@ -58,7 +58,7 @@ import { ImagingTab } from './tabs/imaging-tab';
 import { FormsTab } from './tabs/forms-tab';
 import { FacesheetTab } from './tabs/facesheet-tab';
 import { PrenatalFacesheetTab } from './tabs/prenatal-facesheet-tab';
-import { PrenatalFlowsheet } from '@/features/specialties/ob-gyn/components';
+import { PrenatalFlowsheet, PrenatalVitals } from '@/features/specialties/ob-gyn/components';
 // Phase 2: Specialty system imports
 import { specialtyRegistry } from '@/features/specialties';
 import { useSpecialtyNavigation } from '@/features/specialties/shared/hooks/useSpecialtyNavigation';
@@ -395,6 +395,11 @@ export function PatientDetailShell() {
             {/* Prenatal Flowsheet Tab */}
             <div style={{ display: activeTab === 'flowsheet-prenatal' ? 'block' : 'none' }}>
               <PrenatalFlowsheet patientId={patientId} />
+            </div>
+
+            {/* Prenatal Vitals Tab */}
+            <div style={{ display: activeTab === 'vitals-prenatal' ? 'block' : 'none' }}>
+              <PrenatalVitals patientId={patientId} />
             </div>
 
             {/* History Tab */}

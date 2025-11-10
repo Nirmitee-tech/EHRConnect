@@ -805,73 +805,73 @@ export function PrenatalFlowsheet({ patientId }: PrenatalFlowsheetProps) {
           </div>
         </div>
 
-        {/* Trends Summary */}
+        {/* Trends Summary - Compact */}
         {trends && (
-          <div className="grid grid-cols-4 gap-4 mt-4">
-            <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Scale className="h-4 w-4 text-gray-600" />
-                  <span className="text-xs font-bold text-gray-800">Weight Trend</span>
+          <div className="grid grid-cols-4 gap-3 mt-3">
+            <div className="bg-white border border-gray-300 rounded shadow-sm p-2">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1">
+                  <Scale className="h-3 w-3 text-gray-600" />
+                  <span className="text-[10px] font-bold text-gray-700">Weight</span>
                 </div>
                 {trends.weightTrend > 0 ? (
-                  <TrendingUp className="h-4 w-4 text-green-600" />
+                  <TrendingUp className="h-3 w-3 text-green-600" />
                 ) : (
-                  <TrendingDown className="h-4 w-4 text-red-600" />
+                  <TrendingDown className="h-3 w-3 text-red-600" />
                 )}
               </div>
-              <div className="text-2xl font-bold text-gray-900">
-                {trends.weightTrend > 0 ? '+' : ''}{trends.weightTrend.toFixed(1)} lbs
+              <div className="text-lg font-bold text-gray-900">
+                {trends.weightTrend > 0 ? '+' : ''}{trends.weightTrend.toFixed(1)}
               </div>
-              <div className="text-[9px] text-gray-600 mt-1">Last 3 visits</div>
+              <div className="text-[8px] text-gray-500">lbs (3 visits)</div>
             </div>
 
-            <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-gray-600" />
-                  <span className="text-xs font-bold text-gray-800">BP Trend</span>
+            <div className="bg-white border border-gray-300 rounded shadow-sm p-2">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1">
+                  <Activity className="h-3 w-3 text-gray-600" />
+                  <span className="text-[10px] font-bold text-gray-700">BP</span>
                 </div>
                 {Math.abs(trends.bpTrend) < 5 ? (
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <CheckCircle className="h-3 w-3 text-green-600" />
                 ) : (
-                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertCircle className="h-3 w-3 text-red-600" />
                 )}
               </div>
-              <div className="text-2xl font-bold text-gray-900">
-                {trends.bpTrend > 0 ? '+' : ''}{trends.bpTrend} mmHg
+              <div className="text-lg font-bold text-gray-900">
+                {trends.bpTrend > 0 ? '+' : ''}{trends.bpTrend}
               </div>
-              <div className="text-[9px] text-gray-600 mt-1">Systolic change</div>
+              <div className="text-[8px] text-gray-500">mmHg (systolic)</div>
             </div>
 
-            <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Heart className="h-4 w-4 text-gray-600" />
-                  <span className="text-xs font-bold text-gray-800">FHR Trend</span>
+            <div className="bg-white border border-gray-300 rounded shadow-sm p-2">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1">
+                  <Heart className="h-3 w-3 text-gray-600" />
+                  <span className="text-[10px] font-bold text-gray-700">FHR</span>
                 </div>
                 {Math.abs(trends.fhrTrend) < 20 ? (
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <CheckCircle className="h-3 w-3 text-green-600" />
                 ) : (
-                  <AlertCircle className="h-4 w-4 text-orange-600" />
+                  <AlertCircle className="h-3 w-3 text-orange-600" />
                 )}
               </div>
-              <div className="text-2xl font-bold text-gray-900">
-                {trends.fhrTrend > 0 ? '+' : ''}{trends.fhrTrend} bpm
+              <div className="text-lg font-bold text-gray-900">
+                {trends.fhrTrend > 0 ? '+' : ''}{trends.fhrTrend}
               </div>
-              <div className="text-[9px] text-gray-600 mt-1">Last 3 visits</div>
+              <div className="text-[8px] text-gray-500">bpm (3 visits)</div>
             </div>
 
-            <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-600" />
-                  <span className="text-xs font-bold text-gray-800">Total Visits</span>
+            <div className="bg-white border border-gray-300 rounded shadow-sm p-2">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3 text-gray-600" />
+                  <span className="text-[10px] font-bold text-gray-700">Visits</span>
                 </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{visits.length}</div>
-              <div className="text-[9px] text-gray-600 mt-1">
-                Next: {visits[visits.length - 1]?.nextVisit ? format(parseISO(visits[visits.length - 1].nextVisit!), 'MM/dd/yyyy') : 'Not scheduled'}
+              <div className="text-lg font-bold text-gray-900">{visits.length}</div>
+              <div className="text-[8px] text-gray-500">
+                Next: {visits[visits.length - 1]?.nextVisit ? format(parseISO(visits[visits.length - 1].nextVisit!), 'MM/dd') : 'N/A'}
               </div>
             </div>
           </div>
