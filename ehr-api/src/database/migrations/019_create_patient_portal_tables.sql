@@ -42,15 +42,15 @@ CREATE TABLE IF NOT EXISTS patient_portal_users (
 );
 
 -- Indexes for patient_portal_users
-CREATE INDEX idx_patient_portal_users_email ON patient_portal_users(email);
-CREATE INDEX idx_patient_portal_users_fhir_patient_id ON patient_portal_users(fhir_patient_id);
-CREATE INDEX idx_patient_portal_users_org_id ON patient_portal_users(org_id);
-CREATE INDEX idx_patient_portal_users_status ON patient_portal_users(status);
-CREATE INDEX idx_patient_portal_users_org_email ON patient_portal_users(org_id, email);
-CREATE INDEX idx_patient_portal_users_last_login ON patient_portal_users(last_login_at);
+CREATE INDEX IF NOT EXISTS idx_patient_portal_users_email ON patient_portal_users(email);
+CREATE INDEX IF NOT EXISTS idx_patient_portal_users_fhir_patient_id ON patient_portal_users(fhir_patient_id);
+CREATE INDEX IF NOT EXISTS idx_patient_portal_users_org_id ON patient_portal_users(org_id);
+CREATE INDEX IF NOT EXISTS idx_patient_portal_users_status ON patient_portal_users(status);
+CREATE INDEX IF NOT EXISTS idx_patient_portal_users_org_email ON patient_portal_users(org_id, email);
+CREATE INDEX IF NOT EXISTS idx_patient_portal_users_last_login ON patient_portal_users(last_login_at);
 
 -- Unique constraint for email per organization
-CREATE UNIQUE INDEX idx_patient_portal_users_org_email_unique ON patient_portal_users(org_id, LOWER(email));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_patient_portal_users_org_email_unique ON patient_portal_users(org_id, LOWER(email));
 
 -- =====================================================
 -- PATIENT PORTAL SESSIONS TABLE
@@ -74,10 +74,10 @@ CREATE TABLE IF NOT EXISTS patient_portal_sessions (
 );
 
 -- Indexes for patient_portal_sessions
-CREATE INDEX idx_patient_portal_sessions_token ON patient_portal_sessions(session_token);
-CREATE INDEX idx_patient_portal_sessions_user ON patient_portal_sessions(patient_portal_user_id);
-CREATE INDEX idx_patient_portal_sessions_expires ON patient_portal_sessions(expires_at);
-CREATE INDEX idx_patient_portal_sessions_last_activity ON patient_portal_sessions(last_activity_at);
+CREATE INDEX IF NOT EXISTS idx_patient_portal_sessions_token ON patient_portal_sessions(session_token);
+CREATE INDEX IF NOT EXISTS idx_patient_portal_sessions_user ON patient_portal_sessions(patient_portal_user_id);
+CREATE INDEX IF NOT EXISTS idx_patient_portal_sessions_expires ON patient_portal_sessions(expires_at);
+CREATE INDEX IF NOT EXISTS idx_patient_portal_sessions_last_activity ON patient_portal_sessions(last_activity_at);
 
 -- =====================================================
 -- PATIENT PORTAL AUDIT LOGS TABLE
@@ -107,14 +107,14 @@ CREATE TABLE IF NOT EXISTS patient_portal_audit_logs (
 );
 
 -- Indexes for patient_portal_audit_logs
-CREATE INDEX idx_patient_portal_audit_logs_user ON patient_portal_audit_logs(patient_portal_user_id);
-CREATE INDEX idx_patient_portal_audit_logs_action ON patient_portal_audit_logs(action);
-CREATE INDEX idx_patient_portal_audit_logs_created ON patient_portal_audit_logs(created_at);
-CREATE INDEX idx_patient_portal_audit_logs_status ON patient_portal_audit_logs(status);
-CREATE INDEX idx_patient_portal_audit_logs_resource ON patient_portal_audit_logs(resource_type, resource_id);
+CREATE INDEX IF NOT EXISTS idx_patient_portal_audit_logs_user ON patient_portal_audit_logs(patient_portal_user_id);
+CREATE INDEX IF NOT EXISTS idx_patient_portal_audit_logs_action ON patient_portal_audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_patient_portal_audit_logs_created ON patient_portal_audit_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_patient_portal_audit_logs_status ON patient_portal_audit_logs(status);
+CREATE INDEX IF NOT EXISTS idx_patient_portal_audit_logs_resource ON patient_portal_audit_logs(resource_type, resource_id);
 
 -- Composite index for common audit queries
-CREATE INDEX idx_patient_portal_audit_logs_user_action_created ON patient_portal_audit_logs(patient_portal_user_id, action, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_patient_portal_audit_logs_user_action_created ON patient_portal_audit_logs(patient_portal_user_id, action, created_at DESC);
 
 -- =====================================================
 -- TRIGGERS
@@ -129,6 +129,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_patient_portal_users_updated_at ON patient_portal_users;
 CREATE TRIGGER trigger_patient_portal_users_updated_at
   BEFORE UPDATE ON patient_portal_users
   FOR EACH ROW
@@ -143,6 +144,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_patient_portal_sessions_activity ON patient_portal_sessions;
 CREATE TRIGGER trigger_patient_portal_sessions_activity
   BEFORE UPDATE ON patient_portal_sessions
   FOR EACH ROW

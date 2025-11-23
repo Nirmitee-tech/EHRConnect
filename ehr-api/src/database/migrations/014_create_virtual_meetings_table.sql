@@ -56,14 +56,14 @@ CREATE TABLE IF NOT EXISTS virtual_meetings (
 );
 
 -- Create indexes for performance
-CREATE INDEX idx_virtual_meetings_appointment ON virtual_meetings(appointment_id);
-CREATE INDEX idx_virtual_meetings_org ON virtual_meetings(org_id);
-CREATE INDEX idx_virtual_meetings_status ON virtual_meetings(status);
-CREATE INDEX idx_virtual_meetings_meeting_id ON virtual_meetings(meeting_id);
-CREATE INDEX idx_virtual_meetings_meeting_code ON virtual_meetings(meeting_code);
-CREATE INDEX idx_virtual_meetings_host ON virtual_meetings(host_practitioner_id);
-CREATE INDEX idx_virtual_meetings_patient ON virtual_meetings(patient_id);
-CREATE INDEX idx_virtual_meetings_created_at ON virtual_meetings(created_at);
+CREATE INDEX IF NOT EXISTS idx_virtual_meetings_appointment ON virtual_meetings(appointment_id);
+CREATE INDEX IF NOT EXISTS idx_virtual_meetings_org ON virtual_meetings(org_id);
+CREATE INDEX IF NOT EXISTS idx_virtual_meetings_status ON virtual_meetings(status);
+CREATE INDEX IF NOT EXISTS idx_virtual_meetings_meeting_id ON virtual_meetings(meeting_id);
+CREATE INDEX IF NOT EXISTS idx_virtual_meetings_meeting_code ON virtual_meetings(meeting_code);
+CREATE INDEX IF NOT EXISTS idx_virtual_meetings_host ON virtual_meetings(host_practitioner_id);
+CREATE INDEX IF NOT EXISTS idx_virtual_meetings_patient ON virtual_meetings(patient_id);
+CREATE INDEX IF NOT EXISTS idx_virtual_meetings_created_at ON virtual_meetings(created_at);
 
 -- Create table for meeting participants/sessions
 CREATE TABLE IF NOT EXISTS virtual_meeting_participants (
@@ -91,9 +91,9 @@ CREATE TABLE IF NOT EXISTS virtual_meeting_participants (
 );
 
 -- Create indexes
-CREATE INDEX idx_meeting_participants_meeting ON virtual_meeting_participants(meeting_id);
-CREATE INDEX idx_meeting_participants_user ON virtual_meeting_participants(user_id);
-CREATE INDEX idx_meeting_participants_peer ON virtual_meeting_participants(peer_id);
+CREATE INDEX IF NOT EXISTS idx_meeting_participants_meeting ON virtual_meeting_participants(meeting_id);
+CREATE INDEX IF NOT EXISTS idx_meeting_participants_user ON virtual_meeting_participants(user_id);
+CREATE INDEX IF NOT EXISTS idx_meeting_participants_peer ON virtual_meeting_participants(peer_id);
 
 -- Create table for meeting events/logs
 CREATE TABLE IF NOT EXISTS virtual_meeting_events (
@@ -113,16 +113,16 @@ CREATE TABLE IF NOT EXISTS virtual_meeting_events (
 );
 
 -- Create indexes
-CREATE INDEX idx_meeting_events_meeting ON virtual_meeting_events(meeting_id);
-CREATE INDEX idx_meeting_events_type ON virtual_meeting_events(event_type);
-CREATE INDEX idx_meeting_events_occurred_at ON virtual_meeting_events(occurred_at);
+CREATE INDEX IF NOT EXISTS idx_meeting_events_meeting ON virtual_meeting_events(meeting_id);
+CREATE INDEX IF NOT EXISTS idx_meeting_events_type ON virtual_meeting_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_meeting_events_occurred_at ON virtual_meeting_events(occurred_at);
 
 -- Add 100ms configuration to integrations_config table (if it doesn't exist)
 -- This stores org-specific 100ms settings
 CREATE TABLE IF NOT EXISTS integrations_config (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-  integration_vendor_id UUID REFERENCES integration_vendors(id),
+  integration_vendor_id VARCHAR(100) REFERENCES integration_vendors(id),
 
   -- Configuration
   config_key VARCHAR(255) NOT NULL,
@@ -149,6 +149,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create trigger for updated_at
+DROP TRIGGER IF EXISTS trigger_virtual_meetings_updated_at ON virtual_meetings;
 CREATE TRIGGER trigger_virtual_meetings_updated_at
   BEFORE UPDATE ON virtual_meetings
   FOR EACH ROW

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   Send,
@@ -31,9 +31,12 @@ interface FormProgress {
 export default function FormFillPage() {
   const router = useRouter();
   const params = useParams();
-  const templateId = params.id as string;
-  const patientId = params.patientId as string | undefined;
-  const encounterId = params.encounterId as string | undefined;
+  const searchParams = useSearchParams();
+  const templateId = params?.id as string;
+  const patientId = params?.patientId as string | undefined;
+  const encounterId = params?.encounterId as string | undefined;
+  const orgIdParam = searchParams?.get('orgId');
+  const DEFAULT_ORG_ID = '1200d873-8725-439a-8bbe-e6d4e7c26338';
 
   const [questionnaire, setQuestionnaire] = useState<FHIRQuestionnaire | null>(null);
   const [answers, setAnswers] = useState<Record<string, any>>({});
@@ -49,16 +52,6 @@ export default function FormFillPage() {
 
   // Load form
   useEffect(() => {
-    // Ensure auth headers are set in localStorage
-    if (typeof window !== 'undefined') {
-      if (!localStorage.getItem('userId')) {
-        localStorage.setItem('userId', '0df77487-970d-4245-acd5-b2a6504e88cd');
-      }
-      if (!localStorage.getItem('orgId')) {
-        localStorage.setItem('orgId', '1200d873-8725-439a-8bbe-e6d4e7c26338');
-      }
-    }
-
     loadForm();
   }, [templateId]);
 
@@ -106,10 +99,20 @@ export default function FormFillPage() {
   const loadForm = async () => {
     try {
       setLoading(true);
-      const template = await formsService.getTemplate(templateId);
-      setQuestionnaire(template.questionnaire as FHIRQuestionnaire);
-    } catch (error) {
+      const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+
+      if (userId) {
+        const template = await formsService.getTemplate(templateId);
+        setQuestionnaire(template.questionnaire as FHIRQuestionnaire);
+      } else {
+        // Public access
+        const orgId = orgIdParam || (typeof window !== 'undefined' ? localStorage.getItem('orgId') : null) || DEFAULT_ORG_ID;
+        const template = await formsService.getPublicTemplate(templateId, orgId);
+        setQuestionnaire(template.questionnaire as FHIRQuestionnaire);
+      }
+    } catch (error: any) {
       console.error('Failed to load form:', error);
+      setErrors(prev => ({ ...prev, global: error.message || 'Unknown error' }));
     } finally {
       setLoading(false);
     }
@@ -209,12 +212,25 @@ export default function FormFillPage() {
       if (draftId) {
         await formsService.updateResponse(draftId, { response });
       } else {
-        const created = await formsService.createResponse({
-          form_template_id: templateId,
-          patient_id: patientId || undefined,
-          encounter_id: encounterId || undefined,
-          response,
-        });
+        const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+        let created;
+
+        if (userId) {
+          created = await formsService.createResponse({
+            form_template_id: templateId,
+            patient_id: patientId || undefined,
+            encounter_id: encounterId || undefined,
+            response,
+          });
+        } else {
+          // Public submission
+          const orgId = orgIdParam || (typeof window !== 'undefined' ? localStorage.getItem('orgId') : null) || DEFAULT_ORG_ID;
+          created = await formsService.submitPublicResponse(orgId, {
+            form_template_id: templateId,
+            patient_id: patientId || undefined,
+            response,
+          });
+        }
         setDraftId(created.id);
       }
 
@@ -262,12 +278,24 @@ export default function FormFillPage() {
       if (draftId) {
         await formsService.updateResponse(draftId, { response });
       } else {
-        await formsService.createResponse({
-          form_template_id: templateId,
-          patient_id: patientId || undefined,
-          encounter_id: encounterId || undefined,
-          response,
-        });
+        const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+
+        if (userId) {
+          await formsService.createResponse({
+            form_template_id: templateId,
+            patient_id: patientId || undefined,
+            encounter_id: encounterId || undefined,
+            response,
+          });
+        } else {
+          // Public submission
+          const orgId = orgIdParam || (typeof window !== 'undefined' ? localStorage.getItem('orgId') : null) || DEFAULT_ORG_ID;
+          await formsService.submitPublicResponse(orgId, {
+            form_template_id: templateId,
+            patient_id: patientId || undefined,
+            response,
+          });
+        }
       }
 
       setSubmitted(true);
@@ -490,7 +518,14 @@ export default function FormFillPage() {
         <Card className="max-w-md p-6 text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-900 mb-2">Form Not Found</h2>
-          <p className="text-gray-600 mb-4 text-sm">The form you're looking for doesn't exist.</p>
+          <p className="text-gray-600 mb-4 text-sm">
+            The form you're looking for doesn't exist or could not be loaded.
+          </p>
+          {Object.keys(errors).length > 0 && errors.global && (
+            <div className="mb-4 p-2 bg-red-50 text-red-600 text-xs rounded border border-red-100">
+              Error: {errors.global}
+            </div>
+          )}
           <Button onClick={() => router.push('/forms')} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
             Back to Forms
           </Button>

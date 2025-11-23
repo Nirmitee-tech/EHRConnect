@@ -6,6 +6,7 @@ const router = express.Router();
 const patientController = require('../controllers/patient');
 const appointmentController = require('../controllers/appointment');
 const practitionerController = require('../controllers/practitioner');
+const formsService = require('../services/forms.service');
 
 // Helper function to create FHIR OperationOutcome for errors
 function createOperationOutcome(severity, code, message) {
@@ -1563,6 +1564,47 @@ router.post('/v2/patients', extractOrgId, async (req, res) => {
   } catch (error) {
     console.error('Error creating patient:', error);
     res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ==================== PUBLIC FORM ENDPOINTS ====================
+
+// Get form template by ID (public)
+// GET /api/public/v2/forms/templates/:id?org_id=xxx
+router.get('/v2/forms/templates/:id', extractOrgId, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await formsService.getTemplate(id, req.orgId);
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Error getting public form template:', error);
+    res.status(error.message === 'Form template not found' ? 404 : 500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Submit form response (public)
+// POST /api/public/v2/forms/responses?org_id=xxx
+router.post('/v2/forms/responses', extractOrgId, async (req, res) => {
+  try {
+    // Pass null as userId for public submissions
+    // The service should handle null userId (e.g. for submitted_by)
+    const response = await formsService.createResponse(req.orgId, null, req.body);
+    res.status(201).json({
+      success: true,
+      data: response
+    });
+  } catch (error) {
+    console.error('Error submitting public form response:', error);
+    res.status(500).json({
       success: false,
       error: error.message
     });

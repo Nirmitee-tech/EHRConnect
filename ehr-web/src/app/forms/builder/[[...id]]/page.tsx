@@ -12,7 +12,18 @@ import {
   Eye,
   FileText,
   Search,
-  Settings
+  Settings,
+  Activity,
+  User,
+  MapPin,
+  PenTool,
+  Phone,
+  Mail,
+  Globe,
+  List,
+  Sliders,
+  Database,
+  FileCode
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,23 +32,119 @@ import { Textarea } from '@/components/ui/textarea';
 import { formsService } from '@/services/forms.service';
 import type { FHIRQuestionnaire, QuestionnaireItem } from '@/types/forms';
 import { cn } from '@/lib/utils';
+import { QuestionTreeItem } from '../components/QuestionTreeItem';
+import { addItem, updateItem, deleteItem, findItem } from '../utils/tree-utils';
 
+// Extended Component Types
 const COMPONENT_TYPES = [
+  // Basic Types
   { value: 'group', label: 'Group', icon: 'GRP', description: 'Container for grouping items' },
-  { value: 'choice', label: 'Choice', icon: 'CHC', description: 'Single or multiple choice' },
   { value: 'string', label: 'Text', icon: 'TXT', description: 'Short text input' },
   { value: 'text', label: 'Textarea', icon: 'TXA', description: 'Long text input' },
   { value: 'integer', label: 'Integer', icon: '123', description: 'Whole number input' },
   { value: 'decimal', label: 'Decimal', icon: '1.0', description: 'Decimal number' },
+  { value: 'boolean', label: 'Checkbox', icon: 'CHK', description: 'Yes/No checkbox' },
   { value: 'date', label: 'Date', icon: 'DTE', description: 'Date picker' },
   { value: 'time', label: 'Time', icon: 'TIM', description: 'Time picker' },
   { value: 'datetime', label: 'Datetime', icon: 'DTM', description: 'Date and time picker' },
-  { value: 'boolean', label: 'Checkbox', icon: 'CHK', description: 'Yes/No checkbox' },
+
+  // Selection
+  { value: 'choice', label: 'Choice', icon: 'CHC', description: 'Single or multiple choice' },
+  { value: 'open-choice', label: 'Open Choice', icon: <List className="w-4 h-4" />, description: 'Select or type custom value' },
+
+  // Advanced Inputs
+  { value: 'slider', label: 'Slider', icon: <Sliders className="w-4 h-4" />, description: 'Visual analog scale / Range' },
+  { value: 'signature', label: 'Signature', icon: <PenTool className="w-4 h-4" />, description: 'Digital signature pad' },
+  { value: 'attachment', label: 'Attachment', icon: 'ATT', description: 'File upload' },
+
+  // Formatted Inputs
+  { value: 'phone', label: 'Phone', icon: <Phone className="w-4 h-4" />, description: 'Phone number input' },
+  { value: 'email', label: 'Email', icon: <Mail className="w-4 h-4" />, description: 'Email address input' },
+  { value: 'url', label: 'URL', icon: <Globe className="w-4 h-4" />, description: 'Website link' },
+
+  // Composites (Pre-configured Groups)
+  { value: 'address', label: 'Address', icon: <MapPin className="w-4 h-4" />, description: 'Street, City, State, Zip' },
+  { value: 'human-name', label: 'Name', icon: <User className="w-4 h-4" />, description: 'First, Last, Middle, Prefix' },
+  { value: 'vitals-bp', label: 'Blood Pressure', icon: <Activity className="w-4 h-4" />, description: 'Systolic & Diastolic' },
+  { value: 'vitals-hw', label: 'Height/Weight', icon: <Activity className="w-4 h-4" />, description: 'Height & Weight' },
+
+  // FHIR Specific
+  { value: 'reference', label: 'Reference', icon: 'REF', description: 'Resource reference' },
   { value: 'quantity', label: 'Quantity', icon: 'QTY', description: 'Number with unit' },
   { value: 'display', label: 'Display', icon: 'DSP', description: 'Static text display' },
-  { value: 'attachment', label: 'Attachment', icon: 'ATT', description: 'File upload' },
-  { value: 'reference', label: 'Reference', icon: 'REF', description: 'Resource reference' },
 ];
+
+// Example Templates
+const EXAMPLE_TEMPLATES: Record<string, QuestionnaireItem[]> = {
+  'patient-intake': [
+    {
+      linkId: 'p-1',
+      text: 'Patient Demographics',
+      type: 'group',
+      item: [
+        {
+          linkId: 'p-1-1',
+          text: 'Full Name',
+          type: 'group',
+          item: [
+            { linkId: 'p-1-1-1', text: 'First Name', type: 'string', required: true },
+            { linkId: 'p-1-1-2', text: 'Last Name', type: 'string', required: true }
+          ]
+        },
+        { linkId: 'p-1-2', text: 'Date of Birth', type: 'date', required: true },
+        { linkId: 'p-1-3', text: 'Contact Phone', type: 'string', extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl', valueCode: 'phone' }] }
+      ]
+    },
+    {
+      linkId: 'p-2',
+      text: 'Medical History',
+      type: 'group',
+      item: [
+        {
+          linkId: 'p-2-1',
+          text: 'Do you have any allergies?',
+          type: 'boolean'
+        },
+        {
+          linkId: 'p-2-2',
+          text: 'Please list allergies',
+          type: 'text',
+          enableWhen: [{ question: 'p-2-1', operator: '=', answerBoolean: true }]
+        }
+      ]
+    }
+  ],
+  'vitals-check': [
+    {
+      linkId: 'v-1',
+      text: 'Vital Signs',
+      type: 'group',
+      item: [
+        {
+          linkId: 'v-1-1',
+          text: 'Blood Pressure',
+          type: 'group',
+          item: [
+            { linkId: 'v-1-1-1', text: 'Systolic', type: 'integer', unit: 'mmHg' } as any,
+            { linkId: 'v-1-1-2', text: 'Diastolic', type: 'integer', unit: 'mmHg' } as any
+          ]
+        },
+        {
+          linkId: 'v-1-2',
+          text: 'Heart Rate',
+          type: 'integer',
+          unit: 'bpm'
+        } as any,
+        {
+          linkId: 'v-1-3',
+          text: 'Pain Level (0-10)',
+          type: 'integer',
+          extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl', valueCode: 'slider' }]
+        }
+      ]
+    }
+  ]
+};
 
 export default function FormBuilderPage() {
   const router = useRouter();
@@ -50,14 +157,14 @@ export default function FormBuilderPage() {
   const [questions, setQuestions] = useState<QuestionnaireItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
+  const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set(['root']));
   const [leftPanelTab, setLeftPanelTab] = useState<'items' | 'components'>('items');
   const [bottomPanelTab, setBottomPanelTab] = useState<'questionnaire' | 'response' | 'population' | 'extraction' | 'expressions'>('questionnaire');
   const [componentSearch, setComponentSearch] = useState('');
+  const [contextTypes, setContextTypes] = useState<string[]>([]);
 
   useEffect(() => {
-    // Ensure auth headers are set in localStorage
     if (typeof window !== 'undefined') {
       if (!localStorage.getItem('userId')) {
         localStorage.setItem('userId', '0df77487-970d-4245-acd5-b2a6504e88cd');
@@ -83,8 +190,11 @@ export default function FormBuilderPage() {
       const template = await formsService.getTemplate(templateId);
       setTitle(template.title);
       setDescription(template.description || '');
-      setCategory(template.category);
+      setCategory(template.category || 'general');
       setQuestions(template.questionnaire.item || []);
+      if (template.settings?.contextTypes) {
+        setContextTypes(template.settings.contextTypes);
+      }
     } catch (error) {
       console.error('Failed to load template:', error);
     } finally {
@@ -92,46 +202,152 @@ export default function FormBuilderPage() {
     }
   };
 
-  const addQuestion = (type: string = 'string') => {
-    const newQuestion: QuestionnaireItem = {
-      linkId: `question_${Date.now()}`,
-      text: '',
-      type: type as any,
-      required: false,
-    };
-    setQuestions([...questions, newQuestion]);
-    setSelectedQuestionIndex(questions.length);
-  };
+  const generateLinkId = () => `item_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
-  const updateQuestion = (index: number, field: keyof QuestionnaireItem, value: any) => {
-    const updated = [...questions];
-    updated[index] = { ...updated[index], [field]: value };
-    setQuestions(updated);
-  };
+  const handleAddQuestion = (type: string = 'string', parentLinkId?: string) => {
+    let newQuestion: QuestionnaireItem;
+    const baseId = generateLinkId();
 
-  const deleteQuestion = (index: number) => {
-    setQuestions(questions.filter((_, i) => i !== index));
-  };
-
-  const addChoice = (questionIndex: number) => {
-    const updated = [...questions];
-    if (!updated[questionIndex].answerOption) {
-      updated[questionIndex].answerOption = [];
+    // Handle Composite Types
+    switch (type) {
+      case 'address':
+        newQuestion = {
+          linkId: baseId,
+          text: 'Address',
+          type: 'group',
+          item: [
+            { linkId: `${baseId}_street`, text: 'Street Address', type: 'string' },
+            { linkId: `${baseId}_city`, text: 'City', type: 'string', width: '50%' } as any,
+            { linkId: `${baseId}_state`, text: 'State', type: 'string', width: '25%' } as any,
+            { linkId: `${baseId}_zip`, text: 'Zip Code', type: 'string', width: '25%' } as any,
+            { linkId: `${baseId}_country`, text: 'Country', type: 'string' }
+          ]
+        };
+        break;
+      case 'human-name':
+        newQuestion = {
+          linkId: baseId,
+          text: 'Name',
+          type: 'group',
+          item: [
+            { linkId: `${baseId}_first`, text: 'First Name', type: 'string', width: '40%' } as any,
+            { linkId: `${baseId}_middle`, text: 'Middle', type: 'string', width: '20%' } as any,
+            { linkId: `${baseId}_last`, text: 'Last Name', type: 'string', width: '40%' } as any,
+          ]
+        };
+        break;
+      case 'vitals-bp':
+        newQuestion = {
+          linkId: baseId,
+          text: 'Blood Pressure',
+          type: 'group',
+          item: [
+            { linkId: `${baseId}_sys`, text: 'Systolic', type: 'integer', unit: 'mmHg', width: '50%' } as any,
+            { linkId: `${baseId}_dia`, text: 'Diastolic', type: 'integer', unit: 'mmHg', width: '50%' } as any,
+          ]
+        };
+        break;
+      case 'vitals-hw':
+        newQuestion = {
+          linkId: baseId,
+          text: 'Body Measurements',
+          type: 'group',
+          item: [
+            { linkId: `${baseId}_ht`, text: 'Height', type: 'quantity', unit: 'cm', width: '50%' } as any,
+            { linkId: `${baseId}_wt`, text: 'Weight', type: 'quantity', unit: 'kg', width: '50%' } as any,
+          ]
+        };
+        break;
+      case 'slider':
+        newQuestion = {
+          linkId: baseId,
+          text: 'Slider Question',
+          type: 'integer',
+          extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl', valueCode: 'slider' }]
+        };
+        break;
+      case 'signature':
+        newQuestion = {
+          linkId: baseId,
+          text: 'Signature',
+          type: 'attachment',
+          extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-signature', valueBoolean: true }]
+        };
+        break;
+      case 'phone':
+        newQuestion = {
+          linkId: baseId,
+          text: 'Phone Number',
+          type: 'string',
+          extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl', valueCode: 'phone' }]
+        };
+        break;
+      case 'email':
+        newQuestion = {
+          linkId: baseId,
+          text: 'Email Address',
+          type: 'string',
+          extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl', valueCode: 'email' }]
+        };
+        break;
+      default:
+        newQuestion = {
+          linkId: baseId,
+          text: type === 'group' ? 'New Group' : '',
+          type: type as any,
+          required: false,
+          item: [],
+        };
     }
-    updated[questionIndex].answerOption!.push({ valueString: '' });
-    setQuestions(updated);
+
+    setQuestions(prev => addItem(prev, newQuestion, parentLinkId));
+
+    if (parentLinkId) {
+      const newExpanded = new Set(expandedItems);
+      newExpanded.add(parentLinkId);
+      setExpandedItems(newExpanded);
+    }
+
+    setSelectedLinkId(newQuestion.linkId);
   };
 
-  const updateChoice = (questionIndex: number, choiceIndex: number, value: string) => {
-    const updated = [...questions];
-    updated[questionIndex].answerOption![choiceIndex] = { valueString: value };
-    setQuestions(updated);
+  const handleUpdateQuestion = (linkId: string, field: keyof QuestionnaireItem, value: any) => {
+    setQuestions(prev => updateItem(prev, linkId, { [field]: value }));
   };
 
-  const deleteChoice = (questionIndex: number, choiceIndex: number) => {
-    const updated = [...questions];
-    updated[questionIndex].answerOption = updated[questionIndex].answerOption!.filter((_, i) => i !== choiceIndex);
-    setQuestions(updated);
+  const handleDeleteQuestion = (linkId: string) => {
+    if (confirm('Are you sure you want to delete this item and all its children?')) {
+      setQuestions(prev => deleteItem(prev, linkId));
+      if (selectedLinkId === linkId) {
+        setSelectedLinkId(null);
+      }
+    }
+  };
+
+  const addChoice = (linkId: string) => {
+    const item = findItem(questions, linkId);
+    if (!item) return;
+
+    const currentOptions = item.answerOption || [];
+    const newOptions = [...currentOptions, { valueString: '' }];
+    handleUpdateQuestion(linkId, 'answerOption', newOptions);
+  };
+
+  const updateChoice = (linkId: string, choiceIndex: number, value: string) => {
+    const item = findItem(questions, linkId);
+    if (!item) return;
+
+    const updatedOptions = [...(item.answerOption || [])];
+    updatedOptions[choiceIndex] = { valueString: value };
+    handleUpdateQuestion(linkId, 'answerOption', updatedOptions);
+  };
+
+  const deleteChoice = (linkId: string, choiceIndex: number) => {
+    const item = findItem(questions, linkId);
+    if (!item) return;
+
+    const updatedOptions = (item.answerOption || []).filter((_, i) => i !== choiceIndex);
+    handleUpdateQuestion(linkId, 'answerOption', updatedOptions);
   };
 
   const handleSave = async () => {
@@ -150,6 +366,8 @@ export default function FormBuilderPage() {
         item: questions,
       };
 
+      console.log('Saving with context types:', contextTypes);
+
       let result;
       if (templateId) {
         result = await formsService.updateTemplate(templateId, {
@@ -158,7 +376,6 @@ export default function FormBuilderPage() {
           category,
           questionnaire
         });
-        console.log('Template updated:', result);
       } else {
         result = await formsService.createTemplate({
           title,
@@ -167,7 +384,6 @@ export default function FormBuilderPage() {
           tags: ['custom'],
           questionnaire
         });
-        console.log('Template created:', result);
       }
 
       alert('Form saved successfully!');
@@ -207,11 +423,182 @@ export default function FormBuilderPage() {
     item: questions,
   });
 
+  const loadExample = (key: string) => {
+    if (confirm('This will replace your current form. Continue?')) {
+      setQuestions(EXAMPLE_TEMPLATES[key]);
+      setTitle(key === 'patient-intake' ? 'Patient Intake Form' : 'Vitals Check');
+      setExpandedItems(new Set(['root']));
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
 
-  const selectedQuestion = selectedQuestionIndex !== null ? questions[selectedQuestionIndex] : null;
+  const selectedQuestion = selectedLinkId ? findItem(questions, selectedLinkId) : null;
+
+  // Recursive renderer for the preview panel
+  const renderPreviewItem = (item: QuestionnaireItem, depth = 0) => {
+    const icon = getQuestionIcon(item.type);
+    const isSelected = selectedLinkId === item.linkId;
+
+    // Check extensions for special rendering
+    const isSlider = item.extension?.some(e => e.url.includes('itemControl') && e.valueCode === 'slider');
+    const isSignature = item.extension?.some(e => e.url.includes('signature'));
+    const isPhone = item.extension?.some(e => e.url.includes('itemControl') && e.valueCode === 'phone');
+    const isEmail = item.extension?.some(e => e.url.includes('itemControl') && e.valueCode === 'email');
+
+    // Width handling
+    const width = (item as any)._width || (item as any).width || '100%';
+
+    return (
+      <div
+        key={item.linkId}
+        className={cn(
+          "p-3 rounded border transition-all cursor-pointer mb-3",
+          isSelected
+            ? "border-blue-500 bg-blue-50/30 shadow-sm"
+            : "border-gray-200 hover:border-gray-300 bg-white",
+          item.type === 'group' && "bg-gray-50/50"
+        )}
+        style={{
+          marginLeft: depth > 0 ? '20px' : '0',
+          width: width !== '100%' ? width : undefined,
+          display: width !== '100%' ? 'inline-block' : 'block',
+          verticalAlign: 'top'
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedLinkId(item.linkId);
+        }}
+      >
+        <Label className="flex items-center gap-2 mb-2 text-sm">
+          <span className="text-gray-400 text-xs font-mono flex items-center justify-center w-4 h-4">
+            {typeof icon === 'string' ? icon : icon}
+          </span>
+          <span className="font-medium">
+            {item.text || <span className="text-gray-400 italic">Untitled {item.type}</span>}
+            {item.required && <span className="text-red-500 ml-1">*</span>}
+          </span>
+        </Label>
+
+        {/* Render Logic based on Type and Extensions */}
+        {isSlider ? (
+          <div className="px-2">
+            <input type="range" min="0" max="10" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" disabled />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>0</span>
+              <span>5</span>
+              <span>10</span>
+            </div>
+          </div>
+        ) : isSignature ? (
+          <div className="border-2 border-dashed border-gray-300 rounded h-24 flex items-center justify-center bg-white">
+            <div className="text-center text-gray-400">
+              <PenTool className="h-6 w-6 mx-auto mb-1" />
+              <span className="text-xs">Sign here</span>
+            </div>
+          </div>
+        ) : (
+          <>
+            {item.type === 'string' && (
+              <div className="relative">
+                {isPhone && <Phone className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />}
+                {isEmail && <Mail className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />}
+                <Input
+                  placeholder={isPhone ? "(555) 555-5555" : isEmail ? "user@example.com" : "Short answer"}
+                  disabled
+                  className={cn("bg-gray-50 text-xs h-8", (isPhone || isEmail) && "pl-7")}
+                />
+              </div>
+            )}
+            {item.type === 'text' && (
+              <Textarea placeholder="Long answer" disabled rows={3} className="bg-gray-50 text-xs" />
+            )}
+            {item.type === 'integer' && (
+              <div className="flex items-center gap-2">
+                <Input type="number" placeholder="0" disabled className="bg-gray-50 text-xs h-8" />
+                {(item as any).unit && <span className="text-xs text-gray-500">{(item as any).unit}</span>}
+              </div>
+            )}
+            {item.type === 'decimal' && (
+              <div className="flex items-center gap-2">
+                <Input type="number" placeholder="0.0" disabled className="bg-gray-50 text-xs h-8" />
+                {(item as any).unit && <span className="text-xs text-gray-500">{(item as any).unit}</span>}
+              </div>
+            )}
+            {item.type === 'quantity' && (
+              <div className="flex gap-2">
+                <Input type="number" placeholder="Value" disabled className="bg-gray-50 text-xs h-8 flex-1" />
+                <Input placeholder="Unit" value={(item as any).unit || ''} disabled className="bg-gray-50 text-xs h-8 w-20" />
+              </div>
+            )}
+            {item.type === 'date' && (
+              <Input type="date" disabled className="bg-gray-50 text-xs h-8" />
+            )}
+            {item.type === 'time' && (
+              <Input type="time" disabled className="bg-gray-50 text-xs h-8" />
+            )}
+            {item.type === 'datetime' && (
+              <Input type="datetime-local" disabled className="bg-gray-50 text-xs h-8" />
+            )}
+            {item.type === 'boolean' && (
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2">
+                  <input type="radio" disabled />
+                  <span className="text-xs">Yes</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input type="radio" disabled />
+                  <span className="text-xs">No</span>
+                </label>
+              </div>
+            )}
+            {(item.type === 'choice' || item.type === 'open-choice') && (
+              <div className="space-y-1.5">
+                {item.type === 'open-choice' && (
+                  <Input placeholder="Type or select..." disabled className="bg-gray-50 text-xs h-8 mb-2" />
+                )}
+                {item.answerOption && item.answerOption.length > 0 ? (
+                  item.answerOption.map((option, optIdx) => (
+                    <label key={optIdx} className="flex items-center gap-2">
+                      <input type={item.repeats ? "checkbox" : "radio"} disabled />
+                      <span className="text-xs">{option.valueString || option.valueCoding?.display || `Option ${optIdx + 1}`}</span>
+                    </label>
+                  ))
+                ) : (
+                  <p className="text-xs text-gray-400">No options added</p>
+                )}
+              </div>
+            )}
+            {item.type === 'url' && (
+              <div className="relative">
+                <Globe className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />
+                <Input placeholder="https://example.com" disabled className="bg-gray-50 text-xs h-8 pl-7" />
+              </div>
+            )}
+            {item.type === 'display' && (
+              <div className="text-xs text-gray-600 italic">Display text</div>
+            )}
+            {item.type === 'attachment' && !isSignature && (
+              <div className="border-2 border-dashed border-gray-200 rounded p-4 text-center">
+                <p className="text-xs text-gray-500">File upload placeholder</p>
+              </div>
+            )}
+            {item.type === 'group' && (
+              <div className="mt-3 pl-2 border-l-2 border-gray-200 min-h-[20px]">
+                {item.item && item.item.length > 0 ? (
+                  item.item.map(child => renderPreviewItem(child, depth + 1))
+                ) : (
+                  <div className="text-xs text-gray-400 italic p-2">Empty group</div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="h-screen flex flex-col bg-white">
@@ -224,6 +611,21 @@ export default function FormBuilderPage() {
           </Button>
         </div>
         <div className="flex items-center gap-2">
+          {/* Example Loader */}
+          <div className="mr-2">
+            <select
+              className="h-7 text-xs border-gray-200 rounded bg-gray-50"
+              onChange={(e) => {
+                if (e.target.value) loadExample(e.target.value);
+                e.target.value = '';
+              }}
+            >
+              <option value="">Load Example...</option>
+              <option value="patient-intake">Patient Intake</option>
+              <option value="vitals-check">Vitals Check</option>
+            </select>
+          </div>
+
           <Button
             variant="outline"
             size="sm"
@@ -288,12 +690,12 @@ export default function FormBuilderPage() {
                 <div className="group">
                   <div
                     onClick={() => {
-                      setSelectedQuestionIndex(null);
+                      setSelectedLinkId(null);
                       toggleExpand('root');
                     }}
                     className={cn(
                       "w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-xs hover:bg-white transition-colors cursor-pointer",
-                      selectedQuestionIndex === null && "bg-white shadow-sm"
+                      selectedLinkId === null && "bg-white shadow-sm"
                     )}
                   >
                     {expandedItems.has('root') ? (
@@ -308,7 +710,7 @@ export default function FormBuilderPage() {
                     <Button
                       onClick={(e) => {
                         e.stopPropagation();
-                        addQuestion();
+                        handleAddQuestion();
                       }}
                       size="sm"
                       variant="ghost"
@@ -319,33 +721,25 @@ export default function FormBuilderPage() {
                   </div>
 
                   {expandedItems.has('root') && (
-                    <div className="ml-5 mt-1 space-y-0.5">
+                    <div className="mt-1 space-y-0.5">
                       {questions.length === 0 ? (
                         <div className="px-2 py-6 text-xs text-gray-400 text-center">
                           No items yet
                         </div>
                       ) : (
-                        questions.map((q, idx) => {
-                          const icon = getQuestionIcon(q.type);
-                          return (
-                            <button
-                              key={q.linkId}
-                              onClick={() => setSelectedQuestionIndex(idx)}
-                              className={cn(
-                                "w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-xs hover:bg-white transition-colors",
-                                selectedQuestionIndex === idx && "bg-white shadow-sm"
-                              )}
-                            >
-                              <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{icon}</span>
-                              <span className="flex-1 text-left truncate">
-                                {q.text || `Question ${idx + 1}`}
-                              </span>
-                              {q.required && (
-                                <span className="text-xs text-red-500">*</span>
-                              )}
-                            </button>
-                          );
-                        })
+                        questions.map((q) => (
+                          <QuestionTreeItem
+                            key={q.linkId}
+                            item={q}
+                            selectedId={selectedLinkId}
+                            expandedIds={expandedItems}
+                            onSelect={setSelectedLinkId}
+                            onToggleExpand={toggleExpand}
+                            onAddChild={(parentId) => handleAddQuestion('string', parentId)}
+                            onDelete={handleDeleteQuestion}
+                            getIcon={getQuestionIcon}
+                          />
+                        ))
                       )}
                     </div>
                   )}
@@ -373,12 +767,12 @@ export default function FormBuilderPage() {
                     {filteredComponents.map((comp) => (
                       <button
                         key={comp.value}
-                        onClick={() => addQuestion(comp.value)}
+                        onClick={() => handleAddQuestion(comp.value, selectedLinkId || undefined)}
                         className="flex flex-col items-center justify-center p-3 rounded border border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50 transition-colors group"
                         title={comp.description}
                       >
-                        <span className="text-xs font-bold text-gray-500 group-hover:text-blue-600 mb-1 bg-gray-100 group-hover:bg-blue-100 px-2 py-1 rounded">
-                          {comp.icon}
+                        <span className="text-xs font-bold text-gray-500 group-hover:text-blue-600 mb-1 bg-gray-100 group-hover:bg-blue-100 px-2 py-1 rounded flex items-center justify-center w-8 h-8">
+                          {typeof comp.icon === 'string' ? comp.icon : comp.icon}
                         </span>
                         <span className="text-[10px] text-gray-600 group-hover:text-blue-600 text-center leading-tight">
                           {comp.label}
@@ -395,10 +789,10 @@ export default function FormBuilderPage() {
           <div className="w-80 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
             <div className="px-3 py-2 border-b border-gray-200 flex items-center gap-2 bg-gray-50">
               <FileText className="h-3.5 w-3.5 text-gray-500" />
-              <h3 className="text-xs font-medium text-gray-700">Form</h3>
+              <h3 className="text-xs font-medium text-gray-700">Properties</h3>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-3">
-              {selectedQuestionIndex === null ? (
+              {selectedLinkId === null ? (
                 /* Form Properties */
                 <>
                   <div>
@@ -447,6 +841,39 @@ export default function FormBuilderPage() {
                     <input type="checkbox" id="show-outline" className="rounded" />
                     <Label htmlFor="show-outline" className="text-xs cursor-pointer">Show outline</Label>
                   </div>
+
+                  {/* Context Configuration */}
+                  <div className="pt-4 mt-4 border-t border-gray-200">
+                    <h4 className="text-xs font-semibold text-gray-900 mb-2">Context Configuration</h4>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-gray-700">Required Context</Label>
+                      <div className="space-y-1.5">
+                        {['Encounter', 'EpisodeOfCare', 'Appointment', 'ServiceRequest'].map((ctx) => (
+                          <div key={ctx} className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id={`ctx-${ctx}`}
+                              checked={contextTypes.includes(ctx)}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5"
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setContextTypes([...contextTypes, ctx]);
+                                } else {
+                                  setContextTypes(contextTypes.filter(c => c !== ctx));
+                                }
+                              }}
+                            />
+                            <Label htmlFor={`ctx-${ctx}`} className="text-xs text-gray-600 cursor-pointer">
+                              {ctx}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-1">
+                        Select clinical resources that must be present when filling this form.
+                      </p>
+                    </div>
+                  </div>
                 </>
               ) : selectedQuestion ? (
                 /* Question Properties */
@@ -457,7 +884,7 @@ export default function FormBuilderPage() {
                     <Input
                       id="q-linkid"
                       value={selectedQuestion.linkId}
-                      onChange={(e) => updateQuestion(selectedQuestionIndex, 'linkId', e.target.value)}
+                      onChange={(e) => handleUpdateQuestion(selectedLinkId, 'linkId', e.target.value)}
                       placeholder="unique-id"
                       className="mt-1 h-7 text-xs font-mono"
                     />
@@ -469,7 +896,7 @@ export default function FormBuilderPage() {
                     <select
                       id="q-type"
                       value={selectedQuestion.type}
-                      onChange={(e) => updateQuestion(selectedQuestionIndex, 'type', e.target.value)}
+                      onChange={(e) => handleUpdateQuestion(selectedLinkId, 'type', e.target.value)}
                       className="w-full mt-1 h-7 px-2 text-xs border border-gray-300 rounded-md"
                     >
                       {COMPONENT_TYPES.map((type) => (
@@ -486,7 +913,7 @@ export default function FormBuilderPage() {
                     <Textarea
                       id="q-text"
                       value={selectedQuestion.text}
-                      onChange={(e) => updateQuestion(selectedQuestionIndex, 'text', e.target.value)}
+                      onChange={(e) => handleUpdateQuestion(selectedLinkId, 'text', e.target.value)}
                       placeholder="Enter question"
                       rows={3}
                       className="mt-1 text-xs"
@@ -499,7 +926,7 @@ export default function FormBuilderPage() {
                     <Input
                       id="q-prefix"
                       value={(selectedQuestion as any).prefix || ''}
-                      onChange={(e) => updateQuestion(selectedQuestionIndex, 'prefix' as any, e.target.value)}
+                      onChange={(e) => handleUpdateQuestion(selectedLinkId, 'prefix' as any, e.target.value)}
                       placeholder="e.g., 1., A)"
                       className="mt-1 h-7 text-xs"
                     />
@@ -513,7 +940,7 @@ export default function FormBuilderPage() {
                         <Input
                           id="q-placeholder"
                           value={(selectedQuestion as any)._placeholder || ''}
-                          onChange={(e) => updateQuestion(selectedQuestionIndex, '_placeholder' as any, e.target.value)}
+                          onChange={(e) => handleUpdateQuestion(selectedLinkId, '_placeholder' as any, e.target.value)}
                           placeholder="Placeholder text"
                           className="mt-1 h-7 text-xs"
                         />
@@ -524,12 +951,50 @@ export default function FormBuilderPage() {
                           id="q-maxlength"
                           type="number"
                           value={selectedQuestion.maxLength || ''}
-                          onChange={(e) => updateQuestion(selectedQuestionIndex, 'maxLength', parseInt(e.target.value) || undefined)}
+                          onChange={(e) => handleUpdateQuestion(selectedLinkId, 'maxLength', parseInt(e.target.value) || undefined)}
                           placeholder="e.g., 255"
                           className="mt-1 h-7 text-xs"
                         />
                       </div>
                     </>
+                  )}
+
+                  {/* Attachment Specific */}
+                  {selectedQuestion.type === 'attachment' && (
+                    <>
+                      <div>
+                        <Label className="text-xs font-medium text-gray-700">Allowed Types</Label>
+                        <Input
+                          value={(selectedQuestion as any)._allowedTypes || ''}
+                          onChange={(e) => handleUpdateQuestion(selectedLinkId, '_allowedTypes' as any, e.target.value)}
+                          placeholder="e.g. application/pdf, image/*"
+                          className="mt-1 h-7 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium text-gray-700">Max Size (MB)</Label>
+                        <Input
+                          type="number"
+                          value={(selectedQuestion as any)._maxSize || ''}
+                          onChange={(e) => handleUpdateQuestion(selectedLinkId, '_maxSize' as any, e.target.value)}
+                          placeholder="e.g. 5"
+                          className="mt-1 h-7 text-xs"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Unit for Integer/Decimal/Quantity */}
+                  {(selectedQuestion.type === 'integer' || selectedQuestion.type === 'decimal' || selectedQuestion.type === 'quantity') && (
+                    <div>
+                      <Label className="text-xs font-medium text-gray-700">Unit</Label>
+                      <Input
+                        value={(selectedQuestion as any).unit || ''}
+                        onChange={(e) => handleUpdateQuestion(selectedLinkId, 'unit' as any, e.target.value)}
+                        placeholder="e.g. kg, cm, mmHg"
+                        className="mt-1 h-7 text-xs"
+                      />
+                    </div>
                   )}
 
                   {/* Width */}
@@ -538,13 +1003,12 @@ export default function FormBuilderPage() {
                     <div className="flex gap-2 mt-1">
                       <Input
                         id="q-width"
-                        type="number"
-                        value={(selectedQuestion as any)._width || 'auto'}
-                        onChange={(e) => updateQuestion(selectedQuestionIndex, '_width' as any, e.target.value)}
-                        placeholder="auto"
+                        type="text"
+                        value={(selectedQuestion as any)._width || (selectedQuestion as any).width || '100%'}
+                        onChange={(e) => handleUpdateQuestion(selectedLinkId, '_width' as any, e.target.value)}
+                        placeholder="100%"
                         className="h-7 text-xs"
                       />
-                      <span className="text-xs text-gray-500 flex items-center">%</span>
                     </div>
                   </div>
 
@@ -555,7 +1019,7 @@ export default function FormBuilderPage() {
                         type="checkbox"
                         id="q-hidden"
                         checked={(selectedQuestion as any).hidden || false}
-                        onChange={(e) => updateQuestion(selectedQuestionIndex, 'hidden' as any, e.target.checked)}
+                        onChange={(e) => handleUpdateQuestion(selectedLinkId, 'hidden' as any, e.target.checked)}
                         className="rounded"
                       />
                       <Label htmlFor="q-hidden" className="text-xs cursor-pointer">Hidden</Label>
@@ -565,7 +1029,7 @@ export default function FormBuilderPage() {
                         type="checkbox"
                         id="q-required"
                         checked={selectedQuestion.required || false}
-                        onChange={(e) => updateQuestion(selectedQuestionIndex, 'required', e.target.checked)}
+                        onChange={(e) => handleUpdateQuestion(selectedLinkId, 'required', e.target.checked)}
                         className="rounded"
                       />
                       <Label htmlFor="q-required" className="text-xs cursor-pointer">Required</Label>
@@ -575,7 +1039,7 @@ export default function FormBuilderPage() {
                         type="checkbox"
                         id="q-repeats"
                         checked={selectedQuestion.repeats || false}
-                        onChange={(e) => updateQuestion(selectedQuestionIndex, 'repeats', e.target.checked)}
+                        onChange={(e) => handleUpdateQuestion(selectedLinkId, 'repeats', e.target.checked)}
                         className="rounded"
                       />
                       <Label htmlFor="q-repeats" className="text-xs cursor-pointer">Repeats</Label>
@@ -585,7 +1049,7 @@ export default function FormBuilderPage() {
                         type="checkbox"
                         id="q-readonly"
                         checked={selectedQuestion.readOnly || false}
-                        onChange={(e) => updateQuestion(selectedQuestionIndex, 'readOnly', e.target.checked)}
+                        onChange={(e) => handleUpdateQuestion(selectedLinkId, 'readOnly', e.target.checked)}
                         className="rounded"
                       />
                       <Label htmlFor="q-readonly" className="text-xs cursor-pointer">Read only</Label>
@@ -593,14 +1057,14 @@ export default function FormBuilderPage() {
                   </div>
 
                   {/* Choice Options */}
-                  {selectedQuestion.type === 'choice' && (
+                  {(selectedQuestion.type === 'choice' || selectedQuestion.type === 'open-choice') && (
                     <div className="pt-2 border-t">
                       <div className="flex items-center justify-between mb-2">
                         <Label className="text-xs font-medium text-gray-700">Options</Label>
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => addChoice(selectedQuestionIndex)}
+                          onClick={() => addChoice(selectedLinkId)}
                           className="h-6 px-2 text-xs"
                         >
                           <Plus className="h-3 w-3 mr-1" />
@@ -615,8 +1079,9 @@ export default function FormBuilderPage() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => deleteChoice(selectedQuestionIndex, choiceIdx)}
+                                onClick={() => deleteChoice(selectedLinkId, choiceIdx)}
                                 className="h-5 w-5 p-0"
+                                title="Delete option"
                               >
                                 <Trash2 className="h-3 w-3 text-red-500" />
                               </Button>
@@ -625,17 +1090,7 @@ export default function FormBuilderPage() {
                               <Label className="text-xs text-gray-600">Code</Label>
                               <Input
                                 value={option.valueCoding?.code || option.valueString || ''}
-                                onChange={(e) => {
-                                  const updated = [...questions];
-                                  if (!updated[selectedQuestionIndex].answerOption![choiceIdx].valueCoding) {
-                                    updated[selectedQuestionIndex].answerOption![choiceIdx] = {
-                                      valueCoding: { code: e.target.value, display: e.target.value }
-                                    };
-                                  } else {
-                                    updated[selectedQuestionIndex].answerOption![choiceIdx].valueCoding!.code = e.target.value;
-                                  }
-                                  setQuestions(updated);
-                                }}
+                                onChange={(e) => updateChoice(selectedLinkId, choiceIdx, e.target.value)}
                                 placeholder="code"
                                 className="h-6 text-xs mt-1"
                               />
@@ -644,17 +1099,7 @@ export default function FormBuilderPage() {
                               <Label className="text-xs text-gray-600">Display</Label>
                               <Input
                                 value={option.valueCoding?.display || option.valueString || ''}
-                                onChange={(e) => {
-                                  const updated = [...questions];
-                                  if (!updated[selectedQuestionIndex].answerOption![choiceIdx].valueCoding) {
-                                    updated[selectedQuestionIndex].answerOption![choiceIdx] = {
-                                      valueCoding: { code: e.target.value, display: e.target.value }
-                                    };
-                                  } else {
-                                    updated[selectedQuestionIndex].answerOption![choiceIdx].valueCoding!.display = e.target.value;
-                                  }
-                                  setQuestions(updated);
-                                }}
+                                onChange={(e) => updateChoice(selectedLinkId, choiceIdx, e.target.value)}
                                 placeholder="Display text"
                                 className="h-6 text-xs mt-1"
                               />
@@ -671,7 +1116,7 @@ export default function FormBuilderPage() {
                     <Input
                       id="q-media"
                       value={(selectedQuestion as any)._mediaUrl || ''}
-                      onChange={(e) => updateQuestion(selectedQuestionIndex, '_mediaUrl' as any, e.target.value)}
+                      onChange={(e) => handleUpdateQuestion(selectedLinkId, '_mediaUrl' as any, e.target.value)}
                       placeholder="https://..."
                       className="mt-1 h-7 text-xs"
                     />
@@ -683,89 +1128,10 @@ export default function FormBuilderPage() {
                     <Input
                       id="q-tooltip"
                       value={(selectedQuestion as any)._tooltip || ''}
-                      onChange={(e) => updateQuestion(selectedQuestionIndex, '_tooltip' as any, e.target.value)}
+                      onChange={(e) => handleUpdateQuestion(selectedLinkId, '_tooltip' as any, e.target.value)}
                       placeholder="Help text"
                       className="mt-1 h-7 text-xs"
                     />
-                  </div>
-
-                  {/* Enable When (Conditional Logic) */}
-                  <div className="pt-2 border-t">
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="text-xs font-medium text-gray-700">Enable When (Rules)</Label>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          const updated = [...questions];
-                          if (!updated[selectedQuestionIndex].enableWhen) {
-                            updated[selectedQuestionIndex].enableWhen = [];
-                          }
-                          updated[selectedQuestionIndex].enableWhen!.push({
-                            question: '',
-                            operator: 'exists',
-                            answerBoolean: true
-                          });
-                          setQuestions(updated);
-                        }}
-                        className="h-6 px-2 text-xs"
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Add rule
-                      </Button>
-                    </div>
-                    {selectedQuestion.enableWhen?.map((rule, ruleIdx) => (
-                      <div key={ruleIdx} className="border border-gray-200 rounded p-2 mb-2 space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-gray-600">Rule {ruleIdx + 1}</span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              const updated = [...questions];
-                              updated[selectedQuestionIndex].enableWhen = updated[selectedQuestionIndex].enableWhen!.filter((_, i) => i !== ruleIdx);
-                              setQuestions(updated);
-                            }}
-                            className="h-5 w-5 p-0"
-                          >
-                            <Trash2 className="h-3 w-3 text-red-500" />
-                          </Button>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-600">Question</Label>
-                          <Input
-                            value={rule.question}
-                            onChange={(e) => {
-                              const updated = [...questions];
-                              updated[selectedQuestionIndex].enableWhen![ruleIdx].question = e.target.value;
-                              setQuestions(updated);
-                            }}
-                            placeholder="linkId of question"
-                            className="h-6 text-xs mt-1"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-600">Operator</Label>
-                          <select
-                            value={rule.operator}
-                            onChange={(e) => {
-                              const updated = [...questions];
-                              updated[selectedQuestionIndex].enableWhen![ruleIdx].operator = e.target.value as any;
-                              setQuestions(updated);
-                            }}
-                            className="w-full mt-1 h-6 px-2 text-xs border border-gray-300 rounded-md"
-                          >
-                            <option value="exists">exists</option>
-                            <option value="=">equals (=)</option>
-                            <option value="!=">not equals (!=)</option>
-                            <option value=">">greater than (&gt;)</option>
-                            <option value="<">less than (&lt;)</option>
-                            <option value=">=">greater or equal (&gt;=)</option>
-                            <option value="<=">less or equal (&lt;=)</option>
-                          </select>
-                        </div>
-                      </div>
-                    ))}
                   </div>
 
                   {/* Delete Button */}
@@ -773,10 +1139,7 @@ export default function FormBuilderPage() {
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={() => {
-                        deleteQuestion(selectedQuestionIndex);
-                        setSelectedQuestionIndex(null);
-                      }}
+                      onClick={() => handleDeleteQuestion(selectedLinkId)}
                       className="w-full h-7 text-xs"
                     >
                       <Trash2 className="h-3 w-3 mr-1" />
@@ -808,74 +1171,7 @@ export default function FormBuilderPage() {
                       <p className="text-sm">No questions added yet</p>
                     </div>
                   ) : (
-                    questions.map((q, idx) => {
-                      const icon = getQuestionIcon(q.type);
-                      return (
-                        <div
-                          key={q.linkId}
-                          className={cn(
-                            "p-3 rounded border transition-all cursor-pointer",
-                            selectedQuestionIndex === idx
-                              ? "border-blue-500 bg-blue-50/30 shadow-sm"
-                              : "border-gray-200 hover:border-gray-300 bg-white"
-                          )}
-                          onClick={() => setSelectedQuestionIndex(idx)}
-                        >
-                          <Label className="flex items-center gap-2 mb-2 text-sm">
-                            <span>{icon}</span>
-                            <span className="font-medium">
-                              {q.text || `Question ${idx + 1}`}
-                              {q.required && <span className="text-red-500 ml-1">*</span>}
-                            </span>
-                          </Label>
-
-                          {q.type === 'string' && (
-                            <Input placeholder="Short answer" disabled className="bg-gray-50 text-xs h-8" />
-                          )}
-                          {q.type === 'text' && (
-                            <Textarea placeholder="Long answer" disabled rows={3} className="bg-gray-50 text-xs" />
-                          )}
-                          {q.type === 'integer' && (
-                            <Input type="number" placeholder="0" disabled className="bg-gray-50 text-xs h-8" />
-                          )}
-                          {q.type === 'date' && (
-                            <Input type="date" disabled className="bg-gray-50 text-xs h-8" />
-                          )}
-                          {q.type === 'time' && (
-                            <Input type="time" disabled className="bg-gray-50 text-xs h-8" />
-                          )}
-                          {q.type === 'boolean' && (
-                            <div className="flex gap-4">
-                              <label className="flex items-center gap-2">
-                                <input type="radio" disabled />
-                                <span className="text-xs">Yes</span>
-                              </label>
-                              <label className="flex items-center gap-2">
-                                <input type="radio" disabled />
-                                <span className="text-xs">No</span>
-                              </label>
-                            </div>
-                          )}
-                          {q.type === 'choice' && (
-                            <div className="space-y-1.5">
-                              {q.answerOption && q.answerOption.length > 0 ? (
-                                q.answerOption.map((option, optIdx) => (
-                                  <label key={optIdx} className="flex items-center gap-2">
-                                    <input type="radio" disabled />
-                                    <span className="text-xs">{option.valueString || `Option ${optIdx + 1}`}</span>
-                                  </label>
-                                ))
-                              ) : (
-                                <p className="text-xs text-gray-400">No options added</p>
-                              )}
-                            </div>
-                          )}
-                          {q.type === 'display' && (
-                            <div className="text-xs text-gray-600 italic">Display text</div>
-                          )}
-                        </div>
-                      );
-                    })
+                    questions.map(q => renderPreviewItem(q))
                   )}
                 </div>
               </div>

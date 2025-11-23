@@ -202,16 +202,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_org_specialty_settings_updated_at ON org_specialty_settings;
 CREATE TRIGGER update_org_specialty_settings_updated_at
   BEFORE UPDATE ON org_specialty_settings
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_patient_specialty_episodes_updated_at ON patient_specialty_episodes;
 CREATE TRIGGER update_patient_specialty_episodes_updated_at
   BEFORE UPDATE ON patient_specialty_episodes
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_specialty_visit_types_updated_at ON specialty_visit_types;
 CREATE TRIGGER update_specialty_visit_types_updated_at
   BEFORE UPDATE ON specialty_visit_types
   FOR EACH ROW
@@ -241,6 +244,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS audit_org_specialty_settings_changes ON org_specialty_settings;
 CREATE TRIGGER audit_org_specialty_settings_changes
   AFTER INSERT OR UPDATE ON org_specialty_settings
   FOR EACH ROW
@@ -257,7 +261,12 @@ SELECT
   '1.0.0' as pack_version,
   true as enabled,
   'org' as scope,
-  created_by
+  (
+    CASE
+      WHEN created_by IS NOT NULL AND created_by IN (SELECT id FROM users) THEN created_by
+      ELSE (SELECT id FROM users LIMIT 1)
+    END
+  ) as created_by
 FROM organizations
 WHERE NOT EXISTS (
   SELECT 1 FROM org_specialty_settings

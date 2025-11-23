@@ -105,8 +105,19 @@ export interface QuestionnaireItem {
     valueExpression?: {
       language: string;
       expression: string;
+      // ...
     };
   }>;
+
+  // UI / Builder Specific Properties (Temporary or mapped to extensions)
+  _width?: string;
+  _height?: string;
+  _placeholder?: string;
+  _mediaUrl?: string;
+  _tooltip?: string;
+  _allowedTypes?: string;
+  _maxSize?: number;
+  unit?: string; // For integer/decimal/quantity direct access
 }
 
 export interface FHIRQuestionnaire {
@@ -218,6 +229,7 @@ export interface FHIRQuestionnaireResponse {
   meta?: {
     versionId?: string;
     lastUpdated?: string;
+    profile?: string[];
   };
   identifier?: {
     system?: string;
@@ -276,6 +288,7 @@ export interface FormSettings {
     primaryColor?: string;
     accentColor?: string;
   };
+  contextTypes?: string[]; // e.g. ['Encounter', 'EpisodeOfCare']
 }
 
 export interface FormTemplate {
@@ -319,6 +332,7 @@ export interface FormThemeColors {
 export interface FormThemeFonts {
   family: string;
   size: string;
+  // ...
 }
 
 export interface FormThemeInputs {
@@ -478,6 +492,7 @@ export interface FormTemplateListResponse {
   total: number;
   page: number;
   pageSize: number;
+  pageSize: number;
 }
 
 export interface FormTemplateDetailResponse {
@@ -524,6 +539,7 @@ export interface FormRenderContext {
   patient?: {
     id: string;
     name: string;
+    // ...
   };
   encounter?: {
     id: string;

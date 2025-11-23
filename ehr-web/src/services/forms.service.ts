@@ -50,6 +50,16 @@ export const formsService = {
   },
 
   /**
+   * Get public form template (no auth required)
+   */
+  async getPublicTemplate(id: string, orgId: string): Promise<FormTemplateDetailResponse> {
+    const response = await apiClient.get(`/public/v2/forms/templates/${id}`, {
+      params: { org_id: orgId }
+    });
+    return response.data;
+  },
+
+  /**
    * Create new form template
    */
   async createTemplate(data: CreateFormTemplateRequest): Promise<FormTemplate> {
@@ -169,6 +179,20 @@ export const formsService = {
     response: any;
   }): Promise<any> {
     const response = await apiClient.post('/forms/responses', data);
+    return response.data;
+  },
+
+  /**
+   * Submit public form response (no auth required)
+   */
+  async submitPublicResponse(orgId: string, data: {
+    form_template_id: string;
+    patient_id?: string;
+    response: any;
+  }): Promise<any> {
+    const response = await apiClient.post('/public/v2/forms/responses', data, {
+      params: { org_id: orgId }
+    });
     return response.data;
   },
 

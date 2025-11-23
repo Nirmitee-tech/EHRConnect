@@ -3,6 +3,7 @@ import "./globals.css";
 import AuthSessionProvider from "@/providers/session-provider";
 import { FacilityProvider } from "@/contexts/facility-context";
 import { SpecialtyProvider } from "@/contexts/specialty-context";
+import { CountryProvider } from "@/contexts/country-context";
 import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
 import { ToastProvider } from "@/hooks/useToast";
 // Phase 2: Initialize specialty modules (client-side)
@@ -25,11 +26,13 @@ export default function RootLayout({
         <ToastProvider>
           <AuthSessionProvider>
             <SpecialtyProvider>
-              <FacilityProvider>
-                <AuthenticatedLayout>
-                  {children}
-                </AuthenticatedLayout>
-              </FacilityProvider>
+              <CountryProvider>
+                <FacilityProvider>
+                  <AuthenticatedLayout>
+                    {children}
+                  </AuthenticatedLayout>
+                </FacilityProvider>
+              </CountryProvider>
             </SpecialtyProvider>
           </AuthSessionProvider>
         </ToastProvider>

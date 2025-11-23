@@ -2,6 +2,74 @@
 -- Description: FHIR-compliant encounters table for tracking patient-practitioner interactions
 -- References FHIR Encounter resource: https://www.hl7.org/fhir/encounter.html
 
+-- Ensure dependent fhir_patients table exists before creating encounters
+CREATE TABLE IF NOT EXISTS fhir_patients (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  resource JSONB NOT NULL,
+  active BOOLEAN DEFAULT TRUE,
+  family_name VARCHAR(255),
+  given_name VARCHAR(255),
+  full_name TEXT,
+  gender VARCHAR(20),
+  birth_date DATE,
+  deceased BOOLEAN DEFAULT FALSE,
+  deceased_date_time TIMESTAMPTZ,
+  phone VARCHAR(50),
+  email VARCHAR(255),
+  address_line TEXT,
+  address_city VARCHAR(100),
+  address_state VARCHAR(100),
+  address_postal_code VARCHAR(20),
+  address_country VARCHAR(100),
+  mrn VARCHAR(100),
+  ssn VARCHAR(20),
+  national_id VARCHAR(50),
+  preferred_language VARCHAR(10),
+  general_practitioner_id UUID,
+  managing_organization_id UUID REFERENCES organizations(id),
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT valid_gender CHECK (gender IN ('male', 'female', 'other', 'unknown'))
+);
+
+-- Ensure dependent fhir_appointments table exists before creating encounters
+CREATE TABLE IF NOT EXISTS fhir_appointments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  resource JSONB NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  start_time TIMESTAMPTZ NOT NULL,
+  end_time TIMESTAMPTZ NOT NULL,
+  duration_minutes INTEGER,
+  appointment_type VARCHAR(255),
+  service_category VARCHAR(255),
+  service_type VARCHAR(255),
+  specialty VARCHAR(255),
+  priority INTEGER DEFAULT 0,
+  patient_id UUID REFERENCES fhir_patients(id) ON DELETE CASCADE,
+  practitioner_id UUID,
+  location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+  slot_id UUID,
+  description TEXT,
+  patient_instruction TEXT,
+  cancellation_reason TEXT,
+  cancelled_at TIMESTAMPTZ,
+  checked_in_at TIMESTAMPTZ,
+  arrived_at TIMESTAMPTZ,
+  communication_method VARCHAR(50),
+  reminder_sent BOOLEAN DEFAULT FALSE,
+  reminder_sent_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  created_by UUID REFERENCES users(id),
+  updated_by UUID REFERENCES users(id),
+  CONSTRAINT valid_appointment_status CHECK (status IN (
+    'proposed','pending','booked','arrived','fulfilled','cancelled','noshow','entered-in-error','checked-in','waitlist'
+  )),
+  CONSTRAINT valid_times CHECK (end_time > start_time)
+);
+
 CREATE TABLE IF NOT EXISTS fhir_encounters (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 

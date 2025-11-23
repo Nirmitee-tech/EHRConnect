@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, Share2, MoreVertical, Loader2, ChevronDown } from 'lucide-react';
+import { Plus, Search, Share2, MoreVertical, Loader2, ChevronDown, FileText, Copy, Check, Mail, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { formsService } from '@/services/forms.service';
 import type { FormTemplate } from '@/types/forms';
 import { SidebarToggle } from '@/components/forms/sidebar-toggle';
@@ -22,6 +29,11 @@ export default function FormsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'active' | 'draft' | 'archived'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Share Dialog State
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<FormTemplate | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     // Ensure auth headers are set in localStorage
@@ -97,6 +109,21 @@ export default function FormsPage() {
     }
   };
 
+  const openShareDialog = (template: FormTemplate) => {
+    setSelectedTemplate(template);
+    setShareDialogOpen(true);
+    setCopied(false);
+  };
+
+  const copyToClipboard = () => {
+    if (!selectedTemplate) return;
+    const orgId = localStorage.getItem('orgId') || '1200d873-8725-439a-8bbe-e6d4e7c26338';
+    const url = `${window.location.origin}/forms/fill/${selectedTemplate.id}?orgId=${orgId}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
       case 'active':
@@ -144,6 +171,16 @@ export default function FormsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 h-7 text-xs"
+              onClick={() => router.push('/forms/responses')}
+            >
+              <FileText className="h-3 w-3" />
+              Submissions
+            </Button>
+            <div className="h-4 w-px bg-gray-200 mx-1" />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1 h-7 text-xs">
@@ -243,7 +280,7 @@ export default function FormsPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleExport(template.id, template.title)}
+                            onClick={() => openShareDialog(template)}
                             className="h-8 text-xs"
                           >
                             <Share2 className="h-3 w-3 mr-1" />
@@ -303,6 +340,46 @@ export default function FormsPage() {
           </div>
         )}
       </div>
+
+      {/* Share Dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Form</DialogTitle>
+            <DialogDescription>
+              Share this link with patients to fill out the form.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedTemplate && (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center space-x-2">
+                <div className="grid flex-1 gap-2">
+                  <Input
+                    readOnly
+                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/forms/fill/${selectedTemplate.id}?orgId=${typeof window !== 'undefined' ? localStorage.getItem('orgId') || '1200d873-8725-439a-8bbe-e6d4e7c26338' : ''}`}
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <Button size="sm" onClick={copyToClipboard} className="px-3">
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="outline" className="w-full justify-start gap-2" onClick={() => alert('Email integration coming soon')}>
+                  <Mail className="h-4 w-4" />
+                  Email Link
+                </Button>
+                <Button variant="outline" className="w-full justify-start gap-2" onClick={() => alert('SMS integration coming soon')}>
+                  <MessageSquare className="h-4 w-4" />
+                  Send SMS
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
