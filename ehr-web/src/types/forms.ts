@@ -253,6 +253,31 @@ export interface FHIRQuestionnaireResponse {
 // Form Template Metadata (PostgreSQL)
 // ============================================================================
 
+export type FormLayoutType = 'compact' | 'standard' | 'wizard' | 'card' | 'accordion';
+export type FormDisplayMode = 'single-page' | 'paginated' | 'section-by-section';
+
+export interface FormSettings {
+  layout: FormLayoutType;
+  displayMode: FormDisplayMode;
+  allowAnonymous: boolean;
+  showProgressBar: boolean;
+  showQuestionNumbers: boolean;
+  autoSave: boolean;
+  autoSaveInterval?: number; // seconds
+  allowSaveDraft: boolean;
+  requireAllQuestions: boolean;
+  shuffleQuestions: boolean;
+  showValidationOnBlur: boolean;
+  customCss?: string;
+  branding?: {
+    logoUrl?: string;
+    headerText?: string;
+    footerText?: string;
+    primaryColor?: string;
+    accentColor?: string;
+  };
+}
+
 export interface FormTemplate {
   id: string;
   org_id: string;
@@ -266,6 +291,8 @@ export interface FormTemplate {
   tags?: string[];
   specialty_slug?: string;
   theme_id?: string;
+  settings?: FormSettings; // New: Form display and behavior settings
+  questionnaire?: FHIRQuestionnaire; // The actual form structure
   created_by: string;
   created_at: string;
   updated_by?: string;

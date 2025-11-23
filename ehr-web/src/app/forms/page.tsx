@@ -2,21 +2,38 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, FileText, Eye, Edit, Copy, Archive, Download, Loader2 } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Plus, Search, Share2, MoreVertical, Loader2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { formsService } from '@/services/forms.service';
 import type { FormTemplate } from '@/types/forms';
-import { format } from 'date-fns';
+import { SidebarToggle } from '@/components/forms/sidebar-toggle';
 
 export default function FormsPage() {
   const router = useRouter();
   const [templates, setTemplates] = useState<FormTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'active' | 'draft' | 'archived'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
+    // Ensure auth headers are set in localStorage
+    if (typeof window !== 'undefined') {
+      if (!localStorage.getItem('userId')) {
+        localStorage.setItem('userId', '0df77487-970d-4245-acd5-b2a6504e88cd');
+      }
+      if (!localStorage.getItem('orgId')) {
+        localStorage.setItem('orgId', '1200d873-8725-439a-8bbe-e6d4e7c26338');
+      }
+    }
+
     loadTemplates();
   }, [filter]);
 
@@ -71,7 +88,16 @@ export default function FormsPage() {
     }
   };
 
-  const getStatusVariant = (status: string) => {
+  const handlePublish = async (templateId: string) => {
+    try {
+      await formsService.publishTemplate(templateId);
+      await loadTemplates();
+    } catch (error) {
+      console.error('Failed to publish template:', error);
+    }
+  };
+
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
       case 'active':
         return 'default';
@@ -84,6 +110,13 @@ export default function FormsPage() {
     }
   };
 
+  const filteredTemplates = templates.filter(template => {
+    const matchesSearch = searchQuery === '' ||
+      template.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      template.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -93,146 +126,183 @@ export default function FormsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Forms Builder</h1>
-          <p className="text-gray-600 mt-1">Create and manage FHIR-compliant form templates</p>
-        </div>
-        <Button onClick={() => router.push('/forms/builder')} className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Form Template
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-2">
-        {['all', 'active', 'draft', 'archived'].map((status) => (
-          <Button
-            key={status}
-            variant={filter === status ? 'default' : 'outline'}
-            onClick={() => setFilter(status as any)}
-            className="capitalize"
-          >
-            {status}
-          </Button>
-        ))}
-      </div>
-
-      {/* Templates Grid */}
-      {templates.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <FileText className="h-16 w-16 text-gray-300 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No form templates yet</h3>
-            <p className="text-gray-600 mb-4">Create your first form template to get started</p>
-            <Button onClick={() => router.push('/forms/builder')} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Create Form Template
+    <div className="h-screen flex flex-col bg-gray-50">
+      {/* Header - Compact */}
+      <div className="bg-white border-b border-gray-200 px-4 py-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <SidebarToggle />
+            <h1 className="text-base font-semibold text-gray-900">Form Templates</h1>
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />
+              <Input
+                placeholder="Search forms..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-7 w-48 h-7 text-xs bg-gray-50 border-gray-200"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1 h-7 text-xs">
+                  {filter.toUpperCase()}
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {['all', 'active', 'draft', 'archived'].map((status) => (
+                  <DropdownMenuItem
+                    key={status}
+                    onClick={() => setFilter(status as any)}
+                    className="capitalize text-xs"
+                  >
+                    {status}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button onClick={() => router.push('/forms/builder')} size="sm" className="gap-1 h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white">
+              <Plus className="h-3 w-3" />
+              New Template
             </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {templates.map((template) => (
-            <Card key={template.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{template.title}</CardTitle>
-                    <Badge variant={getStatusVariant(template.status)} className="mt-2">
-                      {template.status}
-                    </Badge>
-                  </div>
-                  <FileText className="h-5 w-5 text-gray-400" />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-gray-600 line-clamp-2">
-                  {template.description || 'No description'}
-                </p>
-
-                <div className="flex flex-wrap gap-1">
-                  {template.tags?.slice(0, 3).map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                  {template.tags && template.tags.length > 3 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{template.tags.length - 3}
-                    </Badge>
-                  )}
-                </div>
-
-                <div className="text-xs text-gray-500 space-y-1">
-                  <div>Version: {template.version}</div>
-                  <div>
-                    Created: {format(new Date(template.created_at), 'MMM d, yyyy')}
-                  </div>
-                  {template.usage_count > 0 && (
-                    <div>Used {template.usage_count} times</div>
-                  )}
-                </div>
-
-                <div className="flex gap-2 pt-2 border-t">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => router.push(`/forms/preview/${template.id}`)}
-                    className="flex-1"
-                  >
-                    <Eye className="h-3 w-3 mr-1" />
-                    Preview
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => router.push(`/forms/builder/${template.id}`)}
-                    className="flex-1"
-                  >
-                    <Edit className="h-3 w-3 mr-1" />
-                    Edit
-                  </Button>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleDuplicate(template.id)}
-                    className="flex-1"
-                  >
-                    <Copy className="h-3 w-3 mr-1" />
-                    Duplicate
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleExport(template.id, template.title)}
-                    className="flex-1"
-                  >
-                    <Download className="h-3 w-3 mr-1" />
-                    Export
-                  </Button>
-                  {template.status !== 'archived' && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleArchive(template.id)}
-                      className="flex-1"
-                    >
-                      <Archive className="h-3 w-3 mr-1" />
-                      Archive
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* Table Container */}
+      <div className="flex-1 overflow-auto p-4">
+        {filteredTemplates.length === 0 ? (
+          <div className="bg-white rounded-lg border border-gray-200 flex flex-col items-center justify-center py-16">
+            <div className="text-gray-400 mb-4">
+              <Search className="h-12 w-12" />
+            </div>
+            <h3 className="text-base font-medium text-gray-900 mb-1">No templates found</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              {searchQuery ? 'Try adjusting your search' : 'Create your first form template to get started'}
+            </p>
+            {!searchQuery && (
+              <Button onClick={() => router.push('/forms/builder')} size="sm" className="gap-2 bg-[#4A90E2] hover:bg-[#3A7BC8] text-white">
+                <Plus className="h-4 w-4" />
+                Create Template
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <tbody className="divide-y divide-gray-100">
+                  {filteredTemplates.map((template) => (
+                    <tr
+                      key={template.id}
+                      className="hover:bg-gray-50 transition-colors group"
+                    >
+                      {/* Template Name & URL */}
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1">
+                          <div className="font-medium text-gray-900 text-sm">
+                            {template.title}
+                          </div>
+                          <div className="text-xs text-gray-500 font-mono">
+                            {template.fhir_url || `http://forms.aidbox.io/questionnaire/${template.id}`}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Status Badge */}
+                      <td className="px-6 py-4 w-32">
+                        <Badge
+                          variant={getStatusVariant(template.status)}
+                          className="text-xs font-medium capitalize"
+                        >
+                          {template.status}
+                        </Badge>
+                      </td>
+
+                      {/* Usage Count */}
+                      <td className="px-6 py-4 w-24 text-center">
+                        <span className="text-sm text-gray-700">
+                          {template.usage_count || 1}
+                        </span>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4 w-48">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => router.push(`/forms/preview/${template.id}`)}
+                            className="h-8 text-xs"
+                          >
+                            PREVIEW
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleExport(template.id, template.title)}
+                            className="h-8 text-xs"
+                          >
+                            <Share2 className="h-3 w-3 mr-1" />
+                            SHARE
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => router.push(`/forms/builder/${template.id}`)}
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                              {template.status === 'draft' && (
+                                <DropdownMenuItem
+                                  onClick={() => handlePublish(template.id)}
+                                  className="text-green-600"
+                                >
+                                  Publish (Make Active)
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem
+                                onClick={() => handleDuplicate(template.id)}
+                              >
+                                Duplicate
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleExport(template.id, template.title)}
+                              >
+                                Export
+                              </DropdownMenuItem>
+                              {template.status !== 'archived' && (
+                                <DropdownMenuItem
+                                  onClick={() => handleArchive(template.id)}
+                                  className="text-red-600"
+                                >
+                                  Archive
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

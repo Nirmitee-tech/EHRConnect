@@ -37,8 +37,8 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
 
   // Show loading state
   if (status === 'loading') {
-    // For routes that should have no layout (widget, patient pages, meetings), show minimal loading
-    if (pathname?.startsWith('/widget') || pathname?.startsWith('/patient-login') || pathname?.startsWith('/patient-register') || pathname?.startsWith('/meeting')) {
+    // For routes that should have no layout (widget, patient pages, meetings, forms fill), show minimal loading
+    if (pathname?.startsWith('/widget') || pathname?.startsWith('/patient-login') || pathname?.startsWith('/patient-register') || pathname?.startsWith('/meeting') || pathname?.startsWith('/forms/fill')) {
       return <>{children}</>;
     }
     return <LoadingState message="Loading..." />;
@@ -46,8 +46,8 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
 
   // Show login screen if not authenticated
   if (status === 'unauthenticated' || !session) {
-    // For routes that should have no layout (widget, patient pages, meetings), render without any header/layout
-    if (pathname?.startsWith('/widget') || pathname?.startsWith('/patient-login') || pathname?.startsWith('/patient-register') || pathname?.startsWith('/meeting')) {
+    // For routes that should have no layout (widget, patient pages, meetings, forms fill), render without any header/layout
+    if (pathname?.startsWith('/widget') || pathname?.startsWith('/patient-login') || pathname?.startsWith('/patient-register') || pathname?.startsWith('/meeting') || pathname?.startsWith('/forms/fill')) {
       return <>{children}</>;
     }
 
