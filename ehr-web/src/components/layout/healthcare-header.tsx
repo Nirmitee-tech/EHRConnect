@@ -16,6 +16,10 @@ const HIDE_HEADER_ROUTES = [
     pattern: /^\/patients\/[^/]+$/,  // /patients/[id] - patient details page
     exclude: ['/patients/new']        // but not /patients/new
   },
+  {
+    pattern: /^\/forms\/builder/,     // /forms/builder - form builder page
+    exclude: []
+  },
   // Add more routes here as needed:
   // {
   //   pattern: /^\/staff\/[^/]+$/,   // /staff/[id] - staff details page

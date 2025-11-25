@@ -8,6 +8,7 @@ import { useResourceCounts } from '@/hooks/use-resource-counts';
 import { NAVIGATION_SECTIONS } from '@/config/navigation.config';
 import { NavItem } from './nav-item';
 import { cn } from '@/lib/utils';
+import { useUIPreferences } from '@/contexts/ui-preferences-context';
 
 const Logo = ({ isCollapsed }: { isCollapsed: boolean }) => (
   <div className="flex items-center space-x-2">
@@ -79,8 +80,11 @@ export function HealthcareSidebar() {
   const pathname = usePathname() || '';
   const { currentFacility } = useFacility();
   const { patients, staff } = useResourceCounts(currentFacility?.id);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { sidebarCollapsed, setSidebarCollapsed } = useUIPreferences();
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Use the context state for collapsed
+  const isCollapsed = sidebarCollapsed;
 
   const isActive = (href: string): boolean =>
     pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
@@ -112,7 +116,7 @@ export function HealthcareSidebar() {
         <div className="flex items-center justify-between">
           <Logo isCollapsed={isCollapsed} />
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={() => setSidebarCollapsed(!isCollapsed)}
             className="p-1.5 rounded-lg border border-[#1E2A70] bg-[#1E2A70] hover:bg-[#3342A5] transition-colors"
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >

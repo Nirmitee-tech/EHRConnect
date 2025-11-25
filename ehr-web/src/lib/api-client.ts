@@ -22,6 +22,15 @@ export function getApiHeaders(session: Session | null | undefined): HeadersInit 
     'Content-Type': 'application/json',
   }
 
+  // Add language preference from cookie
+  if (typeof document !== 'undefined') {
+    const cookieName = 'NEXT_LOCALE';
+    const match = document.cookie.match(new RegExp('(^| )' + cookieName + '=([^;]+)'));
+    if (match) {
+      headers['Accept-Language'] = match[2];
+    }
+  }
+
   if (!session) {
     return headers
   }

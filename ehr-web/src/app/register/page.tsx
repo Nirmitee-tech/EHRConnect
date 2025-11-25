@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { Activity, Building2, User, Mail, Lock, Eye, EyeOff, Phone, MapPin, Check, AlertCircle, ArrowRight, Upload, X, Sparkles, Heart, Brain, Baby, Bone, Stethoscope } from 'lucide-react';
 import Image from 'next/image';
+import { PublicLanguageSelector } from '@/components/common/public-language-selector';
+import { useTranslation } from 'react-i18next';
+import '@/i18n/client';
 
 interface FormData {
   org_type: string;
@@ -84,6 +87,7 @@ const SPECIALTIES: Record<string, Array<{ value: string; label: string; icon: an
 };
 
 export default function RegisterPage() {
+  const { t } = useTranslation('common');
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
     org_type: '',
@@ -134,7 +138,7 @@ export default function RegisterPage() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        setError('Logo file size must be less than 2MB');
+        setError(t('register.logo_size_error'));
         return;
       }
       setFormData(prev => ({
@@ -238,10 +242,10 @@ export default function RegisterPage() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Registration failed');
+        throw new Error(data.error || t('register.error_message'));
       }
 
-      alert(`🎉 Your ${getOrgTypeLabel().toLowerCase()} has been created successfully! Please sign in with your credentials.`);
+      alert(t('register.success_message', { orgType: getOrgTypeLabel().toLowerCase() }));
       window.location.href = '/auth/signin';
     } catch (err) {
       const error = err as Error;
@@ -265,7 +269,7 @@ export default function RegisterPage() {
   };
 
   const getOrgNamePlaceholder = () => {
-    switch(formData.org_type) {
+    switch (formData.org_type) {
       case 'hospital': return 'e.g., City General Hospital';
       case 'clinic': return 'e.g., Community Health Clinic';
       case 'diagnostic_center': return 'e.g., Advanced Diagnostic Center';
@@ -367,7 +371,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Organization Type Preview */}
+            {/* {t('register.org_name')} Preview */}
             {formData.org_type && (
               <div className="space-y-2">
                 <p className="text-sm font-semibold text-gray-700">Type</p>
@@ -485,6 +489,11 @@ export default function RegisterPage() {
         </div>
 
         <div className="mx-auto w-full max-w-md relative z-10">
+          {/* Language Selector - Top Right */}
+          <div className="absolute -top-8 right-0">
+            <PublicLanguageSelector />
+          </div>
+
           {/* Logo */}
           <div className="mb-8">
             <div className="flex items-center gap-2.5">
@@ -500,41 +509,39 @@ export default function RegisterPage() {
             <div className="flex items-center justify-between mb-2">
               {steps.map((s, index) => (
                 <div key={s.number} className="flex items-center flex-1">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold text-sm transition-all ${
-                    step >= s.number
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-gray-200 text-gray-500'
-                  }`}>
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold text-sm transition-all ${step >= s.number
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-gray-200 text-gray-500'
+                    }`}>
                     {step > s.number ? <Check className="w-5 h-5" /> : s.number}
                   </div>
                   {index < steps.length - 1 && (
-                    <div className={`flex-1 h-1 mx-2 rounded transition-all ${
-                      step > s.number ? 'bg-blue-600' : 'bg-gray-200'
-                    }`}></div>
+                    <div className={`flex-1 h-1 mx-2 rounded transition-all ${step > s.number ? 'bg-blue-600' : 'bg-gray-200'
+                      }`}></div>
                   )}
                 </div>
               ))}
             </div>
             <p className="text-sm text-gray-600 text-center">
-              Step {step} of {steps.length}: {steps[step - 1].title}
+              {t('register.step_of', { current: step, total: steps.length })}: {steps[step - 1].title}
             </p>
           </div>
 
           {/* Heading */}
           <div className="mb-8">
             <h1 className="text-3xl font-semibold text-gray-900 tracking-tight mb-2">
-              {step === 1 && 'What type of organization are you?'}
-              {step === 2 && `Tell us about your ${getOrgTypeLabel().toLowerCase()}`}
-              {step === 3 && 'What services do you offer?'}
-              {step === 4 && 'Create your admin account'}
-              {step === 5 && 'Almost there!'}
+              {step === 1 && t('register.what_type')}
+              {step === 2 && t('register.tell_us_about', { orgType: getOrgTypeLabel().toLowerCase() })}
+              {step === 3 && t('register.what_services')}
+              {step === 4 && t('register.create_admin')}
+              {step === 5 && t('register.almost_there')}
             </h1>
             <p className="text-base text-gray-600">
-              {step === 1 && 'This helps us customize your experience'}
-              {step === 2 && 'We\'ll use this to personalize your workspace'}
-              {step === 3 && 'Select all that apply to your practice'}
-              {step === 4 && 'This will be your login credentials'}
-              {step === 5 && 'Just a few more details'}
+              {step === 1 && t('register.customize_experience')}
+              {step === 2 && t('register.personalize_workspace')}
+              {step === 3 && t('register.select_all')}
+              {step === 4 && t('register.login_credentials')}
+              {step === 5 && t('register.few_more_details')}
             </p>
           </div>
 
@@ -559,26 +566,22 @@ export default function RegisterPage() {
                         key={orgType.value}
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, org_type: orgType.value, specialties: [] }))}
-                        className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
-                          isSelected
-                            ? 'border-blue-500 bg-blue-50 shadow-md'
-                            : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
-                        }`}
+                        className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${isSelected
+                          ? 'border-blue-500 bg-blue-50 shadow-md'
+                          : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                          }`}
                       >
-                        <div className={`w-14 h-14 rounded-full flex items-center justify-center ${
-                          isSelected ? 'bg-blue-500' : 'bg-gray-100'
-                        }`}>
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center ${isSelected ? 'bg-blue-500' : 'bg-gray-100'
+                          }`}>
                           <Icon className={`w-7 h-7 ${isSelected ? 'text-white' : 'text-gray-600'}`} />
                         </div>
                         <div className="w-full">
-                          <p className={`text-base font-semibold text-center mb-1 ${
-                            isSelected ? 'text-blue-900' : 'text-gray-900'
-                          }`}>
+                          <p className={`text-base font-semibold text-center mb-1 ${isSelected ? 'text-blue-900' : 'text-gray-900'
+                            }`}>
                             {orgType.label}
                           </p>
-                          <p className={`text-xs text-center ${
-                            isSelected ? 'text-blue-700' : 'text-gray-500'
-                          }`}>
+                          <p className={`text-xs text-center ${isSelected ? 'text-blue-700' : 'text-gray-500'
+                            }`}>
                             {orgType.description}
                           </p>
                         </div>
@@ -594,7 +597,7 @@ export default function RegisterPage() {
 
                 {!formData.org_type && (
                   <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-                    Please select your organization type to continue
+                    {t('register.select_org_type')}
                   </p>
                 )}
 
@@ -604,7 +607,7 @@ export default function RegisterPage() {
                   disabled={!formData.org_type}
                   className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 rounded-lg transition-all text-base shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Continue
+                  {t('register.continue')}
                   <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
@@ -616,13 +619,13 @@ export default function RegisterPage() {
                 {/* Logo Upload */}
                 <div>
                   <label className="block text-base font-medium text-gray-700 mb-3">
-                    {getOrgTypeLabel()} Logo <span className="text-gray-400 font-normal">(optional)</span>
+                    {getOrgTypeLabel()} Logo <span className="text-gray-400 font-normal">({t('register.optional')})</span>
                   </label>
                   {!formData.logo_preview ? (
                     <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
                       <div className="flex flex-col items-center justify-center py-4">
                         <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-600 font-medium">Upload your logo</p>
+                        <p className="text-sm text-gray-600 font-medium">{t('register.upload_logo')}</p>
                         <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 2MB</p>
                       </div>
                       <input
@@ -668,7 +671,7 @@ export default function RegisterPage() {
 
                 <div>
                   <label htmlFor="legal_name" className="block text-base font-medium text-gray-700 mb-2">
-                    Legal Name <span className="text-gray-400 font-normal">(optional)</span>
+                    {t('register.legal_name')} <span className="text-gray-400 text-sm">({t('register.optional')})</span>
                   </label>
                   <input
                     id="legal_name"
@@ -683,7 +686,7 @@ export default function RegisterPage() {
 
                 <div>
                   <label htmlFor="contact_phone" className="block text-base font-medium text-gray-700 mb-2">
-                    Contact Phone
+                    {t('register.contact_phone')}
                   </label>
                   <input
                     id="contact_phone"
@@ -703,7 +706,7 @@ export default function RegisterPage() {
                     onClick={prevStep}
                     className="flex-1 border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 text-gray-700 font-semibold py-3.5 rounded-lg transition-all text-base"
                   >
-                    Back
+                    {t('register.back')}
                   </button>
                   <button
                     type="button"
@@ -729,20 +732,17 @@ export default function RegisterPage() {
                         key={specialty.value}
                         type="button"
                         onClick={() => toggleSpecialty(specialty.value)}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                          isSelected
-                            ? 'border-blue-500 bg-blue-50 shadow-md'
-                            : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
-                        }`}
+                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${isSelected
+                          ? 'border-blue-500 bg-blue-50 shadow-md'
+                          : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                          }`}
                       >
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                          isSelected ? 'bg-blue-500' : 'bg-gray-100'
-                        }`}>
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isSelected ? 'bg-blue-500' : 'bg-gray-100'
+                          }`}>
                           <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : 'text-gray-600'}`} />
                         </div>
-                        <span className={`text-sm font-medium text-center ${
-                          isSelected ? 'text-blue-900' : 'text-gray-700'
-                        }`}>
+                        <span className={`text-sm font-medium text-center ${isSelected ? 'text-blue-900' : 'text-gray-700'
+                          }`}>
                           {specialty.label}
                         </span>
                         {isSelected && (
@@ -834,7 +834,7 @@ export default function RegisterPage() {
               <div className="space-y-5">
                 <div>
                   <label htmlFor="owner_name" className="block text-base font-medium text-gray-700 mb-2">
-                    Full Name
+                    {t('auth.your_name')}
                   </label>
                   <input
                     id="owner_name"
@@ -850,7 +850,7 @@ export default function RegisterPage() {
 
                 <div>
                   <label htmlFor="owner_email" className="block text-base font-medium text-gray-700 mb-2">
-                    Email Address
+                    {t('auth.email')} Address
                   </label>
                   <input
                     id="owner_email"
@@ -866,7 +866,7 @@ export default function RegisterPage() {
 
                 <div>
                   <label htmlFor="owner_password" className="block text-base font-medium text-gray-700 mb-2">
-                    Password
+                    {t('register.create_password')}
                   </label>
                   <div className="relative">
                     <input
@@ -915,7 +915,7 @@ export default function RegisterPage() {
               <div className="space-y-5">
                 <div>
                   <label htmlFor="address.line1" className="block text-base font-medium text-gray-700 mb-2">
-                    Street Address
+                    {t('register.address_line1')}
                   </label>
                   <input
                     id="address.line1"
@@ -932,7 +932,7 @@ export default function RegisterPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="address.city" className="block text-base font-medium text-gray-700 mb-2">
-                      City
+                      {t('register.city')}
                     </label>
                     <input
                       id="address.city"
@@ -948,7 +948,7 @@ export default function RegisterPage() {
 
                   <div>
                     <label htmlFor="address.state" className="block text-base font-medium text-gray-700 mb-2">
-                      State
+                      {t('register.state')}
                     </label>
                     <input
                       id="address.state"
@@ -965,7 +965,7 @@ export default function RegisterPage() {
 
                 <div>
                   <label htmlFor="address.postal_code" className="block text-base font-medium text-gray-700 mb-2">
-                    ZIP Code
+                    {t('register.postal_code')}
                   </label>
                   <input
                     id="address.postal_code"
@@ -1033,7 +1033,7 @@ export default function RegisterPage() {
                     disabled={loading}
                     className="flex-1 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-md hover:shadow-lg"
                   >
-                    {loading ? `Creating Your ${getOrgTypeLabel()}...` : `Create ${getOrgTypeLabel()}`}
+                    {loading ? t('register.creating', { orgType: getOrgTypeLabel() }) : t('register.submit', { orgType: getOrgTypeLabel() })}
                   </button>
                 </div>
               </div>

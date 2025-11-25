@@ -3,7 +3,6 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import { AdminSidebar } from '@/components/layout/admin-sidebar'
 
 export default function AdminLayout({
   children,
@@ -38,5 +37,5 @@ export default function AdminLayout({
     return null // Will redirect
   }
 
-  return <AdminSidebar>{children}</AdminSidebar>
+  return <>{children}</>
 }

@@ -12,6 +12,7 @@ import {
   Bell, Search, Filter, Plus, LayoutDashboard, Smartphone,
   CheckCircle2, Award, Headphones, Rocket
 } from 'lucide-react';
+import { PublicLanguageSelector } from '@/components/common/public-language-selector';
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -70,6 +71,11 @@ export default function Home() {
         <div className="absolute bottom-60 left-40 w-2 h-2 bg-indigo-400 rounded-full"></div>
 
         <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+          {/* Language Selector - Top Right */}
+          <div className="absolute top-0 right-8 z-10">
+            <PublicLanguageSelector />
+          </div>
+
           <div className="mx-auto max-w-4xl text-center">
             {/* Enhanced Badge */}
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border-2 border-blue-300 bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-2.5 shadow-lg shadow-blue-200/50 backdrop-blur-sm">
@@ -329,9 +335,9 @@ export default function Home() {
         <div className="absolute inset-0 opacity-10">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
             <pattern id="wave" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-              <path d="M0 50 Q 25 25, 50 50 T 100 50" stroke="#3b82f6" fill="none" strokeWidth="0.5"/>
+              <path d="M0 50 Q 25 25, 50 50 T 100 50" stroke="#3b82f6" fill="none" strokeWidth="0.5" />
             </pattern>
-            <rect width="100%" height="100%" fill="url(#wave)"/>
+            <rect width="100%" height="100%" fill="url(#wave)" />
           </svg>
         </div>
 
@@ -382,10 +388,10 @@ export default function Home() {
         <div className="absolute inset-0 opacity-5">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
             <pattern id="locks" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
-              <circle cx="10" cy="10" r="1" fill="#10b981"/>
-              <circle cx="50" cy="50" r="1" fill="#10b981"/>
+              <circle cx="10" cy="10" r="1" fill="#10b981" />
+              <circle cx="50" cy="50" r="1" fill="#10b981" />
             </pattern>
-            <rect width="100%" height="100%" fill="url(#locks)"/>
+            <rect width="100%" height="100%" fill="url(#locks)" />
           </svg>
         </div>
 
@@ -459,11 +465,11 @@ export default function Home() {
         <div className="absolute inset-0 opacity-10">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
             <pattern id="circuit" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-              <line x1="0" y1="50" x2="50" y2="50" stroke="white" strokeWidth="1"/>
-              <line x1="50" y1="0" x2="50" y2="100" stroke="white" strokeWidth="1"/>
-              <circle cx="50" cy="50" r="3" fill="white"/>
+              <line x1="0" y1="50" x2="50" y2="50" stroke="white" strokeWidth="1" />
+              <line x1="50" y1="0" x2="50" y2="100" stroke="white" strokeWidth="1" />
+              <circle cx="50" cy="50" r="3" fill="white" />
             </pattern>
-            <rect width="100%" height="100%" fill="url(#circuit)"/>
+            <rect width="100%" height="100%" fill="url(#circuit)" />
           </svg>
         </div>
 
@@ -519,11 +525,11 @@ export default function Home() {
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <radialGradient id="starburst">
-                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3"/>
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0"/>
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
               </radialGradient>
             </defs>
-            <circle cx="50%" cy="50%" r="40%" fill="url(#starburst)"/>
+            <circle cx="50%" cy="50%" r="40%" fill="url(#starburst)" />
           </svg>
         </div>
 

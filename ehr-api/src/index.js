@@ -28,6 +28,7 @@ const virtualMeetingsRoutes = require('./routes/virtual-meetings.routes');
 const patientPortalRoutes = require('./routes/patient-portal');
 const specialtyRoutes = require('./routes/specialties');
 const countryRoutes = require('./routes/countries');
+const translationRoutes = require('./routes/translations');
 const initializeEpisodeRoutes = require('./routes/episodes');
 const formsRoutes = require('./routes/forms');
 const { initializeDatabase } = require('./database/init');
@@ -239,13 +240,14 @@ app.use('/api/virtual-meetings', virtualMeetingsRoutes);
 app.use('/api/patient-portal', patientPortalRoutes);
 app.use('/api/specialties', specialtyRoutes);
 app.use('/api/countries', countryRoutes);
+app.use('/api/translations', translationRoutes);
 app.use('/api', initializeEpisodeRoutes(dbPool)); // Episode routes (FHIR EpisodeOfCare)
 app.use('/api/forms', formsRoutes); // Forms/Questionnaire Builder routes
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
+  res.json({
+    status: 'healthy',
     timestamp: new Date().toISOString(),
     version: '1.0.0',
     fhir: '4.0.1'
@@ -269,7 +271,7 @@ app.use('*', (req, res) => {
 // Error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err);
-  
+
   res.status(err.status || 500).json({
     resourceType: 'OperationOutcome',
     issue: [{

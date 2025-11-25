@@ -203,7 +203,7 @@ class UserService {
    */
   async getUsers(orgId, options = {}) {
     const { activeOnly = false, page = 0, limit = 50 } = options;
-    
+
     const whereClause = activeOnly ? "AND u.status = 'active'" : '';
     const offset = page * limit;
 
@@ -240,7 +240,7 @@ class UserService {
    */
   async deactivateUser(userId, orgId, deactivatedBy, reason = null) {
     const SessionService = require('./session.service');
-    
+
     return await transaction(async (client) => {
       // Update user status
       await client.query(
@@ -279,6 +279,37 @@ class UserService {
 
       return { success: true, message: 'User deactivated successfully' };
     });
+  }
+  /**
+   * Update user profile
+   */
+  async updateUser(userId, data) {
+    const { language } = data;
+    const updates = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (language) {
+      updates.push(`language = $${paramIndex}`);
+      values.push(language);
+      paramIndex++;
+    }
+
+    if (updates.length === 0) {
+      return { message: 'No changes provided' };
+    }
+
+    values.push(userId);
+
+    const result = await query(
+      `UPDATE users 
+       SET ${updates.join(', ')} 
+       WHERE id = $${paramIndex}
+       RETURNING id, email, name, language`,
+      values
+    );
+
+    return result.rows[0];
   }
 }
 

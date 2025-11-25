@@ -1,29 +1,54 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft,
   Save,
   Plus,
   Trash2,
-  ChevronRight,
-  ChevronDown,
   Eye,
-  FileText,
-  Search,
-  Settings,
-  Activity,
-  User,
+  Settings2,
+  Undo2,
+  Redo2,
+  Copy,
+  GripVertical,
+  ChevronDown,
+  ChevronRight,
+  Type,
+  Hash,
+  Calendar,
+  CheckSquare,
+  List as ListIcon,
+  FileText as FileTextIcon,
+  Paperclip,
+  Users,
   MapPin,
-  PenTool,
+  Activity,
   Phone,
   Mail,
   Globe,
-  List,
+  PenTool,
   Sliders,
-  Database,
-  FileCode
+  Layout,
+  Search,
+  Grid3x3,
+  Sparkles,
+  Code,
+  Filter,
+  Link,
+  HelpCircle,
+  AlertCircle,
+  Maximize2,
+  Minimize2,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
+  PanelBottomClose,
+  PanelBottomOpen,
+  ChevronLeft,
+  ChevronUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,118 +57,62 @@ import { Textarea } from '@/components/ui/textarea';
 import { formsService } from '@/services/forms.service';
 import type { FHIRQuestionnaire, QuestionnaireItem } from '@/types/forms';
 import { cn } from '@/lib/utils';
-import { QuestionTreeItem } from '../components/QuestionTreeItem';
-import { addItem, updateItem, deleteItem, findItem } from '../utils/tree-utils';
 
-// Extended Component Types
-const COMPONENT_TYPES = [
-  // Basic Types
-  { value: 'group', label: 'Group', icon: 'GRP', description: 'Container for grouping items' },
-  { value: 'string', label: 'Text', icon: 'TXT', description: 'Short text input' },
-  { value: 'text', label: 'Textarea', icon: 'TXA', description: 'Long text input' },
-  { value: 'integer', label: 'Integer', icon: '123', description: 'Whole number input' },
-  { value: 'decimal', label: 'Decimal', icon: '1.0', description: 'Decimal number' },
-  { value: 'boolean', label: 'Checkbox', icon: 'CHK', description: 'Yes/No checkbox' },
-  { value: 'date', label: 'Date', icon: 'DTE', description: 'Date picker' },
-  { value: 'time', label: 'Time', icon: 'TIM', description: 'Time picker' },
-  { value: 'datetime', label: 'Datetime', icon: 'DTM', description: 'Date and time picker' },
-
-  // Selection
-  { value: 'choice', label: 'Choice', icon: 'CHC', description: 'Single or multiple choice' },
-  { value: 'open-choice', label: 'Open Choice', icon: <List className="w-4 h-4" />, description: 'Select or type custom value' },
-
-  // Advanced Inputs
-  { value: 'slider', label: 'Slider', icon: <Sliders className="w-4 h-4" />, description: 'Visual analog scale / Range' },
-  { value: 'signature', label: 'Signature', icon: <PenTool className="w-4 h-4" />, description: 'Digital signature pad' },
-  { value: 'attachment', label: 'Attachment', icon: 'ATT', description: 'File upload' },
-
-  // Formatted Inputs
-  { value: 'phone', label: 'Phone', icon: <Phone className="w-4 h-4" />, description: 'Phone number input' },
-  { value: 'email', label: 'Email', icon: <Mail className="w-4 h-4" />, description: 'Email address input' },
-  { value: 'url', label: 'URL', icon: <Globe className="w-4 h-4" />, description: 'Website link' },
-
-  // Composites (Pre-configured Groups)
-  { value: 'address', label: 'Address', icon: <MapPin className="w-4 h-4" />, description: 'Street, City, State, Zip' },
-  { value: 'human-name', label: 'Name', icon: <User className="w-4 h-4" />, description: 'First, Last, Middle, Prefix' },
-  { value: 'vitals-bp', label: 'Blood Pressure', icon: <Activity className="w-4 h-4" />, description: 'Systolic & Diastolic' },
-  { value: 'vitals-hw', label: 'Height/Weight', icon: <Activity className="w-4 h-4" />, description: 'Height & Weight' },
-
-  // FHIR Specific
-  { value: 'reference', label: 'Reference', icon: 'REF', description: 'Resource reference' },
-  { value: 'quantity', label: 'Quantity', icon: 'QTY', description: 'Number with unit' },
-  { value: 'display', label: 'Display', icon: 'DSP', description: 'Static text display' },
-];
-
-// Example Templates
-const EXAMPLE_TEMPLATES: Record<string, QuestionnaireItem[]> = {
-  'patient-intake': [
-    {
-      linkId: 'p-1',
-      text: 'Patient Demographics',
-      type: 'group',
-      item: [
-        {
-          linkId: 'p-1-1',
-          text: 'Full Name',
-          type: 'group',
-          item: [
-            { linkId: 'p-1-1-1', text: 'First Name', type: 'string', required: true },
-            { linkId: 'p-1-1-2', text: 'Last Name', type: 'string', required: true }
-          ]
-        },
-        { linkId: 'p-1-2', text: 'Date of Birth', type: 'date', required: true },
-        { linkId: 'p-1-3', text: 'Contact Phone', type: 'string', extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl', valueCode: 'phone' }] }
-      ]
-    },
-    {
-      linkId: 'p-2',
-      text: 'Medical History',
-      type: 'group',
-      item: [
-        {
-          linkId: 'p-2-1',
-          text: 'Do you have any allergies?',
-          type: 'boolean'
-        },
-        {
-          linkId: 'p-2-2',
-          text: 'Please list allergies',
-          type: 'text',
-          enableWhen: [{ question: 'p-2-1', operator: '=', answerBoolean: true }]
-        }
-      ]
-    }
-  ],
-  'vitals-check': [
-    {
-      linkId: 'v-1',
-      text: 'Vital Signs',
-      type: 'group',
-      item: [
-        {
-          linkId: 'v-1-1',
-          text: 'Blood Pressure',
-          type: 'group',
-          item: [
-            { linkId: 'v-1-1-1', text: 'Systolic', type: 'integer', unit: 'mmHg' } as any,
-            { linkId: 'v-1-1-2', text: 'Diastolic', type: 'integer', unit: 'mmHg' } as any
-          ]
-        },
-        {
-          linkId: 'v-1-2',
-          text: 'Heart Rate',
-          type: 'integer',
-          unit: 'bpm'
-        } as any,
-        {
-          linkId: 'v-1-3',
-          text: 'Pain Level (0-10)',
-          type: 'integer',
-          extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl', valueCode: 'slider' }]
-        }
-      ]
-    }
-  ]
+// Component Categories
+const COMPONENT_CATEGORIES = {
+  basic: {
+    label: 'Basic',
+    components: [
+      { type: 'string', label: 'Text', icon: Type },
+      { type: 'text', label: 'Long Text', icon: FileTextIcon },
+      { type: 'integer', label: 'Number', icon: Hash },
+      { type: 'decimal', label: 'Decimal', icon: Hash },
+      { type: 'boolean', label: 'Yes/No', icon: CheckSquare },
+      { type: 'display', label: 'Display', icon: AlertCircle },
+    ]
+  },
+  datetime: {
+    label: 'Date & Time',
+    components: [
+      { type: 'date', label: 'Date', icon: Calendar },
+      { type: 'time', label: 'Time', icon: Calendar },
+      { type: 'datetime', label: 'DateTime', icon: Calendar },
+    ]
+  },
+  selection: {
+    label: 'Selection',
+    components: [
+      { type: 'choice', label: 'Choice', icon: ListIcon },
+      { type: 'open-choice', label: 'Open Choice', icon: ListIcon },
+    ]
+  },
+  advanced: {
+    label: 'Advanced',
+    components: [
+      { type: 'slider', label: 'Slider', icon: Sliders },
+      { type: 'signature', label: 'Signature', icon: PenTool },
+      { type: 'attachment', label: 'File', icon: Paperclip },
+      { type: 'quantity', label: 'Quantity', icon: Hash },
+      { type: 'reference', label: 'Reference', icon: Link },
+    ]
+  },
+  formatted: {
+    label: 'Formatted',
+    components: [
+      { type: 'phone', label: 'Phone', icon: Phone },
+      { type: 'email', label: 'Email', icon: Mail },
+      { type: 'url', label: 'URL', icon: Globe },
+    ]
+  },
+  composite: {
+    label: 'Composites',
+    components: [
+      { type: 'group', label: 'Group', icon: Layout },
+      { type: 'address', label: 'Address', icon: MapPin },
+      { type: 'human-name', label: 'Name', icon: Users },
+      { type: 'vitals-bp', label: 'BP', icon: Activity },
+    ]
+  }
 };
 
 export default function FormBuilderPage() {
@@ -158,11 +127,17 @@ export default function FormBuilderPage() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [history, setHistory] = useState<QuestionnaireItem[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set(['root']));
-  const [leftPanelTab, setLeftPanelTab] = useState<'items' | 'components'>('items');
-  const [bottomPanelTab, setBottomPanelTab] = useState<'questionnaire' | 'response' | 'population' | 'extraction' | 'expressions'>('questionnaire');
-  const [componentSearch, setComponentSearch] = useState('');
+  const [propertyTab, setPropertyTab] = useState<'basic' | 'validation' | 'logic' | 'advanced'>('basic');
+  const [bottomTab, setBottomTab] = useState<'questionnaire' | 'response' | 'context'>('questionnaire');
   const [contextTypes, setContextTypes] = useState<string[]>([]);
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+  const [bottomPanelCollapsed, setBottomPanelCollapsed] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -192,6 +167,8 @@ export default function FormBuilderPage() {
       setDescription(template.description || '');
       setCategory(template.category || 'general');
       setQuestions(template.questionnaire.item || []);
+      setHistory([template.questionnaire.item || []]);
+      setHistoryIndex(0);
       if (template.settings?.contextTypes) {
         setContextTypes(template.settings.contextTypes);
       }
@@ -202,152 +179,188 @@ export default function FormBuilderPage() {
     }
   };
 
-  const generateLinkId = () => `item_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+  const addToHistory = useCallback((newQuestions: QuestionnaireItem[]) => {
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(JSON.parse(JSON.stringify(newQuestions)));
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  }, [history, historyIndex]);
 
-  const handleAddQuestion = (type: string = 'string', parentLinkId?: string) => {
-    let newQuestion: QuestionnaireItem;
+  const undo = () => {
+    if (historyIndex > 0) {
+      setHistoryIndex(historyIndex - 1);
+      setQuestions(JSON.parse(JSON.stringify(history[historyIndex - 1])));
+    }
+  };
+
+  const redo = () => {
+    if (historyIndex < history.length - 1) {
+      setHistoryIndex(historyIndex + 1);
+      setQuestions(JSON.parse(JSON.stringify(history[historyIndex + 1])));
+    }
+  };
+
+  const generateLinkId = () => `q_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
+  const createQuestion = (type: string): QuestionnaireItem => {
     const baseId = generateLinkId();
+    const baseQuestion: QuestionnaireItem = {
+      linkId: baseId,
+      text: '',
+      type: type as any,
+      required: false,
+    };
 
-    // Handle Composite Types
     switch (type) {
+      case 'group':
+        return { ...baseQuestion, text: 'New Group', item: [] };
       case 'address':
-        newQuestion = {
-          linkId: baseId,
+        return {
+          ...baseQuestion,
           text: 'Address',
           type: 'group',
           item: [
-            { linkId: `${baseId}_street`, text: 'Street Address', type: 'string' },
-            { linkId: `${baseId}_city`, text: 'City', type: 'string', width: '50%' } as any,
-            { linkId: `${baseId}_state`, text: 'State', type: 'string', width: '25%' } as any,
-            { linkId: `${baseId}_zip`, text: 'Zip Code', type: 'string', width: '25%' } as any,
-            { linkId: `${baseId}_country`, text: 'Country', type: 'string' }
+            { linkId: `${baseId}_street`, text: 'Street', type: 'string' },
+            { linkId: `${baseId}_city`, text: 'City', type: 'string' },
+            { linkId: `${baseId}_state`, text: 'State', type: 'string' },
+            { linkId: `${baseId}_zip`, text: 'ZIP', type: 'string' },
           ]
         };
-        break;
       case 'human-name':
-        newQuestion = {
-          linkId: baseId,
+        return {
+          ...baseQuestion,
           text: 'Name',
           type: 'group',
           item: [
-            { linkId: `${baseId}_first`, text: 'First Name', type: 'string', width: '40%' } as any,
-            { linkId: `${baseId}_middle`, text: 'Middle', type: 'string', width: '20%' } as any,
-            { linkId: `${baseId}_last`, text: 'Last Name', type: 'string', width: '40%' } as any,
+            { linkId: `${baseId}_first`, text: 'First Name', type: 'string' },
+            { linkId: `${baseId}_last`, text: 'Last Name', type: 'string' },
           ]
         };
-        break;
       case 'vitals-bp':
-        newQuestion = {
-          linkId: baseId,
+        return {
+          ...baseQuestion,
           text: 'Blood Pressure',
           type: 'group',
           item: [
-            { linkId: `${baseId}_sys`, text: 'Systolic', type: 'integer', unit: 'mmHg', width: '50%' } as any,
-            { linkId: `${baseId}_dia`, text: 'Diastolic', type: 'integer', unit: 'mmHg', width: '50%' } as any,
+            { linkId: `${baseId}_sys`, text: 'Systolic', type: 'integer', unit: 'mmHg' } as any,
+            { linkId: `${baseId}_dia`, text: 'Diastolic', type: 'integer', unit: 'mmHg' } as any,
           ]
         };
-        break;
-      case 'vitals-hw':
-        newQuestion = {
-          linkId: baseId,
-          text: 'Body Measurements',
-          type: 'group',
-          item: [
-            { linkId: `${baseId}_ht`, text: 'Height', type: 'quantity', unit: 'cm', width: '50%' } as any,
-            { linkId: `${baseId}_wt`, text: 'Weight', type: 'quantity', unit: 'kg', width: '50%' } as any,
-          ]
-        };
-        break;
       case 'slider':
-        newQuestion = {
-          linkId: baseId,
-          text: 'Slider Question',
+        return {
+          ...baseQuestion,
+          text: 'Rate 0-10',
           type: 'integer',
           extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl', valueCode: 'slider' }]
         };
-        break;
       case 'signature':
-        newQuestion = {
-          linkId: baseId,
+        return {
+          ...baseQuestion,
           text: 'Signature',
           type: 'attachment',
           extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-signature', valueBoolean: true }]
         };
-        break;
       case 'phone':
-        newQuestion = {
-          linkId: baseId,
-          text: 'Phone Number',
+        return {
+          ...baseQuestion,
+          text: 'Phone',
           type: 'string',
           extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl', valueCode: 'phone' }]
         };
-        break;
       case 'email':
-        newQuestion = {
-          linkId: baseId,
-          text: 'Email Address',
+        return {
+          ...baseQuestion,
+          text: 'Email',
           type: 'string',
           extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl', valueCode: 'email' }]
         };
-        break;
       default:
-        newQuestion = {
-          linkId: baseId,
-          text: type === 'group' ? 'New Group' : '',
-          type: type as any,
-          required: false,
-          item: [],
-        };
+        return baseQuestion;
     }
+  };
 
-    setQuestions(prev => addItem(prev, newQuestion, parentLinkId));
+  const handleAddQuestion = (type: string, parentLinkId?: string) => {
+    const newQuestion = createQuestion(type);
 
     if (parentLinkId) {
-      const newExpanded = new Set(expandedItems);
-      newExpanded.add(parentLinkId);
-      setExpandedItems(newExpanded);
+      const addToParent = (items: QuestionnaireItem[]): QuestionnaireItem[] => {
+        return items.map(item => {
+          if (item.linkId === parentLinkId) {
+            return { ...item, item: [...(item.item || []), newQuestion] };
+          }
+          if (item.item) {
+            return { ...item, item: addToParent(item.item) };
+          }
+          return item;
+        });
+      };
+      const newQuestions = addToParent(questions);
+      setQuestions(newQuestions);
+      addToHistory(newQuestions);
+      setExpandedItems(new Set([...expandedItems, parentLinkId]));
+    } else {
+      const newQuestions = [...questions, newQuestion];
+      setQuestions(newQuestions);
+      addToHistory(newQuestions);
     }
 
     setSelectedLinkId(newQuestion.linkId);
   };
 
-  const handleUpdateQuestion = (linkId: string, field: keyof QuestionnaireItem, value: any) => {
-    setQuestions(prev => updateItem(prev, linkId, { [field]: value }));
+  const handleUpdateQuestion = (linkId: string, updates: Partial<QuestionnaireItem>) => {
+    const updateItem = (items: QuestionnaireItem[]): QuestionnaireItem[] => {
+      return items.map(item => {
+        if (item.linkId === linkId) {
+          return { ...item, ...updates };
+        }
+        if (item.item) {
+          return { ...item, item: updateItem(item.item) };
+        }
+        return item;
+      });
+    };
+
+    const newQuestions = updateItem(questions);
+    setQuestions(newQuestions);
+    addToHistory(newQuestions);
   };
 
   const handleDeleteQuestion = (linkId: string) => {
-    if (confirm('Are you sure you want to delete this item and all its children?')) {
-      setQuestions(prev => deleteItem(prev, linkId));
-      if (selectedLinkId === linkId) {
-        setSelectedLinkId(null);
+    const deleteItem = (items: QuestionnaireItem[]): QuestionnaireItem[] => {
+      return items.filter(item => {
+        if (item.linkId === linkId) return false;
+        if (item.item) {
+          item.item = deleteItem(item.item);
+        }
+        return true;
+      });
+    };
+
+    const newQuestions = deleteItem(questions);
+    setQuestions(newQuestions);
+    addToHistory(newQuestions);
+    setSelectedLinkId(null);
+  };
+
+  const handleDuplicateQuestion = (linkId: string) => {
+    const findAndDuplicate = (items: QuestionnaireItem[], targetId: string): QuestionnaireItem[] => {
+      const result: QuestionnaireItem[] = [];
+      for (const item of items) {
+        result.push(item);
+        if (item.linkId === targetId) {
+          const duplicate = JSON.parse(JSON.stringify(item));
+          duplicate.linkId = generateLinkId();
+          result.push(duplicate);
+        } else if (item.item) {
+          item.item = findAndDuplicate(item.item, targetId);
+        }
       }
-    }
-  };
+      return result;
+    };
 
-  const addChoice = (linkId: string) => {
-    const item = findItem(questions, linkId);
-    if (!item) return;
-
-    const currentOptions = item.answerOption || [];
-    const newOptions = [...currentOptions, { valueString: '' }];
-    handleUpdateQuestion(linkId, 'answerOption', newOptions);
-  };
-
-  const updateChoice = (linkId: string, choiceIndex: number, value: string) => {
-    const item = findItem(questions, linkId);
-    if (!item) return;
-
-    const updatedOptions = [...(item.answerOption || [])];
-    updatedOptions[choiceIndex] = { valueString: value };
-    handleUpdateQuestion(linkId, 'answerOption', updatedOptions);
-  };
-
-  const deleteChoice = (linkId: string, choiceIndex: number) => {
-    const item = findItem(questions, linkId);
-    if (!item) return;
-
-    const updatedOptions = (item.answerOption || []).filter((_, i) => i !== choiceIndex);
-    handleUpdateQuestion(linkId, 'answerOption', updatedOptions);
+    const newQuestions = findAndDuplicate(questions, linkId);
+    setQuestions(newQuestions);
+    addToHistory(newQuestions);
   };
 
   const handleSave = async () => {
@@ -358,7 +371,6 @@ export default function FormBuilderPage() {
 
     try {
       setSaving(true);
-
       const questionnaire: FHIRQuestionnaire = {
         resourceType: 'Questionnaire',
         title,
@@ -366,23 +378,22 @@ export default function FormBuilderPage() {
         item: questions,
       };
 
-      console.log('Saving with context types:', contextTypes);
-
-      let result;
       if (templateId) {
-        result = await formsService.updateTemplate(templateId, {
+        await formsService.updateTemplate(templateId, {
           title,
           description,
           category,
-          questionnaire
+          questionnaire,
+          settings: { contextTypes }
         });
       } else {
-        result = await formsService.createTemplate({
+        await formsService.createTemplate({
           title,
           description,
           category,
           tags: ['custom'],
-          questionnaire
+          questionnaire,
+          settings: { contextTypes }
         });
       }
 
@@ -396,6 +407,17 @@ export default function FormBuilderPage() {
     }
   };
 
+  const findItem = (items: QuestionnaireItem[], linkId: string): QuestionnaireItem | null => {
+    for (const item of items) {
+      if (item.linkId === linkId) return item;
+      if (item.item) {
+        const found = findItem(item.item, linkId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
   const toggleExpand = (linkId: string) => {
     const newExpanded = new Set(expandedItems);
     if (newExpanded.has(linkId)) {
@@ -406,830 +428,1076 @@ export default function FormBuilderPage() {
     setExpandedItems(newExpanded);
   };
 
-  const getQuestionIcon = (type: string) => {
-    const component = COMPONENT_TYPES.find(t => t.value === type);
-    return component?.icon || 'A';
-  };
+  const selectedQuestion = selectedLinkId ? findItem(questions, selectedLinkId) : null;
 
-  const filteredComponents = COMPONENT_TYPES.filter(comp =>
-    comp.label.toLowerCase().includes(componentSearch.toLowerCase()) ||
-    comp.description.toLowerCase().includes(componentSearch.toLowerCase())
-  );
+  const filteredCategories = Object.entries(COMPONENT_CATEGORIES).reduce((acc, [key, cat]) => {
+    const filtered = cat.components.filter(comp =>
+      comp.label.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    if (filtered.length > 0) {
+      acc[key] = { ...cat, components: filtered };
+    }
+    return acc;
+  }, {} as typeof COMPONENT_CATEGORIES);
 
   const generateQuestionnaire = (): FHIRQuestionnaire => ({
     resourceType: 'Questionnaire',
     title,
     status: 'draft',
+    description,
     item: questions,
   });
 
-  const loadExample = (key: string) => {
-    if (confirm('This will replace your current form. Continue?')) {
-      setQuestions(EXAMPLE_TEMPLATES[key]);
-      setTitle(key === 'patient-intake' ? 'Patient Intake Form' : 'Vitals Check');
-      setExpandedItems(new Set(['root']));
-    }
-  };
+  const generateQuestionnaireResponse = () => ({
+    resourceType: 'QuestionnaireResponse',
+    status: 'in-progress',
+    authored: new Date().toISOString(),
+    item: [],
+  });
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  }
-
-  const selectedQuestion = selectedLinkId ? findItem(questions, selectedLinkId) : null;
-
-  // Recursive renderer for the preview panel
-  const renderPreviewItem = (item: QuestionnaireItem, depth = 0) => {
-    const icon = getQuestionIcon(item.type);
-    const isSelected = selectedLinkId === item.linkId;
-
-    // Check extensions for special rendering
-    const isSlider = item.extension?.some(e => e.url.includes('itemControl') && e.valueCode === 'slider');
-    const isSignature = item.extension?.some(e => e.url.includes('signature'));
-    const isPhone = item.extension?.some(e => e.url.includes('itemControl') && e.valueCode === 'phone');
-    const isEmail = item.extension?.some(e => e.url.includes('itemControl') && e.valueCode === 'email');
-
-    // Width handling
-    const width = (item as any)._width || (item as any).width || '100%';
-
     return (
-      <div
-        key={item.linkId}
-        className={cn(
-          "p-3 rounded border transition-all cursor-pointer mb-3",
-          isSelected
-            ? "border-blue-500 bg-blue-50/30 shadow-sm"
-            : "border-gray-200 hover:border-gray-300 bg-white",
-          item.type === 'group' && "bg-gray-50/50"
-        )}
-        style={{
-          marginLeft: depth > 0 ? '20px' : '0',
-          width: width !== '100%' ? width : undefined,
-          display: width !== '100%' ? 'inline-block' : 'block',
-          verticalAlign: 'top'
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-          setSelectedLinkId(item.linkId);
-        }}
-      >
-        <Label className="flex items-center gap-2 mb-2 text-sm">
-          <span className="text-gray-400 text-xs font-mono flex items-center justify-center w-4 h-4">
-            {typeof icon === 'string' ? icon : icon}
-          </span>
-          <span className="font-medium">
-            {item.text || <span className="text-gray-400 italic">Untitled {item.type}</span>}
-            {item.required && <span className="text-red-500 ml-1">*</span>}
-          </span>
-        </Label>
-
-        {/* Render Logic based on Type and Extensions */}
-        {isSlider ? (
-          <div className="px-2">
-            <input type="range" min="0" max="10" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" disabled />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>0</span>
-              <span>5</span>
-              <span>10</span>
-            </div>
-          </div>
-        ) : isSignature ? (
-          <div className="border-2 border-dashed border-gray-300 rounded h-24 flex items-center justify-center bg-white">
-            <div className="text-center text-gray-400">
-              <PenTool className="h-6 w-6 mx-auto mb-1" />
-              <span className="text-xs">Sign here</span>
-            </div>
-          </div>
-        ) : (
-          <>
-            {item.type === 'string' && (
-              <div className="relative">
-                {isPhone && <Phone className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />}
-                {isEmail && <Mail className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />}
-                <Input
-                  placeholder={isPhone ? "(555) 555-5555" : isEmail ? "user@example.com" : "Short answer"}
-                  disabled
-                  className={cn("bg-gray-50 text-xs h-8", (isPhone || isEmail) && "pl-7")}
-                />
-              </div>
-            )}
-            {item.type === 'text' && (
-              <Textarea placeholder="Long answer" disabled rows={3} className="bg-gray-50 text-xs" />
-            )}
-            {item.type === 'integer' && (
-              <div className="flex items-center gap-2">
-                <Input type="number" placeholder="0" disabled className="bg-gray-50 text-xs h-8" />
-                {(item as any).unit && <span className="text-xs text-gray-500">{(item as any).unit}</span>}
-              </div>
-            )}
-            {item.type === 'decimal' && (
-              <div className="flex items-center gap-2">
-                <Input type="number" placeholder="0.0" disabled className="bg-gray-50 text-xs h-8" />
-                {(item as any).unit && <span className="text-xs text-gray-500">{(item as any).unit}</span>}
-              </div>
-            )}
-            {item.type === 'quantity' && (
-              <div className="flex gap-2">
-                <Input type="number" placeholder="Value" disabled className="bg-gray-50 text-xs h-8 flex-1" />
-                <Input placeholder="Unit" value={(item as any).unit || ''} disabled className="bg-gray-50 text-xs h-8 w-20" />
-              </div>
-            )}
-            {item.type === 'date' && (
-              <Input type="date" disabled className="bg-gray-50 text-xs h-8" />
-            )}
-            {item.type === 'time' && (
-              <Input type="time" disabled className="bg-gray-50 text-xs h-8" />
-            )}
-            {item.type === 'datetime' && (
-              <Input type="datetime-local" disabled className="bg-gray-50 text-xs h-8" />
-            )}
-            {item.type === 'boolean' && (
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input type="radio" disabled />
-                  <span className="text-xs">Yes</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="radio" disabled />
-                  <span className="text-xs">No</span>
-                </label>
-              </div>
-            )}
-            {(item.type === 'choice' || item.type === 'open-choice') && (
-              <div className="space-y-1.5">
-                {item.type === 'open-choice' && (
-                  <Input placeholder="Type or select..." disabled className="bg-gray-50 text-xs h-8 mb-2" />
-                )}
-                {item.answerOption && item.answerOption.length > 0 ? (
-                  item.answerOption.map((option, optIdx) => (
-                    <label key={optIdx} className="flex items-center gap-2">
-                      <input type={item.repeats ? "checkbox" : "radio"} disabled />
-                      <span className="text-xs">{option.valueString || option.valueCoding?.display || `Option ${optIdx + 1}`}</span>
-                    </label>
-                  ))
-                ) : (
-                  <p className="text-xs text-gray-400">No options added</p>
-                )}
-              </div>
-            )}
-            {item.type === 'url' && (
-              <div className="relative">
-                <Globe className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />
-                <Input placeholder="https://example.com" disabled className="bg-gray-50 text-xs h-8 pl-7" />
-              </div>
-            )}
-            {item.type === 'display' && (
-              <div className="text-xs text-gray-600 italic">Display text</div>
-            )}
-            {item.type === 'attachment' && !isSignature && (
-              <div className="border-2 border-dashed border-gray-200 rounded p-4 text-center">
-                <p className="text-xs text-gray-500">File upload placeholder</p>
-              </div>
-            )}
-            {item.type === 'group' && (
-              <div className="mt-3 pl-2 border-l-2 border-gray-200 min-h-[20px]">
-                {item.item && item.item.length > 0 ? (
-                  item.item.map(child => renderPreviewItem(child, depth + 1))
-                ) : (
-                  <div className="text-xs text-gray-400 italic p-2">Empty group</div>
-                )}
-              </div>
-            )}
-          </>
-        )}
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="w-10 h-10 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-sm text-gray-600">Loading...</p>
+        </div>
       </div>
     );
-  };
+  }
 
   return (
-    <div className="h-screen flex flex-col bg-white">
-      {/* Top Toolbar */}
-      <div className="bg-white border-b border-gray-200 px-3 py-2 flex items-center justify-between h-11">
+    <div className="h-screen flex flex-col bg-gray-50">
+      {/* Compact Toolbar */}
+      <div className="bg-white border-b border-gray-200 px-3 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => router.push('/forms')} className="h-7 px-2">
-            <ArrowLeft className="h-3.5 w-3.5 mr-1" />
-            <span className="text-xs">{title || 'New form'}</span>
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Example Loader */}
-          <div className="mr-2">
-            <select
-              className="h-7 text-xs border-gray-200 rounded bg-gray-50"
-              onChange={(e) => {
-                if (e.target.value) loadExample(e.target.value);
-                e.target.value = '';
-              }}
-            >
-              <option value="">Load Example...</option>
-              <option value="patient-intake">Patient Intake</option>
-              <option value="vitals-check">Vitals Check</option>
-            </select>
-          </div>
-
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="h-7 px-2 text-xs gap-1"
-            onClick={() => {
-              if (templateId) {
-                router.push(`/forms/preview/${templateId}`);
-              } else {
-                alert('Please save the form first before previewing');
-              }
-            }}
+            onClick={() => router.push('/forms')}
+            className="h-8 px-2"
           >
-            <Eye className="h-3 w-3" />
-            Preview
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back
           </Button>
-          <span className="text-xs text-gray-400">Saved</span>
+
+          <div className="h-5 w-px bg-gray-300 mx-1"></div>
+
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Form Title"
+            className="text-sm font-semibold text-gray-900 bg-transparent border-none outline-none focus:ring-0 p-0 w-64"
+          />
+        </div>
+
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={undo}
+            disabled={historyIndex <= 0}
+            className="h-8 w-8 p-0"
+          >
+            <Undo2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={redo}
+            disabled={historyIndex >= history.length - 1}
+            className="h-8 w-8 p-0"
+          >
+            <Redo2 className="h-4 w-4" />
+          </Button>
+
+          <div className="h-5 w-px bg-gray-300 mx-1"></div>
+
           <Button
             onClick={handleSave}
             disabled={!title || saving}
             size="sm"
-            className="h-7 px-3 text-xs gap-1 bg-[#6366f1] hover:bg-[#5558e3] text-white"
+            className="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white"
           >
+            <Save className="h-4 w-4 mr-1" />
             {saving ? 'Saving...' : 'Save'}
           </Button>
         </div>
       </div>
 
-      {/* Four-Panel Layout */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left Panel - Items/Components */}
-          <div className="w-72 bg-gray-50 border-r border-gray-200 flex flex-col">
-            {/* Tabs */}
-            <div className="flex bg-white border-b border-gray-200">
+      {/* Main Layout */}
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+        <div className="flex-1 flex overflow-hidden min-h-0">
+          {/* Left: Component Library */}
+          {leftPanelCollapsed ? (
+            <div className="w-10 shrink-0 bg-white border-r border-gray-200 flex flex-col items-center py-2">
               <button
-                onClick={() => setLeftPanelTab('items')}
-                className={cn(
-                  "flex-1 px-3 py-2.5 text-xs font-medium border-b-2 transition-colors",
-                  leftPanelTab === 'items'
-                    ? "border-blue-500 text-blue-600 bg-gray-50"
-                    : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                )}
+                onClick={() => setLeftPanelCollapsed(false)}
+                className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                title="Show components"
               >
-                Items
+                <ChevronRight className="h-4 w-4" />
               </button>
-              <button
-                onClick={() => setLeftPanelTab('components')}
-                className={cn(
-                  "flex-1 px-3 py-2.5 text-xs font-medium border-b-2 transition-colors",
-                  leftPanelTab === 'components'
-                    ? "border-blue-500 text-blue-600 bg-gray-50"
-                    : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                )}
-              >
+              <div className="mt-2 text-[10px] font-medium text-gray-400 writing-mode-vertical" style={{ writingMode: 'vertical-rl' }}>
                 Components
+              </div>
+            </div>
+          ) : (
+          <div className="w-64 shrink-0 bg-white border-r border-gray-200 flex flex-col">
+            <div className="p-2 border-b border-gray-200 flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-700">Components</span>
+              <button
+                onClick={() => setLeftPanelCollapsed(true)}
+                className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                title="Hide components"
+              >
+                <ChevronLeft className="h-4 w-4" />
               </button>
             </div>
-
-            {leftPanelTab === 'items' ? (
-              /* Items Tab - Tree View */
-              <div className="flex-1 overflow-y-auto p-2">
-                <div className="group">
-                  <div
-                    onClick={() => {
-                      setSelectedLinkId(null);
-                      toggleExpand('root');
-                    }}
-                    className={cn(
-                      "w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-xs hover:bg-white transition-colors cursor-pointer",
-                      selectedLinkId === null && "bg-white shadow-sm"
-                    )}
-                  >
-                    {expandedItems.has('root') ? (
-                      <ChevronDown className="h-3 w-3 text-gray-500" />
-                    ) : (
-                      <ChevronRight className="h-3 w-3 text-gray-500" />
-                    )}
-                    <FileText className="h-3.5 w-3.5 text-blue-500" />
-                    <span className="flex-1 text-left truncate font-medium">
-                      {title || 'New form'}
-                    </span>
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAddQuestion();
-                      }}
-                      size="sm"
-                      variant="ghost"
-                      className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-
-                  {expandedItems.has('root') && (
-                    <div className="mt-1 space-y-0.5">
-                      {questions.length === 0 ? (
-                        <div className="px-2 py-6 text-xs text-gray-400 text-center">
-                          No items yet
-                        </div>
-                      ) : (
-                        questions.map((q) => (
-                          <QuestionTreeItem
-                            key={q.linkId}
-                            item={q}
-                            selectedId={selectedLinkId}
-                            expandedIds={expandedItems}
-                            onSelect={setSelectedLinkId}
-                            onToggleExpand={toggleExpand}
-                            onAddChild={(parentId) => handleAddQuestion('string', parentId)}
-                            onDelete={handleDeleteQuestion}
-                            getIcon={getQuestionIcon}
-                          />
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
+            <div className="p-2 border-b border-gray-200">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                <Input
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 h-8 text-xs bg-gray-50"
+                />
               </div>
-            ) : (
-              /* Components Tab - Library */
-              <div className="flex-1 flex flex-col">
-                {/* Search */}
-                <div className="p-2">
-                  <div className="relative">
-                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />
-                    <Input
-                      placeholder="Search"
-                      value={componentSearch}
-                      onChange={(e) => setComponentSearch(e.target.value)}
-                      className="pl-7 h-7 text-xs bg-white"
-                    />
-                  </div>
-                </div>
+            </div>
 
-                {/* Component Grid */}
-                <div className="flex-1 overflow-y-auto p-2">
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {filteredComponents.map((comp) => (
+            <div className="flex-1 overflow-y-auto p-2">
+              {Object.entries(filteredCategories).map(([key, cat]) => (
+                <div key={key} className="mb-4">
+                  <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">
+                    {cat.label}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {cat.components.map((comp) => (
                       <button
-                        key={comp.value}
-                        onClick={() => handleAddQuestion(comp.value, selectedLinkId || undefined)}
-                        className="flex flex-col items-center justify-center p-3 rounded border border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50 transition-colors group"
-                        title={comp.description}
+                        key={comp.type}
+                        onClick={() => handleAddQuestion(comp.type, selectedLinkId && findItem(questions, selectedLinkId)?.type === 'group' ? selectedLinkId : undefined)}
+                        className="flex flex-col items-center justify-center p-2.5 rounded-lg border border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50 transition-all text-center"
+                        title={comp.type}
                       >
-                        <span className="text-xs font-bold text-gray-500 group-hover:text-blue-600 mb-1 bg-gray-100 group-hover:bg-blue-100 px-2 py-1 rounded flex items-center justify-center w-8 h-8">
-                          {typeof comp.icon === 'string' ? comp.icon : comp.icon}
-                        </span>
-                        <span className="text-[10px] text-gray-600 group-hover:text-blue-600 text-center leading-tight">
+                        <comp.icon className="h-4 w-4 text-gray-600 mb-1.5" />
+                        <span className="text-[11px] font-medium text-gray-700">
                           {comp.label}
                         </span>
                       </button>
                     ))}
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
+          )}
+
+          {/* Center: Tree + Canvas */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            {/* Tree View */}
+            <div className="h-32 border-b border-gray-200 bg-white overflow-y-auto shrink-0">
+              <div className="p-2">
+                <div
+                  onClick={() => {
+                    setSelectedLinkId(null);
+                    toggleExpand('root');
+                  }}
+                  className={cn(
+                    "flex items-center gap-1 px-2 py-1.5 rounded text-xs cursor-pointer hover:bg-gray-100",
+                    selectedLinkId === null && "bg-blue-50"
+                  )}
+                >
+                  {expandedItems.has('root') ? (
+                    <ChevronDown className="h-3 w-3" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3" />
+                  )}
+                  <FileTextIcon className="h-3.5 w-3.5 text-blue-600" />
+                  <span className="flex-1 font-medium">{title || 'Form'}</span>
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddQuestion('string');
+                    }}
+                    size="sm"
+                    variant="ghost"
+                    className="h-5 w-5 p-0"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+
+                {expandedItems.has('root') && (
+                  <div className="ml-2 mt-1 space-y-0.5">
+                    {questions.map((q) => (
+                      <TreeItem
+                        key={q.linkId}
+                        item={q}
+                        selectedId={selectedLinkId}
+                        expandedIds={expandedItems}
+                        onSelect={setSelectedLinkId}
+                        onToggleExpand={toggleExpand}
+                        onAddChild={handleAddQuestion}
+                        onDelete={handleDeleteQuestion}
+                        depth={0}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+
+            {/* Canvas */}
+            <div className="flex-1 overflow-y-auto bg-gray-50 p-4">
+              <CanvasPanel
+                title={title}
+                description={description}
+                questions={questions}
+                selectedId={selectedLinkId}
+                onSelect={setSelectedLinkId}
+                onUpdate={handleUpdateQuestion}
+                showPreview={showPreview}
+                onTogglePreview={() => setShowPreview(!showPreview)}
+              />
+            </div>
           </div>
 
-          {/* Center Panel - Properties */}
-          <div className="w-80 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
-            <div className="px-3 py-2 border-b border-gray-200 flex items-center gap-2 bg-gray-50">
-              <FileText className="h-3.5 w-3.5 text-gray-500" />
-              <h3 className="text-xs font-medium text-gray-700">Properties</h3>
+          {/* Right: Properties Panel */}
+          {rightPanelCollapsed ? (
+            <div className="w-10 shrink-0 bg-white border-l border-gray-200 flex flex-col items-center py-2">
+              <button
+                onClick={() => setRightPanelCollapsed(false)}
+                className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                title="Show properties"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <div className="mt-2 text-[10px] font-medium text-gray-400" style={{ writingMode: 'vertical-rl' }}>
+                Properties
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-3">
-              {selectedLinkId === null ? (
-                /* Form Properties */
-                <>
+          ) : (
+          <div className="w-72 shrink-0 bg-white border-l border-gray-200 flex flex-col overflow-hidden">
+            {/* Panel Header with collapse button */}
+            <div className="p-2 border-b border-gray-200 flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-700">
+                {selectedLinkId === null ? 'Form Settings' : 'Properties'}
+              </span>
+              <button
+                onClick={() => setRightPanelCollapsed(true)}
+                className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                title="Hide properties"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+            {selectedLinkId === null ? (
+              /* Form Properties */
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-4 space-y-4">
                   <div>
-                    <Label htmlFor="form-title" className="text-xs font-medium text-gray-700">Form Title</Label>
+                    <Label className="text-xs font-medium">Title</Label>
                     <Input
-                      id="form-title"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="New form"
-                      className="mt-1 h-7 text-xs"
+                      className="mt-1 h-8 text-xs"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="form-url" className="text-xs font-medium text-gray-700">URL</Label>
-                    <Input
-                      id="form-url"
-                      value={`http://company.com/questionnaire/${title ? title.toLowerCase().replace(/\s+/g, '-') : 'new-form'}`}
-                      disabled
-                      className="mt-1 h-7 text-xs bg-gray-50"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="form-version" className="text-xs font-medium text-gray-700">Version</Label>
-                    <Input
-                      id="form-version"
-                      value="1.0.0"
-                      readOnly
-                      className="mt-1 h-7 text-xs bg-gray-50"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="form-status" className="text-xs font-medium text-gray-700">Status</Label>
-                    <select
-                      id="form-status"
-                      value="draft"
-                      readOnly
-                      disabled
-                      className="w-full mt-1 h-7 px-2 text-xs border border-gray-300 rounded-md bg-gray-50"
-                    >
-                      <option value="draft">draft</option>
-                      <option value="active">active</option>
-                      <option value="retired">retired</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center gap-2 py-1">
-                    <input type="checkbox" id="show-outline" className="rounded" />
-                    <Label htmlFor="show-outline" className="text-xs cursor-pointer">Show outline</Label>
-                  </div>
-
-                  {/* Context Configuration */}
-                  <div className="pt-4 mt-4 border-t border-gray-200">
-                    <h4 className="text-xs font-semibold text-gray-900 mb-2">Context Configuration</h4>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-medium text-gray-700">Required Context</Label>
-                      <div className="space-y-1.5">
-                        {['Encounter', 'EpisodeOfCare', 'Appointment', 'ServiceRequest'].map((ctx) => (
-                          <div key={ctx} className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              id={`ctx-${ctx}`}
-                              checked={contextTypes.includes(ctx)}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5"
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setContextTypes([...contextTypes, ctx]);
-                                } else {
-                                  setContextTypes(contextTypes.filter(c => c !== ctx));
-                                }
-                              }}
-                            />
-                            <Label htmlFor={`ctx-${ctx}`} className="text-xs text-gray-600 cursor-pointer">
-                              {ctx}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-[10px] text-gray-400 mt-1">
-                        Select clinical resources that must be present when filling this form.
-                      </p>
-                    </div>
-                  </div>
-                </>
-              ) : selectedQuestion ? (
-                /* Question Properties */
-                <div className="space-y-3">
-                  {/* Link ID */}
-                  <div>
-                    <Label htmlFor="q-linkid" className="text-xs font-medium text-gray-700">Link Id *</Label>
-                    <Input
-                      id="q-linkid"
-                      value={selectedQuestion.linkId}
-                      onChange={(e) => handleUpdateQuestion(selectedLinkId, 'linkId', e.target.value)}
-                      placeholder="unique-id"
-                      className="mt-1 h-7 text-xs font-mono"
-                    />
-                  </div>
-
-                  {/* Type */}
-                  <div>
-                    <Label htmlFor="q-type" className="text-xs font-medium text-gray-700">Type</Label>
-                    <select
-                      id="q-type"
-                      value={selectedQuestion.type}
-                      onChange={(e) => handleUpdateQuestion(selectedLinkId, 'type', e.target.value)}
-                      className="w-full mt-1 h-7 px-2 text-xs border border-gray-300 rounded-md"
-                    >
-                      {COMPONENT_TYPES.map((type) => (
-                        <option key={type.value} value={type.value}>
-                          {type.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Text / Question */}
-                  <div>
-                    <Label htmlFor="q-text" className="text-xs font-medium text-gray-700">Text</Label>
+                    <Label className="text-xs font-medium">Description</Label>
                     <Textarea
-                      id="q-text"
-                      value={selectedQuestion.text}
-                      onChange={(e) => handleUpdateQuestion(selectedLinkId, 'text', e.target.value)}
-                      placeholder="Enter question"
-                      rows={3}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
                       className="mt-1 text-xs"
+                      rows={3}
                     />
                   </div>
-
-                  {/* Prefix */}
                   <div>
-                    <Label htmlFor="q-prefix" className="text-xs font-medium text-gray-700">Prefix</Label>
-                    <Input
-                      id="q-prefix"
-                      value={(selectedQuestion as any).prefix || ''}
-                      onChange={(e) => handleUpdateQuestion(selectedLinkId, 'prefix' as any, e.target.value)}
-                      placeholder="e.g., 1., A)"
-                      className="mt-1 h-7 text-xs"
-                    />
-                  </div>
-
-                  {/* Text Input Specific */}
-                  {(selectedQuestion.type === 'string' || selectedQuestion.type === 'text') && (
-                    <>
-                      <div>
-                        <Label htmlFor="q-placeholder" className="text-xs font-medium text-gray-700">Placeholder</Label>
-                        <Input
-                          id="q-placeholder"
-                          value={(selectedQuestion as any)._placeholder || ''}
-                          onChange={(e) => handleUpdateQuestion(selectedLinkId, '_placeholder' as any, e.target.value)}
-                          placeholder="Placeholder text"
-                          className="mt-1 h-7 text-xs"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="q-maxlength" className="text-xs font-medium text-gray-700">Max Length</Label>
-                        <Input
-                          id="q-maxlength"
-                          type="number"
-                          value={selectedQuestion.maxLength || ''}
-                          onChange={(e) => handleUpdateQuestion(selectedLinkId, 'maxLength', parseInt(e.target.value) || undefined)}
-                          placeholder="e.g., 255"
-                          className="mt-1 h-7 text-xs"
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {/* Attachment Specific */}
-                  {selectedQuestion.type === 'attachment' && (
-                    <>
-                      <div>
-                        <Label className="text-xs font-medium text-gray-700">Allowed Types</Label>
-                        <Input
-                          value={(selectedQuestion as any)._allowedTypes || ''}
-                          onChange={(e) => handleUpdateQuestion(selectedLinkId, '_allowedTypes' as any, e.target.value)}
-                          placeholder="e.g. application/pdf, image/*"
-                          className="mt-1 h-7 text-xs"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs font-medium text-gray-700">Max Size (MB)</Label>
-                        <Input
-                          type="number"
-                          value={(selectedQuestion as any)._maxSize || ''}
-                          onChange={(e) => handleUpdateQuestion(selectedLinkId, '_maxSize' as any, e.target.value)}
-                          placeholder="e.g. 5"
-                          className="mt-1 h-7 text-xs"
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {/* Unit for Integer/Decimal/Quantity */}
-                  {(selectedQuestion.type === 'integer' || selectedQuestion.type === 'decimal' || selectedQuestion.type === 'quantity') && (
-                    <div>
-                      <Label className="text-xs font-medium text-gray-700">Unit</Label>
-                      <Input
-                        value={(selectedQuestion as any).unit || ''}
-                        onChange={(e) => handleUpdateQuestion(selectedLinkId, 'unit' as any, e.target.value)}
-                        placeholder="e.g. kg, cm, mmHg"
-                        className="mt-1 h-7 text-xs"
-                      />
-                    </div>
-                  )}
-
-                  {/* Width */}
-                  <div>
-                    <Label htmlFor="q-width" className="text-xs font-medium text-gray-700">Width (percentage)</Label>
-                    <div className="flex gap-2 mt-1">
-                      <Input
-                        id="q-width"
-                        type="text"
-                        value={(selectedQuestion as any)._width || (selectedQuestion as any).width || '100%'}
-                        onChange={(e) => handleUpdateQuestion(selectedLinkId, '_width' as any, e.target.value)}
-                        placeholder="100%"
-                        className="h-7 text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Boolean Flags */}
-                  <div className="space-y-2 pt-2 border-t">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="q-hidden"
-                        checked={(selectedQuestion as any).hidden || false}
-                        onChange={(e) => handleUpdateQuestion(selectedLinkId, 'hidden' as any, e.target.checked)}
-                        className="rounded"
-                      />
-                      <Label htmlFor="q-hidden" className="text-xs cursor-pointer">Hidden</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="q-required"
-                        checked={selectedQuestion.required || false}
-                        onChange={(e) => handleUpdateQuestion(selectedLinkId, 'required', e.target.checked)}
-                        className="rounded"
-                      />
-                      <Label htmlFor="q-required" className="text-xs cursor-pointer">Required</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="q-repeats"
-                        checked={selectedQuestion.repeats || false}
-                        onChange={(e) => handleUpdateQuestion(selectedLinkId, 'repeats', e.target.checked)}
-                        className="rounded"
-                      />
-                      <Label htmlFor="q-repeats" className="text-xs cursor-pointer">Repeats</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="q-readonly"
-                        checked={selectedQuestion.readOnly || false}
-                        onChange={(e) => handleUpdateQuestion(selectedLinkId, 'readOnly', e.target.checked)}
-                        className="rounded"
-                      />
-                      <Label htmlFor="q-readonly" className="text-xs cursor-pointer">Read only</Label>
-                    </div>
-                  </div>
-
-                  {/* Choice Options */}
-                  {(selectedQuestion.type === 'choice' || selectedQuestion.type === 'open-choice') && (
-                    <div className="pt-2 border-t">
-                      <div className="flex items-center justify-between mb-2">
-                        <Label className="text-xs font-medium text-gray-700">Options</Label>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => addChoice(selectedLinkId)}
-                          className="h-6 px-2 text-xs"
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Add option
-                        </Button>
-                      </div>
-                      <div className="space-y-2">
-                        {selectedQuestion.answerOption?.map((option, choiceIdx) => (
-                          <div key={choiceIdx} className="border border-gray-200 rounded p-2 space-y-1.5">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-gray-600">Option {choiceIdx + 1}</span>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => deleteChoice(selectedLinkId, choiceIdx)}
-                                className="h-5 w-5 p-0"
-                                title="Delete option"
-                              >
-                                <Trash2 className="h-3 w-3 text-red-500" />
-                              </Button>
-                            </div>
-                            <div>
-                              <Label className="text-xs text-gray-600">Code</Label>
-                              <Input
-                                value={option.valueCoding?.code || option.valueString || ''}
-                                onChange={(e) => updateChoice(selectedLinkId, choiceIdx, e.target.value)}
-                                placeholder="code"
-                                className="h-6 text-xs mt-1"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-xs text-gray-600">Display</Label>
-                              <Input
-                                value={option.valueCoding?.display || option.valueString || ''}
-                                onChange={(e) => updateChoice(selectedLinkId, choiceIdx, e.target.value)}
-                                placeholder="Display text"
-                                className="h-6 text-xs mt-1"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Media */}
-                  <div className="pt-2 border-t">
-                    <Label htmlFor="q-media" className="text-xs font-medium text-gray-700">Media (Image/Video URL)</Label>
-                    <Input
-                      id="q-media"
-                      value={(selectedQuestion as any)._mediaUrl || ''}
-                      onChange={(e) => handleUpdateQuestion(selectedLinkId, '_mediaUrl' as any, e.target.value)}
-                      placeholder="https://..."
-                      className="mt-1 h-7 text-xs"
-                    />
-                  </div>
-
-                  {/* Tooltip */}
-                  <div>
-                    <Label htmlFor="q-tooltip" className="text-xs font-medium text-gray-700">Tooltip</Label>
-                    <Input
-                      id="q-tooltip"
-                      value={(selectedQuestion as any)._tooltip || ''}
-                      onChange={(e) => handleUpdateQuestion(selectedLinkId, '_tooltip' as any, e.target.value)}
-                      placeholder="Help text"
-                      className="mt-1 h-7 text-xs"
-                    />
-                  </div>
-
-                  {/* Delete Button */}
-                  <div className="pt-3 border-t border-gray-200">
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDeleteQuestion(selectedLinkId)}
-                      className="w-full h-7 text-xs"
+                    <Label className="text-xs font-medium">Category</Label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full mt-1 h-8 px-2 text-xs border rounded"
                     >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Delete Item
-                    </Button>
+                      <option value="general">General</option>
+                      <option value="medical">Medical</option>
+                      <option value="administrative">Administrative</option>
+                    </select>
                   </div>
-                </div>
-              ) : null}
-            </div>
-          </div>
-
-          {/* Right Panel - Live Preview */}
-          <div className="flex-1 bg-gray-50 overflow-y-auto">
-            <div className="max-w-3xl mx-auto p-6">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="mb-6">
-                  <h2 className="text-xl font-bold text-gray-900">
-                    {title || 'New form'}
-                  </h2>
-                  {description && (
-                    <p className="text-sm text-gray-600 mt-2">{description}</p>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  {questions.length === 0 ? (
-                    <div className="text-center py-16 text-gray-400">
-                      <FileText className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                      <p className="text-sm">No questions added yet</p>
-                    </div>
-                  ) : (
-                    questions.map(q => renderPreviewItem(q))
-                  )}
                 </div>
               </div>
-            </div>
+            ) : selectedQuestion ? (
+              /* Question Properties */
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Property Tabs */}
+                <div className="flex border-b border-gray-200 bg-gray-50">
+                  {['basic', 'validation', 'logic', 'advanced'].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setPropertyTab(tab as any)}
+                      className={cn(
+                        "flex-1 px-2 py-2 text-[10px] font-medium border-b-2 transition-colors uppercase",
+                        propertyTab === tab
+                          ? "border-blue-600 text-blue-600"
+                          : "border-transparent text-gray-500 hover:text-gray-700"
+                      )}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Property Content */}
+                <div className="flex-1 overflow-y-auto p-4">
+                  <PropertyPanel
+                    question={selectedQuestion}
+                    tab={propertyTab}
+                    onUpdate={(updates) => handleUpdateQuestion(selectedQuestion.linkId, updates)}
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="p-4 border-t border-gray-200 space-y-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDuplicateQuestion(selectedQuestion.linkId)}
+                    className="w-full h-8 text-xs"
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Duplicate
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleDeleteQuestion(selectedQuestion.linkId)}
+                    className="w-full h-8 text-xs"
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </div>
+          )}
         </div>
 
-        {/* Bottom Panel - Debug Console */}
-        <div className="h-64 border-t border-gray-200 bg-white flex flex-col">
-          {/* Tabs */}
+        {/* Bottom Panel */}
+        {bottomPanelCollapsed ? (
+          <div className="h-8 shrink-0 border-t border-gray-200 bg-white flex items-center px-2">
+            <button
+              onClick={() => setBottomPanelCollapsed(false)}
+              className="flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 text-xs"
+              title="Show output panel"
+            >
+              <ChevronUp className="h-3.5 w-3.5" />
+              <span>Output</span>
+            </button>
+          </div>
+        ) : (
+        <div className="h-80 shrink-0 border-t border-gray-200 bg-white flex flex-col">
           <div className="flex border-b border-gray-200 bg-gray-50">
-            {['questionnaire', 'response', 'population', 'extraction', 'expressions'].map((tab) => (
+            <button
+              onClick={() => setBottomPanelCollapsed(true)}
+              className="px-2 py-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              title="Hide output panel"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </button>
+            {['questionnaire', 'response', 'context'].map((tab) => (
               <button
                 key={tab}
-                onClick={() => setBottomPanelTab(tab as any)}
+                onClick={() => setBottomTab(tab as any)}
                 className={cn(
-                  "px-3 py-2 text-xs font-medium border-b-2 transition-colors capitalize",
-                  bottomPanelTab === tab
-                    ? "border-blue-500 text-blue-600 bg-white"
+                  "px-4 py-2 text-xs font-medium border-b-2 transition-colors capitalize",
+                  bottomTab === tab
+                    ? "border-blue-600 text-blue-600 bg-white"
                     : "border-transparent text-gray-600 hover:text-gray-900"
                 )}
               >
-                {tab === 'extraction' ? 'Data Extraction' : tab === 'expressions' ? 'Named Expressions' : tab}
+                {tab}
               </button>
             ))}
           </div>
 
-          {/* Content */}
           <div className="flex-1 overflow-auto p-3">
-            {bottomPanelTab === 'questionnaire' && (
-              <div className="relative">
-                <div className="absolute top-2 right-2">
-                  <Button size="sm" className="h-6 px-2 text-xs bg-[#6366f1] hover:bg-[#5558e3] text-white">
-                    ⚡ Validate
-                  </Button>
-                </div>
+            {bottomTab === 'questionnaire' && (
+              <div>
                 <pre className="text-xs font-mono text-gray-700 overflow-auto">
                   {JSON.stringify(generateQuestionnaire(), null, 2)}
                 </pre>
               </div>
             )}
-            {bottomPanelTab === 'response' && (
-              <pre className="text-xs font-mono text-gray-700">
-                {JSON.stringify({ resourceType: 'QuestionnaireResponse', status: 'in-progress', item: [] }, null, 2)}
-              </pre>
+
+            {bottomTab === 'response' && (
+              <div>
+                <pre className="text-xs font-mono text-gray-700 overflow-auto">
+                  {JSON.stringify(generateQuestionnaireResponse(), null, 2)}
+                </pre>
+              </div>
             )}
-            {bottomPanelTab === 'population' && (
-              <div className="text-xs text-gray-500">Population settings will appear here</div>
-            )}
-            {bottomPanelTab === 'extraction' && (
-              <div className="text-xs text-gray-500">Data extraction mappings will appear here</div>
-            )}
-            {bottomPanelTab === 'expressions' && (
-              <div className="text-xs text-gray-500">Named expressions will appear here</div>
+
+            {bottomTab === 'context' && (
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs font-semibold text-gray-900 mb-2 block">
+                    Required Context Resources
+                  </Label>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Select which FHIR resources must be present when filling this form
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['Patient', 'Practitioner', 'Encounter', 'EpisodeOfCare', 'Appointment', 'ServiceRequest', 'Organization', 'Location'].map((ctx) => (
+                      <label
+                        key={ctx}
+                        className={cn(
+                          "flex items-center gap-2 p-2 rounded border cursor-pointer transition-colors",
+                          contextTypes.includes(ctx)
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={contextTypes.includes(ctx)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setContextTypes([...contextTypes, ctx]);
+                            } else {
+                              setContextTypes(contextTypes.filter(c => c !== ctx));
+                            }
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-xs font-medium text-gray-700">{ctx}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {contextTypes.length > 0 && (
+                  <div className="pt-3 border-t">
+                    <Label className="text-xs font-semibold text-gray-900 mb-2 block">
+                      Selected Contexts
+                    </Label>
+                    <div className="flex flex-wrap gap-1">
+                      {contextTypes.map((ctx) => (
+                        <span
+                          key={ctx}
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium"
+                        >
+                          {ctx}
+                          <button
+                            onClick={() => setContextTypes(contextTypes.filter(c => c !== ctx))}
+                            className="hover:text-blue-900"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
+        )}
       </div>
     </div>
   );
+}
+
+// Tree Item Component
+function TreeItem({
+  item,
+  selectedId,
+  expandedIds,
+  onSelect,
+  onToggleExpand,
+  onAddChild,
+  onDelete,
+  depth,
+}: {
+  item: QuestionnaireItem;
+  selectedId: string | null;
+  expandedIds: Set<string>;
+  onSelect: (id: string) => void;
+  onToggleExpand: (id: string) => void;
+  onAddChild: (type: string, parentId: string) => void;
+  onDelete: (id: string) => void;
+  depth: number;
+}) {
+  const isSelected = selectedId === item.linkId;
+  const isExpanded = expandedIds.has(item.linkId);
+  const hasChildren = item.item && item.item.length > 0;
+  const isGroup = item.type === 'group';
+
+  return (
+    <div>
+      <div
+        onClick={() => onSelect(item.linkId)}
+        className={cn(
+          "group flex items-center gap-1 px-2 py-1 rounded text-xs cursor-pointer hover:bg-gray-100",
+          isSelected && "bg-blue-50",
+        )}
+        style={{ paddingLeft: `${(depth * 12) + 8}px` }}
+      >
+        <div
+          className={cn(
+            "h-4 w-4 flex items-center justify-center",
+            !isGroup && !hasChildren && "invisible"
+          )}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleExpand(item.linkId);
+          }}
+        >
+          {isExpanded ? (
+            <ChevronDown className="h-3 w-3" />
+          ) : (
+            <ChevronRight className="h-3 w-3" />
+          )}
+        </div>
+
+        <span className="text-[10px] font-mono px-1 py-0.5 bg-gray-100 rounded">
+          {item.type.substring(0, 3).toUpperCase()}
+        </span>
+
+        <span className="flex-1 truncate">{item.text || item.linkId}</span>
+
+        {item.required && <span className="text-red-500">*</span>}
+
+        {isGroup && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddChild('string', item.linkId);
+            }}
+            className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100"
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
+        )}
+      </div>
+
+      {isExpanded && hasChildren && (
+        <div className="mt-0.5 space-y-0.5">
+          {item.item!.map((child) => (
+            <TreeItem
+              key={child.linkId}
+              item={child}
+              selectedId={selectedId}
+              expandedIds={expandedIds}
+              onSelect={onSelect}
+              onToggleExpand={onToggleExpand}
+              onAddChild={onAddChild}
+              onDelete={onDelete}
+              depth={depth + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Canvas Panel Component
+function CanvasPanel({
+  title,
+  description,
+  questions,
+  selectedId,
+  onSelect,
+  onUpdate,
+  showPreview,
+  onTogglePreview,
+}: {
+  title: string;
+  description: string;
+  questions: QuestionnaireItem[];
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+  onUpdate: (id: string, updates: Partial<QuestionnaireItem>) => void;
+  showPreview: boolean;
+  onTogglePreview: () => void;
+}) {
+  const renderItem = (item: QuestionnaireItem): React.ReactNode => {
+    const isSelected = selectedId === item.linkId;
+
+    return (
+      <div
+        key={item.linkId}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect(item.linkId);
+        }}
+        className={cn(
+          "p-3 rounded border bg-white cursor-pointer transition-all",
+          isSelected
+            ? "border-blue-500 shadow-md"
+            : "border-gray-200 hover:border-gray-300"
+        )}
+      >
+        <div className="flex items-start gap-2">
+          <div className="flex-1">
+            <Input
+              value={item.text || ''}
+              onChange={(e) => {
+                e.stopPropagation();
+                onUpdate(item.linkId, { text: e.target.value });
+              }}
+              placeholder="Question text..."
+              className="border-none bg-transparent p-0 h-auto text-sm font-medium focus:ring-0 mb-1"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="text-xs text-gray-500">
+              {item.type}
+              {item.required && <span className="text-red-500 ml-1">* required</span>}
+            </div>
+          </div>
+        </div>
+
+        {item.type === 'group' && item.item && item.item.length > 0 && (
+          <div className="mt-3 pl-3 border-l-2 border-gray-200 space-y-2">
+            {item.item.map(child => renderItem(child))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderPreview = (item: QuestionnaireItem): React.ReactNode => {
+    return (
+      <div key={item.linkId} className="space-y-2">
+        <Label className="text-sm font-medium">
+          {item.text || 'Untitled'}
+          {item.required && <span className="text-red-500 ml-1">*</span>}
+        </Label>
+
+        {item.type === 'string' && <Input placeholder="Your answer" className="h-9" />}
+        {item.type === 'text' && <Textarea placeholder="Your answer" rows={3} />}
+        {item.type === 'integer' && <Input type="number" placeholder="0" className="h-9" />}
+        {item.type === 'boolean' && (
+          <div className="flex gap-3">
+            <label className="flex items-center gap-2">
+              <input type="radio" name={item.linkId} />
+              <span className="text-sm">Yes</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="radio" name={item.linkId} />
+              <span className="text-sm">No</span>
+            </label>
+          </div>
+        )}
+        {item.type === 'date' && <Input type="date" className="h-9" />}
+        {item.type === 'choice' && item.answerOption && (
+          <div className="space-y-2">
+            {item.answerOption.map((opt, idx) => (
+              <label key={idx} className="flex items-center gap-2">
+                <input type="radio" name={item.linkId} />
+                <span className="text-sm">{opt.valueString}</span>
+              </label>
+            ))}
+          </div>
+        )}
+        {item.type === 'group' && item.item && (
+          <div className="pl-4 space-y-3 border-l-2 border-gray-200">
+            {item.item.map(child => renderPreview(child))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto">
+      {/* Preview Toggle - Top Right */}
+      <div className="flex justify-end mb-4">
+        <Button
+          onClick={onTogglePreview}
+          size="sm"
+          variant={showPreview ? "default" : "outline"}
+          className="h-8 px-3"
+        >
+          <Eye className="h-3.5 w-3.5 mr-1.5" />
+          {showPreview ? 'Hide Preview' : 'Show Preview'}
+        </Button>
+      </div>
+
+      {showPreview ? (
+        /* Preview Mode */
+        <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{title || 'Form'}</h1>
+          {description && <p className="text-sm text-gray-600 mb-6">{description}</p>}
+
+          <div className="space-y-4">
+            {questions.map(q => renderPreview(q))}
+          </div>
+
+          {questions.length > 0 && (
+            <div className="mt-6 pt-4 border-t">
+              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">Submit</Button>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Edit Mode */
+        <>
+          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-4">
+            <h2 className="text-xl font-bold text-gray-900">{title || 'Form Title'}</h2>
+            {description && <p className="text-sm text-gray-600 mt-2">{description}</p>}
+          </div>
+
+          <div className="space-y-2">
+            {questions.length === 0 ? (
+              <div className="bg-white rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
+                <Sparkles className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-500">Add components from the left panel</p>
+              </div>
+            ) : (
+              questions.map(q => renderItem(q))
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Property Panel Component (keeping existing implementation)
+function PropertyPanel({
+  question,
+  tab,
+  onUpdate,
+}: {
+  question: QuestionnaireItem;
+  tab: 'basic' | 'validation' | 'logic' | 'advanced';
+  onUpdate: (updates: Partial<QuestionnaireItem>) => void;
+}) {
+  if (tab === 'basic') {
+    return (
+      <div className="space-y-4">
+        <div>
+          <Label className="text-xs font-medium">Link ID</Label>
+          <Input
+            value={question.linkId}
+            onChange={(e) => onUpdate({ linkId: e.target.value })}
+            className="mt-1.5 h-8 text-sm font-mono"
+          />
+        </div>
+
+        <div>
+          <Label className="text-xs font-medium">Type</Label>
+          <select
+            value={question.type}
+            onChange={(e) => onUpdate({ type: e.target.value as any })}
+            className="w-full mt-1.5 h-8 px-3 text-sm border rounded-md"
+          >
+            <option value="string">Text</option>
+            <option value="text">Long Text</option>
+            <option value="integer">Integer</option>
+            <option value="decimal">Decimal</option>
+            <option value="boolean">Boolean</option>
+            <option value="date">Date</option>
+            <option value="time">Time</option>
+            <option value="datetime">DateTime</option>
+            <option value="choice">Choice</option>
+            <option value="open-choice">Open Choice</option>
+            <option value="attachment">Attachment</option>
+            <option value="group">Group</option>
+          </select>
+        </div>
+
+        <div>
+          <Label className="text-xs font-medium">Question Text</Label>
+          <Textarea
+            value={question.text || ''}
+            onChange={(e) => onUpdate({ text: e.target.value })}
+            className="mt-1.5 text-sm"
+            rows={3}
+          />
+        </div>
+
+        <div>
+          <Label className="text-xs font-medium">Prefix</Label>
+          <Input
+            value={(question as any).prefix || ''}
+            onChange={(e) => onUpdate({ prefix: e.target.value } as any)}
+            placeholder="e.g., 1., A)"
+            className="mt-1.5 h-8 text-sm"
+          />
+        </div>
+
+        {(question.type === 'string' || question.type === 'text') && (
+          <>
+            <div>
+              <Label className="text-xs font-medium">Placeholder</Label>
+              <Input
+                value={(question as any)._placeholder || ''}
+                onChange={(e) => onUpdate({ _placeholder: e.target.value } as any)}
+                className="mt-1.5 h-8 text-sm"
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-medium">Max Length</Label>
+              <Input
+                type="number"
+                value={question.maxLength || ''}
+                onChange={(e) => onUpdate({ maxLength: parseInt(e.target.value) || undefined })}
+                className="mt-1.5 h-8 text-sm"
+              />
+            </div>
+          </>
+        )}
+
+        {(question.type === 'integer' || question.type === 'decimal' || question.type === 'quantity') && (
+          <div>
+            <Label className="text-xs font-medium">Unit</Label>
+            <Input
+              value={(question as any).unit || ''}
+              onChange={(e) => onUpdate({ unit: e.target.value } as any)}
+              placeholder="e.g., kg, cm"
+              className="mt-1.5 h-8 text-sm"
+            />
+          </div>
+        )}
+
+        {(question.type === 'choice' || question.type === 'open-choice') && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-xs font-medium">Options</Label>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  const newOptions = [...(question.answerOption || []), { valueString: '' }];
+                  onUpdate({ answerOption: newOptions });
+                }}
+                className="h-7 px-2 text-xs"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Add
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {question.answerOption?.map((option, idx) => (
+                <div key={idx} className="flex gap-2">
+                  <Input
+                    value={option.valueString || ''}
+                    onChange={(e) => {
+                      const newOptions = [...(question.answerOption || [])];
+                      newOptions[idx] = { valueString: e.target.value };
+                      onUpdate({ answerOption: newOptions });
+                    }}
+                    placeholder={`Option ${idx + 1}`}
+                    className="h-8 text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      const newOptions = (question.answerOption || []).filter((_, i) => i !== idx);
+                      onUpdate({ answerOption: newOptions });
+                    }}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-2 pt-2 border-t">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={question.required || false}
+              onChange={(e) => onUpdate({ required: e.target.checked })}
+              className="rounded"
+            />
+            <span className="text-xs">Required</span>
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={question.readOnly || false}
+              onChange={(e) => onUpdate({ readOnly: e.target.checked })}
+              className="rounded"
+            />
+            <span className="text-xs">Read Only</span>
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={question.repeats || false}
+              onChange={(e) => onUpdate({ repeats: e.target.checked })}
+              className="rounded"
+            />
+            <span className="text-xs">Repeats</span>
+          </label>
+        </div>
+      </div>
+    );
+  }
+
+  if (tab === 'validation') {
+    return (
+      <div className="space-y-4">
+        <div>
+          <Label className="text-xs font-medium">Min Value</Label>
+          <Input
+            type="number"
+            value={(question as any).minValue || ''}
+            onChange={(e) => onUpdate({ minValue: e.target.value } as any)}
+            className="mt-1.5 h-8 text-sm"
+          />
+        </div>
+        <div>
+          <Label className="text-xs font-medium">Max Value</Label>
+          <Input
+            type="number"
+            value={(question as any).maxValue || ''}
+            onChange={(e) => onUpdate({ maxValue: e.target.value } as any)}
+            className="mt-1.5 h-8 text-sm"
+          />
+        </div>
+        <div>
+          <Label className="text-xs font-medium">Regex Pattern</Label>
+          <Input
+            value={(question as any)._regex || ''}
+            onChange={(e) => onUpdate({ _regex: e.target.value } as any)}
+            placeholder="^[A-Z].*"
+            className="mt-1.5 h-8 text-sm font-mono"
+          />
+        </div>
+        <div>
+          <Label className="text-xs font-medium">Error Message</Label>
+          <Input
+            value={(question as any)._errorMessage || ''}
+            onChange={(e) => onUpdate({ _errorMessage: e.target.value } as any)}
+            className="mt-1.5 h-8 text-sm"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (tab === 'logic') {
+    return (
+      <div className="space-y-4">
+        <div>
+          <Label className="text-xs font-medium">Enable When</Label>
+          <p className="text-xs text-gray-500 mb-3">Show this question conditionally</p>
+          <div className="space-y-3">
+            {question.enableWhen?.map((condition, idx) => (
+              <div key={idx} className="p-3 border rounded-lg space-y-2">
+                <Input
+                  value={condition.question}
+                  onChange={(e) => {
+                    const newConditions = [...(question.enableWhen || [])];
+                    newConditions[idx] = { ...condition, question: e.target.value };
+                    onUpdate({ enableWhen: newConditions });
+                  }}
+                  placeholder="Question ID"
+                  className="h-8 text-sm"
+                />
+                <select
+                  value={condition.operator}
+                  onChange={(e) => {
+                    const newConditions = [...(question.enableWhen || [])];
+                    newConditions[idx] = { ...condition, operator: e.target.value as any };
+                    onUpdate({ enableWhen: newConditions });
+                  }}
+                  className="w-full h-8 px-3 text-sm border rounded-md"
+                >
+                  <option value="=">equals</option>
+                  <option value="!=">not equals</option>
+                  <option value=">">greater than</option>
+                  <option value="<">less than</option>
+                  <option value="exists">exists</option>
+                </select>
+                <Input
+                  value={condition.answerString || condition.answerBoolean?.toString() || ''}
+                  onChange={(e) => {
+                    const newConditions = [...(question.enableWhen || [])];
+                    newConditions[idx] = { ...condition, answerString: e.target.value };
+                    onUpdate({ enableWhen: newConditions });
+                  }}
+                  placeholder="Value"
+                  className="h-8 text-sm"
+                />
+              </div>
+            ))}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const newConditions = [
+                  ...(question.enableWhen || []),
+                  { question: '', operator: '=' as any, answerString: '' }
+                ];
+                onUpdate({ enableWhen: newConditions });
+              }}
+              className="w-full h-8 text-sm"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              Add Condition
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (tab === 'advanced') {
+    return (
+      <div className="space-y-4">
+        <div>
+          <Label className="text-xs font-medium">Initial Value</Label>
+          <Input
+            value={(question as any).initial?.[0]?.valueString || ''}
+            onChange={(e) => onUpdate({ initial: [{ valueString: e.target.value }] } as any)}
+            className="mt-1.5 h-8 text-sm"
+          />
+        </div>
+        <div>
+          <Label className="text-xs font-medium">Help Text</Label>
+          <Textarea
+            value={(question as any)._helpText || ''}
+            onChange={(e) => onUpdate({ _helpText: e.target.value } as any)}
+            className="mt-1.5 text-sm"
+            rows={2}
+          />
+        </div>
+        <div>
+          <Label className="text-xs font-medium">Definition URI</Label>
+          <Input
+            value={question.definition || ''}
+            onChange={(e) => onUpdate({ definition: e.target.value })}
+            placeholder="http://..."
+            className="mt-1.5 h-8 text-sm"
+          />
+        </div>
+        <div>
+          <Label className="text-xs font-medium">Code System</Label>
+          <Input
+            value={(question as any)._codeSystem || ''}
+            onChange={(e) => onUpdate({ _codeSystem: e.target.value } as any)}
+            placeholder="LOINC, SNOMED, etc."
+            className="mt-1.5 h-8 text-sm"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }

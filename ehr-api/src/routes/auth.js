@@ -140,7 +140,7 @@ router.post('/password-reset/confirm', async (req, res) => {
 router.get('/user-context', async (req, res) => {
   try {
     const email = req.query.email;
-    
+
     if (!email) {
       return res.status(400).json({ error: 'Email is required' });
     }
@@ -176,7 +176,7 @@ router.get('/user-context', async (req, res) => {
     }
 
     const userContext = result.rows[0];
-    
+
     // Clean up the response
     res.json({
       user_id: userContext.id,
@@ -233,6 +233,7 @@ router.get('/me', async (req, res) => {
         u.onboarding_completed,
         u.location_ids,
         u.scope,
+        u.language,
         o.name as org_name,
         o.slug as org_slug,
         o.type as org_type,
@@ -302,6 +303,7 @@ router.get('/me', async (req, res) => {
       onboarding_completed: user.onboarding_completed,
       location_ids: locationIds,
       scope: user.scope,
+      language: user.language || 'en',
       roles: user.roles || [],
       permissions: user.permissions || [],
       // Additional metadata
@@ -320,6 +322,28 @@ router.get('/me', async (req, res) => {
       success: false,
       error: error.message || 'Failed to fetch user profile'
     });
+  }
+});
+
+/**
+ * PATCH /api/auth/me
+ * Update user profile (e.g. language)
+ */
+router.patch('/me', async (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'] || req.headers['authorization']?.split(' ')[1];
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { language } = req.body;
+    const result = await require('../services/user.service').updateUser(userId, { language });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

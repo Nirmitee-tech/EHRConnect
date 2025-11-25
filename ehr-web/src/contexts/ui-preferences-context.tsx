@@ -5,32 +5,48 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 interface UIPreferencesContextType {
   hideHeaderOnDetailPages: boolean;
   setHideHeaderOnDetailPages: (value: boolean) => void;
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (value: boolean) => void;
 }
 
 const UIPreferencesContext = createContext<UIPreferencesContextType | undefined>(undefined);
 
 export function UIPreferencesProvider({ children }: { children: React.ReactNode }) {
   const [hideHeaderOnDetailPages, setHideHeaderOnDetailPages] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Load preference from localStorage on mount
+  // Load preferences from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('hideHeaderOnDetailPages');
-    if (saved !== null) {
-      setHideHeaderOnDetailPages(JSON.parse(saved));
+    const savedHeader = localStorage.getItem('hideHeaderOnDetailPages');
+    if (savedHeader !== null) {
+      setHideHeaderOnDetailPages(JSON.parse(savedHeader));
+    }
+
+    const savedSidebar = localStorage.getItem('sidebarCollapsed');
+    if (savedSidebar !== null) {
+      setSidebarCollapsed(JSON.parse(savedSidebar));
     }
   }, []);
 
-  // Save preference to localStorage when it changes
-  const updatePreference = (value: boolean) => {
+  // Save header preference to localStorage when it changes
+  const updateHeaderPreference = (value: boolean) => {
     setHideHeaderOnDetailPages(value);
     localStorage.setItem('hideHeaderOnDetailPages', JSON.stringify(value));
+  };
+
+  // Save sidebar preference to localStorage when it changes
+  const updateSidebarPreference = (value: boolean) => {
+    setSidebarCollapsed(value);
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(value));
   };
 
   return (
     <UIPreferencesContext.Provider
       value={{
         hideHeaderOnDetailPages,
-        setHideHeaderOnDetailPages: updatePreference,
+        setHideHeaderOnDetailPages: updateHeaderPreference,
+        sidebarCollapsed,
+        setSidebarCollapsed: updateSidebarPreference,
       }}
     >
       {children}

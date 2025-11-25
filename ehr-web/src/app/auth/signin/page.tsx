@@ -4,8 +4,12 @@ import { useState, useEffect } from 'react';
 import { signIn, getProviders } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import { Activity, Eye, EyeOff, AlertCircle, Users, FileText } from 'lucide-react';
+import { PublicLanguageSelector } from '@/components/common/public-language-selector';
+import { useTranslation } from 'react-i18next';
+import '@/i18n/client';
 
 export default function SignInPage() {
+  const { t, i18n } = useTranslation('common');
   const searchParams = useSearchParams();
   const [authProvider, setAuthProvider] = useState<string>('loading');
   const [email, setEmail] = useState('');
@@ -14,6 +18,11 @@ export default function SignInPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Initialize i18n
+  useEffect(() => {
+    i18n.changeLanguage(i18n.language);
+  }, [i18n]);
 
   const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
   const errorParam = searchParams?.get('error');
@@ -63,12 +72,12 @@ export default function SignInPage() {
       });
 
       if (result?.error) {
-        setError('Invalid email or password');
+        setError(t('auth.invalid_credentials'));
       } else if (result?.ok) {
         window.location.href = callbackUrl;
       }
     } catch (err) {
-      setError('An error occurred during sign in');
+      setError(t('auth.auth_error'));
       console.error('Sign in error:', err);
     } finally {
       setLoading(false);
@@ -84,7 +93,7 @@ export default function SignInPage() {
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent"></div>
-          <p className="mt-3 text-sm text-gray-500">Loading...</p>
+          <p className="mt-3 text-sm text-gray-500">{t('auth.loading')}</p>
         </div>
       </div>
     );
@@ -98,9 +107,9 @@ export default function SignInPage() {
             <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertCircle className="w-6 h-6 text-red-600" />
             </div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Configuration Error</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('auth.config_error')}</h2>
             <p className="text-sm text-gray-600">
-              Authentication provider is not configured. Please contact your system administrator.
+              {t('auth.config_error_desc')}
             </p>
           </div>
         </div>
@@ -161,15 +170,15 @@ export default function SignInPage() {
                 {/* Stats Row */}
                 <div className="grid grid-cols-3 gap-3">
                   <div className="bg-blue-50 rounded-lg p-2">
-                    <div className="text-xs text-gray-500 mb-1">Patients</div>
+                    <div className="text-xs text-gray-500 mb-1">{t('auth.patients_stat')}</div>
                     <div className="text-lg font-bold text-blue-600">1,234</div>
                   </div>
                   <div className="bg-green-50 rounded-lg p-2">
-                    <div className="text-xs text-gray-500 mb-1">Active</div>
+                    <div className="text-xs text-gray-500 mb-1">{t('auth.active_stat')}</div>
                     <div className="text-lg font-bold text-green-600">856</div>
                   </div>
                   <div className="bg-purple-50 rounded-lg p-2">
-                    <div className="text-xs text-gray-500 mb-1">Today</div>
+                    <div className="text-xs text-gray-500 mb-1">{t('auth.today_stat')}</div>
                     <div className="text-lg font-bold text-purple-600">42</div>
                   </div>
                 </div>
@@ -239,12 +248,11 @@ export default function SignInPage() {
           {/* Text Content */}
           <div className="text-white">
             <h2 className="text-3xl font-bold mb-4">
-              Welcome to EHR Connect
+              {t('auth.welcome_to')}
             </h2>
 
             <p className="text-lg text-blue-100 leading-relaxed mb-8">
-              A modern, FHIR-compliant Electronic Health Records system designed
-              for healthcare professionals to deliver better patient care.
+              {t('auth.modern_ehr')}
             </p>
 
             {/* Feature List */}
@@ -255,7 +263,7 @@ export default function SignInPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="text-sm text-blue-50">FHIR Compliant & HL7 Integration</p>
+                <p className="text-sm text-blue-50">{t('auth.fhir_compliant')}</p>
               </div>
 
               <div className="flex items-center gap-3">
@@ -264,7 +272,7 @@ export default function SignInPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="text-sm text-blue-50">Secure, HIPAA & GDPR Compliant</p>
+                <p className="text-sm text-blue-50">{t('auth.secure_hipaa')}</p>
               </div>
 
               <div className="flex items-center gap-3">
@@ -273,14 +281,14 @@ export default function SignInPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="text-sm text-blue-50">Real-time Sync Across Systems</p>
+                <p className="text-sm text-blue-50">{t('auth.realtime_sync')}</p>
               </div>
             </div>
           </div>
 
           {/* Trust Indicators */}
           <div className="mt-12 pt-8 border-t border-white border-opacity-20">
-            <p className="text-xs text-blue-200 mb-3">Trusted by healthcare organizations</p>
+            <p className="text-xs text-blue-200 mb-3">{t('auth.trusted_by')}</p>
             <div className="flex items-center gap-6">
               <div className="text-xs font-semibold text-white opacity-80">HIPAA</div>
               <div className="text-xs font-semibold text-white opacity-80">HL7 FHIR</div>
@@ -320,6 +328,11 @@ export default function SignInPage() {
         </div>
 
         <div className="mx-auto w-full max-w-md relative z-10">
+          {/* Language Selector - Top Right */}
+          <div className="absolute -top-8 right-0">
+            <PublicLanguageSelector />
+          </div>
+
           {/* Logo - Larger */}
           <div className="mb-10">
             <div className="flex items-center gap-2.5">
@@ -333,10 +346,10 @@ export default function SignInPage() {
           {/* Heading - Larger */}
           <div className="mb-8">
             <h1 className="text-3xl font-semibold text-gray-900 tracking-tight mb-3">
-              Log in to your account
+              {t('auth.log_in_to_account')}
             </h1>
             <p className="text-base text-gray-600">
-              Welcome back! Please enter your details.
+              {t('auth.welcome_back')}
             </p>
           </div>
 
@@ -354,14 +367,14 @@ export default function SignInPage() {
               {/* Email Field */}
               <div>
                 <label htmlFor="email" className="block text-base font-medium text-gray-700 mb-2">
-                  Email
+                  {t('auth.email')}
                 </label>
                 <input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
+                  placeholder={t('auth.enter_email')}
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-sm"
                 />
@@ -370,7 +383,7 @@ export default function SignInPage() {
               {/* Password Field */}
               <div>
                 <label htmlFor="password" className="block text-base font-medium text-gray-700 mb-2">
-                  Password
+                  {t('auth.password')}
                 </label>
                 <div className="relative">
                   <input
@@ -378,7 +391,7 @@ export default function SignInPage() {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
+                    placeholder={t('auth.enter_password')}
                     required
                     className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-sm"
                   />
@@ -405,13 +418,13 @@ export default function SignInPage() {
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
                   />
-                  <span className="text-base text-gray-700">Remember for 30 days</span>
+                  <span className="text-base text-gray-700">{t('auth.remember_for_30_days')}</span>
                 </label>
                 <a
                   href="/auth/forgot-password"
                   className="text-base font-medium text-blue-600 hover:text-blue-700 transition-colors"
                 >
-                  Forgot password?
+                  {t('auth.forgot_password')}
                 </a>
               </div>
 
@@ -421,7 +434,7 @@ export default function SignInPage() {
                 disabled={loading}
                 className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-md hover:shadow-lg"
               >
-                {loading ? 'Signing in...' : 'Sign in'}
+                {loading ? t('auth.signing_in') : t('auth.sign_in')}
               </button>
             </form>
           )}
@@ -433,10 +446,10 @@ export default function SignInPage() {
                 onClick={handleKeycloakSignIn}
                 className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 rounded-lg transition-all text-base shadow-md hover:shadow-lg"
               >
-                Sign in with Keycloak
+                {t('auth.sign_in_with_keycloak')}
               </button>
               <p className="text-center text-sm text-gray-500">
-                You will be redirected to Keycloak for authentication
+                {t('auth.keycloak_redirect')}
               </p>
             </div>
           )}
@@ -444,25 +457,25 @@ export default function SignInPage() {
           {/* Sign Up Link - Microsoft Style */}
           <div className="mt-8 text-center">
             <p className="text-base text-gray-600">
-              Don't have an account?{' '}
+              {t('auth.dont_have_account')}{' '}
               <a
                 href="/register"
                 className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
               >
-                Sign up
+                {t('auth.sign_up')}
               </a>
             </p>
           </div>
 
           {/* Footer Text */}
           <p className="mt-8 text-sm text-center text-gray-500">
-            By continuing, you agree to our{' '}
+            {t('auth.by_continuing')}{' '}
             <a href="/terms" className="text-gray-700 hover:text-gray-900 underline">
-              Terms of Service
+              {t('auth.terms_of_service')}
             </a>{' '}
-            and{' '}
+            {t('auth.and')}{' '}
             <a href="/privacy" className="text-gray-700 hover:text-gray-900 underline">
-              Privacy Policy
+              {t('auth.privacy_policy')}
             </a>
             .
           </p>

@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import acceptLanguage from 'accept-language';
+import { cookieName, fallbackLng, languages } from './i18n/settings';
+
+acceptLanguage.languages(languages);
 
 // Paths that don't require org validation
 const PUBLIC_PATHS = [
@@ -121,6 +125,23 @@ export async function middleware(request: NextRequest) {
   const tokenPermissions = token.permissions as string[] | undefined;
   if (tokenPermissions) {
     response.headers.set('x-user-permissions', JSON.stringify(tokenPermissions));
+  }
+
+  // Language detection
+  let lng;
+  if (request.cookies.has(cookieName)) {
+    lng = acceptLanguage.get(request.cookies.get(cookieName)?.value);
+  }
+  if (!lng) {
+    lng = acceptLanguage.get(request.headers.get('Accept-Language'));
+  }
+  if (!lng) {
+    lng = fallbackLng;
+  }
+
+  // Set language cookie if missing or different
+  if (!request.cookies.has(cookieName)) {
+    response.cookies.set(cookieName, lng);
   }
 
   return response;
