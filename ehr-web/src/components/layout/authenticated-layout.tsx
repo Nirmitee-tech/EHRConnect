@@ -8,22 +8,50 @@ import { HealthcareHeader } from './healthcare-header';
 import { UserProfile } from './user-profile';
 import { TabProvider } from '@/contexts/tab-context';
 import { TabBar } from './tab-bar';
+import { cn } from '@/lib/utils';
+import { NotificationProvider } from '@/contexts/notification-context';
+import { UIPreferencesProvider } from '@/contexts/ui-preferences-context';
+
+const MAIN_CONTENT_PADDING = {
+  default: 'p-6',
+  overrides: [
+    { prefix: '/appointments', padding: 'p-0' },
+    { prefix: '/patient-flow', padding: 'p-0' },
+    { prefix: '/apga', padding: 'p-0' },
+    { prefix: '/feature', padding: 'p-0' },
+    { prefix: '/reports', padding: 'p-0' },
+    { prefix: '/patients/', padding: 'p-0' },
+    { prefix: '/forms', padding: 'p-0' }
+  ]
+} as const;
 
 export function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
 
   // Routes that should not show the sidebar
-  const noSidebarRoutes = ['/onboarding', '/register', '/accept-invitation'];
+  const noSidebarRoutes = ['/onboarding', '/register', '/accept-invitation', '/widget', '/patient-login', '/patient-register', '/portal', '/meeting'];
   const shouldShowSidebar = !noSidebarRoutes.some(route => pathname?.startsWith(route));
+  const mainContentPaddingClass =
+    MAIN_CONTENT_PADDING.overrides.find(({ prefix }) => pathname?.startsWith(prefix))?.padding ??
+    MAIN_CONTENT_PADDING.default;
 
   // Show loading state
   if (status === 'loading') {
+    // For routes that should have no layout (widget, patient pages, meetings, forms fill), show minimal loading
+    if (pathname?.startsWith('/widget') || pathname?.startsWith('/patient-login') || pathname?.startsWith('/patient-register') || pathname?.startsWith('/meeting') || pathname?.startsWith('/forms/fill')) {
+      return <>{children}</>;
+    }
     return <LoadingState message="Loading..." />;
   }
 
   // Show login screen if not authenticated
   if (status === 'unauthenticated' || !session) {
+    // For routes that should have no layout (widget, patient pages, meetings, forms fill), render without any header/layout
+    if (pathname?.startsWith('/widget') || pathname?.startsWith('/patient-login') || pathname?.startsWith('/patient-register') || pathname?.startsWith('/meeting') || pathname?.startsWith('/forms/fill')) {
+      return <>{children}</>;
+    }
+
     return (
       <div className="flex h-screen bg-gray-50">
         <div className="flex-1 flex flex-col">
@@ -59,25 +87,29 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
 
   // Show full layout WITH sidebar when authenticated
   return (
-    <TabProvider>
-      <div className="flex h-screen bg-gray-50">
-        {/* Sidebar */}
-        <HealthcareSidebar />
+    <NotificationProvider>
+      <UIPreferencesProvider>
+        <TabProvider>
+          <div className="flex h-screen bg-gray-50">
+            {/* Sidebar */}
+            <HealthcareSidebar />
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
-          <HealthcareHeader />
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Header */}
+              <HealthcareHeader />
 
-          {/* Tab Bar */}
-          <TabBar />
+              {/* Tab Bar */}
+              <TabBar />
 
-          {/* Main Content */}
-          <main className="flex-1 overflow-auto bg-gray-50 p-6">
-            {children}
-          </main>
-        </div>
-      </div>
-    </TabProvider>
+              {/* Main Content */}
+              <main className={cn('flex-1 overflow-auto bg-gray-50', mainContentPaddingClass)}>
+                {children}
+              </main>
+            </div>
+          </div>
+        </TabProvider>
+      </UIPreferencesProvider>
+    </NotificationProvider>
   );
 }

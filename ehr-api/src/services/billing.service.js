@@ -82,9 +82,86 @@ class BillingService {
    */
   async submitPriorAuthorization(orgId, authData, userId) {
     try {
+      // Basic validation
+      const errors = [];
+      if (!authData.patientId) errors.push('patientId is required');
+      if (!authData.payerId) errors.push('payerId is required');
+      if (!authData.providerNPI || String(authData.providerNPI).replace(/\D/g, '').length !== 10) {
+        errors.push('providerNPI must be a 10-digit NPI');
+      }
+      if (!Array.isArray(authData.cptCodes) || authData.cptCodes.length === 0) {
+        errors.push('At least one CPT code is required');
+      }
+      if (!Array.isArray(authData.icdCodes) || authData.icdCodes.length === 0) {
+        errors.push('At least one ICD code is required');
+      }
+      if (errors.length) {
+        const err = new Error(errors.join('; '));
+        err.status = 400;
+        throw err;
+      }
+
+      // Resolve payer DB ID (accepts payer_id string or UUID)
+      const payerResult = await db.query(
+        `SELECT id, payer_id, name, requires_prior_auth
+         FROM billing_payers
+         WHERE payer_id = $1 OR id::text = $1
+         LIMIT 1`,
+        [authData.payerId]
+      );
+      if (payerResult.rows.length === 0) {
+        const err = new Error('Payer not found');
+        err.status = 400;
+        throw err;
+      }
+      const payerDbId = payerResult.rows[0].id;
+
+      // Duplicate guard: same patient/payer with overlapping CPTs in last 30 days
+      if (!authData.ignoreDuplicate) {
+        const dupResult = await db.query(
+          `SELECT auth_number, requested_date, status
+           FROM billing_prior_authorizations
+           WHERE org_id = $1
+             AND patient_id = $2
+             AND payer_id = $3
+             AND status IN ('pending', 'approved')
+             AND requested_date >= NOW() - INTERVAL '30 days'
+             AND cpt_codes && $4::text[]
+           LIMIT 1`,
+          [orgId, authData.patientId, payerDbId, authData.cptCodes]
+        );
+        if (dupResult.rows.length > 0) {
+          const err = new Error(
+            `Similar prior auth exists (${dupResult.rows[0].auth_number || dupResult.rows[0].status}) requested on ${dupResult.rows[0].requested_date.toISOString().split('T')[0]}`
+          );
+          err.status = 409;
+          throw err;
+        }
+      }
+
+      // Simple readiness scoring
+      let readinessScore = 0;
+      const readinessNotes = [];
+      if (authData.cptCodes?.length) readinessScore += 1;
+      else readinessNotes.push('Missing CPT');
+      if (authData.icdCodes?.length) readinessScore += 1;
+      else readinessNotes.push('Missing ICD');
+      if (String(authData.providerNPI).replace(/\D/g, '').length === 10) readinessScore += 1;
+      else readinessNotes.push('NPI not 10 digits');
+      if (authData.notes && authData.notes.length >= 10) readinessScore += 1;
+      else readinessNotes.push('Add clinical note for justification');
+      if (authData.units && authData.units > 0) readinessScore += 1;
+      else readinessNotes.push('Units missing');
+
+      const readinessPassed = readinessScore >= 4;
+
       const result = await claimMDService.submitPriorAuthorization(orgId, {
         ...authData,
+        payerDbId,
         requestedBy: userId,
+        readinessScore,
+        readinessPassed,
+        readinessNotes: readinessNotes.join('; '),
       });
 
       return {

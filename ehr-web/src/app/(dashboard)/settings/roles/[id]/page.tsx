@@ -10,9 +10,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export default function RoleEditorPage() {
   const router = useRouter()
-  const params = useParams()
+  const params = useParams<{ id?: string }>()
   const { data: session } = useSession()
-  const roleId = params.id as string
+  const roleId = params?.id ?? 'new'
 
   const [role, setRole] = useState<Role | null>(null)
   const [loading, setLoading] = useState(true)

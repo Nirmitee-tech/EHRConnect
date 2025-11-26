@@ -3,6 +3,9 @@ export type AppointmentStatus = 'scheduled' | 'in-progress' | 'completed' | 'can
 // Types of all-day events
 export type AllDayEventType = 'appointment' | 'leave' | 'vacation' | 'holiday' | 'conference' | 'training' | 'other';
 
+// Appointment mode/type
+export type AppointmentMode = 'in-person' | 'video-call' | 'voice-call' | 'other';
+
 export interface Appointment {
   id: string;
   patientId?: string;
@@ -28,6 +31,19 @@ export interface Appointment {
   encounterId?: string; // ID of active encounter if one exists
   patientAge?: string; // Patient age for display
   patientPhone?: string; // Patient phone for display
+  mode?: AppointmentMode; // Appointment mode (in-person, video-call, voice-call, other)
+
+  // Recurring appointment fields
+  isRecurring?: boolean;
+  recurrenceInterval?: number; // e.g., 1, 2, 3
+  recurrencePeriod?: 'day' | 'week' | 'month' | 'year';
+  recurrenceDays?: number[]; // [0,1,2,3,4,5,6] for days of week
+  recurrenceEndDate?: string;
+
+  // Additional details
+  chiefComplaint?: string;
+  selectedForms?: string[]; // Array of form IDs to send
+  isEmergency?: boolean;
 }
 
 export interface AppointmentStats {
@@ -38,7 +54,7 @@ export interface AppointmentStats {
   cancelled: number;
 }
 
-export type CalendarView = 'day' | 'week' | 'month';
+export type CalendarView = 'day' | 'week' | 'month' | 'dashboard' | 'list' | 'multi-provider';
 
 export interface CalendarSlot {
   time: Date;

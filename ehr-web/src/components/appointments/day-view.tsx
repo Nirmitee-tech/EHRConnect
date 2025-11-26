@@ -10,7 +10,7 @@ interface DayViewProps {
   appointments: Appointment[];
   onAppointmentClick?: (appointment: Appointment) => void;
   onAppointmentDrop?: (appointment: Appointment, newDate: Date, newHour: number) => void;
-  onCreateAppointment?: (date: Date, startHour: number, endHour: number) => void;
+  onCreateAppointment?: (date: Date, startTime: Date, endTime: Date) => void;
   onAppointmentResize?: (appointment: Appointment, newStartTime: Date, newEndTime: Date) => void;
 }
 
@@ -293,9 +293,17 @@ export function DayView({
   const handleMouseUp = () => {
     if (isCreating && createStart !== null && createEnd !== null) {
       const startHour = Math.min(createStart, createEnd);
-      const endHour = Math.max(createStart, createEnd) + 1;
+      const endHour = Math.max(createStart, createEnd);
 
-      onCreateAppointment?.(currentDate, startHour, endHour);
+      // Create proper Date objects with exact time
+      const startTime = new Date(currentDate);
+      startTime.setHours(startHour, 0, 0, 0);
+
+      const endTime = new Date(currentDate);
+      // If single click (start === end), add 1 hour, otherwise add 1 to include end hour
+      endTime.setHours(startHour === endHour ? endHour + 1 : endHour + 1, 0, 0, 0);
+
+      onCreateAppointment?.(currentDate, startTime, endTime);
     }
 
     setIsCreating(false);

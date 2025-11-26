@@ -1,0 +1,102 @@
+{
+  "resourceType": "Questionnaire",
+  "id": "general-intake",
+  "name": "General Intake Form",
+  "title": "Patient Intake - General Care",
+  "status": "active",
+  "version": "1.0.0",
+  "description": "Standard intake form for general primary care",
+  "item": [
+    {
+      "linkId": "demographics",
+      "text": "Demographics",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "demographics.name",
+          "text": "Full Name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "linkId": "demographics.dob",
+          "text": "Date of Birth",
+          "type": "date",
+          "required": true
+        },
+        {
+          "linkId": "demographics.gender",
+          "text": "Gender",
+          "type": "choice",
+          "required": true,
+          "answerOption": [
+            {"valueString": "male"},
+            {"valueString": "female"},
+            {"valueString": "other"}
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "chief-complaint",
+      "text": "Chief Complaint",
+      "type": "text",
+      "required": true
+    },
+    {
+      "linkId": "medical-history",
+      "text": "Medical History",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "medical-history.conditions",
+          "text": "Current Medical Conditions",
+          "type": "text",
+          "required": false
+        },
+        {
+          "linkId": "medical-history.medications",
+          "text": "Current Medications",
+          "type": "text",
+          "required": false
+        },
+        {
+          "linkId": "medical-history.allergies",
+          "text": "Known Allergies",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "linkId": "social-history",
+      "text": "Social History",
+      "type": "group",
+      "item": [
+        {
+          "linkId": "social-history.smoking",
+          "text": "Smoking Status",
+          "type": "choice",
+          "required": false,
+          "answerOption": [
+            {"valueString": "never"},
+            {"valueString": "former"},
+            {"valueString": "current"}
+          ]
+        },
+        {
+          "linkId": "social-history.alcohol",
+          "text": "Alcohol Use",
+          "type": "choice",
+          "required": false,
+          "answerOption": [
+            {"valueString": "none"},
+            {"valueString": "occasional"},
+            {"valueString": "moderate"},
+            {"valueString": "heavy"}
+          ]
+        }
+      ]
+    }
+  ]
+}

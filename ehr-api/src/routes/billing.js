@@ -353,7 +353,7 @@ router.post('/prior-auth/submit', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Prior auth submission error:', error);
-    res.status(500).json({
+    res.status(error.status || 500).json({
       error: 'Prior authorization submission failed',
       message: error.message,
     });

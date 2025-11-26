@@ -165,6 +165,7 @@ class ClaimMDService {
       patientId,
       encounterId,
       payerId,
+      payerDbId,
       providerNPI,
       cptCodes,
       icdCodes,
@@ -172,6 +173,9 @@ class ClaimMDService {
       serviceLocation,
       notes,
       requestedBy,
+      readinessScore = 0,
+      readinessPassed = false,
+      readinessNotes = '',
     } = authRequest;
 
     try {
@@ -194,22 +198,28 @@ class ClaimMDService {
       const response = await this.makeRequest(orgId, '/prior-auth/submit', 'POST', payload);
 
       // Store prior auth in database
-      const payer = await db.query('SELECT id FROM billing_payers WHERE payer_id = $1', [payerId]);
-      const payerDbId = payer.rows[0]?.id;
+      let payerDb = payerDbId;
+      if (!payerDb) {
+        const payer = await db.query(
+          'SELECT id FROM billing_payers WHERE payer_id = $1 OR id::text = $1 LIMIT 1',
+          [payerId]
+        );
+        payerDb = payer.rows[0]?.id;
+      }
 
       const result = await db.query(
         `INSERT INTO billing_prior_authorizations
          (auth_number, org_id, patient_id, encounter_id, payer_id, provider_npi,
-          cpt_codes, icd_codes, units, service_location, status, requested_date,
-          request_payload, response_payload, requested_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+          cpt_codes, icd_codes, units, service_location, status, requested_date, readiness_score,
+          readiness_passed, readiness_notes, request_payload, response_payload, requested_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
          RETURNING id, auth_number`,
         [
           response.authorizationNumber,
           orgId,
           patientId,
           encounterId,
-          payerDbId,
+          payerDb,
           providerNPI,
           cptCodes,
           icdCodes,
@@ -217,6 +227,9 @@ class ClaimMDService {
           serviceLocation,
           response.status || 'pending',
           new Date(),
+          readinessScore,
+          readinessPassed,
+          readinessNotes,
           JSON.stringify(payload),
           JSON.stringify(response),
           requestedBy,

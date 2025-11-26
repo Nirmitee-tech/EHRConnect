@@ -1,36 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  Building2,
-  User,
-  MapPin,
-  Shield,
-  CheckCircle2,
-  ArrowRight,
-  ArrowLeft,
-  Mail,
-  Phone,
-  Lock,
-  Globe,
-  Sparkles,
-  Check,
-  AlertCircle,
-  Zap,
-  Star
-} from 'lucide-react';
+import { Activity, Building2, User, Mail, Lock, Eye, EyeOff, Phone, MapPin, Check, AlertCircle, ArrowRight, Upload, X, Sparkles, Heart, Brain, Baby, Bone, Stethoscope } from 'lucide-react';
+import Image from 'next/image';
+import { PublicLanguageSelector } from '@/components/common/public-language-selector';
+import { useTranslation } from 'react-i18next';
+import '@/i18n/client';
 
 interface FormData {
+  org_type: string;
   org_name: string;
-  owner_email: string;
-  owner_name: string;
-  owner_password: string;
-  confirm_password: string;
   legal_name: string;
+  owner_name: string;
+  owner_email: string;
+  owner_password: string;
   contact_phone: string;
   address: {
     line1: string;
@@ -41,123 +24,78 @@ interface FormData {
     country: string;
   };
   timezone: string;
+  specialties: string[];
+  custom_services: string[];
+  logo_file: File | null;
+  logo_preview: string;
   terms_accepted: boolean;
   baa_accepted: boolean;
 }
 
-type StepId = 'organization' | 'owner' | 'address' | 'legal';
-
-interface Step {
-  id: StepId;
-  title: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
-const steps: Step[] = [
-  {
-    id: 'organization',
-    title: 'Organization',
-    description: 'Tell us about your healthcare organization',
-    icon: Building2
-  },
-  {
-    id: 'owner',
-    title: 'Your Account',
-    description: 'Create your admin credentials',
-    icon: User
-  },
-  {
-    id: 'address',
-    title: 'Location',
-    description: 'Where is your organization based?',
-    icon: MapPin
-  },
-  {
-    id: 'legal',
-    title: 'Compliance',
-    description: 'Review and accept legal agreements',
-    icon: Shield
-  },
+const ORG_TYPES = [
+  { value: 'hospital', label: 'Hospital', icon: Building2, description: 'Inpatient and emergency care facility' },
+  { value: 'clinic', label: 'Clinic', icon: Stethoscope, description: 'Outpatient medical services' },
+  { value: 'diagnostic_center', label: 'Diagnostic Center', icon: Activity, description: 'Imaging and lab services' },
+  { value: 'pharmacy', label: 'Pharmacy', icon: Heart, description: 'Medication dispensing and counseling' },
+  { value: 'nursing_home', label: 'Nursing Home', icon: User, description: 'Long-term care facility' },
+  { value: 'lab', label: 'Laboratory', icon: Brain, description: 'Medical testing and analysis' },
 ];
 
-// Input Component with Validation - Moved outside to prevent re-creation
-interface InputValidationProps {
-  label: string;
-  name: string;
-  icon?: React.ComponentType<{ className?: string }>;
-  type?: string;
-  required?: boolean;
-  placeholder?: string;
-  minLength?: number;
-  value: string;
-  hasError: boolean;
-  isValid: boolean;
-  errorMessage?: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
-}
-
-const InputWithValidation: React.FC<InputValidationProps> = ({
-  label,
-  name,
-  icon: Icon,
-  value,
-  hasError,
-  isValid,
-  errorMessage,
-  onChange,
-  onBlur,
-  ...props
-}) => {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={name} className="text-sm font-medium text-slate-700 flex items-center gap-2">
-        {Icon && <Icon className="w-4 h-4 text-[#667eea]" />}
-        {label}
-      </Label>
-      <div className="relative">
-        <Input
-          id={name}
-          value={value}
-          onChange={onChange}
-          onBlur={onBlur}
-          className={`
-            text-sm transition-all duration-200 border-2
-            ${hasError
-              ? 'border-red-300 focus:border-red-400 focus:ring-red-100 bg-red-50/50'
-              : isValid
-              ? 'border-emerald-300 focus:border-emerald-400 focus:ring-emerald-100 bg-emerald-50/30'
-              : 'border-slate-200 focus:border-[#667eea] focus:ring-2 focus:ring-[#667eea]/10 bg-white hover:border-slate-300'
-            }
-          `}
-          {...props}
-        />
-        {hasError && (
-          <AlertCircle className="w-4 h-4 text-red-400 absolute right-3 top-1/2 -translate-y-1/2" />
-        )}
-        {isValid && (
-          <Check className="w-4 h-4 text-emerald-500 absolute right-3 top-1/2 -translate-y-1/2" />
-        )}
-      </div>
-      {hasError && errorMessage && (
-        <p className="text-xs text-red-500 flex items-center gap-1">
-          {errorMessage}
-        </p>
-      )}
-    </div>
-  );
+const SPECIALTIES: Record<string, Array<{ value: string; label: string; icon: any }>> = {
+  hospital: [
+    { value: 'general_practice', label: 'General Medicine', icon: Stethoscope },
+    { value: 'emergency_medicine', label: 'Emergency Medicine', icon: AlertCircle },
+    { value: 'surgery', label: 'Surgery', icon: Activity },
+    { value: 'pediatrics', label: 'Pediatrics', icon: Baby },
+    { value: 'cardiology', label: 'Cardiology', icon: Heart },
+    { value: 'orthopedics', label: 'Orthopedics', icon: Bone },
+    { value: 'neurology', label: 'Neurology', icon: Brain },
+    { value: 'obstetrics', label: 'Obstetrics & Gynecology', icon: User },
+  ],
+  clinic: [
+    { value: 'general_practice', label: 'General Practice', icon: Stethoscope },
+    { value: 'family_medicine', label: 'Family Medicine', icon: User },
+    { value: 'pediatrics', label: 'Pediatrics', icon: Baby },
+    { value: 'internal_medicine', label: 'Internal Medicine', icon: Activity },
+    { value: 'dermatology', label: 'Dermatology', icon: Heart },
+    { value: 'ophthalmology', label: 'Ophthalmology', icon: AlertCircle },
+  ],
+  diagnostic_center: [
+    { value: 'radiology', label: 'Radiology (X-Ray, CT, MRI)', icon: Activity },
+    { value: 'ultrasound', label: 'Ultrasound', icon: Stethoscope },
+    { value: 'pathology', label: 'Pathology', icon: Brain },
+    { value: 'cardiology', label: 'Cardiac Imaging (Echo, ECG)', icon: Heart },
+  ],
+  pharmacy: [
+    { value: 'retail_pharmacy', label: 'Retail Pharmacy', icon: Stethoscope },
+    { value: 'clinical_pharmacy', label: 'Clinical Pharmacy', icon: Activity },
+    { value: 'compounding', label: 'Compounding', icon: Brain },
+    { value: 'specialty_pharmacy', label: 'Specialty Pharmacy', icon: Heart },
+  ],
+  nursing_home: [
+    { value: 'geriatric_care', label: 'Geriatric Care', icon: User },
+    { value: 'rehabilitation', label: 'Rehabilitation', icon: Activity },
+    { value: 'palliative_care', label: 'Palliative Care', icon: Heart },
+    { value: 'memory_care', label: 'Memory Care', icon: Brain },
+  ],
+  lab: [
+    { value: 'clinical_pathology', label: 'Clinical Pathology', icon: Activity },
+    { value: 'molecular_diagnostics', label: 'Molecular Diagnostics', icon: Brain },
+    { value: 'microbiology', label: 'Microbiology', icon: Stethoscope },
+    { value: 'hematology', label: 'Hematology', icon: Heart },
+  ],
 };
 
 export default function RegisterPage() {
-  const [currentStep, setCurrentStep] = useState(0);
+  const { t } = useTranslation('common');
+  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
+    org_type: '',
     org_name: '',
-    owner_email: '',
-    owner_name: '',
-    owner_password: '',
-    confirm_password: '',
     legal_name: '',
+    owner_name: '',
+    owner_email: '',
+    owner_password: '',
     contact_phone: '',
     address: {
       line1: '',
@@ -165,172 +103,150 @@ export default function RegisterPage() {
       city: '',
       state: '',
       postal_code: '',
-      country: 'India',
+      country: 'USA',
     },
-    timezone: 'Asia/Kolkata',
+    timezone: 'America/New_York',
+    specialties: [],
+    custom_services: [],
+    logo_file: null,
+    logo_preview: '',
     terms_accepted: false,
     baa_accepted: false,
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [customServiceInput, setCustomServiceInput] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
-  // Real-time validation
-  const validateField = (name: string, value: string, data: FormData = formData): string => {
-    switch (name) {
-      case 'owner_email':
-        return !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value
-          ? 'Please enter a valid email address'
-          : '';
-      case 'owner_password':
-        if (value.length > 0 && value.length < 8) return 'Password must be at least 8 characters';
-        if (value.length > 0 && !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(value))
-          return 'Include uppercase, lowercase, and numbers';
-        return '';
-      case 'confirm_password':
-        return value && value !== data.owner_password
-          ? 'Passwords do not match'
-          : '';
-      case 'contact_phone':
-        return value && !/^[\d\s\+\-()]+$/.test(value)
-          ? 'Please enter a valid phone number'
-          : '';
-      case 'org_name':
-        return value && value.length < 3
-          ? 'Organization name must be at least 3 characters'
-          : '';
-      default:
-        return '';
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    if (name.startsWith('address.')) {
+      const addressField = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        address: { ...prev.address, [addressField]: value }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
     }
   };
 
-  const handleFieldChange = (name: string, value: string) => {
-    setFormData(prev => {
-      let updated: FormData;
-
-      if (name.startsWith('address.')) {
-        const [, child] = name.split('.') as [string, keyof FormData['address']];
-        updated = {
-          ...prev,
-          address: { ...prev.address, [child]: value }
-        };
-      } else {
-        updated = { ...prev, [name as keyof FormData]: value } as FormData;
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        setError(t('register.logo_size_error'));
+        return;
       }
-
-      if (touchedFields[name]) {
-        const error = validateField(name, value, updated);
-        setFieldErrors(prevErrors => ({ ...prevErrors, [name]: error }));
-      }
-
-      if (name === 'owner_password' && touchedFields.confirm_password) {
-        const confirmError = validateField('confirm_password', updated.confirm_password, updated);
-        setFieldErrors(prevErrors => ({ ...prevErrors, confirm_password: confirmError }));
-      }
-
-      return updated;
-    });
-  };
-
-  const handleFieldBlur = (name: string, value: string) => {
-    const updatedTouched = { ...touchedFields, [name]: true };
-    setTouchedFields(updatedTouched);
-
-    const currentData = name.startsWith('address.')
-      ? {
-          ...formData,
-          address: {
-            ...formData.address,
-            [name.split('.')[1] as keyof FormData['address']]: value
-          }
-        }
-      : ({ ...formData, [name as keyof FormData]: value } as FormData);
-
-    const error = validateField(name, value, currentData);
-    setFieldErrors(prev => ({ ...prev, [name]: error }));
-
-    if (name === 'owner_password' && updatedTouched.confirm_password) {
-      const confirmError = validateField('confirm_password', currentData.confirm_password, currentData);
-      setFieldErrors(prev => ({ ...prev, confirm_password: confirmError }));
-    }
-  };
-
-  const isStepValid = (stepIndex: number): boolean => {
-    switch (stepIndex) {
-      case 0: // Organization
-        return !!(formData.org_name && formData.contact_phone && formData.timezone);
-      case 1: // Owner
-        return !!(
-          formData.owner_name &&
-          formData.owner_email &&
-          formData.owner_password &&
-          formData.confirm_password &&
-          formData.owner_password === formData.confirm_password &&
-          !fieldErrors.owner_email &&
-          !fieldErrors.owner_password
-        );
-      case 2: // Address
-        return true; // Optional
-      case 3: // Legal
-        return formData.terms_accepted && formData.baa_accepted;
-      default:
-        return false;
-    }
-  };
-
-  const handleNext = () => {
-    if (currentStep < steps.length - 1 && isStepValid(currentStep)) {
-      setCurrentStep(prev => prev + 1);
+      setFormData(prev => ({
+        ...prev,
+        logo_file: file,
+        logo_preview: URL.createObjectURL(file)
+      }));
       setError('');
     }
   };
 
-  const handleBack = () => {
-    if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
-      setError('');
+  const handleRemoveLogo = () => {
+    if (formData.logo_preview) {
+      URL.revokeObjectURL(formData.logo_preview);
     }
+    setFormData(prev => ({
+      ...prev,
+      logo_file: null,
+      logo_preview: ''
+    }));
+  };
+
+  const toggleSpecialty = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      specialties: prev.specialties.includes(value)
+        ? prev.specialties.filter(s => s !== value)
+        : [...prev.specialties, value]
+    }));
+  };
+
+  const addCustomService = () => {
+    if (customServiceInput.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        custom_services: [...prev.custom_services, customServiceInput.trim()]
+      }));
+      setCustomServiceInput('');
+    }
+  };
+
+  const removeCustomService = (service: string) => {
+    setFormData(prev => ({
+      ...prev,
+      custom_services: prev.custom_services.filter(s => s !== service)
+    }));
+  };
+
+  const nextStep = () => {
+    if (step < 5) setStep(step + 1);
+  };
+
+  const prevStep = () => {
+    if (step > 1) setStep(step - 1);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!isStepValid(currentStep)) {
-      setError('Please complete all required fields correctly');
-      return;
-    }
-
     setLoading(true);
     setError('');
 
     try {
-      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/api/orgs', {
+      const slug = formData.org_name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+
+      // For now, we'll store logo as base64 in metadata
+      // In production, you'd upload to S3/Cloudinary
+      let logoDataUrl = '';
+      if (formData.logo_file) {
+        logoDataUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(formData.logo_file!);
+        });
+      }
+
+      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          org_name: formData.org_name,
-          owner_email: formData.owner_email,
-          owner_name: formData.owner_name,
-          owner_password: formData.owner_password,
-          legal_name: formData.legal_name || formData.org_name,
-          contact_phone: formData.contact_phone,
-          address: formData.address,
-          timezone: formData.timezone,
-          terms_accepted: formData.terms_accepted,
-          baa_accepted: formData.baa_accepted,
+          email: formData.owner_email,
+          password: formData.owner_password,
+          name: formData.owner_name,
+          organization: {
+            name: formData.org_name,
+            slug: slug,
+            legal_name: formData.legal_name || formData.org_name,
+            org_type: formData.org_type,
+            contact_phone: formData.contact_phone,
+            address: formData.address,
+            timezone: formData.timezone,
+            specialties: [...formData.specialties, ...formData.custom_services],
+            logo_url: logoDataUrl,
+            terms_accepted: formData.terms_accepted,
+            baa_accepted: formData.baa_accepted,
+          },
         }),
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Registration failed');
+        throw new Error(data.error || t('register.error_message'));
       }
 
-      const result = await response.json();
-
-      // Show success and redirect
-      window.location.href = '/onboarding?registered=true&slug=' + result.organization.slug;
+      alert(t('register.success_message', { orgType: getOrgTypeLabel().toLowerCase() }));
+      window.location.href = '/auth/signin';
     } catch (err) {
       const error = err as Error;
       setError(error.message);
@@ -339,639 +255,887 @@ export default function RegisterPage() {
     }
   };
 
-  // Helper function to render input fields using the outer InputWithValidation component
-  const renderInput = (
-    label: string,
-    name: string,
-    icon?: React.ComponentType<{ className?: string }>,
-    props?: { type?: string; required?: boolean; placeholder?: string; minLength?: number }
-  ) => {
-    const value = name.includes('.')
-      ? formData.address[name.split('.')[1] as keyof typeof formData.address]
-      : formData[name as keyof FormData];
-    const hasError = !!(touchedFields[name] && fieldErrors[name]);
-    const isValid = !!(touchedFields[name] && !fieldErrors[name] && value);
+  const steps = [
+    { number: 1, title: 'Organization Type', icon: Building2 },
+    { number: 2, title: 'Details', icon: Stethoscope },
+    { number: 3, title: 'Services', icon: Activity },
+    { number: 4, title: 'Your Account', icon: User },
+    { number: 5, title: 'Location', icon: MapPin },
+  ];
 
-    return (
-      <InputWithValidation
-        label={label}
-        name={name}
-        icon={icon}
-        value={value as string}
-        hasError={hasError}
-        isValid={isValid}
-        errorMessage={fieldErrors[name]}
-        onChange={(e) => handleFieldChange(name, e.target.value)}
-        onBlur={(e) => handleFieldBlur(name, e.target.value)}
-        {...props}
-      />
-    );
+  const getOrgTypeLabel = () => {
+    const orgType = ORG_TYPES.find(t => t.value === formData.org_type);
+    return orgType?.label || 'Organization';
   };
 
-  // Vertical Stepper Component
-  const VerticalStepper = () => (
-    <div className="space-y-1">
-      {steps.map((step, index) => {
-        const Icon = step.icon;
-        const isActive = index === currentStep;
-        const isCompleted = index < currentStep;
-
-        return (
-          <div key={step.id} className="relative">
-            <div className={`
-              flex items-center gap-4 p-4 rounded-xl transition-all duration-300 cursor-pointer
-              ${isActive
-                ? 'bg-gradient-to-r from-violet-50 to-purple-50 border-2 border-violet-300 shadow-md'
-                : isCompleted
-                ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200'
-                : 'bg-white border-2 border-slate-200 hover:border-slate-300'
-              }
-            `}>
-              <div className={`
-                w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300
-                ${isActive
-                  ? 'bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-300'
-                  : isCompleted
-                  ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md'
-                  : 'bg-slate-100 text-slate-400'
-                }
-              `}>
-                {isCompleted ? (
-                  <CheckCircle2 className="w-6 h-6" />
-                ) : (
-                  <Icon className="w-6 h-6" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className={`
-                  text-base font-bold transition-colors truncate
-                  ${isActive ? 'text-violet-700' : isCompleted ? 'text-emerald-700' : 'text-slate-500'}
-                `}>
-                  {step.title}
-                </h3>
-                <p className={`
-                  text-xs transition-colors truncate
-                  ${isActive ? 'text-violet-600' : isCompleted ? 'text-emerald-600' : 'text-slate-400'}
-                `}>
-                  {step.description}
-                </p>
-              </div>
-            </div>
-            {index < steps.length - 1 && (
-              <div className="ml-6 h-4 w-0.5 bg-gradient-to-b from-slate-200 to-transparent"></div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-
-  // Modern Summary Card
-  const LivePreview = () => {
-    const getInitials = (name: string) => {
-      if (!name) return '';
-      return name
-        .split(' ')
-        .map(n => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
-    };
-
-    const formatAddress = () => {
-      const parts = [
-        formData.address.line1,
-        formData.address.city,
-        formData.address.state,
-        formData.address.postal_code
-      ].filter(Boolean);
-      return parts.join(', ');
-    };
-
-    return (
-      <div className="space-y-4">
-        {/* Modern Business Card */}
-        <div className="relative group">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
-          <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden">
-            {/* Header with gradient */}
-            <div className="h-32 bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600 relative overflow-hidden">
-              <div className="absolute inset-0 bg-grid-white/[0.05] bg-[length:20px_20px]"></div>
-              <div className="absolute top-4 right-4">
-                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                  <Sparkles className="w-3.5 h-3.5 text-white" />
-                  <span className="text-xs font-semibold text-white">Enterprise</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Logo Badge - Overlapping */}
-            <div className="px-6 -mt-12">
-              <div className={`
-                w-24 h-24 rounded-2xl flex items-center justify-center text-3xl font-bold
-                shadow-xl border-4 border-white transition-all duration-500
-                ${formData.org_name
-                  ? 'bg-gradient-to-br from-violet-600 to-purple-700 text-white scale-100'
-                  : 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400 scale-95'
-                }
-              `}>
-                {formData.org_name ? getInitials(formData.org_name) : <Building2 className="w-12 h-12" />}
-              </div>
-            </div>
-
-            <div className="px-6 pt-4 pb-6">
-              {/* Organization Name */}
-              <h3 className={`
-                text-2xl font-bold mb-1 transition-colors
-                ${formData.org_name ? 'text-slate-900' : 'text-slate-300'}
-              `}>
-                {formData.org_name || 'Your Organization'}
-              </h3>
-
-              {/* Legal Name */}
-              {formData.legal_name && formData.legal_name !== formData.org_name && (
-                <p className="text-sm text-slate-500 font-medium mb-4">
-                  {formData.legal_name}
-                </p>
-              )}
-
-              {/* Contact Grid */}
-              <div className="grid grid-cols-2 gap-3 mt-6">
-                {formData.contact_phone && (
-                  <div className="col-span-2 flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-                      <Phone className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-slate-500 font-medium">Phone</p>
-                      <p className="text-sm font-semibold text-slate-900 truncate">{formData.contact_phone}</p>
-                    </div>
-                  </div>
-                )}
-
-                {formData.owner_email && (
-                  <div className="col-span-2 flex items-center gap-3 p-3 bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl border border-violet-100">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                      <Mail className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-slate-500 font-medium">Email</p>
-                      <p className="text-sm font-semibold text-slate-900 truncate">{formData.owner_email}</p>
-                    </div>
-                  </div>
-                )}
-
-                {formatAddress() && (
-                  <div className="col-span-2 flex items-center gap-3 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-100">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
-                      <MapPin className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-slate-500 font-medium">Location</p>
-                      <p className="text-sm font-semibold text-slate-900 truncate">{formatAddress()}</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="col-span-2 flex items-center gap-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-100">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0">
-                    <Globe className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-slate-500 font-medium">Timezone</p>
-                    <p className="text-sm font-semibold text-slate-900 truncate">
-                      {formData.timezone.split('/')[1]?.replace('_', ' ') || formData.timezone}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Administrator Badge */}
-              {formData.owner_name && (
-                <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-700 text-white flex items-center justify-center text-base font-bold shadow-lg">
-                      {getInitials(formData.owner_name)}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-base font-bold text-slate-900">{formData.owner_name}</p>
-                        <span className="text-xs font-bold text-violet-700 bg-violet-100 px-2 py-1 rounded-lg">
-                          ADMIN
-                        </span>
-                      </div>
-                      <p className="text-sm text-slate-500 font-medium">System Administrator</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Compliance Badge */}
-              {(formData.terms_accepted && formData.baa_accepted) && (
-                <div className="mt-4 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 flex items-center gap-3">
-                  <Shield className="w-5 h-5 text-emerald-600" />
-                  <span className="text-sm font-bold text-emerald-700">HIPAA Compliant & Secure</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Setup Progress */}
-        <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-5 py-3 border-b border-slate-200">
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-violet-600" />
-              <h4 className="text-sm font-bold text-slate-900">Setup Progress</h4>
-            </div>
-          </div>
-
-          <div className="p-5 space-y-3">
-            <div className={`flex items-center gap-3 p-3 rounded-lg transition-all ${formData.org_name ? 'bg-emerald-50 border-2 border-emerald-200' : 'bg-slate-50 border-2 border-slate-100'}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${formData.org_name ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md' : 'bg-slate-200 text-slate-400'}`}>
-                {formData.org_name ? <Check className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-slate-900">Organization Profile</p>
-                <p className="text-xs text-slate-500">Basic info & contact details</p>
-              </div>
-            </div>
-
-            <div className={`flex items-center gap-3 p-3 rounded-lg transition-all ${formData.owner_name && formData.owner_email ? 'bg-emerald-50 border-2 border-emerald-200' : 'bg-slate-50 border-2 border-slate-100'}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${formData.owner_name && formData.owner_email ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md' : 'bg-slate-200 text-slate-400'}`}>
-                {formData.owner_name && formData.owner_email ? <Check className="w-4 h-4" /> : <User className="w-4 h-4" />}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-slate-900">Admin Account</p>
-                <p className="text-xs text-slate-500">Your credentials & access</p>
-              </div>
-            </div>
-
-            <div className={`flex items-center gap-3 p-3 rounded-lg transition-all ${formData.address.city ? 'bg-emerald-50 border-2 border-emerald-200' : 'bg-slate-50 border-2 border-slate-100'}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${formData.address.city ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md' : 'bg-slate-200 text-slate-400'}`}>
-                {formData.address.city ? <Check className="w-4 h-4" /> : <MapPin className="w-4 h-4" />}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-slate-900">Physical Location</p>
-                <p className="text-xs text-slate-500">Address & service area</p>
-              </div>
-            </div>
-
-            <div className={`flex items-center gap-3 p-3 rounded-lg transition-all ${formData.terms_accepted && formData.baa_accepted ? 'bg-emerald-50 border-2 border-emerald-200' : 'bg-slate-50 border-2 border-slate-100'}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${formData.terms_accepted && formData.baa_accepted ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md' : 'bg-slate-200 text-slate-400'}`}>
-                {formData.terms_accepted && formData.baa_accepted ? <Check className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-slate-900">Compliance</p>
-                <p className="text-xs text-slate-500">Legal & security agreements</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Premium Features */}
-        <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 rounded-xl shadow-xl p-5 text-white">
-          <div className="flex items-center gap-2 mb-4">
-            <Star className="w-5 h-5 text-amber-300" />
-            <h4 className="text-sm font-bold">What You Get</h4>
-          </div>
-          <ul className="space-y-2.5 text-sm">
-            <li className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-300"></div>
-              <span>Unlimited patient records</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-300"></div>
-              <span>Real-time data synchronization</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-300"></div>
-              <span>Advanced security & encryption</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-300"></div>
-              <span>24/7 dedicated support</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-    );
+  const getOrgNamePlaceholder = () => {
+    switch (formData.org_type) {
+      case 'hospital': return 'e.g., City General Hospital';
+      case 'clinic': return 'e.g., Community Health Clinic';
+      case 'diagnostic_center': return 'e.g., Advanced Diagnostic Center';
+      case 'pharmacy': return 'e.g., Main Street Pharmacy';
+      case 'nursing_home': return 'e.g., Sunrise Care Home';
+      case 'lab': return 'e.g., Precision Medical Laboratory';
+      default: return 'e.g., Your Healthcare Facility';
+    }
   };
+
+  const currentSpecialties = formData.org_type ? SPECIALTIES[formData.org_type] || [] : [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/30 to-indigo-50/40">
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="max-w-7xl w-full">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 mb-4 shadow-lg shadow-violet-300">
+    <div className="fixed inset-0 flex overflow-hidden">
+      {/* Left Side - Live Preview Card */}
+      <div className="hidden lg:flex lg:flex-1 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 items-center justify-center p-12 relative overflow-hidden">
+        {/* Animated Background Blobs - Even Lighter */}
+        <div className="absolute inset-0 opacity-[0.06] z-0">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl translate-x-1/2 translate-y-1/2 animate-pulse" style={{ animationDelay: '1s' }}></div>
+        </div>
+
+        {/* Medical Cross Pattern - Meaningful Design */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+          {/* Cross pattern in corners - representing healthcare */}
+          <div className="absolute top-[15%] right-[10%] opacity-[0.04]">
+            <div className="relative w-16 h-16">
+              <div className="absolute top-1/2 left-0 w-16 h-4 bg-white -translate-y-1/2"></div>
+              <div className="absolute left-1/2 top-0 w-4 h-16 bg-white -translate-x-1/2"></div>
+            </div>
+          </div>
+
+          <div className="absolute bottom-[20%] left-[8%] opacity-[0.04]">
+            <div className="relative w-12 h-12">
+              <div className="absolute top-1/2 left-0 w-12 h-3 bg-white -translate-y-1/2"></div>
+              <div className="absolute left-1/2 top-0 w-3 h-12 bg-white -translate-x-1/2"></div>
+            </div>
+          </div>
+
+          {/* Heartbeat line pattern */}
+          <svg className="absolute top-[40%] left-[5%] w-32 h-16 opacity-[0.05]" viewBox="0 0 128 64">
+            <path d="M0,32 L20,32 L25,20 L30,44 L35,28 L40,32 L128,32" stroke="white" strokeWidth="2" fill="none" />
+          </svg>
+
+          <svg className="absolute bottom-[35%] right-[12%] w-24 h-12 opacity-[0.05]" viewBox="0 0 96 48">
+            <path d="M0,24 L15,24 L18,15 L22,33 L26,21 L30,24 L96,24" stroke="white" strokeWidth="2" fill="none" />
+          </svg>
+
+          {/* Subtle floating circles - organized pattern */}
+          <div className="absolute top-[25%] left-[15%] w-20 h-20 border border-white border-opacity-[0.03] rounded-full animate-float-slow"></div>
+          <div className="absolute top-[60%] right-[18%] w-24 h-24 border border-white border-opacity-[0.03] rounded-full animate-float-slow" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute bottom-[25%] left-[20%] w-16 h-16 border border-white border-opacity-[0.03] rounded-full animate-float-slow" style={{ animationDelay: '2s' }}></div>
+
+          {/* DNA helix inspired dots - connected pattern */}
+          <div className="absolute top-[30%] right-[25%]">
+            <div className="relative w-2 h-32 opacity-[0.04]">
+              <div className="absolute top-0 left-0 w-2 h-2 bg-white rounded-full"></div>
+              <div className="absolute top-[25%] right-0 w-2 h-2 bg-white rounded-full"></div>
+              <div className="absolute top-[50%] left-0 w-2 h-2 bg-white rounded-full"></div>
+              <div className="absolute top-[75%] right-0 w-2 h-2 bg-white rounded-full"></div>
+              <div className="absolute bottom-0 left-0 w-2 h-2 bg-white rounded-full"></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative z-10 max-w-lg w-full">
+          <div className="mb-8">
+            <div className="w-16 h-16 bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 shadow-2xl">
               <Sparkles className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-4xl font-bold text-slate-900 mb-2 bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
-              Create Your Organization
+            <h1 className="text-4xl font-bold text-white mb-4">
+              Your {getOrgTypeLabel()} is Taking Shape!
             </h1>
-            <p className="text-base text-slate-600">
-              Enterprise healthcare platform • HIPAA compliant • Built for scale
+            <p className="text-xl text-blue-100">
+              Watch your {getOrgTypeLabel().toLowerCase()} come to life as you complete the setup
             </p>
           </div>
 
-          {/* Three Column Layout: Stepper | Form | Summary */}
-          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_380px] gap-6 items-start">
-            {/* Left: Vertical Stepper */}
-            <div className="hidden lg:block lg:sticky lg:top-6">
-              <VerticalStepper />
+          {/* Live Preview Card */}
+          <div className="bg-white rounded-2xl shadow-2xl p-8 space-y-6">
+            {/* Logo Preview */}
+            <div className="flex items-center gap-4">
+              {formData.logo_preview ? (
+                <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-blue-200 shadow-md">
+                  <img src={formData.logo_preview} alt="Logo" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                  <Building2 className="w-10 h-10 text-white" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <h2 className="text-2xl font-bold text-gray-900 truncate">
+                  {formData.org_name || `Your ${getOrgTypeLabel()} Name`}
+                </h2>
+                {formData.legal_name && (
+                  <p className="text-sm text-gray-500 truncate">{formData.legal_name}</p>
+                )}
+              </div>
             </div>
 
-            {/* Center: Form */}
-            <Card className="border-2 border-slate-200 shadow-xl bg-white">
-              <CardContent className="p-8">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Error Message */}
-                  {error && (
-                    <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <strong className="font-bold">Error:</strong> {error}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Step Content */}
-                  <div>
-                    {/* Step 0: Organization */}
-                    {currentStep === 0 && (
-                      <div className="space-y-5">
-                        <div>
-                          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 mb-1">
-                            <Building2 className="w-6 h-6 text-violet-600" />
-                            Organization Information
-                          </h2>
-                          <p className="text-sm text-slate-500">Tell us about your healthcare organization</p>
-                        </div>
-
-                        <div className="space-y-4">
-                          {renderInput("Organization Name", "org_name", Building2, { type: "text", required: true, placeholder: "e.g., Sushruth Care Hospital" })}
-
-                          {renderInput("Legal Name (Optional)", "legal_name", undefined, { type: "text", placeholder: "Official registered name" })}
-
-                          <div className="grid grid-cols-2 gap-4">
-                            {renderInput("Contact Phone", "contact_phone", Phone, { type: "tel", required: true, placeholder: "+91 98765 43210" })}
-
-                            <div className="space-y-1.5">
-                              <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                                <Globe className="w-4 h-4 text-violet-500" />
-                                Timezone
-                              </Label>
-                              <select
-                                value={formData.timezone}
-                                onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
-                                className="w-full px-3 py-2 text-sm border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-100 focus:border-violet-400 transition-all bg-white hover:border-slate-300"
-                              >
-                                <option value="Asia/Kolkata">🇮🇳 Asia/Kolkata (IST)</option>
-                                <option value="America/New_York">🇺🇸 America/New_York (EST)</option>
-                                <option value="Europe/London">🇬🇧 Europe/London (GMT)</option>
-                                <option value="Asia/Dubai">🇦🇪 Asia/Dubai (GST)</option>
-                                <option value="Asia/Singapore">🇸🇬 Asia/Singapore (SGT)</option>
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Step 1: Owner */}
-                    {currentStep === 1 && (
-                      <div className="space-y-5">
-                        <div>
-                          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 mb-1">
-                            <User className="w-6 h-6 text-violet-600" />
-                            Administrator Account
-                          </h2>
-                          <p className="text-sm text-slate-500">Create your admin credentials</p>
-                        </div>
-
-                        <div className="space-y-4">
-                          {renderInput('Full Name', 'owner_name', User, {
-                            type: 'text',
-                            required: true,
-                            placeholder: 'Dr. John Doe',
-                          })}
-
-                          {renderInput('Email Address', 'owner_email', Mail, {
-                            type: 'email',
-                            required: true,
-                            placeholder: 'admin@hospital.com',
-                          })}
-
-                          <div className="grid grid-cols-2 gap-4">
-                            {renderInput('Password', 'owner_password', Lock, {
-                              type: 'password',
-                              required: true,
-                              minLength: 8,
-                              placeholder: '••••••••',
-                            })}
-
-                            {renderInput('Confirm Password', 'confirm_password', Lock, {
-                              type: 'password',
-                              required: true,
-                              minLength: 8,
-                              placeholder: '••••••••',
-                            })}
-                          </div>
-
-                          <div className="bg-violet-50 border-2 border-violet-200 px-4 py-3 rounded-lg text-sm text-violet-900">
-                            <strong className="font-bold">Password requirements:</strong> 8+ characters, uppercase, lowercase, and numbers
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Step 2: Address */}
-                    {currentStep === 2 && (
-                      <div className="space-y-5">
-                        <div>
-                          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 mb-1">
-                            <MapPin className="w-6 h-6 text-violet-600" />
-                            Location Details
-                          </h2>
-                          <p className="text-sm text-slate-500">Physical address (optional but recommended)</p>
-                        </div>
-
-                        <div className="space-y-4">
-                          {renderInput('Address Line 1', 'address.line1', MapPin, {
-                            type: 'text',
-                            placeholder: 'Street address',
-                          })}
-
-                          {renderInput('Address Line 2', 'address.line2', undefined, {
-                            type: 'text',
-                            placeholder: 'Suite, building, floor',
-                          })}
-
-                          <div className="grid grid-cols-2 gap-4">
-                            {renderInput('City', 'address.city', undefined, {
-                              type: 'text',
-                              placeholder: 'City',
-                            })}
-
-                            {renderInput('State', 'address.state', undefined, {
-                              type: 'text',
-                              placeholder: 'State',
-                            })}
-
-                            {renderInput('Postal Code', 'address.postal_code', undefined, {
-                              type: 'text',
-                              placeholder: 'PIN/ZIP',
-                            })}
-
-                            {renderInput('Country', 'address.country', undefined, {
-                              type: 'text',
-                              placeholder: 'Country',
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Step 3: Legal */}
-                    {currentStep === 3 && (
-                      <div className="space-y-5">
-                        <div>
-                          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 mb-1">
-                            <Shield className="w-6 h-6 text-violet-600" />
-                            Legal & Compliance
-                          </h2>
-                          <p className="text-sm text-slate-500">Review and accept terms</p>
-                        </div>
-
-                        <div className="space-y-4">
-                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4">
-                            <label className="flex items-start gap-3 cursor-pointer group">
-                              <input
-                                type="checkbox"
-                                required
-                                checked={formData.terms_accepted}
-                                onChange={(e) => setFormData({ ...formData, terms_accepted: e.target.checked })}
-                                className="w-5 h-5 mt-0.5 rounded border-2 border-blue-300 text-blue-600 focus:ring-2 focus:ring-blue-200 cursor-pointer"
-                              />
-                              <div className="flex-1">
-                                <span className="text-sm font-bold text-slate-900 group-hover:text-blue-700">
-                                  Terms & Conditions
-                                </span>
-                                <p className="text-sm text-slate-600 mt-1">
-                                  I accept the{' '}
-                                  <a href="/terms" target="_blank" className="text-blue-600 underline font-semibold">
-                                    Terms of Service
-                                  </a>
-                                </p>
-                              </div>
-                            </label>
-                          </div>
-
-                          <div className="bg-gradient-to-r from-purple-50 to-violet-50 border-2 border-purple-200 rounded-xl p-4">
-                            <label className="flex items-start gap-3 cursor-pointer group">
-                              <input
-                                type="checkbox"
-                                required
-                                checked={formData.baa_accepted}
-                                onChange={(e) => setFormData({ ...formData, baa_accepted: e.target.checked })}
-                                className="w-5 h-5 mt-0.5 rounded border-2 border-purple-300 text-purple-600 focus:ring-2 focus:ring-purple-200 cursor-pointer"
-                              />
-                              <div className="flex-1">
-                                <span className="text-sm font-bold text-slate-900 group-hover:text-purple-700 flex items-center gap-2">
-                                  Business Associate Agreement
-                                  <span className="text-xs font-bold bg-purple-200 text-purple-800 px-2 py-0.5 rounded-lg">HIPAA</span>
-                                </span>
-                                <p className="text-sm text-slate-600 mt-1">
-                                  Required for compliance •{' '}
-                                  <a href="/baa" target="_blank" className="text-purple-600 underline font-semibold">
-                                    Read BAA
-                                  </a>
-                                </p>
-                              </div>
-                            </label>
-                          </div>
-
-                          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 px-4 py-3 rounded-xl">
-                            <div className="flex items-start gap-3">
-                              <Shield className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                              <p className="text-sm text-emerald-900">
-                                <strong className="font-bold">Your data is secure:</strong> End-to-end encryption, HIPAA & GDPR compliant
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Navigation Buttons */}
-                  <div className="flex items-center justify-between pt-6 border-t-2 border-slate-100">
-                    <Button
-                      type="button"
-                      onClick={handleBack}
-                      disabled={currentStep === 0}
-                      variant="outline"
-                      className="px-5 py-2.5 text-sm font-bold disabled:opacity-30 border-2"
-                    >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      Back
-                    </Button>
-
-                    {currentStep < steps.length - 1 ? (
-                      <Button
-                        type="button"
-                        onClick={handleNext}
-                        disabled={!isStepValid(currentStep)}
-                        className="px-6 py-2.5 text-sm bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-700 hover:to-purple-800 text-white font-bold shadow-lg shadow-violet-300 disabled:opacity-50"
-                      >
-                        Continue
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </Button>
-                    ) : (
-                      <Button
-                        type="submit"
-                        disabled={loading || !isStepValid(currentStep)}
-                        className="px-6 py-2.5 text-sm bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold shadow-lg shadow-emerald-300 disabled:opacity-50"
-                      >
-                        {loading ? (
-                          <>
-                            <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                            Creating...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="w-5 h-5 mr-2" />
-                            Complete Setup
-                          </>
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                </form>
-
-                {/* Footer */}
-                <div className="mt-6 pt-6 border-t-2 border-slate-100 text-center">
-                  <p className="text-sm text-slate-600">
-                    Already registered?{' '}
-                    <button
-                      type="button"
-                      onClick={() => window.location.href = '/api/auth/signin'}
-                      className="text-violet-600 font-bold hover:text-violet-700 hover:underline"
-                    >
-                      Sign in here
-                    </button>
-                  </p>
+            {/* {t('register.org_name')} Preview */}
+            {formData.org_type && (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-gray-700">{t('register.type')}</p>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium">
+                  {getOrgTypeLabel()}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            )}
 
-            {/* Right: Live Preview */}
-            <div className="lg:sticky lg:top-6 h-fit">
-              <LivePreview />
+            {/* Specialties Preview */}
+            {(formData.specialties.length > 0 || formData.custom_services.length > 0) && (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-gray-700">{t('register.services_offered')}</p>
+                <div className="flex flex-wrap gap-2">
+                  {formData.specialties.map(spec => {
+                    const specialty = currentSpecialties.find(s => s.value === spec);
+                    return (
+                      <span
+                        key={spec}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium"
+                      >
+                        {specialty && <specialty.icon className="w-4 h-4" />}
+                        {specialty?.label}
+                      </span>
+                    );
+                  })}
+                  {formData.custom_services.map(service => (
+                    <span
+                      key={service}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm font-medium"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      {service}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Contact Info Preview */}
+            {formData.contact_phone && (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-gray-700">{t('register.contact')}</p>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Phone className="w-4 h-4" />
+                  <span className="text-sm">{formData.contact_phone}</span>
+                </div>
+                {formData.owner_email && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Mail className="w-4 h-4" />
+                    <span className="text-sm">{formData.owner_email}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Location Preview */}
+            {(formData.address.city || formData.address.state) && (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-gray-700">{t('register.location')}</p>
+                <div className="flex items-start gap-2 text-gray-600">
+                  <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm">
+                    {formData.address.line1 && <div>{formData.address.line1}</div>}
+                    {(formData.address.city || formData.address.state) && (
+                      <div>
+                        {formData.address.city}{formData.address.city && formData.address.state ? ', ' : ''}{formData.address.state} {formData.address.postal_code}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Admin Preview */}
+            {formData.owner_name && (
+              <div className="pt-4 border-t border-gray-200">
+                <p className="text-sm font-semibold text-gray-700">{t('register.administrator')}</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{formData.owner_name}</p>
+                    <p className="text-xs text-gray-500">Organization Admin</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Progress Indicator */}
+            <div className="pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-semibold text-gray-700">Setup Progress</p>
+                <p className="text-sm font-bold text-blue-600">{Math.round((step / 5) * 100)}%</p>
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500 ease-out"
+                  style={{ width: `${(step / 5) * 100}%` }}
+                ></div>
+              </div>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Right Side - Registration Form */}
+      <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24 bg-white relative overflow-hidden">
+        {/* Floating Bubbles */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-[10%] left-[15%] w-32 h-32 bg-blue-100 rounded-full opacity-20 animate-float" style={{ animationDuration: '8s' }}></div>
+          <div className="absolute top-[60%] right-[10%] w-24 h-24 bg-indigo-100 rounded-full opacity-25 animate-float" style={{ animationDuration: '10s', animationDelay: '1s' }}></div>
+          <div className="absolute top-[30%] right-[25%] w-16 h-16 bg-purple-100 rounded-full opacity-20 animate-float" style={{ animationDuration: '12s', animationDelay: '2s' }}></div>
+        </div>
+
+        <div className="mx-auto w-full max-w-md relative z-10">
+          {/* Language Selector - Top Right */}
+          <div className="absolute -top-8 right-0">
+            <PublicLanguageSelector />
+          </div>
+
+          {/* Logo */}
+          <div className="mb-8">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                <Activity className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-2xl font-semibold text-gray-900">EHR Connect</span>
+            </div>
+          </div>
+
+          {/* Progress Steps */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              {steps.map((s, index) => (
+                <div key={s.number} className="flex items-center flex-1">
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold text-sm transition-all ${step >= s.number
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-gray-200 text-gray-500'
+                    }`}>
+                    {step > s.number ? <Check className="w-5 h-5" /> : s.number}
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className={`flex-1 h-1 mx-2 rounded transition-all ${step > s.number ? 'bg-blue-600' : 'bg-gray-200'
+                      }`}></div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-sm text-gray-600 text-center">
+              {t('register.step_of', { current: step, total: steps.length })}: {steps[step - 1].title}
+            </p>
+          </div>
+
+          {/* Heading */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-semibold text-gray-900 tracking-tight mb-2">
+              {step === 1 && t('register.what_type')}
+              {step === 2 && t('register.tell_us_about', { orgType: getOrgTypeLabel().toLowerCase() })}
+              {step === 3 && t('register.what_services')}
+              {step === 4 && t('register.create_admin')}
+              {step === 5 && t('register.almost_there')}
+            </h1>
+            <p className="text-base text-gray-600">
+              {step === 1 && t('register.customize_experience')}
+              {step === 2 && t('register.personalize_workspace')}
+              {step === 3 && t('register.select_all')}
+              {step === 4 && t('register.login_credentials')}
+              {step === 5 && t('register.few_more_details')}
+            </p>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg px-4 py-3.5 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            {/* Step 1: Organization Type Selection */}
+            {step === 1 && (
+              <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-3">
+                  {ORG_TYPES.map((orgType) => {
+                    const Icon = orgType.icon;
+                    const isSelected = formData.org_type === orgType.value;
+                    return (
+                      <button
+                        key={orgType.value}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, org_type: orgType.value, specialties: [] }))}
+                        className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${isSelected
+                          ? 'border-blue-500 bg-blue-50 shadow-md'
+                          : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                          }`}
+                      >
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center ${isSelected ? 'bg-blue-500' : 'bg-gray-100'
+                          }`}>
+                          <Icon className={`w-7 h-7 ${isSelected ? 'text-white' : 'text-gray-600'}`} />
+                        </div>
+                        <div className="w-full">
+                          <p className={`text-base font-semibold text-center mb-1 ${isSelected ? 'text-blue-900' : 'text-gray-900'
+                            }`}>
+                            {orgType.label}
+                          </p>
+                          <p className={`text-xs text-center ${isSelected ? 'text-blue-700' : 'text-gray-500'
+                            }`}>
+                            {orgType.description}
+                          </p>
+                        </div>
+                        {isSelected && (
+                          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                            <Check className="w-4 h-4 text-white" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {!formData.org_type && (
+                  <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                    {t('register.select_org_type')}
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  disabled={!formData.org_type}
+                  className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 rounded-lg transition-all text-base shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t('register.continue')}
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+
+            {/* Step 2: Organization + Logo */}
+            {step === 2 && (
+              <div className="space-y-5">
+                {/* Logo Upload */}
+                <div>
+                  <label className="block text-base font-medium text-gray-700 mb-3">
+                    {getOrgTypeLabel()} Logo <span className="text-gray-400 font-normal">({t('register.optional')})</span>
+                  </label>
+                  {!formData.logo_preview ? (
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <div className="flex flex-col items-center justify-center py-4">
+                        <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600 font-medium">{t('register.upload_logo')}</p>
+                        <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 2MB</p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  ) : (
+                    <div className="relative inline-block">
+                      <img
+                        src={formData.logo_preview}
+                        alt="Logo preview"
+                        className="w-32 h-32 object-cover rounded-lg border-2 border-blue-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveLogo}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-md"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="org_name" className="block text-base font-medium text-gray-700 mb-2">
+                    {getOrgTypeLabel()} Name
+                  </label>
+                  <input
+                    id="org_name"
+                    name="org_name"
+                    type="text"
+                    value={formData.org_name}
+                    onChange={handleChange}
+                    placeholder={getOrgNamePlaceholder()}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-sm"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="legal_name" className="block text-base font-medium text-gray-700 mb-2">
+                    {t('register.legal_name')} <span className="text-gray-400 text-sm">({t('register.optional')})</span>
+                  </label>
+                  <input
+                    id="legal_name"
+                    name="legal_name"
+                    type="text"
+                    value={formData.legal_name}
+                    onChange={handleChange}
+                    placeholder={`e.g., ${formData.org_name || getOrgTypeLabel()} LLC`}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-sm"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="contact_phone" className="block text-base font-medium text-gray-700 mb-2">
+                    {t('register.contact_phone')}
+                  </label>
+                  <input
+                    id="contact_phone"
+                    name="contact_phone"
+                    type="tel"
+                    value={formData.contact_phone}
+                    onChange={handleChange}
+                    placeholder="+1 (555) 123-4567"
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-sm"
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    className="flex-1 border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 text-gray-700 font-semibold py-3.5 rounded-lg transition-all text-base"
+                  >
+                    {t('register.back')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 rounded-lg transition-all text-base shadow-md hover:shadow-lg"
+                  >
+                    Continue
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Specialties/Services */}
+            {step === 3 && (
+              <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-3">
+                  {currentSpecialties.map((specialty) => {
+                    const Icon = specialty.icon;
+                    const isSelected = formData.specialties.includes(specialty.value);
+                    return (
+                      <button
+                        key={specialty.value}
+                        type="button"
+                        onClick={() => toggleSpecialty(specialty.value)}
+                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${isSelected
+                          ? 'border-blue-500 bg-blue-50 shadow-md'
+                          : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                          }`}
+                      >
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isSelected ? 'bg-blue-500' : 'bg-gray-100'
+                          }`}>
+                          <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : 'text-gray-600'}`} />
+                        </div>
+                        <span className={`text-sm font-medium text-center ${isSelected ? 'text-blue-900' : 'text-gray-700'
+                          }`}>
+                          {specialty.label}
+                        </span>
+                        {isSelected && (
+                          <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                            <Check className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Custom Services Input */}
+                <div className="pt-3 border-t border-gray-200">
+                  <label className="block text-base font-medium text-gray-700 mb-2">
+                    Add Custom Service <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={customServiceInput}
+                      onChange={(e) => setCustomServiceInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomService())}
+                      placeholder="e.g., Home Visits, Telemedicine"
+                      className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={addCustomService}
+                      disabled={!customServiceInput.trim()}
+                      className="px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Add
+                    </button>
+                  </div>
+
+                  {/* Display custom services */}
+                  {formData.custom_services.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {formData.custom_services.map((service, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm font-medium"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          {service}
+                          <button
+                            type="button"
+                            onClick={() => removeCustomService(service)}
+                            className="hover:bg-green-200 rounded-full p-0.5 transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {(formData.specialties.length === 0 && formData.custom_services.length === 0) && (
+                  <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                    {t('register.must_accept')} service or add a custom one to continue
+                  </p>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    className="flex-1 border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 text-gray-700 font-semibold py-3.5 rounded-lg transition-all text-base"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    disabled={formData.specialties.length === 0 && formData.custom_services.length === 0}
+                    className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 rounded-lg transition-all text-base shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Continue
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Account */}
+            {step === 4 && (
+              <div className="space-y-5">
+                <div>
+                  <label htmlFor="owner_name" className="block text-base font-medium text-gray-700 mb-2">
+                    {t('auth.your_name')}
+                  </label>
+                  <input
+                    id="owner_name"
+                    name="owner_name"
+                    type="text"
+                    value={formData.owner_name}
+                    onChange={handleChange}
+                    placeholder="Dr. John Doe"
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-sm"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="owner_email" className="block text-base font-medium text-gray-700 mb-2">
+                    {t('auth.email')} Address
+                  </label>
+                  <input
+                    id="owner_email"
+                    name="owner_email"
+                    type="email"
+                    value={formData.owner_email}
+                    onChange={handleChange}
+                    placeholder="john@hospital.com"
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-sm"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="owner_password" className="block text-base font-medium text-gray-700 mb-2">
+                    {t('register.create_password')}
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="owner_password"
+                      name="owner_password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.owner_password}
+                      onChange={handleChange}
+                      placeholder="At least 8 characters"
+                      required
+                      minLength={8}
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    className="flex-1 border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 text-gray-700 font-semibold py-3.5 rounded-lg transition-all text-base"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 rounded-lg transition-all text-base shadow-md hover:shadow-lg"
+                  >
+                    Continue
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 5: Location & Terms */}
+            {step === 5 && (
+              <div className="space-y-5">
+                <div>
+                  <label htmlFor="address.line1" className="block text-base font-medium text-gray-700 mb-2">
+                    {t('register.address_line1')}
+                  </label>
+                  <input
+                    id="address.line1"
+                    name="address.line1"
+                    type="text"
+                    value={formData.address.line1}
+                    onChange={handleChange}
+                    placeholder="123 Main Street"
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-sm"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="address.city" className="block text-base font-medium text-gray-700 mb-2">
+                      {t('register.city')}
+                    </label>
+                    <input
+                      id="address.city"
+                      name="address.city"
+                      type="text"
+                      value={formData.address.city}
+                      onChange={handleChange}
+                      placeholder="New York"
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="address.state" className="block text-base font-medium text-gray-700 mb-2">
+                      {t('register.state')}
+                    </label>
+                    <input
+                      id="address.state"
+                      name="address.state"
+                      type="text"
+                      value={formData.address.state}
+                      onChange={handleChange}
+                      placeholder="NY"
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-sm"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="address.postal_code" className="block text-base font-medium text-gray-700 mb-2">
+                    {t('register.postal_code')}
+                  </label>
+                  <input
+                    id="address.postal_code"
+                    name="address.postal_code"
+                    type="text"
+                    value={formData.address.postal_code}
+                    onChange={handleChange}
+                    placeholder="10001"
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-sm"
+                  />
+                </div>
+
+                {/* Terms */}
+                <div className="space-y-3 pt-2">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="terms_accepted"
+                      checked={formData.terms_accepted}
+                      onChange={handleChange}
+                      required
+                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 mt-0.5"
+                    />
+                    <span className="text-sm text-gray-700">
+                      I agree to the{' '}
+                      <a href="/terms" className="text-blue-600 hover:text-blue-700 underline">
+                        {t('register.terms_baa')}
+                      </a>{' '}
+                      and{' '}
+                      <a href="/privacy" className="text-blue-600 hover:text-blue-700 underline">
+                        Privacy Policy
+                      </a>
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="baa_accepted"
+                      checked={formData.baa_accepted}
+                      onChange={handleChange}
+                      required
+                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 mt-0.5"
+                    />
+                    <span className="text-sm text-gray-700">
+                      I accept the{' '}
+                      <a href="/baa" className="text-blue-600 hover:text-blue-700 underline">
+                        {t('register.accept_baa')}
+                      </a>
+                    </span>
+                  </label>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    className="flex-1 border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 text-gray-700 font-semibold py-3.5 rounded-lg transition-all text-base"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-md hover:shadow-lg"
+                  >
+                    {loading ? t('register.creating', { orgType: getOrgTypeLabel() }) : t('register.submit', { orgType: getOrgTypeLabel() })}
+                  </button>
+                </div>
+              </div>
+            )}
+          </form>
+
+          {/* Sign In Link */}
+          <div className="mt-8 text-center">
+            <p className="text-base text-gray-600">
+              Already have an account?{' '}
+              <a
+                href="/auth/signin"
+                className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
+              >
+                Sign in
+              </a>
+            </p>
+          </div>
+        </div>
+
+        {/* CSS Animations */}
+        <style jsx>{`
+          @keyframes float {
+            0%, 100% {
+              transform: translateY(0) translateX(0);
+            }
+            25% {
+              transform: translateY(-20px) translateX(10px);
+            }
+            50% {
+              transform: translateY(-40px) translateX(-10px);
+            }
+            75% {
+              transform: translateY(-20px) translateX(5px);
+            }
+          }
+
+          @keyframes float-slow {
+            0%, 100% {
+              transform: translateY(0) translateX(0) scale(1);
+            }
+            25% {
+              transform: translateY(-30px) translateX(20px) scale(1.05);
+            }
+            50% {
+              transform: translateY(-60px) translateX(-20px) scale(0.95);
+            }
+            75% {
+              transform: translateY(-30px) translateX(10px) scale(1.02);
+            }
+          }
+
+          @keyframes float-medium {
+            0%, 100% {
+              transform: translateY(0) translateX(0) scale(1);
+            }
+            33% {
+              transform: translateY(-25px) translateX(15px) scale(1.1);
+            }
+            66% {
+              transform: translateY(-50px) translateX(-15px) scale(0.9);
+            }
+          }
+
+          @keyframes float-fast {
+            0%, 100% {
+              transform: translateY(0) translateX(0);
+            }
+            50% {
+              transform: translateY(-40px) translateX(-20px);
+            }
+          }
+
+          @keyframes spin-slow {
+            from {
+              transform: rotate(0deg);
+            }
+            to {
+              transform: rotate(360deg);
+            }
+          }
+
+          .animate-float {
+            animation: float linear infinite;
+          }
+
+          .animate-float-slow {
+            animation: float-slow 20s ease-in-out infinite;
+          }
+
+          .animate-float-medium {
+            animation: float-medium 15s ease-in-out infinite;
+          }
+
+          .animate-float-fast {
+            animation: float-fast 10s ease-in-out infinite;
+          }
+
+          .animate-spin-slow {
+            animation: spin-slow 30s linear infinite;
+          }
+        `}</style>
       </div>
     </div>
   );

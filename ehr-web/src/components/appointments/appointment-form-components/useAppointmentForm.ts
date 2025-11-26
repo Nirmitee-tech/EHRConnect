@@ -23,6 +23,7 @@ interface FormData {
   allDayEventType?: string;
   isEmergency?: boolean;
   location?: string;
+  mode?: 'in-person' | 'video-call' | 'voice-call' | 'other';
 }
 
 export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appointment | null) {
@@ -38,16 +39,26 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
     operatory: '',
     treatmentCategory: '',
     date: initialDate ? initialDate.toISOString().split('T')[0] : '',
-    time: '09:00',
+    time: initialDate
+      ? `${initialDate.getHours().toString().padStart(2, '0')}:${initialDate.getMinutes().toString().padStart(2, '0')}`
+      : '09:00',
     durationHours: 0,
     durationMinutes: defaultDuration,
     notes: '',
     sendEmail: false,
-    sendSMS: false
+    sendSMS: false,
+    mode: 'in-person'
   });
 
   const [practitioners, setPractitioners] = useState<Array<{ id: string; name: string; color?: string; vacations?: any[]; officeHours?: any[] }>>([]);
-  const [patients, setPatients] = useState<Array<{ id: string; name: string }>>([]);
+  const [patients, setPatients] = useState<Array<{
+    id: string;
+    name: string;
+    dateOfBirth?: string;
+    gender?: string;
+    phone?: string;
+    email?: string;
+  }>>([]);
 
   // Load organization settings
   useEffect(() => {
@@ -86,7 +97,8 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
     } else if (initialDate) {
       setFormData(prev => ({
         ...prev,
-        date: initialDate.toISOString().split('T')[0]
+        date: initialDate.toISOString().split('T')[0],
+        time: `${initialDate.getHours().toString().padStart(2, '0')}:${initialDate.getMinutes().toString().padStart(2, '0')}`
       }));
     }
   }, [editingAppointment, initialDate]);
@@ -132,10 +144,21 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
         _count: 100,
         _sort: '-_lastUpdated'
       });
-      const patientList = bundle.map(p => ({
-        id: p.id!,
-        name: p.name?.[0] ? `${p.name[0].given?.join(' ')} ${p.name[0].family}` : 'Unknown'
-      }));
+      const patientList = bundle.map(p => {
+        // Extract phone
+        const phone = p.telecom?.find((t: any) => t.system === 'phone')?.value;
+        // Extract email
+        const email = p.telecom?.find((t: any) => t.system === 'email')?.value;
+
+        return {
+          id: p.id!,
+          name: p.name?.[0] ? `${p.name[0].given?.join(' ')} ${p.name[0].family}` : 'Unknown',
+          dateOfBirth: p.birthDate,
+          gender: p.gender,
+          phone,
+          email
+        };
+      });
       setPatients(patientList);
     } catch (error) {
       console.error('Error loading patients:', error);
@@ -158,7 +181,8 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
       durationMinutes: appointment.duration % 60,
       notes: appointment.reason || '',
       sendEmail: false,
-      sendSMS: false
+      sendSMS: false,
+      mode: appointment.mode || 'in-person'
     });
   };
 
@@ -201,7 +225,8 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
       durationMinutes: defaultDuration % 60,
       notes: '',
       sendEmail: false,
-      sendSMS: false
+      sendSMS: false,
+      mode: 'in-person'
     });
   };
 
@@ -212,6 +237,8 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
     updateField,
     handleDoctorChange,
     handlePatientChange,
-    resetForm
+    resetForm,
+    refreshPatients: loadPatients, // Expose function to refresh patient list
+    refreshPractitioners: loadPractitioners // Expose function to refresh practitioner list
   };
 }

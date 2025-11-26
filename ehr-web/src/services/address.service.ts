@@ -1,6 +1,6 @@
 import { AddressData, NoteData, HabitsData, AllergiesData, InsuranceData } from '@/types/encounter';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const FHIR_BASE_URL = `${API_BASE_URL}/fhir/R4`;
 
 export class AddressService {

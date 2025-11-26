@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+
 import { X } from 'lucide-react';
 import {
   Sheet,
@@ -45,6 +46,8 @@ interface LocationFormData {
   contactPhone: string;
   contactPerson: string;
 }
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 
 export function CreateLocationSidebar({
   open,
@@ -120,7 +123,7 @@ export function CreateLocationSidebar({
       };
 
       const response = await fetch(
-        'http://localhost:8000/api/inventory/masters/locations',
+        `${API_URL}/api/inventory/masters/locations`,
         {
           method: 'POST',
           headers: {

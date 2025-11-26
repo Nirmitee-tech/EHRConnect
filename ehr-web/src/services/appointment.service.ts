@@ -560,15 +560,44 @@ export class AppointmentService {
   /**
    * Create a new appointment
    */
-  static async createAppointment(appointmentData: Partial<Appointment>): Promise<Appointment> {
+  static async createAppointment(appointmentData: Partial<Appointment>, orgId?: string): Promise<Appointment> {
     try {
-      const fhirAppointment: Partial<FHIRAppointment> = {
+      // Use provided org_id or try to get from localStorage as fallback
+      const finalOrgId = orgId || (typeof window !== 'undefined' ? localStorage.getItem('currentFacilityId') : null);
+
+      if (!finalOrgId) {
+        throw new Error('No facility selected. Please select a facility from settings.');
+      }
+
+      const extensions: any[] = [
+        {
+          url: 'http://ehrconnect.io/fhir/StructureDefinition/appointment-organization',
+          valueReference: {
+            reference: `Organization/${finalOrgId}`
+          }
+        }
+      ];
+
+      // Add appointment mode extension if provided
+      if (appointmentData.mode) {
+        extensions.push({
+          url: 'http://ehrconnect.io/fhir/StructureDefinition/appointment-mode',
+          valueString: appointmentData.mode
+        });
+      }
+
+      const fhirAppointment: any = {
         resourceType: 'Appointment',
         status: AppointmentService.mapStatusToFHIR(appointmentData.status || 'scheduled'),
         start: appointmentData.startTime ? new Date(appointmentData.startTime).toISOString() : undefined,
         end: appointmentData.endTime ? new Date(appointmentData.endTime).toISOString() : undefined,
         minutesDuration: appointmentData.duration,
         comment: appointmentData.reason,
+        appointmentType: appointmentData.appointmentType ? {
+          coding: [{
+            display: appointmentData.appointmentType
+          }]
+        } : undefined,
         participant: [
           {
             actor: {
@@ -584,10 +613,28 @@ export class AppointmentService {
             },
             status: 'accepted'
           }
-        ]
+        ],
+        extension: extensions
       };
 
-      const created = await medplum.createResource(fhirAppointment as FHIRAppointment);
+      console.log('[Appointment Service] Creating appointment with org_id:', finalOrgId);
+
+      // Use direct fetch with org_id header (matching user's pattern)
+      const response = await fetch('/api/fhir/Appointment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/fhir+json',
+          'x-org-id': finalOrgId,
+        },
+        body: JSON.stringify(fhirAppointment),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `Failed to create appointment: ${response.status} ${response.statusText}`);
+      }
+
+      const created = await response.json();
       return AppointmentService.transformFHIRAppointment(created);
     } catch (error) {
       console.error('Error creating appointment:', error);
@@ -600,7 +647,89 @@ export class AppointmentService {
    */
   static async updateAppointment(id: string, updates: Partial<Appointment>): Promise<Appointment> {
     try {
-      // Build PATCH operations array dynamically based on what's being updated
+      // If practitioner is being changed, we need to use PUT with full resource
+      // because PATCH on nested participant arrays is unreliable
+      if (updates.practitionerId || updates.practitionerName) {
+        console.log('🔄 Updating appointment with practitioner change:', {
+          id,
+          newPractitionerId: updates.practitionerId,
+          newPractitionerName: updates.practitionerName
+        });
+
+        // Get the current appointment
+        const current: any = await medplum.readResource('Appointment', id);
+
+        // Update the practitioner participant
+        const updatedParticipants = current.participant?.map((p: any) => {
+          if (p.actor?.reference?.startsWith('Practitioner/')) {
+            return {
+              ...p,
+              actor: {
+                reference: updates.practitionerId ? `Practitioner/${updates.practitionerId}` : p.actor.reference,
+                display: updates.practitionerName || p.actor.display
+              }
+            };
+          }
+          return p;
+        }) || [];
+
+        // Build updated resource
+        const updatedResource = {
+          ...current,
+          participant: updatedParticipants
+        };
+
+        // Apply other updates
+        if (updates.status) {
+          updatedResource.status = AppointmentService.mapStatusToFHIR(updates.status);
+        }
+        if (updates.startTime) {
+          updatedResource.start = updates.startTime instanceof Date
+            ? updates.startTime.toISOString()
+            : new Date(updates.startTime).toISOString();
+        }
+        if (updates.endTime) {
+          updatedResource.end = updates.endTime instanceof Date
+            ? updates.endTime.toISOString()
+            : new Date(updates.endTime).toISOString();
+        }
+        if (updates.duration !== undefined) {
+          updatedResource.minutesDuration = updates.duration;
+        }
+        if (updates.reason) {
+          updatedResource.comment = updates.reason;
+        }
+        if (updates.appointmentType) {
+          updatedResource.appointmentType = {
+            coding: [{
+              display: updates.appointmentType
+            }]
+          };
+        }
+
+        console.log('📤 Sending PUT request with updated resource');
+        console.log('Updated FHIR resource:', JSON.stringify(updatedResource, null, 2));
+
+        // Use PUT to update the entire resource
+        const result = await medplum.updateResource(updatedResource);
+
+        console.log('✅ Backend returned updated resource:', JSON.stringify(result, null, 2));
+
+        const transformed = AppointmentService.transformFHIRAppointment(result);
+
+        console.log('🔄 Transformed appointment:', {
+          id: transformed.id,
+          practitionerId: transformed.practitionerId,
+          practitionerName: transformed.practitionerName,
+          patientName: transformed.patientName,
+          startTime: transformed.startTime,
+          endTime: transformed.endTime
+        });
+
+        return transformed;
+      }
+
+      // For non-practitioner updates, use PATCH for efficiency
       const patchOps: any[] = [];
 
       if (updates.status) {
@@ -647,14 +776,26 @@ export class AppointmentService {
         });
       }
 
-      console.log('Sending PATCH operations:', patchOps);
+      if (updates.appointmentType) {
+        patchOps.push({
+          op: 'replace',
+          path: '/appointmentType',
+          value: {
+            coding: [{
+              display: updates.appointmentType
+            }]
+          }
+        });
+      }
+
+      console.log('📤 Sending PATCH operations:', patchOps);
 
       // Use PATCH with only the fields being updated
       const result = await medplum.patchResource('Appointment', id, patchOps);
 
       return AppointmentService.transformFHIRAppointment(result);
     } catch (error) {
-      console.error('Error updating appointment:', error);
+      console.error('❌ Error updating appointment:', error);
       throw error;
     }
   }
@@ -676,6 +817,11 @@ export class AppointmentService {
     const patient = fhir.participant?.find((p) => p.actor?.reference?.startsWith('Patient/'));
     const practitioner = fhir.participant?.find((p) => p.actor?.reference?.startsWith('Practitioner/'));
 
+    // Extract appointment mode from extension
+    const modeExtension = (fhir as any).extension?.find(
+      (ext: any) => ext.url === 'http://ehrconnect.io/fhir/StructureDefinition/appointment-mode'
+    );
+
     return {
       id: fhir.id!,
       patientId: patient?.actor?.reference?.split('/')[1] || '',
@@ -689,6 +835,7 @@ export class AppointmentService {
       duration: fhir.minutesDuration || 30,
       reason: fhir.comment,
       notes: fhir.description,
+      mode: modeExtension?.valueString as any,
       createdAt: new Date(fhir.meta?.lastUpdated || ''),
       updatedAt: new Date(fhir.meta?.lastUpdated || '')
     };

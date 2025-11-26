@@ -1,19 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AuthSessionProvider from "@/providers/session-provider";
 import { FacilityProvider } from "@/contexts/facility-context";
+import { SpecialtyProvider } from "@/contexts/specialty-context";
+import { CountryProvider } from "@/contexts/country-context";
 import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { ToastProvider } from "@/hooks/useToast";
+// Phase 2: Initialize specialty modules (client-side)
+import { SpecialtyInitializer } from "./specialty-init-client";
 
 export const metadata: Metadata = {
   title: "EHR Connect - Healthcare Management",
@@ -27,17 +21,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
-        suppressHydrationWarning
-      >
-        <AuthSessionProvider>
-          <FacilityProvider>
-            <AuthenticatedLayout>
-              {children}
-            </AuthenticatedLayout>
-          </FacilityProvider>
-        </AuthSessionProvider>
+      <body className="antialiased bg-gray-50" suppressHydrationWarning>
+        <SpecialtyInitializer />
+        <ToastProvider>
+          <AuthSessionProvider>
+            <SpecialtyProvider>
+              <CountryProvider>
+                <FacilityProvider>
+                  <AuthenticatedLayout>
+                    {children}
+                  </AuthenticatedLayout>
+                </FacilityProvider>
+              </CountryProvider>
+            </SpecialtyProvider>
+          </AuthSessionProvider>
+        </ToastProvider>
       </body>
     </html>
   );

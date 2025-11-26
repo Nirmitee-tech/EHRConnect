@@ -12,22 +12,40 @@ class HundredMSHandler extends BaseIntegrationHandler {
   async initialize(integration) {
     await super.initialize(integration);
 
+    // Parse credentials if they're stored as a string
+    const credentials = typeof integration.credentials === 'string'
+      ? JSON.parse(integration.credentials)
+      : integration.credentials;
+
     const client = {
-      appAccessKey: integration.credentials.appAccessKey,
-      appSecret: integration.credentials.appSecret,
-      templateId: integration.credentials.templateId,
-      region: integration.credentials.region || 'us'
+      appAccessKey: credentials.appId || credentials.appAccessKey, // Support both field names
+      appSecret: credentials.appSecret,
+      templateId: credentials.templateId || credentials.template_id,
+      region: credentials.region || credentials.defaultRegion || 'us',
+      apiEndpoint: credentials.apiEndpoint || 'https://api.100ms.live/v2'
     };
 
     this.setClient(integration.id, client);
-    console.log(`✓ 100ms client initialized for ${integration.id}`);
+    console.log(`✓ 100ms client initialized for ${integration.id}`, {
+      hasAppId: !!client.appAccessKey,
+      hasSecret: !!client.appSecret,
+      templateId: client.templateId,
+      region: client.region
+    });
   }
 
   async execute(integration, operation, params) {
-    const client = this.getClient(integration.id);
+    let client = this.getClient(integration.id);
 
+    // Auto-initialize if not already initialized
     if (!client) {
-      throw new Error('100ms client not initialized');
+      console.log(`🔄 Auto-initializing 100ms client for integration ${integration.id}`);
+      await this.initialize(integration);
+      client = this.getClient(integration.id);
+
+      if (!client) {
+        throw new Error('100ms client not initialized');
+      }
     }
 
     switch (operation) {
@@ -66,16 +84,21 @@ class HundredMSHandler extends BaseIntegrationHandler {
 
       console.log('Testing 100ms connection...');
 
-      // In production:
-      // const response = await fetch('https://api.100ms.live/v2/rooms', {
-      //   headers: {
-      //     'Authorization': `Bearer ${this.generateManagementToken(client)}`,
-      //     'Content-Type': 'application/json'
-      //   }
-      // });
-      // return response.ok;
+      const managementToken = this.generateManagementToken(client);
+      const response = await fetch('https://api.100ms.live/v2/rooms?limit=1', {
+        headers: {
+          'Authorization': `Bearer ${managementToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
-      return true; // Simulated success
+      if (!response.ok) {
+        console.error('100ms connection test failed:', response.status, await response.text());
+        return false;
+      }
+
+      console.log('✅ 100ms connection test successful');
+      return true;
     } catch (error) {
       console.error('100ms connection test failed:', error);
       return false;
@@ -85,68 +108,86 @@ class HundredMSHandler extends BaseIntegrationHandler {
   async createRoom(client, params) {
     console.log('Creating 100ms room:', params);
 
-    // In production:
-    // const response = await fetch('https://api.100ms.live/v2/rooms', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Authorization': `Bearer ${this.generateManagementToken(client)}`,
-    //     'Content-Type': 'application/json'
-    //   },
-    //   body: JSON.stringify({
-    //     name: params.name,
-    //     description: params.description,
-    //     template_id: client.templateId,
-    //     region: client.region
-    //   })
-    // });
-    // return await response.json();
+    const managementToken = this.generateManagementToken(client);
 
-    // Mock response
-    return {
-      id: `room_${Date.now()}`,
+    const payload = {
       name: params.name,
-      description: params.description,
-      enabled: true,
-      template_id: client.templateId,
-      created_at: new Date().toISOString()
+      description: params.description || '',
+      region: client.region
     };
+
+    // Add template_id if provided
+    if (client.templateId) {
+      payload.template_id = client.templateId;
+    }
+
+    console.log('100ms createRoom payload:', payload);
+
+    const response = await fetch('https://api.100ms.live/v2/rooms', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${managementToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('100ms createRoom failed:', response.status, errorText);
+      throw new Error(`Failed to create room: ${response.status} ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ 100ms room created:', result.id);
+    return result;
   }
 
   async getRoomDetails(client, roomId) {
     console.log('Fetching 100ms room details:', roomId);
 
-    // Mock response
-    return {
-      id: roomId,
-      name: 'Telehealth Consultation',
-      enabled: true,
-      template_id: client.templateId,
-      active_sessions: 0
-    };
+    const managementToken = this.generateManagementToken(client);
+
+    const response = await fetch(`https://api.100ms.live/v2/rooms/${roomId}`, {
+      headers: {
+        'Authorization': `Bearer ${managementToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('100ms getRoomDetails failed:', response.status, errorText);
+      throw new Error(`Failed to get room details: ${response.status}`);
+    }
+
+    return await response.json();
   }
 
   async createAuthToken(client, params) {
     console.log('Creating 100ms auth token:', params);
 
-    // In production:
-    // const jwt = require('jsonwebtoken');
-    // const token = jwt.sign({
-    //   access_key: client.appAccessKey,
-    //   room_id: params.roomId,
-    //   user_id: params.userId,
-    //   role: params.role, // host, guest, viewer
-    //   type: 'app',
-    //   version: 2
-    // }, client.appSecret, {
-    //   algorithm: 'HS256',
-    //   expiresIn: '24h',
-    //   jwtid: `${Date.now()}`
-    // });
-    // return { token };
+    const jwt = require('jsonwebtoken');
 
-    // Mock response
+    const payload = {
+      access_key: client.appAccessKey,
+      room_id: params.roomId,
+      user_id: params.userId,
+      role: params.role, // host, guest, viewer
+      type: 'app',
+      version: 2
+    };
+
+    const token = jwt.sign(payload, client.appSecret, {
+      algorithm: 'HS256',
+      expiresIn: '24h',
+      jwtid: `${Date.now()}`
+    });
+
+    console.log('✅ 100ms auth token created for user:', params.userId);
+
     return {
-      token: `mock_token_${Date.now()}`,
+      token,
       room_id: params.roomId,
       user_id: params.userId,
       role: params.role
@@ -156,7 +197,30 @@ class HundredMSHandler extends BaseIntegrationHandler {
   async endRoom(client, roomId) {
     console.log('Ending 100ms room:', roomId);
 
-    // Mock response
+    const managementToken = this.generateManagementToken(client);
+
+    const response = await fetch(`https://api.100ms.live/v2/active-rooms/${roomId}/end`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${managementToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        reason: 'Meeting ended by host'
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('100ms endRoom failed:', response.status, errorText);
+      // Don't throw error if room is already ended
+      if (response.status !== 404) {
+        throw new Error(`Failed to end room: ${response.status}`);
+      }
+    }
+
+    console.log('✅ 100ms room ended:', roomId);
+
     return {
       success: true,
       message: 'Room ended successfully'
@@ -166,78 +230,156 @@ class HundredMSHandler extends BaseIntegrationHandler {
   async getActiveSessions(client, roomId) {
     console.log('Fetching active sessions for room:', roomId);
 
-    // Mock response
+    const managementToken = this.generateManagementToken(client);
+
+    const response = await fetch(`https://api.100ms.live/v2/active-rooms/${roomId}/sessions`, {
+      headers: {
+        'Authorization': `Bearer ${managementToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('100ms getActiveSessions failed:', response.status, errorText);
+      return {
+        room_id: roomId,
+        sessions: [],
+        total: 0
+      };
+    }
+
+    const result = await response.json();
     return {
       room_id: roomId,
-      active_sessions: [],
-      total: 0
+      sessions: result.data || [],
+      total: result.data?.length || 0
     };
   }
 
   async startRecording(client, params) {
     console.log('Starting recording for room:', params.roomId);
 
-    // In production:
-    // const response = await fetch(`https://api.100ms.live/v2/recordings/room/${params.roomId}/start`, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Authorization': `Bearer ${this.generateManagementToken(client)}`,
-    //     'Content-Type': 'application/json'
-    //   },
-    //   body: JSON.stringify({
-    //     meeting_url: params.meetingUrl,
-    //     resolution: params.resolution || { width: 1280, height: 720 }
-    //   })
-    // });
-    // return await response.json();
+    const managementToken = this.generateManagementToken(client);
 
-    // Mock response
-    return {
-      id: `recording_${Date.now()}`,
-      room_id: params.roomId,
-      status: 'running',
-      started_at: new Date().toISOString()
-    };
+    const response = await fetch(`https://api.100ms.live/v2/recordings/room/${params.roomId}/start`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${managementToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        meeting_url: params.meetingUrl,
+        resolution: params.resolution || { width: 1280, height: 720 }
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('100ms startRecording failed:', response.status, errorText);
+      throw new Error(`Failed to start recording: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ 100ms recording started:', result.id);
+    return result;
   }
 
   async stopRecording(client, recordingId) {
     console.log('Stopping recording:', recordingId);
 
-    // Mock response
-    return {
-      id: recordingId,
-      status: 'stopped',
-      stopped_at: new Date().toISOString(),
-      recording_url: `https://recordings.100ms.live/${recordingId}.mp4`
-    };
+    const managementToken = this.generateManagementToken(client);
+
+    const response = await fetch(`https://api.100ms.live/v2/recordings/${recordingId}/stop`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${managementToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('100ms stopRecording failed:', response.status, errorText);
+      throw new Error(`Failed to stop recording: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ 100ms recording stopped:', recordingId);
+    return result;
   }
 
   async startLiveStream(client, params) {
     console.log('Starting live stream for room:', params.roomId);
 
-    // Mock response
-    return {
-      id: `stream_${Date.now()}`,
-      room_id: params.roomId,
-      status: 'running',
-      rtmp_urls: params.rtmpUrls || []
-    };
+    const managementToken = this.generateManagementToken(client);
+
+    const response = await fetch(`https://api.100ms.live/v2/live-streams/room/${params.roomId}/start`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${managementToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        meeting_url: params.meetingUrl,
+        rtmp_urls: params.rtmpUrls || []
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('100ms startLiveStream failed:', response.status, errorText);
+      throw new Error(`Failed to start live stream: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ 100ms live stream started:', result.id);
+    return result;
   }
 
   async stopLiveStream(client, streamId) {
     console.log('Stopping live stream:', streamId);
 
-    // Mock response
-    return {
-      id: streamId,
-      status: 'stopped',
-      stopped_at: new Date().toISOString()
-    };
+    const managementToken = this.generateManagementToken(client);
+
+    const response = await fetch(`https://api.100ms.live/v2/live-streams/${streamId}/stop`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${managementToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('100ms stopLiveStream failed:', response.status, errorText);
+      throw new Error(`Failed to stop live stream: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ 100ms live stream stopped:', streamId);
+    return result;
   }
 
   generateManagementToken(client) {
-    // In production, generate JWT with management permissions
-    return 'mock_management_token';
+    const jwt = require('jsonwebtoken');
+    const uuid = require('uuid');
+
+    const payload = {
+      access_key: client.appAccessKey,
+      type: 'management',
+      version: 2,
+      iat: Math.floor(Date.now() / 1000),
+      nbf: Math.floor(Date.now() / 1000)
+    };
+
+    const token = jwt.sign(payload, client.appSecret, {
+      algorithm: 'HS256',
+      expiresIn: '24h',
+      jwtid: uuid.v4()
+    });
+
+    return token;
   }
 }
 

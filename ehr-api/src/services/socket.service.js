@@ -1,5 +1,6 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const notificationService = require('./notification.service');
 
 /**
  * Socket.IO Service for Real-time Permission Updates
@@ -29,6 +30,17 @@ class SocketService {
     this.io.use(async (socket, next) => {
       try {
         const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
+        const isPublicWidget = socket.handshake.auth.publicWidget === true;
+        const orgId = socket.handshake.auth.orgId;
+
+        // Allow public widget connections without authentication
+        if (isPublicWidget && orgId) {
+          socket.isPublic = true;
+          socket.orgId = orgId;
+          socket.userId = null;
+          console.log(`Public widget connection for org: ${orgId}`);
+          return next();
+        }
 
         if (!token) {
           return next(new Error('Authentication required'));
@@ -40,6 +52,7 @@ class SocketService {
         socket.userId = decoded.userId || decoded.sub;
         socket.orgId = decoded.orgId || decoded.org_id;
         socket.email = decoded.email;
+        socket.isPublic = false;
 
         if (!socket.userId || !socket.orgId) {
           return next(new Error('Invalid token: missing user or org context'));
@@ -54,13 +67,16 @@ class SocketService {
 
     // Connection handler
     this.io.on('connection', (socket) => {
-      console.log(`Socket connected: ${socket.id} (User: ${socket.userId}, Org: ${socket.orgId})`);
+      const connectionType = socket.isPublic ? 'Public Widget' : 'Authenticated User';
+      console.log(`Socket connected: ${socket.id} (Type: ${connectionType}, User: ${socket.userId || 'N/A'}, Org: ${socket.orgId})`);
 
-      // Track user socket connections
-      if (!this.userSockets.has(socket.userId)) {
-        this.userSockets.set(socket.userId, new Set());
+      // Track user socket connections (only for authenticated users)
+      if (socket.userId) {
+        if (!this.userSockets.has(socket.userId)) {
+          this.userSockets.set(socket.userId, new Set());
+        }
+        this.userSockets.get(socket.userId).add(socket.id);
       }
-      this.userSockets.get(socket.userId).add(socket.id);
 
       // Join org room for org-wide broadcasts
       const orgRoom = `org:${socket.orgId}`;
@@ -72,16 +88,25 @@ class SocketService {
       }
       this.orgRooms.get(socket.orgId).add(socket.id);
 
-      // Join user-specific room for direct notifications
-      const userRoom = `user:${socket.userId}`;
-      socket.join(userRoom);
+      // Join user-specific room for direct notifications (only for authenticated users)
+      if (socket.userId) {
+        const userRoom = `user:${socket.userId}`;
+        socket.join(userRoom);
+      }
 
       // Send welcome message
-      socket.emit('connected', {
-        message: 'Connected to permission update service',
-        userId: socket.userId,
-        orgId: socket.orgId,
-      });
+      if (socket.isPublic) {
+        socket.emit('connected', {
+          message: 'Connected to booking widget real-time service',
+          orgId: socket.orgId,
+        });
+      } else {
+        socket.emit('connected', {
+          message: 'Connected to permission update service',
+          userId: socket.userId,
+          orgId: socket.orgId,
+        });
+      }
 
       // Handle disconnection
       socket.on('disconnect', () => {
@@ -132,12 +157,27 @@ class SocketService {
     }
 
     const userRoom = `user:${userId}`;
-    this.io.to(userRoom).emit('permission-changed', {
+    const payload = {
       type: 'user_permission_change',
       userId,
       changeData,
       timestamp: new Date().toISOString(),
-    });
+    };
+
+    this.io.to(userRoom).emit('permission-changed', payload);
+
+    const orgId = changeData?.orgId || changeData?.org_id || changeData?.organizationId || changeData?.orgID;
+    if (orgId) {
+      notificationService.createNotification({
+        orgId,
+        userId,
+        event: 'permission-changed',
+        data: payload,
+        recipients: [userId],
+      }).catch((error) => {
+        console.error('Failed to persist permission notification:', error);
+      });
+    }
 
     console.log(`Notified user ${userId} of permission change`);
   }
@@ -167,11 +207,21 @@ class SocketService {
     }
 
     const orgRoom = `org:${orgId}`;
-    this.io.to(orgRoom).emit('role-changed', {
+    const payload = {
       type: 'org_role_change',
       orgId,
       changeData,
       timestamp: new Date().toISOString(),
+    };
+
+    this.io.to(orgRoom).emit('role-changed', payload);
+
+    notificationService.recordOrgEvent({
+      orgId,
+      event: 'role-changed',
+      data: payload,
+    }).catch((error) => {
+      console.error('Failed to persist role change notification:', error);
     });
 
     console.log(`Notified org ${orgId} of role change`);
@@ -189,17 +239,28 @@ class SocketService {
     // Notify the specific user
     this.notifyUserPermissionChange(userId, {
       type: 'role_assignment',
+      orgId,
       ...changeData,
     });
 
     // Also notify admins in the org
     const orgRoom = `org:${orgId}`;
-    this.io.to(orgRoom).emit('role-assignment-changed', {
+    const payload = {
       type: 'role_assignment_change',
       userId,
       orgId,
       changeData,
       timestamp: new Date().toISOString(),
+    };
+
+    this.io.to(orgRoom).emit('role-assignment-changed', payload);
+
+    notificationService.recordOrgEvent({
+      orgId,
+      event: 'role-assignment-changed',
+      data: payload,
+    }).catch((error) => {
+      console.error('Failed to persist role assignment notification:', error);
     });
 
     console.log(`Notified role assignment change for user ${userId} in org ${orgId}`);
@@ -217,17 +278,28 @@ class SocketService {
     // Notify the specific user
     this.notifyUserPermissionChange(userId, {
       type: 'role_revocation',
+      orgId,
       ...changeData,
     });
 
     // Also notify admins
     const orgRoom = `org:${orgId}`;
-    this.io.to(orgRoom).emit('role-revocation', {
+    const payload = {
       type: 'role_revocation',
       userId,
       orgId,
       changeData,
       timestamp: new Date().toISOString(),
+    };
+
+    this.io.to(orgRoom).emit('role-revocation', payload);
+
+    notificationService.recordOrgEvent({
+      orgId,
+      event: 'role-revocation',
+      data: payload,
+    }).catch((error) => {
+      console.error('Failed to persist role revocation notification:', error);
     });
 
     console.log(`Notified role revocation for user ${userId} in org ${orgId}`);
@@ -292,6 +364,125 @@ class SocketService {
    */
   getIO() {
     return this.io;
+  }
+
+  /**
+   * ========================================
+   * APPOINTMENT BOOKING REAL-TIME EVENTS
+   * ========================================
+   */
+
+  /**
+   * Notify organization about appointment created
+   * This refreshes slot availability in booking widgets
+   */
+  notifyAppointmentCreated(orgId, appointmentData) {
+    if (!this.io) {
+      console.warn('Socket.IO not initialized');
+      return;
+    }
+
+    const orgRoom = `org:${orgId}`;
+    const payload = {
+      type: 'appointment_created',
+      orgId,
+      appointment: appointmentData,
+      timestamp: new Date().toISOString(),
+    };
+
+    this.io.to(orgRoom).emit('appointment:created', payload);
+
+    notificationService.recordOrgEvent({
+      orgId,
+      event: 'appointment:created',
+      data: payload,
+    }).catch((error) => {
+      console.error('Failed to persist appointment created notification:', error);
+    });
+
+    console.log(`Notified org ${orgId} of new appointment creation`);
+  }
+
+  /**
+   * Notify organization about appointment updated
+   */
+  notifyAppointmentUpdated(orgId, appointmentData) {
+    if (!this.io) {
+      console.warn('Socket.IO not initialized');
+      return;
+    }
+
+    const orgRoom = `org:${orgId}`;
+    const payload = {
+      type: 'appointment_updated',
+      orgId,
+      appointment: appointmentData,
+      timestamp: new Date().toISOString(),
+    };
+
+    this.io.to(orgRoom).emit('appointment:updated', payload);
+
+    notificationService.recordOrgEvent({
+      orgId,
+      event: 'appointment:updated',
+      data: payload,
+    }).catch((error) => {
+      console.error('Failed to persist appointment updated notification:', error);
+    });
+
+    console.log(`Notified org ${orgId} of appointment update`);
+  }
+
+  /**
+   * Notify organization about appointment cancelled
+   */
+  notifyAppointmentCancelled(orgId, appointmentData) {
+    if (!this.io) {
+      console.warn('Socket.IO not initialized');
+      return;
+    }
+
+    const orgRoom = `org:${orgId}`;
+    const payload = {
+      type: 'appointment_cancelled',
+      orgId,
+      appointment: appointmentData,
+      timestamp: new Date().toISOString(),
+    };
+
+    this.io.to(orgRoom).emit('appointment:cancelled', payload);
+
+    notificationService.recordOrgEvent({
+      orgId,
+      event: 'appointment:cancelled',
+      data: payload,
+    }).catch((error) => {
+      console.error('Failed to persist appointment cancelled notification:', error);
+    });
+
+    console.log(`Notified org ${orgId} of appointment cancellation`);
+  }
+
+  /**
+   * Notify organization to refresh slots for a specific date
+   * This is more efficient than full refresh
+   */
+  notifySlotsChanged(orgId, date, practitionerId = null) {
+    if (!this.io) {
+      console.warn('Socket.IO not initialized');
+      return;
+    }
+
+    const orgRoom = `org:${orgId}`;
+    this.io.to(orgRoom).emit('slots:changed', {
+      type: 'slots_changed',
+      orgId,
+      date,
+      practitionerId,
+      timestamp: new Date().toISOString(),
+    });
+
+    console.log(`Notified org ${orgId} of slot changes for date ${date}`);
   }
 }
 

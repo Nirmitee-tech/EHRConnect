@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16.2
+    container_name: keycloak-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-keycloak}
+      POSTGRES_USER: ${POSTGRES_USER:-keycloakuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  keycloak:
+    image: jitendratech/ehr-keycloak:${KEYCLOAK_TAG:-dev}
+    container_name: keycloak-server
+    environment:
+      # Database
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-keycloak}
+      KC_DB_USERNAME: ${POSTGRES_USER:-keycloakuser}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+
+      # Admin
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+
+      # Hostname Configuration
+      KC_HOSTNAME: ${KC_HOSTNAME:-auth-dev.nirmitee.io}
+      KC_HOSTNAME_STRICT: "false"
+
+      # Force HTTPS URL generation (even in dev mode)
+      KC_HOSTNAME_URL: https://${KC_HOSTNAME:-auth-dev.nirmitee.io}
+      KC_HOSTNAME_ADMIN_URL: https://${KC_HOSTNAME:-auth-dev.nirmitee.io}
+
+      # HTTP Configuration
+      KC_HTTP_ENABLED: "true"
+
+      # Proxy Configuration (CRITICAL!)
+      KC_PROXY_HEADERS: xforwarded
+
+      # Health
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "${KEYCLOAK_PORT:-8080}:8080"
+    depends_on:
+      - postgres
+    command: start-dev --import-realm --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
+    restart: always
+
+volumes:
+  postgres_data:

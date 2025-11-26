@@ -9,6 +9,22 @@ import { Label } from '@/components/ui/label';
 import billingService from '@/services/billing.service';
 import { useRouter } from 'next/navigation';
 
+const computeReadinessScore = (data: {
+  cptCodes: string[];
+  icdCodes: string[];
+  providerNPI: string;
+  notes?: string;
+  units?: number;
+}) => {
+  let score = 0;
+  if (data.cptCodes?.length) score += 1;
+  if (data.icdCodes?.length) score += 1;
+  if (data.providerNPI && data.providerNPI.length === 10) score += 1;
+  if (data.notes && data.notes.length >= 10) score += 1;
+  if (data.units && data.units > 0) score += 1;
+  return score;
+};
+
 export default function NewPriorAuthPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -27,6 +43,8 @@ export default function NewPriorAuthPage() {
     units: 1,
     serviceLocation: '',
     notes: '',
+    eligibilityChecked: false,
+    docsPrepared: false,
   });
 
   const [cptInput, setCptInput] = useState('');
@@ -244,6 +262,13 @@ export default function NewPriorAuthPage() {
                     </option>
                   ))}
                 </select>
+                {formData.payerId && (
+                  <p className="text-xs text-gray-600 mt-1">
+                    {payers.find((p) => (p.payer_id || p.id) === formData.payerId)?.requires_prior_auth
+                      ? 'Payer indicates prior auth is typically required.'
+                      : 'No prior auth flag on file for this payer.'}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -403,6 +428,41 @@ export default function NewPriorAuthPage() {
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               />
             </div>
+
+            <div className="mt-6 space-y-3">
+              <h3 className="text-base font-semibold text-gray-900">Readiness Checklist</h3>
+              <label className="flex items-start gap-3 text-sm text-gray-800">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4"
+                  checked={formData.eligibilityChecked}
+                  onChange={(e) => setFormData({ ...formData, eligibilityChecked: e.target.checked })}
+                  required
+                />
+                <span>Eligibility checked (270/271 or portal/phone) and coverage confirmed</span>
+              </label>
+              <label className="flex items-start gap-3 text-sm text-gray-800">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4"
+                  checked={formData.docsPrepared}
+                  onChange={(e) => setFormData({ ...formData, docsPrepared: e.target.checked })}
+                  required
+                />
+                <span>Clinical packet ready (signed order, notes, imaging/treatment history)</span>
+              </label>
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <span className="font-semibold">Readiness score:</span>
+                <span className="px-2 py-1 bg-gray-100 rounded-md">
+                  {computeReadinessScore(formData)} / 5
+                </span>
+                {computeReadinessScore(formData) >= 4 ? (
+                  <span className="text-green-700">Looks ready for submission</span>
+                ) : (
+                  <span className="text-amber-700">Add details to improve first-pass</span>
+                )}
+              </div>
+            </div>
           </div>
 
           {error && (
@@ -427,7 +487,14 @@ export default function NewPriorAuthPage() {
             </Button>
             <Button
               type="submit"
-              disabled={loading || formData.cptCodes.length === 0 || formData.icdCodes.length === 0}
+              disabled={
+                loading ||
+                formData.cptCodes.length === 0 ||
+                formData.icdCodes.length === 0 ||
+                !formData.eligibilityChecked ||
+                !formData.docsPrepared ||
+                formData.providerNPI.length !== 10
+              }
               className="flex-1 bg-purple-600 hover:bg-purple-700"
             >
               {loading ? (

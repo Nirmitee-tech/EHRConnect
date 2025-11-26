@@ -1,10 +1,10 @@
 import { MedplumClient } from '@medplum/core'
 
-// Initialize Medplum client to use Next.js API proxy
+// Initialize Medplum client
 export const medplum = new MedplumClient({
-  baseUrl: process.env.NEXT_PUBLIC_MEDPLUM_BASE_URL || 'http://localhost:3000/api/fhir',
-  fhirUrlPath: '',
-  clientId: process.env.MEDPLUM_CLIENT_ID || 'medplum-client',
+  baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+  fhirUrlPath: 'fhir/R4',
+  clientId: process.env.NEXT_PUBLIC_MEDPLUM_CLIENT_ID || 'medplum-client',
   onUnauthenticated: () => {
     // Redirect to sign in page when unauthenticated
     if (typeof window !== 'undefined') {
@@ -30,8 +30,22 @@ export type FHIRResourceType =
   | 'DocumentReference'
   | 'ServiceRequest'
   | 'Coverage'
+  | 'Communication'
+  | 'CommunicationRequest'
+  | 'Immunization'
+  | 'ImagingStudy'
   | 'Binary'
+  | 'Goal'
+  | 'Task'
+  | 'Questionnaire'
+  | 'QuestionnaireResponse'
+  | 'RelatedPerson'
+  | 'Consent'
+  | 'ExplanationOfBenefit'
+  | 'Invoice'
+  | 'PaymentNotice'
   | 'CarePlan'
+  | 'FamilyMemberHistory'
 
 // Generic FHIR search parameters
 export interface FHIRSearchParams {

@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+
 import { X, Search, Loader2, ChevronDown, ChevronUp, Check, Shield, User, CreditCard, Phone, MapPin, DollarSign, FileText, CheckCircle } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@nirmitee.io/design-system';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 interface InsuranceDrawerProps {
   open: boolean;
@@ -81,7 +84,7 @@ export function InsuranceDrawer({ open, onOpenChange, onSave, patientId }: Insur
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/integrations/claimmd/payers?search=${encodeURIComponent(search)}`
+        `${API_URL}/api/integrations/claimmd/payers?search=${encodeURIComponent(search)}`
       );
       const data = await response.json();
 

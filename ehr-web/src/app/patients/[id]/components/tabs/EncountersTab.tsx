@@ -7,9 +7,10 @@ interface EncountersTabProps {
   observations: any[];
   onNewEncounter: () => void;
   selectedEncounterId?: string;
+  onEncounterClick?: (encounterId: string) => void;
 }
 
-export const EncountersTab = memo(function EncountersTab({ encounters, observations, onNewEncounter, selectedEncounterId }: EncountersTabProps) {
+export const EncountersTab = memo(function EncountersTab({ encounters, observations, onNewEncounter, selectedEncounterId, onEncounterClick }: EncountersTabProps) {
   const encounterRefs = React.useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   // Scroll to selected encounter when it changes
@@ -62,11 +63,14 @@ export const EncountersTab = memo(function EncountersTab({ encounters, observati
                     <div className="absolute left-6 top-16 bottom-0 w-0.5 bg-gray-200" style={{ height: 'calc(100% + 1rem)' }} />
                   )}
 
-                  <div className={`rounded-lg border p-4 ml-0 transition-all ${
-                    isSelected
-                      ? 'bg-blue-50 border-blue-300 shadow-lg ring-2 ring-blue-200'
-                      : 'bg-white border-gray-200'
-                  }`}>
+                  <div
+                    onClick={() => onEncounterClick?.(encounter.id)}
+                    className={`rounded-lg border p-4 ml-0 transition-all cursor-pointer hover:shadow-md ${
+                      isSelected
+                        ? 'bg-blue-50 border-blue-300 shadow-lg ring-2 ring-blue-200'
+                        : 'bg-white border-gray-200'
+                    }`}
+                  >
                     <div className="flex items-start gap-4">
                       <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${
                         encounter.status === 'in-progress' ? 'bg-blue-100' :

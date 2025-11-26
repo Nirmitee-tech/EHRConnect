@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Appointment } from '@/types/appointment';
-import { Clock, User, MapPin, Stethoscope, Calendar, FileText, Play, CheckCircle, XCircle } from 'lucide-react';
+import { Clock, User, MapPin, Stethoscope, Calendar, FileText, Play, CheckCircle, XCircle, Video, Phone, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface DetailedAppointmentCardProps {
@@ -99,6 +99,19 @@ export function DetailedAppointmentCard({
     }
   };
 
+  const getModeIcon = (mode?: string) => {
+    switch (mode) {
+      case 'video-call':
+        return <Video className="h-3 w-3 text-green-600" />;
+      case 'voice-call':
+        return <Phone className="h-3 w-3 text-purple-600" />;
+      case 'in-person':
+        return <Users className="h-3 w-3 text-blue-600" />;
+      default:
+        return null;
+    }
+  };
+
   // Use practitioner color if available
   const borderColor = appointment.practitionerColor || '#3b82f6';
 
@@ -127,9 +140,24 @@ export function DetailedAppointmentCard({
         <div className="p-3 h-full flex flex-col gap-2">
           {/* Status Badge - First */}
           <div className="flex items-center justify-between">
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide whitespace-nowrap ${getStatusBadgeColor(appointment.status)}`}>
-              {getStatusLabel(appointment.status)}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide whitespace-nowrap ${getStatusBadgeColor(appointment.status)}`}>
+                {getStatusLabel(appointment.status)}
+              </span>
+              {/* Video Call Badge - Prominent */}
+              {appointment.mode === 'video-call' && (
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-green-600 text-white rounded-full text-[10px] font-bold">
+                  <Video className="h-3 w-3" />
+                  <span>VIDEO CALL</span>
+                </div>
+              )}
+              {appointment.mode === 'voice-call' && (
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-600 text-white rounded-full text-[10px] font-bold">
+                  <Phone className="h-3 w-3" />
+                  <span>VOICE CALL</span>
+                </div>
+              )}
+            </div>
             {appointment.patientId && (
               <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/60 rounded text-[10px] text-gray-600 font-mono">
                 <User className="h-2.5 w-2.5" />
@@ -180,6 +208,14 @@ export function DetailedAppointmentCard({
             <div className="flex items-center gap-1.5 text-xs text-gray-700">
               <MapPin className="h-3 w-3 flex-shrink-0 text-gray-500" />
               <span className="truncate">{appointment.location}</span>
+            </div>
+          )}
+
+          {/* Appointment Mode */}
+          {appointment.mode && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-700">
+              {getModeIcon(appointment.mode)}
+              <span className="truncate capitalize font-medium">{appointment.mode.replace('-', ' ')}</span>
             </div>
           )}
 

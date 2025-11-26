@@ -246,6 +246,7 @@ router.post('/role-assignments', async (req, res) => {
       role_id,
       scope,
       location_id,
+      location_ids,
       department_id,
       expires_at
     } = req.body;
@@ -256,20 +257,26 @@ router.post('/role-assignments', async (req, res) => {
       });
     }
 
-    const assignment = await rbacService.assignRole(
+    const result = await rbacService.assignRole(
       {
         user_id,
         org_id: req.userContext.orgId,
         role_id,
         scope,
         location_id,
+        location_ids,
         department_id,
         expires_at
       },
       req.userContext.userId
     );
 
-    res.status(201).json({ assignment });
+    res.status(201).json({
+      assignment: result.assignments?.[0] || null,
+      assignments: result.assignments || [],
+      location_ids: result.location_ids || [],
+      count: (result.assignments || []).length
+    });
   } catch (error) {
     console.error('Error assigning role:', error);
     res.status(400).json({ error: error.message });

@@ -1,0 +1,167 @@
+{
+  "slug": "general",
+  "version": "1.0.0",
+  "name": "General Primary Care",
+  "description": "Default specialty pack for general primary care practice",
+  "category": "clinical",
+  "icon": "Stethoscope",
+  "color": "#3B82F6",
+  "dependencies": [],
+  "templates": [
+    "templates/general-intake.json",
+    "templates/general-encounter.json"
+  ],
+  "visitTypes": "visit-types.json",
+  "workflows": null,
+  "reports": "reports/general-kpis.json",
+  "featureFlags": {
+    "enableAdvancedEncounters": true,
+    "enableTelehealth": true
+  },
+  "devices": [],
+  "navigation": {
+    "sections": [
+      {
+        "id": "dashboard",
+        "label": "Dashboard",
+        "icon": "LayoutDashboard",
+        "category": "general",
+        "order": 1
+      },
+      {
+        "id": "facesheet",
+        "label": "Facesheet",
+        "icon": "FileText",
+        "category": "clinical",
+        "order": 2,
+        "componentName": "GeneralFacesheet"
+      },
+      {
+        "id": "allergies",
+        "label": "Allergies",
+        "icon": "AlertCircle",
+        "category": "clinical",
+        "order": 3
+      },
+      {
+        "id": "problems",
+        "label": "Diagnoses",
+        "icon": "Search",
+        "category": "clinical",
+        "order": 4
+      },
+      {
+        "id": "medications",
+        "label": "Medications",
+        "icon": "Pill",
+        "category": "clinical",
+        "order": 5
+      },
+      {
+        "id": "vaccines",
+        "label": "Vaccines",
+        "icon": "Syringe",
+        "category": "clinical",
+        "order": 6
+      },
+      {
+        "id": "vitals",
+        "label": "Vitals",
+        "icon": "Activity",
+        "category": "clinical",
+        "order": 7
+      },
+      {
+        "id": "lab",
+        "label": "Lab",
+        "icon": "TestTube",
+        "category": "clinical",
+        "order": 8
+      },
+      {
+        "id": "imaging",
+        "label": "Imaging",
+        "icon": "ImageIcon",
+        "category": "clinical",
+        "order": 9
+      },
+      {
+        "id": "history",
+        "label": "History",
+        "icon": "History",
+        "category": "clinical",
+        "order": 10
+      },
+      {
+        "id": "encounters",
+        "label": "Visit Details",
+        "icon": "Calendar",
+        "category": "clinical",
+        "order": 11
+      },
+      {
+        "id": "documents",
+        "label": "Documents",
+        "icon": "FileText",
+        "category": "administrative",
+        "order": 12
+      },
+      {
+        "id": "profile",
+        "label": "Profile",
+        "icon": "UserCircle",
+        "category": "administrative",
+        "order": 13
+      },
+      {
+        "id": "portal-access",
+        "label": "Portal Access",
+        "icon": "Globe",
+        "category": "administrative",
+        "order": 14
+      },
+      {
+        "id": "financial",
+        "label": "Financial",
+        "icon": "DollarSign",
+        "category": "financial",
+        "order": 15
+      },
+      {
+        "id": "billing",
+        "label": "Billing",
+        "icon": "FileCheck",
+        "category": "financial",
+        "order": 16
+      },
+      {
+        "id": "insurance",
+        "label": "Insurance",
+        "icon": "Shield",
+        "category": "financial",
+        "order": 17
+      },
+      {
+        "id": "card-details",
+        "label": "Card Details",
+        "icon": "CreditCard",
+        "category": "financial",
+        "order": 18
+      }
+    ],
+    "replaceSections": false,
+    "mergeWith": null
+  },
+  "episodeConfig": {
+    "allowConcurrent": true,
+    "defaultState": "active",
+    "requiredFields": [],
+    "stateTransitions": {
+      "planned": ["active", "cancelled"],
+      "active": ["onhold", "finished", "cancelled"],
+      "onhold": ["active", "finished", "cancelled"],
+      "finished": [],
+      "cancelled": []
+    }
+  }
+}

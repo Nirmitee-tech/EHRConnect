@@ -28,6 +28,9 @@ interface PriorAuthRequest {
   units?: number;
   serviceLocation?: string;
   notes?: string;
+  eligibilityChecked?: boolean;
+  docsPrepared?: boolean;
+  ignoreDuplicate?: boolean;
 }
 
 interface ClaimData {

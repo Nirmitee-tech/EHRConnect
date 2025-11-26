@@ -34,10 +34,10 @@ import { PatientInstructionsSection } from '@/components/encounters/patient-inst
 import { PackageSection } from '@/components/encounters/package-section';
 
 export default function EncounterPage() {
-  const params = useParams();
+  const params = useParams<{ id?: string }>();
   const router = useRouter();
   const { data: session } = useSession();
-  const encounterId = params.id as string;
+  const encounterId = params?.id ?? '';
 
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,10 +65,15 @@ export default function EncounterPage() {
   };
 
   useEffect(() => {
-    loadEncounter();
+    if (encounterId) {
+      loadEncounter();
+    }
   }, [encounterId]);
 
   const loadEncounter = async () => {
+    if (!encounterId) {
+      return;
+    }
     try {
       setLoading(true);
       const data = await EncounterService.getById(encounterId);
@@ -89,7 +94,7 @@ export default function EncounterPage() {
 
           // Also get patient resource to check active status
           try {
-            const patientResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/fhir/R4/Patient/${data.patientId}`, {
+            const patientResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/fhir/R4/Patient/${data.patientId}`, {
               credentials: 'include',
             });
             if (patientResponse.ok) {

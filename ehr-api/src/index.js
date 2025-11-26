@@ -13,6 +13,7 @@ const rbacRoutes = require('./routes/rbac');
 const rbacEnhancedRoutes = require('./routes/rbac.enhanced');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
+const userDataRoutes = require('./routes/user-data');
 const onboardingRoutes = require('./routes/onboarding');
 const billingRoutes = require('./routes/billing');
 const inventoryRoutes = require('./routes/inventory');
@@ -22,6 +23,14 @@ const dashboardRoutes = require('./routes/dashboard');
 const integrationsRoutes = require('./routes/integrations');
 const bedManagementRoutes = require('./routes/bed-management');
 const dataMapperRoutes = require('./routes/data-mapper');
+const notificationRoutes = require('./routes/notifications');
+const virtualMeetingsRoutes = require('./routes/virtual-meetings.routes');
+const patientPortalRoutes = require('./routes/patient-portal');
+const specialtyRoutes = require('./routes/specialties');
+const countryRoutes = require('./routes/countries');
+const translationRoutes = require('./routes/translations');
+const initializeEpisodeRoutes = require('./routes/episodes');
+const formsRoutes = require('./routes/forms');
 const { initializeDatabase } = require('./database/init');
 const socketService = require('./services/socket.service');
 const billingJobs = require('./services/billing.jobs');
@@ -43,15 +52,69 @@ dbPool.connect()
 
 // Middleware
 app.use(helmet());
+
+// CORS configuration - Allow specific origins with credentials
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://ehr-dev.nirmitee.io',
+  'https://api-dev.nirmitee.io',
+  'https://ehr-staging.nirmitee.io',
+  'https://api-staging.nirmitee.io',
+  'https://ehr.nirmitee.io',
+  'https://api.nirmitee.io',
+  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
+];
+
 app.use(cors({
-  origin: '*', // Allow all origins for VAPI integration
-  credentials: false, // Must be false when origin is '*'
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-org-id']
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, Postman, or server-to-server)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true, // Allow credentials (cookies, authorization headers)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'Accept',
+    'Origin',
+    'X-Requested-With',
+    'User-Agent',
+    'Referer',
+    // Custom app headers
+    'x-org-id',
+    'x-user-id',
+    'x-user-roles',
+    'x-location-id',
+    'x-location-ids',
+    'x-department-id',
+    'x-request-id',
+    'x-practitioner-id',
+    'x-patient-id',
+    'x-session-token', // Patient portal session token
+    // Medplum specific headers
+    'x-medplum',
+    'x-trace-id',
+    'x-correlation-id',
+    'cache-control',
+    'if-match',
+    'if-none-match',
+    'if-modified-since',
+    'if-none-exist',
+    'prefer',
+  ],
+  exposedHeaders: ['Content-Range', 'X-Content-Range', 'ETag', 'Last-Modified', 'Location']
 }));
 app.use(express.json({
   limit: '10mb',
-  type: ['application/json', 'application/fhir+json']
+  type: ['application/json', 'application/fhir+json', 'application/json-patch+json']
 }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -160,9 +223,10 @@ app.use('/api/orgs', organizationRoutes);
 app.use('/api/orgs', userRoutes);
 app.use('/api/orgs', onboardingRoutes);
 app.use('/api/invitations', invitationRoutes);
+app.use('/api/rbac/v2', rbacEnhancedRoutes); // Enhanced RBAC with permission matrix (must be before /api/rbac)
 app.use('/api/rbac', rbacRoutes);
-app.use('/api/rbac/v2', rbacEnhancedRoutes); // Enhanced RBAC with permission matrix
 app.use('/api/auth', authRoutes);
+app.use('/api/user', userDataRoutes); // Separate endpoints for user data with Redis caching
 app.use('/api/billing', billingRoutes);
 app.use('/api/inventory/masters', inventoryMastersRoutes);
 app.use('/api/inventory', inventoryRoutes);
@@ -171,11 +235,19 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/integrations', integrationsRoutes);
 app.use('/api/bed-management', bedManagementRoutes);
 app.use('/api/data-mapper', dataMapperRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/virtual-meetings', virtualMeetingsRoutes);
+app.use('/api/patient-portal', patientPortalRoutes);
+app.use('/api/specialties', specialtyRoutes);
+app.use('/api/countries', countryRoutes);
+app.use('/api/translations', translationRoutes);
+app.use('/api', initializeEpisodeRoutes(dbPool)); // Episode routes (FHIR EpisodeOfCare)
+app.use('/api/forms', formsRoutes); // Forms/Questionnaire Builder routes
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
+  res.json({
+    status: 'healthy',
     timestamp: new Date().toISOString(),
     version: '1.0.0',
     fhir: '4.0.1'
@@ -199,7 +271,7 @@ app.use('*', (req, res) => {
 // Error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err);
-  
+
   res.status(err.status || 500).json({
     resourceType: 'OperationOutcome',
     issue: [{

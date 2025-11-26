@@ -1,0 +1,112 @@
+version: "3.8"
+
+# Simplified compose file for Dokploy Staging - uses Dokploy's managed databases
+# This file ONLY includes app services (ehr-api, ehr-web, keycloak)
+# PostgreSQL is managed separately in Dokploy
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: ehr-redis-staging
+    networks:
+      - ehr-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: ehr-keycloak-staging
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: ${KC_DB_URL}
+      KC_DB_USERNAME: ${DB_USER}
+      KC_DB_PASSWORD: ${DB_PASSWORD}
+      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME}
+      KC_HOSTNAME_STRICT: "true"
+      KC_HOSTNAME_STRICT_HTTPS: "true"
+      KC_PROXY: edge
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+    networks:
+      - ehr-network
+    command:
+      - start
+      - --optimized
+      - --import-realm
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - ./keycloak/themes:/opt/keycloak/providers/
+      - keycloak_staging_data:/opt/keycloak/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: always
+
+  ehr-api:
+    image: ${DOCKERHUB_USERNAME:-jitendratech}/ehr-api:${API_IMAGE_TAG:-staging}
+    container_name: ehr-api-staging
+    environment:
+      NODE_ENV: staging
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KEYCLOAK_CLIENT_ID: admin-cli
+      PORT: 8000
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      JWT_SECRET: ${JWT_SECRET}
+      SOCKET_IO_ENABLED: "true"
+      SOCKET_PORT: 8001
+      SOCKET_CORS_ORIGIN: ${ALLOWED_ORIGINS}
+      CLAIMMD_API_URL: ${CLAIMMD_API_URL}
+    depends_on:
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - ehr-network
+    restart: always
+
+  ehr-web:
+    image: ${DOCKERHUB_USERNAME:-jitendratech}/ehr-web:${WEB_IMAGE_TAG:-staging}
+    container_name: ehr-web-staging
+    environment:
+      NODE_ENV: staging
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT:-5432}/${DB_NAME}
+      DIRECT_URL: postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT:-5432}/${DB_NAME}
+      REDIS_URL: redis://redis:6379
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXT_PUBLIC_KEYCLOAK_URL: ${NEXT_PUBLIC_KEYCLOAK_URL}
+      NEXT_PUBLIC_KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID}
+    depends_on:
+      - ehr-api
+      - redis
+    networks:
+      - ehr-network
+    restart: always
+
+networks:
+  ehr-network:
+    driver: bridge
+
+volumes:
+  keycloak_staging_data:

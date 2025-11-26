@@ -1,0 +1,141 @@
+{
+  "version": "1.0",
+  "name": "ehr-connect",
+  "description": "Electronic Health Records System with FHIR compliance",
+  "environments": {
+    "development": {
+      "compose_file": "docker-compose.dev.yml",
+      "env_file": ".env.dev",
+      "domains": {
+        "web": "dev.yourdomain.com",
+        "api": "dev-api.yourdomain.com",
+        "auth": "dev-auth.yourdomain.com"
+      },
+      "resources": {
+        "postgres": {
+          "memory": "512M",
+          "cpus": "0.5"
+        },
+        "redis": {
+          "memory": "256M",
+          "cpus": "0.25"
+        },
+        "keycloak": {
+          "memory": "1G",
+          "cpus": "1"
+        },
+        "ehr-api": {
+          "memory": "1G",
+          "cpus": "1"
+        },
+        "ehr-web": {
+          "memory": "1G",
+          "cpus": "1"
+        }
+      }
+    },
+    "staging": {
+      "compose_file": "docker-compose.staging.yml",
+      "env_file": ".env.staging",
+      "domains": {
+        "web": "staging.yourdomain.com",
+        "api": "staging-api.yourdomain.com",
+        "auth": "staging-auth.yourdomain.com"
+      },
+      "resources": {
+        "postgres": {
+          "memory": "1G",
+          "cpus": "1"
+        },
+        "redis": {
+          "memory": "512M",
+          "cpus": "0.5"
+        },
+        "keycloak": {
+          "memory": "1G",
+          "cpus": "1"
+        },
+        "ehr-api": {
+          "memory": "1G",
+          "cpus": "1"
+        },
+        "ehr-web": {
+          "memory": "1G",
+          "cpus": "1"
+        }
+      }
+    },
+    "production": {
+      "compose_file": "docker-compose.prod.yml",
+      "env_file": ".env.prod",
+      "domains": {
+        "web": "yourdomain.com",
+        "api": "api.yourdomain.com",
+        "auth": "auth.yourdomain.com"
+      },
+      "resources": {
+        "postgres": {
+          "memory": "2G",
+          "cpus": "2"
+        },
+        "redis": {
+          "memory": "1G",
+          "cpus": "1"
+        },
+        "keycloak": {
+          "memory": "2G",
+          "cpus": "2"
+        },
+        "ehr-api": {
+          "memory": "2G",
+          "cpus": "2"
+        },
+        "ehr-web": {
+          "memory": "2G",
+          "cpus": "2"
+        }
+      }
+    }
+  },
+  "health_checks": {
+    "ehr-api": {
+      "endpoint": "/health",
+      "interval": "30s",
+      "timeout": "10s",
+      "retries": 3
+    },
+    "ehr-web": {
+      "endpoint": "/api/health",
+      "interval": "30s",
+      "timeout": "10s",
+      "retries": 3
+    },
+    "keycloak": {
+      "endpoint": "/health/ready",
+      "interval": "30s",
+      "timeout": "10s",
+      "retries": 5
+    }
+  },
+  "ports": {
+    "ehr-web": 3000,
+    "ehr-api": 8000,
+    "socket": 8001,
+    "keycloak": 8080,
+    "postgres": 5432,
+    "redis": 6379
+  },
+  "volumes": [
+    "postgres_data",
+    "redis_data",
+    "keycloak_data"
+  ],
+  "networks": [
+    "ehr-network"
+  ],
+  "dependencies": {
+    "ehr-api": ["postgres", "redis", "keycloak"],
+    "ehr-web": ["ehr-api", "postgres", "redis"],
+    "keycloak": ["postgres"]
+  }
+}

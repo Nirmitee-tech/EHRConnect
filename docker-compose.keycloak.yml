@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16.2
+    container_name: keycloak-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-keycloak}
+      POSTGRES_USER: ${POSTGRES_USER:-keycloakuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - keycloak-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-keycloakuser}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  keycloak:
+    image: jitendratech/ehr-keycloak:${KEYCLOAK_TAG:-dev}
+    container_name: keycloak-server
+    environment:
+      # Database Configuration
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-keycloak}
+      KC_DB_USERNAME: ${POSTGRES_USER:-keycloakuser}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+
+      # Admin Credentials
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+
+      # Hostname Configuration
+      KC_HOSTNAME: ${KC_HOSTNAME:-auth-dev.nirmitee.io}
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+
+      # Proxy Configuration
+      KC_PROXY: edge
+      KC_HTTP_ENABLED: "true"
+
+      # Health & Monitoring
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KC_LOG_LEVEL: ${KC_LOG_LEVEL:-info}
+    ports:
+      - "${KEYCLOAK_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - keycloak-network
+    command: start --import-realm
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: always
+
+networks:
+  keycloak-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

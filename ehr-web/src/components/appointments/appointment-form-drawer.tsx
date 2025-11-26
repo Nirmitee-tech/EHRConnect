@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useSession } from 'next-auth/react';
 import { AppointmentService } from '@/services/appointment.service';
 import { Appointment } from '@/types/appointment';
 import { DrawerHeader } from './appointment-form-components/DrawerHeader';
@@ -8,6 +9,7 @@ import { AppointmentTypeTabs } from './appointment-form-components/AppointmentTy
 import { AppointmentFormFields } from './appointment-form-components/AppointmentFormFields';
 import { DrawerFooter } from './appointment-form-components/DrawerFooter';
 import { useAppointmentForm } from './appointment-form-components/useAppointmentForm';
+import { PatientDrawer } from '@/components/patients/patient-drawer';
 import { AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 
 interface AppointmentFormDrawerProps {
@@ -23,16 +25,20 @@ type AppointmentType = 'single' | 'series' | 'group';
 type TabType = 'appointment' | 'task' | 'unavailable';
 type BookingStatus = 'form' | 'confirming' | 'waitlist' | 'success';
 
-const TREATMENT_CATEGORIES = [
-  'General Checkup',
-  'Dental',
-  'Cardiology',
-  'Orthopedics',
-  'Pediatrics',
-  'Surgery',
-  'Consultation',
-  'Follow-up',
-  'Emergency'
+const APPOINTMENT_TYPES = [
+  'General Consultation',
+  'Follow-up Visit',
+  'Emergency',
+  'Routine Checkup',
+  'Specialist Consultation',
+  'Preventive Care',
+  'Annual Physical',
+  'Vaccination',
+  'Lab Work',
+  'Imaging/Radiology',
+  'Minor Procedure',
+  'Post-Operative',
+  'Chronic Care Management'
 ];
 
 const DEFAULT_LOCATIONS = [
@@ -52,6 +58,7 @@ export function AppointmentFormDrawer({
   editingAppointment,
   existingAppointments = []
 }: AppointmentFormDrawerProps) {
+  const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState<TabType>('appointment');
   const [appointmentType, setAppointmentType] = useState<AppointmentType>('single');
   const [loading, setLoading] = useState(false);
@@ -59,6 +66,13 @@ export function AppointmentFormDrawer({
   const [bookingStatus, setBookingStatus] = useState<BookingStatus>('form');
   const [locations, setLocations] = useState<string[]>(DEFAULT_LOCATIONS);
   const [conflictingAppointments, setConflictingAppointments] = useState<Appointment[]>([]);
+  const [showLocationDrawer, setShowLocationDrawer] = useState(false);
+  const [showCategoryDrawer, setShowCategoryDrawer] = useState(false);
+  const [showPatientDrawer, setShowPatientDrawer] = useState(false);
+  const [newLocation, setNewLocation] = useState('');
+  const [newCategory, setNewCategory] = useState('');
+  const [appointmentTypes, setAppointmentTypes] = useState<string[]>(APPOINTMENT_TYPES);
+  const pendingPatientSelectionRef = useRef<string | null>(null);
 
   const {
     formData,
@@ -67,8 +81,22 @@ export function AppointmentFormDrawer({
     updateField,
     handleDoctorChange,
     handlePatientChange,
-    resetForm
+    resetForm,
+    refreshPatients
   } = useAppointmentForm(initialDate, editingAppointment);
+
+  // Auto-select newly created patient when list updates
+  useEffect(() => {
+    if (pendingPatientSelectionRef.current && patients.length > 0) {
+      const newPatient = patients.find(p => p.id === pendingPatientSelectionRef.current);
+      if (newPatient) {
+        // Simulate the selection event for handlePatientChange
+        const event = { target: { value: newPatient.id } } as React.ChangeEvent<HTMLSelectElement>;
+        handlePatientChange(event);
+        pendingPatientSelectionRef.current = null; // Clear the pending selection
+      }
+    }
+  }, [patients, handlePatientChange]);
 
   // Check for conflicting appointments, leaves, and working hours
   const checkConflicts = (startTime: Date, endTime: Date): Appointment[] => {
@@ -231,7 +259,8 @@ export function AppointmentFormDrawer({
         reason: formData.notes,
         location: formData.location,
         isAllDay: formData.isAllDay,
-        allDayEventType: formData.allDayEventType as any
+        allDayEventType: formData.allDayEventType as any,
+        mode: formData.mode // Include appointment mode
       };
 
       let savedAppointment: Appointment;
@@ -241,7 +270,9 @@ export function AppointmentFormDrawer({
           appointmentData
         );
       } else {
-        savedAppointment = await AppointmentService.createAppointment(appointmentData);
+        // Pass org_id from session
+        const orgId = (session as any)?.org_id;
+        savedAppointment = await AppointmentService.createAppointment(appointmentData, orgId);
       }
 
       setBookingStatus('success');
@@ -317,7 +348,7 @@ export function AppointmentFormDrawer({
                   formData={formData}
                   practitioners={practitioners}
                   patients={patients}
-                  treatmentCategories={TREATMENT_CATEGORIES}
+                  treatmentCategories={appointmentTypes}
                   locations={locations}
                   isNewPatient={isNewPatient}
                   onFormDataChange={updateField}
@@ -325,6 +356,9 @@ export function AppointmentFormDrawer({
                   onPatientChange={handlePatientChange}
                   onToggleNewPatient={() => setIsNewPatient(!isNewPatient)}
                   onAddLocation={handleAddLocation}
+                  onOpenPatientDrawer={() => setShowPatientDrawer(true)}
+                  onOpenLocationDrawer={() => setShowLocationDrawer(true)}
+                  onOpenCategoryDrawer={() => setShowCategoryDrawer(true)}
                 />
               )}
 
@@ -443,6 +477,153 @@ export function AppointmentFormDrawer({
           </div>
         )}
       </div>
+
+      {/* Location Sidebar */}
+      {showLocationDrawer && (
+        <div className="fixed inset-0 z-50 bg-black/30" onClick={() => setShowLocationDrawer(false)}>
+          <div
+            className="absolute right-0 top-0 h-full w-96 bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex h-full flex-col">
+              <div className="flex items-center justify-between border-b px-6 py-4">
+                <h2 className="text-lg font-semibold">Add New Location</h2>
+                <button
+                  onClick={() => setShowLocationDrawer(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Location Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newLocation}
+                      onChange={(e) => setNewLocation(e.target.value)}
+                      placeholder="Enter location name"
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="border-t px-6 py-4 flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowLocationDrawer(false);
+                    setNewLocation('');
+                  }}
+                  className="flex-1 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (newLocation.trim()) {
+                      const updatedLocations = [...locations, newLocation.trim()];
+                      setLocations(updatedLocations);
+                      updateField('location', newLocation.trim());
+                      setNewLocation('');
+                      setShowLocationDrawer(false);
+                    }
+                  }}
+                  className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  Add Location
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Sidebar */}
+      {showCategoryDrawer && (
+        <div className="fixed inset-0 z-50 bg-black/30" onClick={() => setShowCategoryDrawer(false)}>
+          <div
+            className="absolute right-0 top-0 h-full w-96 bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex h-full flex-col">
+              <div className="flex items-center justify-between border-b px-6 py-4">
+                <h2 className="text-lg font-semibold">Add New Appointment Type</h2>
+                <button
+                  onClick={() => setShowCategoryDrawer(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Appointment Type Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      placeholder="Enter appointment type name"
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="border-t px-6 py-4 flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowCategoryDrawer(false);
+                    setNewCategory('');
+                  }}
+                  className="flex-1 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (newCategory.trim()) {
+                      const updatedCategories = [...appointmentTypes, newCategory.trim()];
+                      setAppointmentTypes(updatedCategories);
+                      updateField('treatmentCategory', newCategory.trim());
+                      setNewCategory('');
+                      setShowCategoryDrawer(false);
+                    }
+                  }}
+                  className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  Add Appointment Type
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Patient Drawer */}
+      <PatientDrawer
+        open={showPatientDrawer}
+        onOpenChange={setShowPatientDrawer}
+        skipEncounter={true}
+        onSuccess={async (createdPatientId) => {
+          // Close the drawer
+          setShowPatientDrawer(false);
+
+          // Store the patient ID to select after list refreshes
+          if (createdPatientId) {
+            pendingPatientSelectionRef.current = createdPatientId;
+          }
+
+          // Reload the patient list - the useEffect will auto-select once updated
+          await refreshPatients();
+        }}
+      />
     </>
   );
 }

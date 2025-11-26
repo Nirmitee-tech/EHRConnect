@@ -1,0 +1,12 @@
+{
+    "welcome": "Bienvenido a EHR Connect",
+    "dashboard": "Panel",
+    "patients": "Pacientes",
+    "settings": "Configuración",
+    "language": "Idioma",
+    "select_language": "Seleccionar Idioma",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "profile": "Perfil",
+    "logout": "Cerrar Sesión"
+}

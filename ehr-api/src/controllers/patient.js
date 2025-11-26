@@ -1,5 +1,20 @@
 const { v4: uuidv4 } = require('uuid');
 
+/**
+ * Generate unique Medical Record Number (MRN)
+ * Format: PT + 8-digit timestamp + 3-digit random number
+ * Example: PT123456789042
+ */
+function generateMRN() {
+  const prefix = 'PT';
+  const timestamp = Date.now().toString().slice(-8);
+  const random = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, '0');
+
+  return `${prefix}${timestamp}${random}`;
+}
+
 class PatientController {
   // Search patients
   async search(db, query) {
@@ -77,7 +92,7 @@ class PatientController {
     try {
       const id = resourceData.id || uuidv4();
       const now = new Date().toISOString();
-      
+
       const patient = {
         ...resourceData,
         id,
@@ -97,6 +112,34 @@ class PatientController {
       const name = patient.name[0];
       if (!name.family && (!name.given || name.given.length === 0)) {
         throw new Error('Patient name must have either family name or given name');
+      }
+
+      // Auto-generate MRN if not provided
+      const hasMRN = patient.identifier?.some(
+        id => id.type?.coding?.some(c => c.code === 'MR')
+      );
+
+      if (!hasMRN) {
+        const mrn = generateMRN();
+
+        // Ensure identifier array exists
+        if (!patient.identifier) {
+          patient.identifier = [];
+        }
+
+        // Add MRN identifier
+        patient.identifier.push({
+          use: 'official',
+          type: {
+            coding: [{
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+              code: 'MR',
+              display: 'Medical Record Number'
+            }]
+          },
+          system: 'urn:oid:ehrconnect:mrn',
+          value: mrn
+        });
       }
 
       await db.query(

@@ -1,6 +1,7 @@
 const { query, transaction } = require('../database/connection');
 const KeycloakService = require('./keycloak.service');
 const RBACService = require('./rbac.service');
+const { syncUserLocations } = require('../utils/user-location-sync');
 
 /**
  * User Management Service
@@ -26,6 +27,14 @@ class UserService {
       throw new Error('Missing required fields: email, name, password, role_keys');
     }
 
+    const normalizedLocationIds = Array.isArray(location_ids)
+      ? [...new Set(location_ids.filter(Boolean))]
+      : [];
+
+    if (scope === 'LOCATION' && normalizedLocationIds.length === 0) {
+      throw new Error('Location scoped roles require at least one location_id');
+    }
+
     // Check if user already exists
     const existingUser = await query(
       'SELECT id FROM users WHERE email = $1',
@@ -48,7 +57,7 @@ class UserService {
         attributes: {
           org_id: orgId,
           org_slug: '', // Will be set from org query
-          location_ids: location_ids,
+          location_ids: normalizedLocationIds,
           permissions: [] // Will be set after role assignment
         }
       });
@@ -90,21 +99,71 @@ class UserService {
 
       // Assign roles
       for (const role of rolesResult.rows) {
-        await client.query(
-          `INSERT INTO role_assignments (
-            user_id, org_id, role_id, scope, location_id, assigned_by
-          )
-          VALUES ($1, $2, $3, $4, $5, $6)`,
-          [
-            user.id,
-            orgId,
-            role.id,
-            scope,
-            scope === 'LOCATION' && location_ids.length > 0 ? location_ids[0] : null,
-            createdBy
-          ]
-        );
+        if (scope === 'LOCATION') {
+          for (const locationId of normalizedLocationIds) {
+            const exists = await client.query(
+              `SELECT 1 FROM role_assignments
+               WHERE user_id = $1 AND org_id = $2 AND role_id = $3
+                 AND scope = $4 AND location_id = $5
+                 AND revoked_at IS NULL
+               LIMIT 1`,
+              [user.id, orgId, role.id, scope, locationId]
+            );
+
+            if (exists.rows.length > 0) {
+              continue;
+            }
+
+            await client.query(
+              `INSERT INTO role_assignments (
+                user_id, org_id, role_id, scope, location_id, assigned_by
+              )
+              VALUES ($1, $2, $3, $4, $5, $6)`,
+              [
+                user.id,
+                orgId,
+                role.id,
+                scope,
+                locationId,
+                createdBy
+              ]
+            );
+          }
+        } else {
+          const exists = await client.query(
+            `SELECT 1 FROM role_assignments
+             WHERE user_id = $1 AND org_id = $2 AND role_id = $3
+               AND scope = $4 AND location_id IS NULL
+               AND revoked_at IS NULL
+             LIMIT 1`,
+            [user.id, orgId, role.id, scope]
+          );
+
+          if (exists.rows.length > 0) {
+            continue;
+          }
+
+          await client.query(
+            `INSERT INTO role_assignments (
+              user_id, org_id, role_id, scope, location_id, assigned_by
+            )
+            VALUES ($1, $2, $3, $4, NULL, $5)`,
+            [
+              user.id,
+              orgId,
+              role.id,
+              scope,
+              createdBy
+            ]
+          );
+        }
       }
+
+      const syncedLocationIds = await syncUserLocations({
+        userId: user.id,
+        orgId,
+        client
+      });
 
       // Get aggregated permissions
       const permissions = await RBACService.getUserPermissions(user.id, orgId);
@@ -113,7 +172,7 @@ class UserService {
       await KeycloakService.updateUserAttributes(keycloakUser.id, {
         org_id: orgId,
         org_slug: orgSlug,
-        location_ids: location_ids,
+        location_ids: syncedLocationIds,
         permissions: Array.isArray(permissions) ? permissions : []
       });
 
@@ -144,7 +203,7 @@ class UserService {
    */
   async getUsers(orgId, options = {}) {
     const { activeOnly = false, page = 0, limit = 50 } = options;
-    
+
     const whereClause = activeOnly ? "AND u.status = 'active'" : '';
     const offset = page * limit;
 
@@ -181,7 +240,7 @@ class UserService {
    */
   async deactivateUser(userId, orgId, deactivatedBy, reason = null) {
     const SessionService = require('./session.service');
-    
+
     return await transaction(async (client) => {
       // Update user status
       await client.query(
@@ -220,6 +279,37 @@ class UserService {
 
       return { success: true, message: 'User deactivated successfully' };
     });
+  }
+  /**
+   * Update user profile
+   */
+  async updateUser(userId, data) {
+    const { language } = data;
+    const updates = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (language) {
+      updates.push(`language = $${paramIndex}`);
+      values.push(language);
+      paramIndex++;
+    }
+
+    if (updates.length === 0) {
+      return { message: 'No changes provided' };
+    }
+
+    values.push(userId);
+
+    const result = await query(
+      `UPDATE users 
+       SET ${updates.join(', ')} 
+       WHERE id = $${paramIndex}
+       RETURNING id, email, name, language`,
+      values
+    );
+
+    return result.rows[0];
   }
 }
 

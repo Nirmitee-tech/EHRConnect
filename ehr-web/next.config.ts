@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   transpilePackages: ['@nirmitee.io/design-system'],
 
+  // Enable standalone output for Docker
+  output: 'standalone',
+
   // Optimize for faster development
   reactStrictMode: false, // Disable in dev to reduce double-rendering
 

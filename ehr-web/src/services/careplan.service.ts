@@ -22,6 +22,9 @@ export interface CarePlanFormData {
   status: string;
   intent: string;
   activities: CarePlanActivity[];
+  goals?: string;
+  interventions?: string;
+  outcomes?: string;
 }
 
 class CarePlanService {

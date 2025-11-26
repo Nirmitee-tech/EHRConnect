@@ -15,7 +15,8 @@ interface PatientDrawerProps {
   onOpenChange: (open: boolean) => void;
   patient?: FHIRPatient;
   isEditing?: boolean;
-  onSuccess?: () => void;
+  onSuccess?: (createdPatientId?: string) => void;
+  skipEncounter?: boolean; // Skip encounter form and just close after patient creation
 }
 
 type WorkflowStep = 'patient-form' | 'encounter-form';
@@ -30,17 +31,27 @@ interface CreatedPatientData {
   email?: string;
 }
 
-export function PatientDrawer({ 
-  open, 
-  onOpenChange, 
-  patient, 
+export function PatientDrawer({
+  open,
+  onOpenChange,
+  patient,
   isEditing = false,
-  onSuccess 
+  onSuccess,
+  skipEncounter = false
 }: PatientDrawerProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('patient-form');
   const [createdPatient, setCreatedPatient] = useState<CreatedPatientData | null>(null);
+  const [compactMode, setCompactMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const stored = localStorage.getItem('patientFormCompactMode');
+      return stored ? JSON.parse(stored) : false;
+    } catch {
+      return false;
+    }
+  });
 
   // Generate MRN (Medical Record Number)
   const generateMRN = (): string => {
@@ -59,18 +70,18 @@ export function PatientDrawer({
         // If updating from search, move to encounter form with existing patient data
         if (isUpdate && patientId) {
           const updateData = data as UpdatePatientRequest;
-          const age = updateData.dateOfBirth 
-            ? Math.floor((Date.now() - new Date(updateData.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+          const age = updateData.demographics?.dateOfBirth 
+            ? Math.floor((Date.now() - new Date(updateData.demographics.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
             : undefined;
 
           setCreatedPatient({
             id: patientId,
-            name: updateData.firstName || '',
+            name: updateData.demographics?.firstName || '',
             age,
-            gender: updateData.gender,
-            mrn: updateData.mrn || undefined,
-            phone: updateData.phone || undefined,
-            email: updateData.email || undefined
+            gender: updateData.demographics?.gender,
+            mrn: updateData.demographics?.mrn || undefined,
+            phone: updateData.contact?.mobileNumber || undefined,
+            email: updateData.contact?.email || undefined
           });
 
           setCurrentStep('encounter-form');
@@ -96,23 +107,35 @@ export function PatientDrawer({
         const createdPatientResponse = await patientService.createPatient(patientData as CreatePatientRequest, 'current-user');
 
         // Calculate age from date of birth
-        const age = patientData.dateOfBirth 
-          ? Math.floor((Date.now() - new Date(patientData.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+        const age = patientData.demographics?.dateOfBirth
+          ? Math.floor((Date.now() - new Date(patientData.demographics.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
           : undefined;
 
         // Store created patient data for encounter form
         setCreatedPatient({
           id: createdPatientResponse.id || '',
-          name: patientData.firstName,
+          name: patientData.demographics?.firstName || '',
           age,
-          gender: patientData.gender,
+          gender: patientData.demographics?.gender,
           mrn: patientData.hospitalId,
-          phone: patientData.phone,
-          email: patientData.email
+          phone: patientData.contact?.mobileNumber,
+          email: patientData.contact?.email
         });
 
-        // Move to encounter form
-        setCurrentStep('encounter-form');
+        // If skipEncounter flag is set, close drawer and call onSuccess
+        if (skipEncounter) {
+          onOpenChange(false);
+          setCurrentStep('patient-form');
+          const patientId = createdPatientResponse.id || '';
+          setCreatedPatient(null);
+
+          if (onSuccess) {
+            onSuccess(patientId); // Pass the created patient ID
+          }
+        } else {
+          // Move to encounter form
+          setCurrentStep('encounter-form');
+        }
       }
     } catch (error) {
       console.error('Failed to save patient:', error);
@@ -166,7 +189,7 @@ export function PatientDrawer({
     }}>
       <DrawerContent side="right" size="3xl" className="overflow-y-auto p-0">
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <User className="h-4 w-4 text-white" />
@@ -174,6 +197,23 @@ export function PatientDrawer({
               <h2 className="text-sm font-bold text-gray-900">
                 {currentStep === 'encounter-form' ? 'Create Encounter' : (isEditing ? 'Edit Patient' : 'New Patient')}
               </h2>
+            </div>
+            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
+              <input
+                id="compact-mode-toggle"
+                type="checkbox"
+                className="h-4 w-4 rounded border-gray-300 text-[#3342a5] focus:ring-[#3342a5]"
+                checked={compactMode}
+                onChange={(e) => {
+                  setCompactMode(e.target.checked);
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('patientFormCompactMode', JSON.stringify(e.target.checked));
+                  }
+                }}
+              />
+              <label htmlFor="compact-mode-toggle" className="text-xs font-medium text-gray-700">
+                Compact Mode
+              </label>
             </div>
           </div>
         </div>
@@ -183,6 +223,7 @@ export function PatientDrawer({
             <PatientForm
               patient={patient}
               isEditing={isEditing}
+              compactMode={compactMode}
               onSubmit={handleSubmit}
               onCancel={handleCancel}
             />

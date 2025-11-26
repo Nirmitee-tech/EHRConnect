@@ -17,7 +17,7 @@ import {
 import ExecutiveDashboard from './views/executive-dashboard'
 import ClinicalDashboard from './views/clinical-dashboard'
 import OperationsDashboard from './views/operations-dashboard'
-import RCMDashboard from './views/rcm-dashboard'
+import RCMDashboardEnhanced from './views/rcm-dashboard-enhanced'
 import QualityDashboard from './views/quality-dashboard'
 
 export default function DashboardPage() {
@@ -167,7 +167,7 @@ export default function DashboardPage() {
               </TabsContent>
 
               <TabsContent value="rcm" className="mt-0 p-6">
-                <RCMDashboard filters={{ dateRange, location, department }} />
+                <RCMDashboardEnhanced filters={{ dateRange, location, department }} />
               </TabsContent>
 
               <TabsContent value="quality" className="mt-0 p-6">

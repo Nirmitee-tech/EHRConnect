@@ -44,14 +44,14 @@ export function useCalendarSettings() {
     const totalMinutes = (endHour - startHour) * 60;
     const slotsCount = Math.floor(totalMinutes / slotDuration);
 
-    for (let i = 0; i <= slotsCount; i++) {
+    // Use i < slotsCount to avoid creating an extra slot at 24:00
+    // We want slots from 0:00 to 23:45 (for 15-min), not 0:00 to 24:00
+    for (let i = 0; i < slotsCount; i++) {
       const totalMins = startHour * 60 + (i * slotDuration);
       const hours = Math.floor(totalMins / 60);
       const minutes = totalMins % 60;
 
-      if (hours < endHour || (hours === endHour && minutes === 0)) {
-        slots.push(`${hours}:${minutes.toString().padStart(2, '0')}`);
-      }
+      slots.push(`${hours}:${minutes.toString().padStart(2, '0')}`);
     }
 
     return slots;

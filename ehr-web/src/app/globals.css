@@ -44,6 +44,8 @@
 }
 
 :root {
+  --font-geist-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  --font-geist-mono: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   /* EHR Connect Theme - Keycloak Purple/Green Palette */
   --radius: 0.625rem;
   
@@ -332,4 +334,18 @@ input:focus, select:focus, textarea:focus {
 .compact-select input {
   padding: 0.375rem 0.75rem !important;
   font-size: 0.75rem !important;
+}
+
+/* Hide sidebar functionality for forms */
+body.hide-sidebar aside[role="navigation"],
+body.hide-sidebar nav[role="navigation"] {
+  display: none !important;
+}
+
+body.hide-sidebar header {
+  display: none !important;
+}
+
+body.hide-sidebar .tab-bar {
+  display: none !important;
 }

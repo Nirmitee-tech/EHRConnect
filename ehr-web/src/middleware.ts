@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import acceptLanguage from 'accept-language';
+import { cookieName, fallbackLng, languages } from './i18n/settings';
+
+acceptLanguage.languages(languages);
 
 // Paths that don't require org validation
 const PUBLIC_PATHS = [
@@ -12,9 +16,17 @@ const PUBLIC_PATHS = [
   '/verify-email',
   '/forgot-password',
   '/reset-password',
+  '/patient-login', // Patient portal login
+  '/patient-register', // Patient portal registration
+  '/api/patient/register', // Patient registration API
   '/_next',
   '/favicon.ico',
   '/api/health',
+  '/widget', // Public booking widget
+  '/api/public', // Public API endpoints for widget
+  '/meeting', // Public meeting links for patients
+  '/join', // Alternative public meeting join path
+  '/forms/fill', // Public form filling for patients
 ];
 
 // Root path should be accessible to everyone (landing page)
@@ -25,6 +37,7 @@ const AUTH_ONLY_PATHS = [
   '/onboarding',
   '/select-organization',
   '/accept-invitation',
+  '/portal', // Patient portal - authenticated but no org context needed
 ];
 
 export async function middleware(request: NextRequest) {
@@ -71,30 +84,64 @@ export async function middleware(request: NextRequest) {
   // Get org context from token
   const tokenOrgId = token.org_id as string | undefined;
   const tokenOrgSlug = token.org_slug as string | undefined;
-  
+  const userType = token.userType as string | undefined;
+
   // If user has no org assigned and not already on onboarding, redirect to onboarding
-  if (!tokenOrgId && !pathname.startsWith('/onboarding')) {
+  // BUT: Skip this check for patients - they don't have org_id, they have patientId
+  if (!tokenOrgId && !pathname.startsWith('/onboarding') && userType !== 'patient') {
     return NextResponse.redirect(new URL('/onboarding', request.url));
   }
 
   // Create response with org context headers for API/database isolation
   const response = NextResponse.next();
-  
+
+  // Set user ID header (from id or sub field)
+  const tokenUserId = (token.id || token.sub) as string | undefined;
+  if (tokenUserId) {
+    response.headers.set('x-user-id', tokenUserId);
+  }
+
+  // Set org context headers
   if (tokenOrgId) {
     response.headers.set('x-org-id', tokenOrgId);
   }
   if (tokenOrgSlug) {
     response.headers.set('x-org-slug', tokenOrgSlug);
   }
-  
+
+  // Set location IDs
   const tokenLocationIds = token.location_ids as string[] | undefined;
   if (tokenLocationIds) {
     response.headers.set('x-location-ids', JSON.stringify(tokenLocationIds));
   }
-  
+
+  // Set user roles
   const tokenRoles = token.roles as string[] | undefined;
   if (tokenRoles) {
     response.headers.set('x-user-roles', JSON.stringify(tokenRoles));
+  }
+
+  // Set user permissions
+  const tokenPermissions = token.permissions as string[] | undefined;
+  if (tokenPermissions) {
+    response.headers.set('x-user-permissions', JSON.stringify(tokenPermissions));
+  }
+
+  // Language detection
+  let lng;
+  if (request.cookies.has(cookieName)) {
+    lng = acceptLanguage.get(request.cookies.get(cookieName)?.value);
+  }
+  if (!lng) {
+    lng = acceptLanguage.get(request.headers.get('Accept-Language'));
+  }
+  if (!lng) {
+    lng = fallbackLng;
+  }
+
+  // Set language cookie if missing or different
+  if (!request.cookies.has(cookieName)) {
+    response.cookies.set(cookieName, lng);
   }
 
   return response;

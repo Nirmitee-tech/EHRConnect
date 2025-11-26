@@ -317,16 +317,15 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
   )
 
   return (
-    <></>
-    // <Sidebar
-    //   logo={<Activity className="h-8 w-8 text-blue-600" />}
-    //   brandName="EHR Connect"
-    //   search={searchComponent}
-    //   navigation={navigationContent}
-    //   footer={footerContent}
-    //   topBar={topBarContent}
-    // >
-    //   {children}
-    // </Sidebar>
+    <Sidebar
+      logo={<Activity className="h-8 w-8 text-blue-600" />}
+      brandName="EHR Connect"
+      search={searchComponent}
+      navigation={navigationContent}
+      footer={footerContent}
+      topBar={topBarContent}
+    >
+      {children}
+    </Sidebar>
   )
 }

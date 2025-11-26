@@ -12,6 +12,17 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000,
 });
 
+console.log({
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  database: process.env.DB_NAME || 'medplum',
+  user: process.env.DB_USER || 'medplum',
+  password: process.env.DB_PASSWORD || 'medplum123',
+  max: 20, // Maximum number of clients in pool
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+})
+
 // Test connection
 pool.on('connect', () => {
   console.log('Database connection established');

@@ -84,6 +84,11 @@ export interface FHIRPatient extends FHIRResource {
   birthDate?: string;
   deceased?: boolean | string;
   address?: FHIRAddress[];
+  photo?: Array<{
+    contentType?: string;
+    data?: string;
+    url?: string;
+  }>;
   maritalStatus?: {
     coding?: Array<{
       system?: string;
@@ -115,6 +120,108 @@ export interface FHIRPatient extends FHIRResource {
       }>;
     };
     preferred?: boolean;
+  }>;
+}
+
+export interface FHIRRelatedPerson extends FHIRResource {
+  resourceType: 'RelatedPerson';
+  patient: FHIRReference;
+  relationship?: Array<{
+    coding?: Array<{
+      system?: string;
+      code?: string;
+      display?: string;
+    }>;
+    text?: string;
+  }>;
+  name?: FHIRHumanName;
+  telecom?: FHIRContactPoint[];
+}
+
+export interface FHIRCoverage extends FHIRResource {
+  resourceType: 'Coverage';
+  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
+  type?: {
+    coding?: Array<{
+      system?: string;
+      code?: string;
+      display?: string;
+    }>;
+    text?: string;
+  };
+  subscriber?: FHIRReference & { display?: string };
+  subscriberId?: string;
+  beneficiary: FHIRReference;
+  relationship?: {
+    coding?: Array<{
+      system?: string;
+      code?: string;
+      display?: string;
+    }>;
+    text?: string;
+  };
+  period?: {
+    start?: string;
+    end?: string;
+  };
+  payor?: FHIRReference[];
+  class?: Array<{
+    type: {
+      coding?: Array<{
+        system?: string;
+        code?: string;
+        display?: string;
+      }>;
+      text?: string;
+    };
+    value: string;
+    name?: string;
+  }>;
+  extension?: Array<{
+    url: string;
+    valueAttachment?: {
+      contentType?: string;
+      data?: string;
+      url?: string;
+    };
+    valueBoolean?: boolean;
+    valueString?: string;
+  }>;
+}
+
+export interface FHIRConsent extends FHIRResource {
+  resourceType: 'Consent';
+  status: 'draft' | 'proposed' | 'active' | 'rejected' | 'inactive' | 'entered-in-error';
+  category: Array<{
+    coding?: Array<{
+      system?: string;
+      code?: string;
+      display?: string;
+    }>;
+    text?: string;
+  }>;
+  patient: FHIRReference;
+  dateTime?: string;
+  performer?: FHIRReference[];
+  organization?: FHIRReference[];
+  provision?: {
+    type?: 'deny' | 'permit';
+    period?: {
+      start?: string;
+      end?: string;
+    };
+    code?: Array<{
+      coding?: Array<{
+        system?: string;
+        code?: string;
+        display?: string;
+      }>;
+    }>;
+  };
+  extension?: Array<{
+    url: string;
+    valueBoolean?: boolean;
+    valueCode?: string;
   }>;
 }
 
@@ -241,5 +348,84 @@ export interface FHIRCommunication extends FHIRResource {
     authorReference?: FHIRReference;
     time?: string;
     text: string;
+  }>;
+}
+
+// FHIR FamilyMemberHistory Resource for Family Health History
+export interface FHIRCodeableConcept {
+  coding?: Array<{
+    system?: string;
+    code?: string;
+    display?: string;
+  }>;
+  text?: string;
+}
+
+export interface FHIRAge {
+  value?: number;
+  unit?: string;
+  system?: string;
+  code?: string;
+}
+
+export interface FHIRRange {
+  low?: {
+    value?: number;
+    unit?: string;
+  };
+  high?: {
+    value?: number;
+    unit?: string;
+  };
+}
+
+export interface FHIRPeriod {
+  start?: string;
+  end?: string;
+}
+
+export interface FHIRAnnotation {
+  authorReference?: FHIRReference;
+  authorString?: string;
+  time?: string;
+  text: string;
+}
+
+export interface FHIRFamilyMemberHistory extends FHIRResource {
+  resourceType: 'FamilyMemberHistory';
+  identifier?: FHIRIdentifier[];
+  instantiatesCanonical?: string[];
+  instantiatesUri?: string[];
+  status: 'partial' | 'completed' | 'entered-in-error' | 'health-unknown';
+  dataAbsentReason?: FHIRCodeableConcept;
+  patient: FHIRReference; // Patient reference (required)
+  date?: string; // DateTime when history was recorded
+  name?: string; // Name of family member
+  relationship: FHIRCodeableConcept; // Relationship to patient (required)
+  sex?: FHIRCodeableConcept; // Gender of family member
+  bornPeriod?: FHIRPeriod;
+  bornDate?: string;
+  bornString?: string;
+  ageAge?: FHIRAge;
+  ageRange?: FHIRRange;
+  ageString?: string;
+  estimatedAge?: boolean;
+  deceasedBoolean?: boolean;
+  deceasedAge?: FHIRAge;
+  deceasedRange?: FHIRRange;
+  deceasedDate?: string;
+  deceasedString?: string;
+  reasonCode?: FHIRCodeableConcept[];
+  reasonReference?: FHIRReference[];
+  note?: FHIRAnnotation[];
+  condition?: Array<{
+    code: FHIRCodeableConcept; // Condition suffered by family member
+    outcome?: FHIRCodeableConcept; // Result of condition
+    contributedToDeath?: boolean;
+    onsetAge?: FHIRAge;
+    onsetRange?: FHIRRange;
+    onsetPeriod?: FHIRPeriod;
+    onsetString?: string;
+    note?: FHIRAnnotation[];
   }>;
 }

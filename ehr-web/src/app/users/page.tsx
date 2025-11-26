@@ -319,7 +319,17 @@ interface UserDrawerProps {
 }
 
 function UserDrawer({ mode, session, userContext, onClose, onSuccess }: UserDrawerProps) {
-  const [formData, setFormData] = useState({
+  interface DrawerFormState {
+    email: string;
+    name: string;
+    password: string;
+    confirm_password: string;
+    role_keys: string[];
+    scope: 'ORG' | 'LOCATION';
+    location_ids: string[];
+  }
+
+  const initialFormState: DrawerFormState = {
     email: '',
     name: '',
     password: '',
@@ -327,9 +337,76 @@ function UserDrawer({ mode, session, userContext, onClose, onSuccess }: UserDraw
     role_keys: ['CLINICIAN'],
     scope: 'ORG',
     location_ids: [],
-  });
+  };
+
+  const [formData, setFormData] = useState<DrawerFormState>(initialFormState);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [locationsLoading, setLocationsLoading] = useState(false);
+  const [locationsError, setLocationsError] = useState<string | null>(null);
+  const [availableLocations, setAvailableLocations] = useState<Array<{
+    id: string;
+    name: string;
+    location_type?: string;
+    address?: Record<string, unknown>;
+    active?: boolean;
+  }>>([]);
+
+  const orgId = session?.org_id || userContext?.org_id;
+  const actingUserId = session?.user?.id || userContext?.user_id;
+  const accessToken = session?.accessToken;
+
+  useEffect(() => {
+    if (!orgId || !actingUserId) {
+      return;
+    }
+
+    const fetchLocations = async () => {
+      try {
+        setLocationsLoading(true);
+        setLocationsError(null);
+
+        const headers: Record<string, string> = {
+          'x-org-id': orgId,
+          'x-user-id': actingUserId,
+        };
+
+        if (accessToken) {
+          headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/orgs/${orgId}/locations?activeOnly=true`,
+          { headers }
+        );
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error || 'Failed to load locations');
+        }
+
+        const data = await response.json();
+        setAvailableLocations(data.locations || []);
+      } catch (err) {
+        console.error('Error loading locations:', err);
+        setLocationsError(err instanceof Error ? err.message : 'Failed to load locations');
+      } finally {
+        setLocationsLoading(false);
+      }
+    };
+
+    fetchLocations();
+  }, [orgId, actingUserId, accessToken]);
+
+  const toggleLocation = (locationId: string) => {
+    setFormData(prev => {
+      const exists = prev.location_ids.includes(locationId);
+      const nextIds = exists
+        ? prev.location_ids.filter(id => id !== locationId)
+        : [...prev.location_ids, locationId];
+      return { ...prev, location_ids: nextIds };
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -342,11 +419,14 @@ function UserDrawer({ mode, session, userContext, onClose, onSuccess }: UserDraw
       return;
     }
 
+    if (formData.scope === 'LOCATION' && formData.location_ids.length === 0) {
+      setError('Select at least one location for location-scoped access');
+      setLoading(false);
+      return;
+    }
+
     try {
       // Use org_id from session or userContext
-      const orgId = session?.org_id || userContext?.org_id;
-      const userId = session?.user?.id || userContext?.user_id;
-
       if (!orgId) {
         throw new Error('Organization ID not found');
       }
@@ -371,13 +451,19 @@ function UserDrawer({ mode, session, userContext, onClose, onSuccess }: UserDraw
             location_ids: formData.location_ids,
           };
 
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'x-org-id': orgId,
+        'x-user-id': actingUserId || '',
+      };
+
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-org-id': orgId,
-          'x-user-id': userId || '',
-        },
+        headers,
         body: JSON.stringify(payload),
       });
 
@@ -500,12 +586,66 @@ function UserDrawer({ mode, session, userContext, onClose, onSuccess }: UserDraw
               <select
                 className="w-full px-3 py-2 border rounded-md"
                 value={formData.scope}
-                onChange={(e) => setFormData({ ...formData, scope: e.target.value })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === 'ORG' || value === 'LOCATION') {
+                    setFormData(prev => ({
+                      ...prev,
+                      scope: value,
+                      location_ids: value === 'LOCATION' ? prev.location_ids : [],
+                    }));
+                  }
+                }}
               >
                 <option value="ORG">Organization Wide</option>
                 <option value="LOCATION">Specific Locations</option>
               </select>
             </div>
+
+            {formData.scope === 'LOCATION' && (
+              <div>
+                <Label className="text-sm font-medium mb-1 block">Locations *</Label>
+                <div className="border rounded-md p-3 max-h-56 overflow-y-auto space-y-3 bg-gray-50">
+                  {locationsLoading ? (
+                    <p className="text-sm text-gray-600">Loading locations…</p>
+                  ) : locationsError ? (
+                    <p className="text-sm text-red-600">{locationsError}</p>
+                  ) : availableLocations.length === 0 ? (
+                    <p className="text-sm text-gray-600">
+                      No active locations found. Create locations before assigning staff.
+                    </p>
+                  ) : (
+                    availableLocations.map(location => {
+                      const isSelected = formData.location_ids.includes(location.id);
+                      return (
+                        <label
+                          key={location.id}
+                          className="flex items-start gap-3 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            checked={isSelected}
+                            onChange={() => toggleLocation(location.id)}
+                          />
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">{location.name}</p>
+                            {location.location_type && (
+                              <p className="text-xs text-gray-500">
+                                {location.location_type.replace(/_/g, ' ')}
+                              </p>
+                            )}
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+                {formData.location_ids.length === 0 && !locationsLoading && availableLocations.length > 0 && (
+                  <p className="text-xs text-red-600 mt-2">Select at least one location.</p>
+                )}
+              </div>
+            )}
 
             <div className="bg-blue-50 rounded-lg p-4">
               <p className="text-sm text-gray-700">

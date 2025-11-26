@@ -337,6 +337,168 @@ export const AVAILITY_SCHEMA: IntegrationConfigSchema = {
   }
 };
 
+// 100ms Video Integration
+export const HUNDREDMS_SCHEMA: IntegrationConfigSchema = {
+  vendorId: '100ms',
+  requiresMultiStep: true,
+  steps: [
+    {
+      id: 'credentials',
+      title: 'API Credentials',
+      description: 'Enter your 100ms dashboard credentials',
+      fields: [
+        {
+          key: 'appId',
+          label: 'App ID',
+          type: 'text',
+          required: true,
+          placeholder: 'Enter your 100ms App ID',
+          helpText: 'Found in your 100ms dashboard under Developer section'
+        },
+        {
+          key: 'appSecret',
+          label: 'App Secret',
+          type: 'password',
+          required: true,
+          placeholder: 'Enter your App Secret',
+          helpText: 'Keep this confidential and secure'
+        },
+        {
+          key: 'apiEndpoint',
+          label: 'API Endpoint',
+          type: 'url',
+          required: true,
+          placeholder: 'https://api.100ms.live/v2',
+          helpText: '100ms Management API endpoint',
+          defaultValue: 'https://api.100ms.live/v2'
+        }
+      ]
+    },
+    {
+      id: 'room-config',
+      title: 'Room Configuration',
+      description: 'Configure default room settings',
+      fields: [
+        {
+          key: 'templateId',
+          label: 'Template ID (Optional)',
+          type: 'text',
+          required: false,
+          placeholder: 'Enter template ID',
+          helpText: 'Use a specific room template from your 100ms dashboard'
+        },
+        {
+          key: 'defaultRegion',
+          label: 'Default Region',
+          type: 'select',
+          required: false,
+          options: [
+            { label: 'Auto (Recommended)', value: 'auto' },
+            { label: 'United States', value: 'us' },
+            { label: 'Europe', value: 'eu' },
+            { label: 'India', value: 'in' },
+            { label: 'Singapore', value: 'sg' }
+          ],
+          defaultValue: 'auto',
+          helpText: 'Geographic region for hosting rooms'
+        },
+        {
+          key: 'maxDuration',
+          label: 'Max Session Duration (minutes)',
+          type: 'number',
+          required: false,
+          placeholder: '60',
+          defaultValue: 60,
+          helpText: 'Maximum duration for each video session'
+        }
+      ]
+    },
+    {
+      id: 'features',
+      title: 'Features',
+      description: 'Enable advanced features',
+      fields: [
+        {
+          key: 'recordingEnabled',
+          label: 'Enable Recording',
+          type: 'checkbox',
+          required: false,
+          defaultValue: true,
+          helpText: 'Allow recording of video consultations (requires HIPAA compliance)'
+        },
+        {
+          key: 'transcriptionEnabled',
+          label: 'Enable Transcription',
+          type: 'checkbox',
+          required: false,
+          defaultValue: false,
+          helpText: 'Enable automatic transcription of meetings'
+        },
+        {
+          key: 'chatEnabled',
+          label: 'Enable Chat',
+          type: 'checkbox',
+          required: false,
+          defaultValue: true,
+          helpText: 'Allow text chat during video calls'
+        },
+        {
+          key: 'screenShareEnabled',
+          label: 'Enable Screen Sharing',
+          type: 'checkbox',
+          required: false,
+          defaultValue: true,
+          helpText: 'Allow participants to share their screen'
+        },
+        {
+          key: 'virtualBackgroundEnabled',
+          label: 'Enable Virtual Backgrounds',
+          type: 'checkbox',
+          required: false,
+          defaultValue: false,
+          helpText: 'Allow virtual/blurred backgrounds'
+        }
+      ]
+    },
+    {
+      id: 'security',
+      title: 'Security & Compliance',
+      description: 'Configure security settings',
+      fields: [
+        {
+          key: 'waitingRoomEnabled',
+          label: 'Enable Waiting Room',
+          type: 'checkbox',
+          required: false,
+          defaultValue: true,
+          helpText: 'Participants wait for host to join'
+        },
+        {
+          key: 'endToEndEncryption',
+          label: 'End-to-End Encryption',
+          type: 'checkbox',
+          required: false,
+          defaultValue: true,
+          helpText: 'Enable E2E encryption for HIPAA compliance'
+        },
+        {
+          key: 'webhookUrl',
+          label: 'Webhook URL (Optional)',
+          type: 'url',
+          required: false,
+          placeholder: 'https://yourdomain.com/webhooks/100ms',
+          helpText: 'Receive real-time events about sessions'
+        }
+      ]
+    }
+  ],
+  testing: {
+    enabled: true,
+    testEndpoint: '/active-rooms',
+    testMethod: 'GET'
+  }
+};
+
 // Default simple schema
 export const DEFAULT_SCHEMA: IntegrationConfigSchema = {
   vendorId: 'default',
@@ -374,6 +536,7 @@ export const INTEGRATION_SCHEMAS: Record<string, IntegrationConfigSchema> = {
   stripe: STRIPE_SCHEMA,
   twilio: TWILIO_SCHEMA,
   availity: AVAILITY_SCHEMA,
+  '100ms': HUNDREDMS_SCHEMA,
   // Add more as needed
 };
 

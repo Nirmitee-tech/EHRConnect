@@ -262,3 +262,5 @@ export class StaffService {
     return this.updatePractitioner(id, { color });
   }
 }
+
+export const staffService = StaffService;

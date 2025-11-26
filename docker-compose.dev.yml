@@ -1,0 +1,142 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: ehr-postgres-dev
+    environment:
+      POSTGRES_DB: ${DB_NAME:-medplum}
+      POSTGRES_USER: ${DB_USER:-medplum}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-medplum123}
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/01-init-db.sql
+      - ./init-keycloak-db.sql:/docker-entrypoint-initdb.d/02-init-keycloak-db.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - ehr-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-medplum} -d ${DB_NAME:-medplum}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: ehr-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - ehr-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: ehr-keycloak-dev
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin123}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: ${DB_USER:-medplum}
+      KC_DB_PASSWORD: ${DB_PASSWORD:-medplum123}
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KC_PROXY: edge
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ehr-network
+    command:
+      - start-dev
+      - --import-realm
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - ./keycloak/themes:/opt/keycloak/providers/
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  ehr-api:
+    image: ${DOCKERHUB_USERNAME:-yourname}/ehr-api:${API_IMAGE_TAG:-dev}
+    container_name: ehr-api-dev
+    environment:
+      NODE_ENV: development
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-medplum}
+      DB_USER: ${DB_USER:-medplum}
+      DB_PASSWORD: ${DB_PASSWORD:-medplum123}
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-ehr-realm}
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin123}
+      KEYCLOAK_CLIENT_ID: admin-cli
+      PORT: 8000
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      JWT_SECRET: ${JWT_SECRET}
+      SOCKET_IO_ENABLED: "true"
+      SOCKET_PORT: 8001
+      SOCKET_CORS_ORIGIN: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      CLAIMMD_API_URL: ${CLAIMMD_API_URL:-https://api.claim.md/v1}
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - ehr-network
+    restart: unless-stopped
+
+  ehr-web:
+    image: ${DOCKERHUB_USERNAME:-yourname}/ehr-web:${WEB_IMAGE_TAG:-dev}
+    container_name: ehr-web-dev
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${DB_USER:-medplum}:${DB_PASSWORD:-medplum123}@postgres:5432/${DB_NAME:-medplum}
+      DIRECT_URL: postgresql://${DB_USER:-medplum}:${DB_PASSWORD:-medplum123}@postgres:5432/${DB_NAME:-medplum}
+      REDIS_URL: redis://redis:6379
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_KEYCLOAK_URL: ${NEXT_PUBLIC_KEYCLOAK_URL:-http://localhost:8080}
+      NEXT_PUBLIC_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-ehr-realm}
+      NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID:-ehr-web-client}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - ehr-api
+      - postgres
+      - redis
+    networks:
+      - ehr-network
+    restart: unless-stopped
+
+networks:
+  ehr-network:
+    driver: bridge
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
