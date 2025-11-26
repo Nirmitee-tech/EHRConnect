@@ -374,7 +374,7 @@ export default function RegisterPage() {
             {/* {t('register.org_name')} Preview */}
             {formData.org_type && (
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-gray-700">Type</p>
+                <p className="text-sm font-semibold text-gray-700">{t('register.type')}</p>
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium">
                   {getOrgTypeLabel()}
                 </div>
@@ -384,7 +384,7 @@ export default function RegisterPage() {
             {/* Specialties Preview */}
             {(formData.specialties.length > 0 || formData.custom_services.length > 0) && (
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-gray-700">Services Offered</p>
+                <p className="text-sm font-semibold text-gray-700">{t('register.services_offered')}</p>
                 <div className="flex flex-wrap gap-2">
                   {formData.specialties.map(spec => {
                     const specialty = currentSpecialties.find(s => s.value === spec);
@@ -414,7 +414,7 @@ export default function RegisterPage() {
             {/* Contact Info Preview */}
             {formData.contact_phone && (
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-gray-700">Contact</p>
+                <p className="text-sm font-semibold text-gray-700">{t('register.contact')}</p>
                 <div className="flex items-center gap-2 text-gray-600">
                   <Phone className="w-4 h-4" />
                   <span className="text-sm">{formData.contact_phone}</span>
@@ -431,7 +431,7 @@ export default function RegisterPage() {
             {/* Location Preview */}
             {(formData.address.city || formData.address.state) && (
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-gray-700">Location</p>
+                <p className="text-sm font-semibold text-gray-700">{t('register.location')}</p>
                 <div className="flex items-start gap-2 text-gray-600">
                   <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
@@ -449,7 +449,7 @@ export default function RegisterPage() {
             {/* Admin Preview */}
             {formData.owner_name && (
               <div className="pt-4 border-t border-gray-200">
-                <p className="text-sm font-semibold text-gray-700 mb-2">Administrator</p>
+                <p className="text-sm font-semibold text-gray-700">{t('register.administrator')}</p>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
                     <User className="w-5 h-5 text-white" />
@@ -804,7 +804,7 @@ export default function RegisterPage() {
 
                 {(formData.specialties.length === 0 && formData.custom_services.length === 0) && (
                   <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-                    Please select at least one service or add a custom one to continue
+                    {t('register.must_accept')} service or add a custom one to continue
                   </p>
                 )}
 
@@ -993,7 +993,7 @@ export default function RegisterPage() {
                     <span className="text-sm text-gray-700">
                       I agree to the{' '}
                       <a href="/terms" className="text-blue-600 hover:text-blue-700 underline">
-                        Terms of Service
+                        {t('register.terms_baa')}
                       </a>{' '}
                       and{' '}
                       <a href="/privacy" className="text-blue-600 hover:text-blue-700 underline">
@@ -1014,7 +1014,7 @@ export default function RegisterPage() {
                     <span className="text-sm text-gray-700">
                       I accept the{' '}
                       <a href="/baa" className="text-blue-600 hover:text-blue-700 underline">
-                        Business Associate Agreement (BAA)
+                        {t('register.accept_baa')}
                       </a>
                     </span>
                   </label>

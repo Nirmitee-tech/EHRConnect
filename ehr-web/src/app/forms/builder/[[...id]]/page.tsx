@@ -49,6 +49,12 @@ import {
   PanelBottomOpen,
   ChevronLeft,
   ChevronUp,
+  Upload,
+  FileUp,
+  Wand2,
+  Loader2,
+  X,
+  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -138,6 +144,10 @@ export default function FormBuilderPage() {
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const [bottomPanelCollapsed, setBottomPanelCollapsed] = useState(false);
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiGenerating, setAIGenerating] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [aiPrompt, setAIPrompt] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -407,6 +417,105 @@ export default function FormBuilderPage() {
     }
   };
 
+  // AI Form Generation from PDF
+  const handleAIGenerate = async () => {
+    if (!uploadedFile && !aiPrompt) {
+      alert('Please upload a PDF or enter a description');
+      return;
+    }
+
+    setAIGenerating(true);
+
+    try {
+      // Create form data for API call
+      const formData = new FormData();
+      if (uploadedFile) {
+        formData.append('file', uploadedFile);
+      }
+      formData.append('prompt', aiPrompt || 'Generate a comprehensive questionnaire from this document');
+
+      // Call AI service to generate questions
+      const response = await fetch('/api/ai/generate-form', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate form');
+      }
+
+      const data = await response.json();
+
+      // Set form title and description from AI response
+      if (data.title) setTitle(data.title);
+      if (data.description) setDescription(data.description);
+
+      // Convert AI response to QuestionnaireItems
+      if (data.questions && Array.isArray(data.questions)) {
+        const newQuestions: QuestionnaireItem[] = data.questions.map((q: any, index: number) => ({
+          linkId: `ai_${Date.now()}_${index}`,
+          text: q.text || q.question || '',
+          type: mapAITypeToFHIR(q.type),
+          required: q.required || false,
+          answerOption: q.options?.map((opt: string) => ({ valueString: opt })),
+        }));
+
+        setQuestions(newQuestions);
+        addToHistory(newQuestions);
+      }
+
+      setShowAIModal(false);
+      setUploadedFile(null);
+      setAIPrompt('');
+    } catch (error) {
+      console.error('AI generation failed:', error);
+      alert('Failed to generate form. Please try again.');
+    } finally {
+      setAIGenerating(false);
+    }
+  };
+
+  // Map AI response type to FHIR Questionnaire type
+  const mapAITypeToFHIR = (aiType: string): string => {
+    const typeMap: Record<string, string> = {
+      'text': 'string',
+      'short_text': 'string',
+      'long_text': 'text',
+      'paragraph': 'text',
+      'number': 'integer',
+      'decimal': 'decimal',
+      'date': 'date',
+      'time': 'time',
+      'datetime': 'dateTime',
+      'yes_no': 'boolean',
+      'boolean': 'boolean',
+      'single_choice': 'choice',
+      'multiple_choice': 'choice',
+      'dropdown': 'choice',
+      'scale': 'integer',
+      'rating': 'integer',
+      'email': 'string',
+      'phone': 'string',
+      'url': 'url',
+    };
+    return typeMap[aiType?.toLowerCase()] || 'string';
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        alert('Please upload a PDF file');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        alert('File size must be less than 10MB');
+        return;
+      }
+      setUploadedFile(file);
+    }
+  };
+
   const findItem = (items: QuestionnaireItem[], linkId: string): QuestionnaireItem | null => {
     for (const item of items) {
       if (item.linkId === linkId) return item;
@@ -513,6 +622,16 @@ export default function FormBuilderPage() {
           </Button>
 
           <div className="h-5 w-px bg-gray-300 mx-1"></div>
+
+          <Button
+            onClick={() => setShowAIModal(true)}
+            size="sm"
+            variant="outline"
+            className="h-8 px-3 border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400"
+          >
+            <Wand2 className="h-4 w-4 mr-1" />
+            AI Generate
+          </Button>
 
           <Button
             onClick={handleSave}
@@ -907,6 +1026,163 @@ export default function FormBuilderPage() {
         </div>
         )}
       </div>
+
+      {/* AI Generation Modal */}
+      {showAIModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-5 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Wand2 className="h-5 w-5 text-blue-600" />
+                  <h2 className="text-base font-semibold text-gray-900">AI Form Generator</h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowAIModal(false);
+                    setUploadedFile(null);
+                    setAIPrompt('');
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded transition-colors"
+                >
+                  <X className="h-4 w-4 text-gray-500" />
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Upload a PDF document or describe what form you need
+              </p>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-4">
+              {/* Step 1: PDF Upload */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-medium">1</span>
+                  <Label className="text-sm font-medium text-gray-700">Upload PDF (optional)</Label>
+                </div>
+                <div
+                  className={cn(
+                    "border rounded-lg p-4 text-center transition-all cursor-pointer",
+                    uploadedFile
+                      ? "border-green-300 bg-green-50"
+                      : "border-gray-200 hover:border-blue-300 hover:bg-blue-50/50"
+                  )}
+                  onClick={() => document.getElementById('pdf-upload')?.click()}
+                >
+                  <input
+                    id="pdf-upload"
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  {uploadedFile ? (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-600" />
+                        <span className="text-sm text-gray-700 truncate max-w-[200px]">{uploadedFile.name}</span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setUploadedFile(null);
+                        }}
+                        className="p-1 hover:bg-green-100 rounded"
+                      >
+                        <X className="h-3.5 w-3.5 text-gray-500" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2 text-gray-500">
+                      <FileUp className="h-4 w-4" />
+                      <span className="text-sm">Click to upload PDF</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Step 2: Description */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-medium">2</span>
+                  <Label className="text-sm font-medium text-gray-700">Describe your form</Label>
+                </div>
+                <Textarea
+                  value={aiPrompt}
+                  onChange={(e) => setAIPrompt(e.target.value)}
+                  placeholder="e.g., Create a diabetes screening form with questions about symptoms, family history, and lifestyle..."
+                  className="min-h-[80px] text-sm resize-none"
+                />
+              </div>
+
+              {/* Quick Templates */}
+              <div>
+                <p className="text-xs text-gray-500 mb-2">Or try a template:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    'COVID-19 screening',
+                    'Pre-op assessment',
+                    'Mental health intake',
+                    'Pediatric wellness',
+                  ].map((example) => (
+                    <button
+                      key={example}
+                      onClick={() => setAIPrompt(example + ' questionnaire')}
+                      className="px-2.5 py-1 text-xs bg-gray-100 hover:bg-blue-100 hover:text-blue-700 rounded text-gray-600 transition-colors"
+                    >
+                      {example}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Info Box */}
+              <div className="bg-blue-50 rounded-lg p-3 flex gap-2">
+                <AlertCircle className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-blue-700">
+                  AI will analyze your input and generate form questions. You can edit, add, or remove questions after generation.
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-5 py-3 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowAIModal(false);
+                  setUploadedFile(null);
+                  setAIPrompt('');
+                }}
+                disabled={aiGenerating}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleAIGenerate}
+                disabled={aiGenerating || (!uploadedFile && !aiPrompt)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {aiGenerating ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                    Generate
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
