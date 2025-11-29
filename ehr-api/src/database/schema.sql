@@ -83,6 +83,23 @@ CREATE INDEX idx_departments_org_id ON departments(org_id);
 CREATE INDEX idx_departments_location_id ON departments(location_id);
 
 -- =====================================================
+-- DEPARTMENT MEMBERSHIPS (User-Department relationships)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS department_memberships (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  department_id UUID NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
+  role TEXT, -- 'member', 'head', 'assistant', etc.
+  joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  left_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, department_id, left_at) -- Allow rejoining after leaving
+);
+
+CREATE INDEX idx_department_memberships_user_id ON department_memberships(user_id);
+CREATE INDEX idx_department_memberships_department_id ON department_memberships(department_id);
+
+-- =====================================================
 -- USERS
 -- =====================================================
 CREATE TABLE IF NOT EXISTS users (
@@ -496,10 +513,10 @@ CREATE TABLE IF NOT EXISTS inventory_categories (
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   metadata JSONB,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  UNIQUE(org_id, LOWER(name))
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_categories_org_name_unique ON inventory_categories(org_id, LOWER(name));
 CREATE INDEX IF NOT EXISTS idx_inventory_categories_org ON inventory_categories(org_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_categories_active ON inventory_categories(org_id, is_active);
 
@@ -517,10 +534,10 @@ CREATE TABLE IF NOT EXISTS inventory_suppliers (
   metadata JSONB,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  UNIQUE(org_id, LOWER(name)),
   UNIQUE(org_id, code)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_suppliers_org_name_unique ON inventory_suppliers(org_id, LOWER(name));
 CREATE INDEX IF NOT EXISTS idx_inventory_suppliers_org ON inventory_suppliers(org_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_suppliers_active ON inventory_suppliers(org_id, is_active);
 
@@ -546,10 +563,10 @@ CREATE TABLE IF NOT EXISTS inventory_items (
   metadata JSONB,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  UNIQUE(org_id, LOWER(name)),
   UNIQUE(org_id, sku)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_items_org_name_unique ON inventory_items(org_id, LOWER(name));
 CREATE INDEX IF NOT EXISTS idx_inventory_items_org ON inventory_items(org_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_items_category ON inventory_items(org_id, category_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_items_active ON inventory_items(org_id, is_active);

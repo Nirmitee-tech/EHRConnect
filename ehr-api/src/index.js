@@ -12,6 +12,8 @@ const invitationRoutes = require('./routes/invitations');
 const rbacRoutes = require('./routes/rbac');
 const rbacEnhancedRoutes = require('./routes/rbac.enhanced');
 const authRoutes = require('./routes/auth');
+const rolesRoutes = require('./routes/roles');
+const teamRoutes = require('./routes/team');
 const userRoutes = require('./routes/users');
 const userDataRoutes = require('./routes/user-data');
 const onboardingRoutes = require('./routes/onboarding');
@@ -31,6 +33,7 @@ const countryRoutes = require('./routes/countries');
 const translationRoutes = require('./routes/translations');
 const initializeEpisodeRoutes = require('./routes/episodes');
 const formsRoutes = require('./routes/forms');
+const tasksRoutes = require('./routes/tasks');
 const { initializeDatabase } = require('./database/init');
 const socketService = require('./services/socket.service');
 const billingJobs = require('./services/billing.jobs');
@@ -90,6 +93,7 @@ app.use(cors({
     'Referer',
     // Custom app headers
     'x-org-id',
+    'x-org-slug',
     'x-user-id',
     'x-user-roles',
     'x-location-id',
@@ -226,6 +230,8 @@ app.use('/api/invitations', invitationRoutes);
 app.use('/api/rbac/v2', rbacEnhancedRoutes); // Enhanced RBAC with permission matrix (must be before /api/rbac)
 app.use('/api/rbac', rbacRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/roles', rolesRoutes);
+app.use('/api/team', teamRoutes);
 app.use('/api/user', userDataRoutes); // Separate endpoints for user data with Redis caching
 app.use('/api/billing', billingRoutes);
 app.use('/api/inventory/masters', inventoryMastersRoutes);
@@ -243,6 +249,7 @@ app.use('/api/countries', countryRoutes);
 app.use('/api/translations', translationRoutes);
 app.use('/api', initializeEpisodeRoutes(dbPool)); // Episode routes (FHIR EpisodeOfCare)
 app.use('/api/forms', formsRoutes); // Forms/Questionnaire Builder routes
+app.use('/api/tasks', tasksRoutes); // Task Management System routes
 
 // Health check
 app.get('/health', (req, res) => {

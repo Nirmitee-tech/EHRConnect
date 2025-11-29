@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS fhir_resources (
     resource_data JSONB NOT NULL,
     deleted BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
+    org_id UUID,
+
     -- Add indexes for better performance
     CONSTRAINT unique_resource_version UNIQUE (id, version_id)
 );
@@ -19,6 +20,7 @@ CREATE TABLE IF NOT EXISTS fhir_resources (
 CREATE INDEX IF NOT EXISTS idx_fhir_resources_type ON fhir_resources(resource_type);
 CREATE INDEX IF NOT EXISTS idx_fhir_resources_last_updated ON fhir_resources(last_updated);
 CREATE INDEX IF NOT EXISTS idx_fhir_resources_deleted ON fhir_resources(deleted);
+CREATE INDEX IF NOT EXISTS idx_fhir_resources_org_id ON fhir_resources(org_id);
 CREATE INDEX IF NOT EXISTS idx_fhir_resources_data_gin ON fhir_resources USING GIN (resource_data);
 
 -- Patient-specific indexes for common searches

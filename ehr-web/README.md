@@ -2,7 +2,33 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+### 1. Environment Setup
+
+The `.env.local` file has been created with default values for local development. Review and update if needed:
+
+```bash
+# View the configuration
+cat .env.local
+
+# Update values if needed (optional)
+nano .env.local  # or use your preferred editor
+```
+
+**Key Variables:**
+- `NEXT_PUBLIC_API_URL` - Backend API URL (default: http://localhost:8000)
+- `NEXTAUTH_URL` - Frontend URL (default: http://localhost:3000)
+- `NEXTAUTH_SECRET` - Session encryption secret (change in production!)
+- `AUTH_PROVIDER` - Authentication method: `postgres` (default) or `keycloak`
+
+### 2. Install Dependencies
+
+```bash
+npm install
+# or
+yarn install
+```
+
+### 3. Run the Development Server
 
 ```bash
 npm run dev
@@ -10,11 +36,13 @@ npm run dev
 yarn dev
 # or
 pnpm dev
-# or
-bun dev
 ```
 
+### 4. Access the Application
+
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+The application will connect to the backend API at `http://localhost:8000` (configurable via `NEXT_PUBLIC_API_URL`).
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

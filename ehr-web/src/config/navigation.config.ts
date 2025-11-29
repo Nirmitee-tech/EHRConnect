@@ -22,11 +22,13 @@ import {
   Bed,
   UserPlus,
   Map,
+  MapPin,
   BedDouble,
   ArrowRightLeft,
   ClipboardList,
   Puzzle,
-  Globe
+  Globe,
+  CheckSquare
 } from 'lucide-react';
 import { NavSection, PageInfo } from '@/types/navigation';
 
@@ -40,6 +42,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
       { name: 'Appointments', href: '/appointments', icon: Calendar },
       { name: 'Patient Flow', href: '/patient-flow', icon: ArrowRightLeft },
       { name: 'Encounters', href: '/encounters', icon: Activity },
+      { name: 'Tasks', href: '/tasks', icon: CheckSquare },
       { name: 'Patients', href: '/patients', icon: Users },
       {
         name: 'Bed Management',
@@ -128,7 +131,9 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
   {
     title: 'ADMINISTRATION',
     items: [
-      { name: 'User Management', href: '/users', icon: Users },
+      { name: 'Team Management', href: '/team-management', icon: Users },
+      { name: 'User Management', href: '/users', icon: UserCheck },
+      { name: 'Locations', href: '/settings/locations', icon: MapPin },
       { name: 'Roles & Permissions', href: '/roles', icon: Shield },
       { name: 'Forms Builder', href: '/forms', icon: ClipboardList },
       { name: 'Specialty Packs', href: '/admin/specialties', icon: PackageIcon },
@@ -163,6 +168,10 @@ const PAGE_CONFIG: Record<string, PageInfo> = {
     title: 'Patients',
     actionButton: { label: 'Add Patient', href: '/patients/new' }
   },
+  'team-management': {
+    title: 'Team Management',
+    actionButton: { label: 'Invite Member', href: '/team-management' }
+  },
   staff: {
     title: 'Staff List',
     actionButton: { label: 'Add Doctor' }
@@ -175,10 +184,18 @@ const PAGE_CONFIG: Record<string, PageInfo> = {
     title: 'Appointments',
     actionButton: { label: 'New Appointment', href: '/appointments/new' }
   },
+  tasks: {
+    title: 'Tasks',
+    actionButton: { label: 'Create Task', href: '/tasks' }
+  },
   'patient-flow': { title: 'Patient Flow Board' },
   inventory: {
     title: 'Inventory',
     actionButton: { label: 'New Item', href: '/inventory' }
+  },
+  locations: {
+    title: 'Locations',
+    actionButton: { label: 'Add Location', href: '/settings/locations' }
   },
   reports: { title: 'Reports' },
   admin: { title: 'Administration' },
@@ -188,6 +205,7 @@ const PAGE_CONFIG: Record<string, PageInfo> = {
 const ADMIN_PAGES: Record<string, string> = {
   facilities: 'Facilities Management',
   users: 'User Management',
+  'team-management': 'Team Management',
   specialties: 'Specialty Pack Management'
 };
 
@@ -205,6 +223,10 @@ export const getPageInfo = (pathname: string): PageInfo => {
     if (secondSegment && !thirdSegment) {
       return { title: 'Patient Details', actionButton: { label: 'Edit Patient' } };
     }
+  }
+
+  if (firstSegment === 'settings' && secondSegment === 'locations') {
+    return PAGE_CONFIG['locations'];
   }
 
   if (firstSegment === 'admin' && secondSegment) {

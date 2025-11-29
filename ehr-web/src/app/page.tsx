@@ -3,6 +3,8 @@
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import '@/i18n/client';
 import {
   Activity, Users, FileText, Shield, ArrowRight, Check,
   Building2, Sparkles, Heart, Calendar, Lock, Zap,
@@ -17,6 +19,7 @@ import { PublicLanguageSelector } from '@/components/common/public-language-sele
 export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useTranslation('common');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -82,26 +85,25 @@ export default function Home() {
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               <Workflow className="w-4 h-4 text-blue-600" />
               <span className="text-sm font-bold text-blue-900">
-                FHIR-Native • Easy to Use • Built for Integration
+                {t('landing.badge')}
               </span>
               <Globe className="w-4 h-4 text-indigo-600" />
             </div>
 
             {/* Enhanced Headline */}
             <h1 className="mb-6 text-5xl font-bold tracking-tight text-gray-900 sm:text-6xl lg:text-7xl">
-              Modern EHR Built on<br />
+              {t('landing.hero_title_line1')}<br />
               <span className="relative inline-block">
                 <span className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 blur-lg opacity-20"></span>
                 <span className="relative bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  FHIR Standards
+                  {t('landing.hero_title_line2')}
                 </span>
               </span>
             </h1>
 
             {/* Clear Subheading */}
             <p className="mb-10 text-lg leading-relaxed text-gray-600 sm:text-xl max-w-3xl mx-auto">
-              FHIR-native EHR platform designed for seamless integration and ease of use.
-              Connect with any system, access data anywhere, deploy in minutes—not months.
+              {t('landing.hero_subtitle')}
             </p>
 
             {/* Enhanced CTA Buttons */}
@@ -111,7 +113,7 @@ export default function Home() {
                 className="group relative inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-10 py-4 text-base font-bold text-white shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-600/40 hover:scale-105 transition-all"
               >
                 <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-700 to-indigo-700 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                <span className="relative">Start Free Trial</span>
+                <span className="relative">{t('landing.cta_primary')}</span>
                 <ArrowRight className="relative w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </a>
 
@@ -119,7 +121,7 @@ export default function Home() {
                 onClick={handleSignIn}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-gray-300 bg-white px-10 py-4 text-base font-bold text-gray-900 shadow-lg hover:border-blue-300 hover:bg-blue-50 hover:scale-105 transition-all"
               >
-                Sign In
+                {t('landing.cta_secondary')}
               </button>
             </div>
 
@@ -127,15 +129,15 @@ export default function Home() {
             <div className="mt-12 flex flex-wrap items-center justify-center gap-6">
               <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full border-2 border-blue-200 shadow-sm">
                 <CheckCircle2 className="w-5 h-5 text-blue-600" />
-                <span className="text-sm font-bold text-blue-900">FHIR R4 Native</span>
+                <span className="text-sm font-bold text-blue-900">{t('landing.trust_fhir')}</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 bg-purple-50 rounded-full border-2 border-purple-200 shadow-sm">
                 <CheckCircle2 className="w-5 h-5 text-purple-600" />
-                <span className="text-sm font-bold text-purple-900">API-First Design</span>
+                <span className="text-sm font-bold text-purple-900">{t('landing.trust_api')}</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full border-2 border-green-200 shadow-sm">
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
-                <span className="text-sm font-bold text-green-900">Deploy in Minutes</span>
+                <span className="text-sm font-bold text-green-900">{t('landing.trust_deploy')}</span>
               </div>
             </div>
           </div>

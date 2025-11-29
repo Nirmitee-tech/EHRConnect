@@ -51,10 +51,17 @@ export default function SettingsPage() {
     },
     {
       title: 'Facility Settings',
-      description: 'Update facility information and locations',
+      description: 'Update facility information and calendar settings',
       icon: <Building2 className="h-6 w-6" />,
       href: '/settings/facility',
       color: 'bg-orange-500'
+    },
+    {
+      title: 'Locations',
+      description: 'Manage physical locations and facilities',
+      icon: <Building2 className="h-6 w-6" />,
+      href: '/settings/locations',
+      color: 'bg-amber-500'
     },
     {
       title: 'Notifications',

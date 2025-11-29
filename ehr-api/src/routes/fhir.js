@@ -7,6 +7,7 @@ const patientController = require('../controllers/patient');
 const organizationController = require('../controllers/organization');
 const practitionerController = require('../controllers/practitioner');
 const appointmentController = require('../controllers/appointment');
+const FHIRTaskController = require('../controllers/fhir-task.controller');
 
 // Helper function to validate FHIR JSON structure
 function validateFHIRResource(resourceType, resource) {
@@ -276,6 +277,13 @@ createResourceRoutes('Patient', patientController);
 createResourceRoutes('Organization', organizationController);
 createResourceRoutes('Practitioner', practitionerController);
 createResourceRoutes('Appointment', appointmentController);
+
+// Task routes (custom implementation with FHIR R4 compliance)
+router.get('/Task', FHIRTaskController.search.bind(FHIRTaskController));
+router.get('/Task/:id', FHIRTaskController.read.bind(FHIRTaskController));
+router.post('/Task', FHIRTaskController.create.bind(FHIRTaskController));
+router.put('/Task/:id', FHIRTaskController.update.bind(FHIRTaskController));
+router.delete('/Task/:id', FHIRTaskController.delete.bind(FHIRTaskController));
 
 // Generic resource operations for any resource type
 router.get('/:resourceType', async (req, res) => {

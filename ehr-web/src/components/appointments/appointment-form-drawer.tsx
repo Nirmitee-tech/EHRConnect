@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { AppointmentService } from '@/services/appointment.service';
 import { Appointment } from '@/types/appointment';
@@ -11,6 +11,7 @@ import { DrawerFooter } from './appointment-form-components/DrawerFooter';
 import { useAppointmentForm } from './appointment-form-components/useAppointmentForm';
 import { PatientDrawer } from '@/components/patients/patient-drawer';
 import { AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { useLocation } from '@/contexts/location-context';
 
 interface AppointmentFormDrawerProps {
   isOpen: boolean;
@@ -41,15 +42,6 @@ const APPOINTMENT_TYPES = [
   'Chronic Care Management'
 ];
 
-const DEFAULT_LOCATIONS = [
-  'Room 1',
-  'Room 2',
-  'Room 3',
-  'Consultation Room A',
-  'Consultation Room B',
-  'Emergency Room'
-];
-
 export function AppointmentFormDrawer({
   isOpen,
   onClose,
@@ -64,15 +56,13 @@ export function AppointmentFormDrawer({
   const [loading, setLoading] = useState(false);
   const [isNewPatient, setIsNewPatient] = useState(false);
   const [bookingStatus, setBookingStatus] = useState<BookingStatus>('form');
-  const [locations, setLocations] = useState<string[]>(DEFAULT_LOCATIONS);
   const [conflictingAppointments, setConflictingAppointments] = useState<Appointment[]>([]);
-  const [showLocationDrawer, setShowLocationDrawer] = useState(false);
   const [showCategoryDrawer, setShowCategoryDrawer] = useState(false);
   const [showPatientDrawer, setShowPatientDrawer] = useState(false);
-  const [newLocation, setNewLocation] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [appointmentTypes, setAppointmentTypes] = useState<string[]>(APPOINTMENT_TYPES);
   const pendingPatientSelectionRef = useRef<string | null>(null);
+  const { locations, currentLocation } = useLocation();
 
   const {
     formData,
@@ -97,6 +87,24 @@ export function AppointmentFormDrawer({
       }
     }
   }, [patients, handlePatientChange]);
+
+  // Default the appointment location to the selected location from the navbar
+  useEffect(() => {
+    if (currentLocation && !formData.locationId && !editingAppointment) {
+      updateField('locationId', currentLocation.id);
+      updateField('location', currentLocation.name);
+    }
+  }, [currentLocation, formData.locationId, editingAppointment, updateField]);
+
+  // Map existing appointment location names to IDs once locations load
+  useEffect(() => {
+    if (!formData.locationId && formData.location && locations.length > 0) {
+      const matched = locations.find(loc => loc.name === formData.location);
+      if (matched) {
+        updateField('locationId', matched.id);
+      }
+    }
+  }, [formData.location, formData.locationId, locations, updateField]);
 
   // Check for conflicting appointments, leaves, and working hours
   const checkConflicts = (startTime: Date, endTime: Date): Appointment[] => {
@@ -188,7 +196,9 @@ export function AppointmentFormDrawer({
 
       // Check if same practitioner and location
       const samePractitioner = apt.practitionerId === formData.doctorId || apt.practitionerName === formData.doctorName;
-      const sameLocation = apt.location === formData.location;
+      const sameLocation =
+        (apt.locationId && formData.locationId && apt.locationId === formData.locationId) ||
+        (apt.location && formData.location && apt.location === formData.location);
 
       if (!samePractitioner && !sameLocation) return false;
 
@@ -197,12 +207,6 @@ export function AppointmentFormDrawer({
     });
 
     return [...conflicts, ...appointmentConflicts];
-  };
-
-  const handleAddLocation = (location: string) => {
-    if (!locations.includes(location)) {
-      setLocations([...locations, location]);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -257,6 +261,7 @@ export function AppointmentFormDrawer({
         endTime: endDateTime,
         duration,
         reason: formData.notes,
+        locationId: formData.locationId,
         location: formData.location,
         isAllDay: formData.isAllDay,
         allDayEventType: formData.allDayEventType as any,
@@ -355,9 +360,7 @@ export function AppointmentFormDrawer({
                   onDoctorChange={handleDoctorChange}
                   onPatientChange={handlePatientChange}
                   onToggleNewPatient={() => setIsNewPatient(!isNewPatient)}
-                  onAddLocation={handleAddLocation}
                   onOpenPatientDrawer={() => setShowPatientDrawer(true)}
-                  onOpenLocationDrawer={() => setShowLocationDrawer(true)}
                   onOpenCategoryDrawer={() => setShowCategoryDrawer(true)}
                 />
               )}
@@ -477,70 +480,6 @@ export function AppointmentFormDrawer({
           </div>
         )}
       </div>
-
-      {/* Location Sidebar */}
-      {showLocationDrawer && (
-        <div className="fixed inset-0 z-50 bg-black/30" onClick={() => setShowLocationDrawer(false)}>
-          <div
-            className="absolute right-0 top-0 h-full w-96 bg-white shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex h-full flex-col">
-              <div className="flex items-center justify-between border-b px-6 py-4">
-                <h2 className="text-lg font-semibold">Add New Location</h2>
-                <button
-                  onClick={() => setShowLocationDrawer(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Location Name
-                    </label>
-                    <input
-                      type="text"
-                      value={newLocation}
-                      onChange={(e) => setNewLocation(e.target.value)}
-                      placeholder="Enter location name"
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      autoFocus
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="border-t px-6 py-4 flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowLocationDrawer(false);
-                    setNewLocation('');
-                  }}
-                  className="flex-1 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    if (newLocation.trim()) {
-                      const updatedLocations = [...locations, newLocation.trim()];
-                      setLocations(updatedLocations);
-                      updateField('location', newLocation.trim());
-                      setNewLocation('');
-                      setShowLocationDrawer(false);
-                    }
-                  }}
-                  className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                >
-                  Add Location
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Category Sidebar */}
       {showCategoryDrawer && (

@@ -11,6 +11,10 @@ const vonageHandler = require('./vonage.handler');
 const customHL7Handler = require('./custom-hl7.handler');
 const claimMDHandler = require('./claimmd.handler');
 
+// Task System Integrations
+const TaskAppointmentIntegration = require('./task-appointment.integration');
+const TaskFormIntegration = require('./task-form.integration');
+
 // Add more handlers as they are created:
 // const twilioHandler = require('./twilio.handler');
 // const availityHandler = require('./availity.handler');
@@ -56,5 +60,8 @@ module.exports = {
   hundredMSHandler,
   agoraHandler,
   vonageHandler,
-  customHL7Handler
+  customHL7Handler,
+  // Task System Integrations
+  TaskAppointmentIntegration,
+  TaskFormIntegration
 };

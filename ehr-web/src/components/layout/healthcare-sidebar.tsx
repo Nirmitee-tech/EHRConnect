@@ -26,10 +26,10 @@ const Logo = ({ isCollapsed }: { isCollapsed: boolean }) => (
   </div>
 );
 
-const FacilityInfo = ({ facilityName, patientCount, staffCount }: { 
-  facilityName: string; 
-  patientCount: number; 
-  staffCount: number; 
+const FacilityInfo = ({ facilityName, patientCount, staffCount }: {
+  facilityName: string;
+  patientCount: number;
+  staffCount: number;
 }) => (
   <div className="mx-3 mb-3 p-3 rounded-lg bg-[#1E2A70]/30 border border-[#1E2A70]">
     <div className="flex items-center space-x-2 mb-2">
@@ -98,15 +98,15 @@ export function HealthcareSidebar() {
   // Filter navigation sections based on search query
   const filteredSections = searchQuery
     ? NAVIGATION_SECTIONS.map(section => ({
-        ...section,
-        items: section.items.filter(item =>
-          item.name.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      })).filter(section => section.items.length > 0)
+      ...section,
+      items: section.items.filter(item =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    })).filter(section => section.items.length > 0)
     : NAVIGATION_SECTIONS;
 
   return (
-    <aside 
+    <aside
       className={cn(
         'bg-[#0F1E56] flex flex-col h-full transition-all duration-300',
         isCollapsed ? 'w-16' : 'w-64'

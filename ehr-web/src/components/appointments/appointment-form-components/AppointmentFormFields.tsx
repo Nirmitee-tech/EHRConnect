@@ -19,15 +19,13 @@ interface AppointmentFormFieldsProps {
     email?: string;
   }>;
   treatmentCategories: string[];
-  locations: string[];
+  locations: Array<{ id: string; name: string }>;
   isNewPatient: boolean;
   onFormDataChange: (field: string, value: any) => void;
   onDoctorChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onPatientChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onToggleNewPatient: () => void;
-  onAddLocation: (location: string) => void;
   onOpenPatientDrawer?: () => void;
-  onOpenLocationDrawer?: () => void;
   onOpenCategoryDrawer?: () => void;
 }
 
@@ -42,9 +40,7 @@ export function AppointmentFormFields({
   onDoctorChange,
   onPatientChange,
   onToggleNewPatient,
-  onAddLocation,
   onOpenPatientDrawer,
-  onOpenLocationDrawer,
   onOpenCategoryDrawer
 }: AppointmentFormFieldsProps) {
   const [showAddDoctor, setShowAddDoctor] = useState(false);
@@ -52,6 +48,12 @@ export function AppointmentFormFields({
 
   // Get selected practitioner
   const selectedPractitioner = practitioners.find(p => p.id === formData.doctorId);
+
+  const handleLocationChange = (value: string) => {
+    const selected = locations.find(loc => loc.id === value);
+    onFormDataChange('locationId', value);
+    onFormDataChange('location', selected?.name || '');
+  };
 
   // Check if a date is a working day
   const isWorkingDay = (date: Date): boolean => {
@@ -274,12 +276,10 @@ export function AppointmentFormFields({
         <SearchableSelect
           label="Location"
           required
-          options={locations.map(loc => ({ value: loc, label: loc }))}
-          value={formData.location || ''}
-          onChange={(value) => onFormDataChange('location', value)}
+          options={locations.map(loc => ({ value: loc.id, label: loc.name }))}
+          value={formData.locationId || ''}
+          onChange={handleLocationChange}
           placeholder="Select Location"
-          onAddNew={onOpenLocationDrawer}
-          addNewLabel="Add New Location"
         />
       </div>
 

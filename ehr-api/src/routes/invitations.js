@@ -106,7 +106,13 @@ router.post('/orgs/:orgId/invitations', checkOrgAccess, async (req, res) => {
       req.userContext.userId
     );
 
-    res.status(201).json({ invitation });
+    // Include accept URL in development mode
+    const response = { invitation };
+    if (process.env.NODE_ENV === 'development') {
+      response.accept_url = `${process.env.NEXT_PUBLIC_WEB_URL || 'http://localhost:3000'}/accept-invitation/${invitation.token}`;
+    }
+
+    res.status(201).json(response);
   } catch (error) {
     console.error('Create invitation error:', error);
     res.status(400).json({ error: error.message });

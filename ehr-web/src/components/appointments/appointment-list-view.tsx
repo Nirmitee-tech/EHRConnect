@@ -103,8 +103,13 @@ export function AppointmentListView({
       }
 
       // Location filter
-      if (selectedLocations.length > 0 && apt.location && !selectedLocations.includes(apt.location)) {
-        return false;
+      if (selectedLocations.length > 0) {
+        const matchesLocation = selectedLocations.some(loc =>
+          loc === apt.locationId || (apt.location && loc === apt.location)
+        );
+        if (!matchesLocation) {
+          return false;
+        }
       }
 
       return true;
@@ -116,7 +121,7 @@ export function AppointmentListView({
     const groups: { [key: string]: Appointment[] } = {};
 
     filteredAppointments.forEach(apt => {
-      const location = apt.location || 'Virtual';
+      const location = apt.location || 'Unassigned';
       if (!groups[location]) {
         groups[location] = [];
       }
@@ -141,11 +146,11 @@ export function AppointmentListView({
     );
   };
 
-  const handleLocationToggle = (location: string) => {
+  const handleLocationToggle = (locationId: string) => {
     setSelectedLocations(prev =>
-      prev.includes(location)
-        ? prev.filter(l => l !== location)
-        : [...prev, location]
+      prev.includes(locationId)
+        ? prev.filter(l => l !== locationId)
+        : [...prev, locationId]
     );
   };
 
@@ -291,8 +296,8 @@ export function AppointmentListView({
                 <label key={location.id} className="flex items-center gap-1.5 cursor-pointer text-xs">
                   <input
                     type="checkbox"
-                    checked={selectedLocations.includes(location.name)}
-                    onChange={() => handleLocationToggle(location.name)}
+                    checked={selectedLocations.includes(location.id)}
+                    onChange={() => handleLocationToggle(location.id)}
                     className="w-3 h-3 rounded border-gray-300"
                   />
                   <span className="text-gray-700">{location.name}</span>

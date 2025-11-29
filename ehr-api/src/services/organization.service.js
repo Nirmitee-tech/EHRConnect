@@ -416,6 +416,176 @@ class OrganizationService {
       return updateResult.rows[0];
     });
   }
+
+  /**
+   * Create department
+   */
+  async createDepartment(departmentData, createdBy) {
+    const {
+      org_id,
+      location_id,
+      name,
+      code,
+      department_type,
+      head_user_id,
+      description
+    } = departmentData;
+
+    return await transaction(async (client) => {
+      // Check if code is unique within org/location
+      if (code) {
+        const existing = await client.query(
+          'SELECT id FROM departments WHERE org_id = $1 AND code = $2 AND (location_id = $3 OR (location_id IS NULL AND $3 IS NULL))',
+          [org_id, code, location_id || null]
+        );
+
+        if (existing.rows.length > 0) {
+          throw new Error('Department code already exists in this location');
+        }
+      }
+
+      // Create department
+      const result = await client.query(
+        `INSERT INTO departments (
+          org_id, location_id, name, code, department_type,
+          head_user_id, active, created_at, updated_at,
+          metadata
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, true, NOW(), NOW(), $7)
+        RETURNING *`,
+        [
+          org_id,
+          location_id || null,
+          name,
+          code || null,
+          department_type || null,
+          head_user_id || null,
+          JSON.stringify({ description: description || null })
+        ]
+      );
+
+      // Audit log
+      await client.query(
+        `INSERT INTO audit_events (
+          org_id, actor_user_id, action, target_type, target_id,
+          target_name, status, metadata
+        )
+        VALUES ($1, $2, 'DEPARTMENT.CREATED', 'Department', $3, $4, 'success', $5)`,
+        [org_id, createdBy, result.rows[0].id, name, JSON.stringify(departmentData)]
+      );
+
+      return result.rows[0];
+    });
+  }
+
+  /**
+   * Get departments
+   */
+  async getDepartments(orgId, activeOnly = false) {
+    const whereClause = activeOnly ? 'AND active = true' : '';
+
+    const result = await query(
+      `SELECT
+        d.*,
+        l.name as location_name,
+        u.name as head_name
+       FROM departments d
+       LEFT JOIN locations l ON d.location_id = l.id
+       LEFT JOIN users u ON d.head_user_id = u.id
+       WHERE d.org_id = $1 ${whereClause}
+       ORDER BY d.name`,
+      [orgId]
+    );
+
+    // Parse metadata JSON and add description
+    return result.rows.map(row => ({
+      ...row,
+      description: row.metadata?.description || null
+    }));
+  }
+
+  /**
+   * Update department
+   */
+  async updateDepartment(departmentId, updates, updatedBy) {
+    return await transaction(async (client) => {
+      const result = await client.query(
+        'SELECT org_id, name FROM departments WHERE id = $1',
+        [departmentId]
+      );
+
+      if (result.rows.length === 0) {
+        throw new Error('Department not found');
+      }
+
+      const department = result.rows[0];
+      const updateFields = [];
+      const params = [];
+      let paramCount = 1;
+
+      if (updates.name !== undefined) {
+        updateFields.push(`name = $${paramCount++}`);
+        params.push(updates.name);
+      }
+
+      if (updates.code !== undefined) {
+        updateFields.push(`code = $${paramCount++}`);
+        params.push(updates.code || null);
+      }
+
+      if (updates.department_type !== undefined) {
+        updateFields.push(`department_type = $${paramCount++}`);
+        params.push(updates.department_type || null);
+      }
+
+      if (updates.location_id !== undefined) {
+        updateFields.push(`location_id = $${paramCount++}`);
+        params.push(updates.location_id || null);
+      }
+
+      if (updates.head_user_id !== undefined) {
+        updateFields.push(`head_user_id = $${paramCount++}`);
+        params.push(updates.head_user_id || null);
+      }
+
+      if (updates.active !== undefined) {
+        updateFields.push(`active = $${paramCount++}`);
+        params.push(updates.active);
+      }
+
+      if (updates.description !== undefined) {
+        updateFields.push(`metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), '{description}', $${paramCount++})`);
+        params.push(JSON.stringify(updates.description));
+      }
+
+      updateFields.push(`updated_at = NOW()`);
+
+      params.push(departmentId);
+      const updateResult = await client.query(
+        `UPDATE departments
+         SET ${updateFields.join(', ')}
+         WHERE id = $${paramCount}
+         RETURNING *`,
+        params
+      );
+
+      // Audit log
+      await client.query(
+        `INSERT INTO audit_events (
+          org_id, actor_user_id, action, target_type, target_id,
+          target_name, status, metadata
+        )
+        VALUES ($1, $2, 'DEPARTMENT.UPDATED', 'Department', $3, $4, 'success', $5)`,
+        [department.org_id, updatedBy, departmentId, department.name, JSON.stringify(updates)]
+      );
+
+      const updated = updateResult.rows[0];
+      return {
+        ...updated,
+        description: updated.metadata?.description || null
+      };
+    });
+  }
 }
 
 module.exports = new OrganizationService();

@@ -1,0 +1,178 @@
+const { Pool } = require('pg');
+
+module.exports = {
+  up: async (queryInterface, Sequelize) => {
+    const sql = `-- Migration: Create fhir_encounters table
+-- Description: FHIR-compliant encounters table for tracking patient-practitioner interactions
+-- References FHIR Encounter resource: https://www.hl7.org/fhir/encounter.html
+
+-- Ensure dependent fhir_patients table exists before creating encounters
+CREATE TABLE IF NOT EXISTS fhir_patients (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  resource JSONB NOT NULL,
+  active BOOLEAN DEFAULT TRUE,
+  family_name VARCHAR(255),
+  given_name VARCHAR(255),
+  full_name TEXT,
+  gender VARCHAR(20),
+  birth_date DATE,
+  deceased BOOLEAN DEFAULT FALSE,
+  deceased_date_time TIMESTAMPTZ,
+  phone VARCHAR(50),
+  email VARCHAR(255),
+  address_line TEXT,
+  address_city VARCHAR(100),
+  address_state VARCHAR(100),
+  address_postal_code VARCHAR(20),
+  address_country VARCHAR(100),
+  mrn VARCHAR(100),
+  ssn VARCHAR(20),
+  national_id VARCHAR(50),
+  preferred_language VARCHAR(10),
+  general_practitioner_id UUID,
+  managing_organization_id UUID REFERENCES organizations(id),
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT valid_gender CHECK (gender IN ('male', 'female', 'other', 'unknown'))
+);
+
+-- Ensure dependent fhir_appointments table exists before creating encounters
+CREATE TABLE IF NOT EXISTS fhir_appointments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  resource JSONB NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  start_time TIMESTAMPTZ NOT NULL,
+  end_time TIMESTAMPTZ NOT NULL,
+  duration_minutes INTEGER,
+  appointment_type VARCHAR(255),
+  service_category VARCHAR(255),
+  service_type VARCHAR(255),
+  specialty VARCHAR(255),
+  priority INTEGER DEFAULT 0,
+  patient_id UUID REFERENCES fhir_patients(id) ON DELETE CASCADE,
+  practitioner_id UUID,
+  location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+  slot_id UUID,
+  description TEXT,
+  patient_instruction TEXT,
+  cancellation_reason TEXT,
+  cancelled_at TIMESTAMPTZ,
+  checked_in_at TIMESTAMPTZ,
+  arrived_at TIMESTAMPTZ,
+  communication_method VARCHAR(50),
+  reminder_sent BOOLEAN DEFAULT FALSE,
+  reminder_sent_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  created_by UUID REFERENCES users(id),
+  updated_by UUID REFERENCES users(id),
+  CONSTRAINT valid_appointment_status CHECK (status IN (
+    'proposed','pending','booked','arrived','fulfilled','cancelled','noshow','entered-in-error','checked-in','waitlist'
+  )),
+  CONSTRAINT valid_times CHECK (end_time > start_time)
+);
+
+CREATE TABLE IF NOT EXISTS fhir_encounters (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- Organization context
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+
+  -- FHIR Resource
+  resource JSONB NOT NULL,
+
+  -- Extracted fields for querying (from resource)
+  status VARCHAR(50) NOT NULL, -- planned, arrived, triaged, in-progress, onleave, finished, cancelled
+  class VARCHAR(50), -- inpatient, outpatient, ambulatory, emergency, virtual, etc.
+
+  -- References
+  patient_id UUID REFERENCES fhir_patients(id),
+  practitioner_id UUID, -- Primary practitioner
+  appointment_id UUID REFERENCES fhir_appointments(id),
+
+  -- Period
+  period_start TIMESTAMPTZ,
+  period_end TIMESTAMPTZ,
+
+  -- Encounter type
+  encounter_type VARCHAR(255),
+  service_type VARCHAR(255),
+
+  -- Metadata
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+
+  -- Constraints
+  CONSTRAINT valid_encounter_status CHECK (status IN (
+    'planned',
+    'arrived',
+    'triaged',
+    'in-progress',
+    'onleave',
+    'finished',
+    'cancelled',
+    'entered-in-error',
+    'unknown'
+  ))
+);
+
+-- Create indexes for performance
+CREATE INDEX idx_fhir_encounters_org ON fhir_encounters(org_id);
+CREATE INDEX idx_fhir_encounters_patient ON fhir_encounters(patient_id);
+CREATE INDEX idx_fhir_encounters_practitioner ON fhir_encounters(practitioner_id);
+CREATE INDEX idx_fhir_encounters_appointment ON fhir_encounters(appointment_id);
+CREATE INDEX idx_fhir_encounters_status ON fhir_encounters(status);
+CREATE INDEX idx_fhir_encounters_period_start ON fhir_encounters(period_start);
+CREATE INDEX idx_fhir_encounters_created_at ON fhir_encounters(created_at);
+CREATE INDEX idx_fhir_encounters_resource_gin ON fhir_encounters USING gin(resource);
+
+-- Create function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_fhir_encounters_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger for updated_at
+CREATE TRIGGER trigger_fhir_encounters_updated_at
+  BEFORE UPDATE ON fhir_encounters
+  FOR EACH ROW
+  EXECUTE FUNCTION update_fhir_encounters_updated_at();
+
+-- Add comments for documentation
+COMMENT ON TABLE fhir_encounters IS 'FHIR Encounter resources - tracks all patient-practitioner interactions';
+COMMENT ON COLUMN fhir_encounters.resource IS 'Full FHIR Encounter resource in JSONB format';
+COMMENT ON COLUMN fhir_encounters.status IS 'Encounter status extracted from resource for quick filtering';
+COMMENT ON COLUMN fhir_encounters.class IS 'Encounter class (inpatient, outpatient, virtual, etc.)';
+`;
+
+    const config = queryInterface.sequelize.config;
+    const pool = new Pool({
+      host: config.host,
+      port: config.port,
+      database: config.database,
+      user: config.username,
+      password: config.password,
+    });
+
+    try {
+      console.log('🔄 Executing 20240101000028-create_fhir_encounters_table...');
+      await pool.query(sql);
+      console.log('✅ 20240101000028-create_fhir_encounters_table completed');
+    } catch (error) {
+      console.error('❌ 20240101000028-create_fhir_encounters_table failed:', error.message);
+      throw error;
+    } finally {
+      await pool.end();
+    }
+  },
+
+  down: async (queryInterface, Sequelize) => {
+    // Rollback not implemented
+    console.log('⚠️  Rollback not implemented for 20240101000028-create_fhir_encounters_table.js');
+  }
+};

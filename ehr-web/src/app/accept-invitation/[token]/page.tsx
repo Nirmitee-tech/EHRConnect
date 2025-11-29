@@ -85,10 +85,14 @@ export default function AcceptInvitationPage({ params }: { params: Promise<{ tok
       }
 
       const result = await response.json();
-      
+
       // Show success and redirect to login
-      alert(`${result.message}\n\nYou can now sign in with your credentials.`);
-      router.push('/dashboard');
+      alert(`${result.message}\n\nRedirecting you to the login page...`);
+
+      // Redirect to appropriate login page based on auth provider
+      setTimeout(() => {
+        router.push('/auth/signin');
+      }, 1500);
     } catch (err) {
       const error = err as Error;
       setError(error.message);

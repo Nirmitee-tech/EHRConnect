@@ -9,9 +9,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Heart, TrendingUp, Activity, Users, CheckCircle2, Eye, EyeOff } from 'lucide-react'
-import Image from 'next/image'
+import { PublicLanguageSelector } from '@/components/common/public-language-selector'
+import { useTranslation } from 'react-i18next'
+import '@/i18n/client'
 
 function PatientLoginPageContent() {
+  const { t } = useTranslation('common')
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams?.get('callbackUrl') || '/portal/dashboard'
@@ -41,13 +44,13 @@ function PatientLoginPageContent() {
       })
 
       if (result?.error) {
-        setError('Invalid email or password. Please try again.')
+        setError(t('patient_auth.error_invalid'))
       } else if (result?.ok) {
         router.push(callbackUrl)
         router.refresh()
       }
     } catch (err) {
-      setError('An error occurred. Please try again.')
+      setError(t('patient_auth.error_generic'))
       console.error('Login error:', err)
     } finally {
       setIsLoading(false)
@@ -60,22 +63,22 @@ function PatientLoginPageContent() {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
-      {/* Left Side - Login Form */}
       <div className="flex flex-col bg-white">
-        {/* Logo */}
-        <div className="p-8">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#0755D1] to-[#0540A3] rounded-xl flex items-center justify-center shadow-lg shadow-[#0755D1]/30">
-              <Heart className="w-6 h-6 text-white" />
+        <div className="p-6 sm:p-8">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#0755D1] to-[#0540A3] rounded-xl flex items-center justify-center shadow-lg shadow-[#0755D1]/30">
+                <Heart className="w-6 h-6 text-white" />
+              </div>
             </div>
+            <PublicLanguageSelector />
           </div>
         </div>
 
-        {/* Form Content */}
-        <div className="flex-1 flex items-center justify-center px-8 py-12">
+        <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-10 sm:py-12">
           <div className="w-full max-w-md space-y-8">
             <div className="space-y-2">
-              <h1 className="text-3xl font-bold text-gray-900">Get Started Now</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{t('patient_auth.get_started')}</h1>
             </div>
 
             {/* Form */}
@@ -87,12 +90,12 @@ function PatientLoginPageContent() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-700 font-medium">Email address</Label>
+                <Label htmlFor="email" className="text-gray-700 font-medium">{t('auth.email')}</Label>
                 <Input
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="rodrigo@example.com"
+                  placeholder={t('patient_auth.email_placeholder')}
                   value={formData.email}
                   onChange={handleInputChange}
                   required
@@ -103,12 +106,12 @@ function PatientLoginPageContent() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-gray-700 font-medium">Password</Label>
+                  <Label htmlFor="password" className="text-gray-700 font-medium">{t('auth.password')}</Label>
                   <Link
                     href="/patient-login/forgot-password"
                     className="text-sm text-[#0755D1] hover:text-[#0540A3] transition-colors font-medium"
                   >
-                    Forget password?
+                    {t('auth.forgot_password')}
                   </Link>
                 </div>
                 <div className="relative">
@@ -116,7 +119,7 @@ function PatientLoginPageContent() {
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="min 8 chars"
+                    placeholder={t('patient_auth.password_placeholder')}
                     value={formData.password}
                     onChange={handleInputChange}
                     required
@@ -142,7 +145,7 @@ function PatientLoginPageContent() {
                   className="w-4 h-4 rounded border-gray-300 text-[#0755D1] focus:ring-[#0755D1]"
                 />
                 <label htmlFor="terms" className="text-sm text-gray-600">
-                  I agree to the <Link href="/terms" className="text-[#0755D1] hover:underline font-medium">Terms & Privacy</Link>
+                  {t('patient_auth.accept_terms')} <Link href="/terms" className="text-[#0755D1] hover:underline font-medium">{t('patient_auth.terms_link_text')}</Link>
                 </label>
               </div>
 
@@ -154,18 +157,18 @@ function PatientLoginPageContent() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Logging in...
+                    {t('auth.signing_in')}
                   </>
                 ) : (
-                  'Login'
+                  t('auth.sign_in')
                 )}
               </Button>
             </form>
 
             <p className="text-center text-sm text-gray-600">
-              Have an account?{' '}
+              {t('patient_auth.need_account')}{' '}
               <Link href="/patient-register" className="text-[#0755D1] hover:text-[#0540A3] font-semibold">
-                Sign in
+                {t('patient_auth.create_account')}
               </Link>
             </p>
           </div>
@@ -188,10 +191,10 @@ function PatientLoginPageContent() {
         <div className="relative z-10 flex flex-col justify-center h-full max-w-2xl mx-auto">
           <div className="space-y-6 mb-12">
             <h2 className="text-4xl lg:text-5xl font-bold leading-tight">
-              The simplest way to manage your healthcare
+              {t('patient_auth.hero_title')}
             </h2>
             <p className="text-lg text-white/90">
-              Enter your credentials to access your account
+              {t('patient_auth.hero_subtitle')}
             </p>
           </div>
 
@@ -206,27 +209,27 @@ function PatientLoginPageContent() {
                     <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
                     <div className="w-3 h-3 rounded-full bg-green-400"></div>
                   </div>
-                  <span className="text-xs text-gray-500">Jun 24, 2021 - June 30, 2021</span>
+                  <span className="text-xs text-gray-500">{t('patient_auth.sample_date_range')}</span>
                 </div>
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div className="bg-gradient-to-br from-blue-50 to-white p-3 rounded-lg border border-blue-100">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-gray-600 font-medium">Patient Visit</span>
+                      <span className="text-xs text-gray-600 font-medium">{t('patient_auth.metric_patient_visit')}</span>
                       <TrendingUp className="w-3 h-3 text-[#0755D1]" />
                     </div>
                     <p className="text-xl font-bold text-gray-900">12.1K</p>
-                    <p className="text-xs text-green-600">+12% this week</p>
+                    <p className="text-xs text-green-600">{t('patient_auth.change_positive', { value: '+12%' })}</p>
                   </div>
 
                   <div className="bg-gradient-to-br from-sky-50 to-white p-3 rounded-lg border border-sky-100">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-gray-600 font-medium">Appointments</span>
+                      <span className="text-xs text-gray-600 font-medium">{t('patient_auth.metric_appointments')}</span>
                       <Activity className="w-3 h-3 text-[#0755D1]" />
                     </div>
                     <p className="text-xl font-bold text-gray-900">8.5K</p>
-                    <p className="text-xs text-green-600">+8% this week</p>
+                    <p className="text-xs text-green-600">{t('patient_auth.change_positive', { value: '+8%' })}</p>
                   </div>
                 </div>
 
@@ -234,7 +237,7 @@ function PatientLoginPageContent() {
                 <div className="bg-gradient-to-br from-blue-50/50 to-white p-3 rounded-lg border border-blue-100/50">
                   <div className="flex items-center gap-2 mb-2">
                     <Users className="w-4 h-4 text-[#0755D1]" />
-                    <span className="text-xs text-gray-600 font-medium">Add Member</span>
+                    <span className="text-xs text-gray-600 font-medium">{t('patient_auth.metric_add_member')}</span>
                   </div>
                   <div className="flex -space-x-2">
                     <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#0755D1] to-[#0540A3] border-2 border-white"></div>
@@ -249,7 +252,7 @@ function PatientLoginPageContent() {
 
               {/* Dashboard Table */}
               <div className="p-4">
-                <h3 className="text-xs font-semibold text-gray-700 mb-3">Recent Utilization</h3>
+                <h3 className="text-xs font-semibold text-gray-700 mb-3">{t('patient_auth.metric_recent_utilization')}</h3>
                 <div className="space-y-2">
                   {[
                     { name: 'Dr. Sarah Smith', amount: '$8,254', status: 'high', percent: 92 },
@@ -280,15 +283,15 @@ function PatientLoginPageContent() {
           <div className="mt-12 flex items-center justify-center gap-8 opacity-80">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5" />
-              <span className="text-sm font-medium">HIPAA Compliant</span>
+              <span className="text-sm font-medium">{t('patient_auth.trust_hipaa')}</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5" />
-              <span className="text-sm font-medium">SOC 2 Certified</span>
+              <span className="text-sm font-medium">{t('patient_auth.trust_soc2')}</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5" />
-              <span className="text-sm font-medium">ISO 27001</span>
+              <span className="text-sm font-medium">{t('patient_auth.trust_iso')}</span>
             </div>
           </div>
         </div>

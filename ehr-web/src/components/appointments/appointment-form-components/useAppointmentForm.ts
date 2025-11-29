@@ -23,6 +23,7 @@ interface FormData {
   allDayEventType?: string;
   isEmergency?: boolean;
   location?: string;
+  locationId?: string;
   mode?: 'in-person' | 'video-call' | 'voice-call' | 'other';
 }
 
@@ -47,6 +48,8 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
     notes: '',
     sendEmail: false,
     sendSMS: false,
+    location: '',
+    locationId: '',
     mode: 'in-person'
   });
 
@@ -182,6 +185,8 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
       notes: appointment.reason || '',
       sendEmail: false,
       sendSMS: false,
+      location: appointment.location || '',
+      locationId: appointment.locationId || '',
       mode: appointment.mode || 'in-person'
     });
   };
@@ -226,6 +231,8 @@ export function useAppointmentForm(initialDate?: Date, editingAppointment?: Appo
       notes: '',
       sendEmail: false,
       sendSMS: false,
+      location: '',
+      locationId: '',
       mode: 'in-person'
     });
   };

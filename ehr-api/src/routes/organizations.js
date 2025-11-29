@@ -173,4 +173,67 @@ router.patch('/:orgId/locations/:locationId', checkOrgAccess, async (req, res) =
   }
 });
 
+// =====================================================
+// DEPARTMENT ROUTES
+// =====================================================
+
+/**
+ * POST /api/orgs/:orgId/departments
+ * Create a new department
+ */
+router.post('/:orgId/departments', checkOrgAccess, async (req, res) => {
+  try {
+    const departmentData = {
+      ...req.body,
+      org_id: req.params.orgId
+    };
+
+    const department = await organizationService.createDepartment(
+      departmentData,
+      req.userContext.userId
+    );
+
+    res.status(201).json({ department });
+  } catch (error) {
+    console.error('Create department error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/orgs/:orgId/departments
+ * Get all departments for an organization
+ */
+router.get('/:orgId/departments', checkOrgAccess, async (req, res) => {
+  try {
+    const { activeOnly } = req.query;
+    const departments = await organizationService.getDepartments(
+      req.params.orgId,
+      activeOnly === 'true'
+    );
+    res.json({ departments });
+  } catch (error) {
+    console.error('Get departments error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * PATCH /api/orgs/:orgId/departments/:departmentId
+ * Update a department
+ */
+router.patch('/:orgId/departments/:departmentId', checkOrgAccess, async (req, res) => {
+  try {
+    const department = await organizationService.updateDepartment(
+      req.params.departmentId,
+      req.body,
+      req.userContext.userId
+    );
+    res.json({ department });
+  } catch (error) {
+    console.error('Update department error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
 module.exports = router;

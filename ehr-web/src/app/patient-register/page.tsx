@@ -11,9 +11,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2, Heart, ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { PublicLanguageSelector } from '@/components/common/public-language-selector'
+import { useTranslation } from 'react-i18next'
+import '@/i18n/client'
 
 export default function PatientRegisterPage() {
   const router = useRouter()
+  const { t } = useTranslation('common')
 
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [isLoading, setIsLoading] = useState(false)
@@ -54,7 +58,7 @@ export default function PatientRegisterPage() {
 
   const validateStep1 = () => {
     if (!formData.firstName || !formData.lastName || !formData.dateOfBirth || !formData.gender) {
-      setError('Please fill in all required fields')
+      setError(t('patient_register.error_required'))
       return false
     }
     return true
@@ -62,13 +66,13 @@ export default function PatientRegisterPage() {
 
   const validateStep2 = () => {
     if (!formData.email || !formData.phone) {
-      setError('Please fill in all required fields')
+      setError(t('patient_register.error_required'))
       return false
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address')
+      setError(t('patient_register.error_email'))
       return false
     }
 
@@ -77,22 +81,22 @@ export default function PatientRegisterPage() {
 
   const validateStep3 = () => {
     if (!formData.password || !formData.confirmPassword) {
-      setError('Please fill in all required fields')
+      setError(t('patient_register.error_required'))
       return false
     }
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long')
+      setError(t('patient_register.error_password_length'))
       return false
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
+      setError(t('patient_register.error_password_match'))
       return false
     }
 
     if (!formData.agreedToTerms || !formData.agreedToPrivacy) {
-      setError('Please agree to the Terms of Service and Privacy Policy')
+      setError(t('patient_register.error_terms'))
       return false
     }
 
@@ -136,13 +140,13 @@ export default function PatientRegisterPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed')
+        throw new Error(data.message || t('patient_register.error_submit'))
       }
 
       // Redirect to verification page
       router.push('/patient-login/verify-email?email=' + encodeURIComponent(formData.email))
     } catch (err: any) {
-      setError(err.message || 'An error occurred during registration')
+      setError(err.message || t('patient_register.error_generic'))
       console.error('Registration error:', err)
     } finally {
       setIsLoading(false)
@@ -160,12 +164,15 @@ export default function PatientRegisterPage() {
             </div>
             <span className="text-xl font-bold text-gray-900">EHRConnect</span>
           </Link>
-          <Link href="/patient-login">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Login
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            <PublicLanguageSelector />
+            <Link href="/patient-login">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                {t('patient_register.back_to_login')}
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -203,23 +210,23 @@ export default function PatientRegisterPage() {
               ))}
             </div>
             <div className="flex justify-between mt-4 px-4">
-              <span className="text-xs text-gray-600 font-medium">Personal Info</span>
-              <span className="text-xs text-gray-600 font-medium">Contact Details</span>
-              <span className="text-xs text-gray-600 font-medium">Account Setup</span>
+              <span className="text-xs text-gray-600 font-medium">{t('patient_register.step_personal')}</span>
+              <span className="text-xs text-gray-600 font-medium">{t('patient_register.step_contact')}</span>
+              <span className="text-xs text-gray-600 font-medium">{t('patient_register.step_account')}</span>
             </div>
           </div>
 
           <Card className="border-0 shadow-xl">
             <CardHeader>
               <CardTitle className="text-2xl font-bold">
-                {step === 1 && 'Personal Information'}
-                {step === 2 && 'Contact Information'}
-                {step === 3 && 'Account Setup'}
+                {step === 1 && t('patient_register.step1_title')}
+                {step === 2 && t('patient_register.step2_title')}
+                {step === 3 && t('patient_register.step3_title')}
               </CardTitle>
               <CardDescription>
-                {step === 1 && 'Help us get to know you better'}
-                {step === 2 && 'How can we reach you?'}
-                {step === 3 && 'Create your secure account'}
+                {step === 1 && t('patient_register.step1_desc')}
+                {step === 2 && t('patient_register.step2_desc')}
+                {step === 3 && t('patient_register.step3_desc')}
               </CardDescription>
             </CardHeader>
 
@@ -236,7 +243,7 @@ export default function PatientRegisterPage() {
                   <div className="space-y-4">
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="firstName">First Name *</Label>
+                        <Label htmlFor="firstName">{t('patient_register.first_name')} *</Label>
                         <Input
                           id="firstName"
                           name="firstName"
@@ -248,7 +255,7 @@ export default function PatientRegisterPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="lastName">Last Name *</Label>
+                        <Label htmlFor="lastName">{t('patient_register.last_name')} *</Label>
                         <Input
                           id="lastName"
                           name="lastName"
@@ -262,7 +269,7 @@ export default function PatientRegisterPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                      <Label htmlFor="dateOfBirth">{t('patient_register.dob')} *</Label>
                       <Input
                         id="dateOfBirth"
                         name="dateOfBirth"
@@ -276,19 +283,19 @@ export default function PatientRegisterPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="gender">Gender *</Label>
+                      <Label htmlFor="gender">{t('patient_register.gender')} *</Label>
                       <Select
                         value={formData.gender}
                         onValueChange={(value) => handleSelectChange('gender', value)}
                       >
                         <SelectTrigger className="h-11">
-                          <SelectValue placeholder="Select gender" />
+                          <SelectValue placeholder={t('patient_register.select_gender')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="male">Male</SelectItem>
-                          <SelectItem value="female">Female</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                          <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                          <SelectItem value="male">{t('patient_register.gender_male')}</SelectItem>
+                          <SelectItem value="female">{t('patient_register.gender_female')}</SelectItem>
+                          <SelectItem value="other">{t('patient_register.gender_other')}</SelectItem>
+                          <SelectItem value="prefer-not-to-say">{t('patient_register.gender_na')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -299,29 +306,29 @@ export default function PatientRegisterPage() {
                 {step === 2 && (
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email Address *</Label>
+                      <Label htmlFor="email">{t('auth.email')} *</Label>
                       <Input
                         id="email"
                         name="email"
                         type="email"
-                        placeholder="you@example.com"
+                        placeholder={t('patient_register.email_placeholder')}
                         value={formData.email}
                         onChange={handleInputChange}
                         required
                         className="h-11"
                       />
                       <p className="text-xs text-gray-500">
-                        We'll send appointment reminders and important updates here
+                        {t('patient_register.email_helper')}
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number *</Label>
+                      <Label htmlFor="phone">{t('patient_register.phone')} *</Label>
                       <Input
                         id="phone"
                         name="phone"
                         type="tel"
-                        placeholder="(555) 123-4567"
+                        placeholder={t('patient_register.phone_placeholder')}
                         value={formData.phone}
                         onChange={handleInputChange}
                         required
@@ -330,11 +337,11 @@ export default function PatientRegisterPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="address">Street Address</Label>
+                      <Label htmlFor="address">{t('patient_register.address')}</Label>
                       <Input
                         id="address"
                         name="address"
-                        placeholder="123 Main Street"
+                        placeholder={t('patient_register.address_placeholder')}
                         value={formData.address}
                         onChange={handleInputChange}
                         className="h-11"
@@ -343,22 +350,22 @@ export default function PatientRegisterPage() {
 
                     <div className="grid md:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="city">City</Label>
+                        <Label htmlFor="city">{t('patient_register.city')}</Label>
                         <Input
                           id="city"
                           name="city"
-                          placeholder="New York"
+                          placeholder={t('patient_register.city_placeholder')}
                           value={formData.city}
                           onChange={handleInputChange}
                           className="h-11"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="state">State</Label>
+                        <Label htmlFor="state">{t('patient_register.state')}</Label>
                         <Input
                           id="state"
                           name="state"
-                          placeholder="NY"
+                          placeholder={t('patient_register.state_placeholder')}
                           value={formData.state}
                           onChange={handleInputChange}
                           className="h-11"
@@ -366,11 +373,11 @@ export default function PatientRegisterPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="zipCode">ZIP Code</Label>
+                        <Label htmlFor="zipCode">{t('patient_register.zip')}</Label>
                         <Input
                           id="zipCode"
                           name="zipCode"
-                          placeholder="10001"
+                          placeholder={t('patient_register.zip_placeholder')}
                           value={formData.zipCode}
                           onChange={handleInputChange}
                           className="h-11"
@@ -385,29 +392,29 @@ export default function PatientRegisterPage() {
                 {step === 3 && (
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="password">Password *</Label>
+                      <Label htmlFor="password">{t('auth.password')} *</Label>
                       <Input
                         id="password"
                         name="password"
                         type="password"
-                        placeholder="Create a strong password"
+                        placeholder={t('patient_register.password_placeholder')}
                         value={formData.password}
                         onChange={handleInputChange}
                         required
                         className="h-11"
                       />
                       <p className="text-xs text-gray-500">
-                        Must be at least 8 characters long
+                        {t('patient_register.password_helper')}
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                      <Label htmlFor="confirmPassword">{t('patient_register.confirm_password')} *</Label>
                       <Input
                         id="confirmPassword"
                         name="confirmPassword"
                         type="password"
-                        placeholder="Re-enter your password"
+                        placeholder={t('patient_register.confirm_password_placeholder')}
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
                         required
@@ -429,9 +436,9 @@ export default function PatientRegisterPage() {
                             htmlFor="agreedToTerms"
                             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                           >
-                            I agree to the{' '}
+                            {t('patient_register.agree_terms')}{' '}
                             <Link href="/terms" className="text-blue-600 hover:underline">
-                              Terms of Service
+                              {t('patient_register.terms_link')}
                             </Link>
                           </label>
                         </div>
@@ -450,11 +457,11 @@ export default function PatientRegisterPage() {
                             htmlFor="agreedToPrivacy"
                             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                           >
-                            I agree to the{' '}
+                            {t('patient_register.agree_privacy')}{' '}
                             <Link href="/privacy" className="text-blue-600 hover:underline">
-                              Privacy Policy
+                              {t('patient_register.privacy_link')}
                             </Link>{' '}
-                            and consent to the collection and use of my health information
+                            {t('patient_register.privacy_consent')}
                           </label>
                         </div>
                       </div>
@@ -473,7 +480,7 @@ export default function PatientRegisterPage() {
                   disabled={isLoading}
                   className="flex-1"
                 >
-                  Back
+                  {t('patient_register.back')}
                 </Button>
               )}
 
@@ -483,7 +490,7 @@ export default function PatientRegisterPage() {
                   onClick={handleNext}
                   className={`${step === 1 ? 'w-full' : 'flex-1'}`}
                 >
-                  Continue
+                  {t('patient_register.next')}
                 </Button>
               ) : (
                 <Button
@@ -495,10 +502,10 @@ export default function PatientRegisterPage() {
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Account...
+                      {t('patient_register.creating')}
                     </>
                   ) : (
-                    'Create Account'
+                    t('patient_register.submit')
                   )}
                 </Button>
               )}
@@ -506,9 +513,9 @@ export default function PatientRegisterPage() {
           </Card>
 
           <p className="mt-6 text-center text-sm text-gray-600">
-            Already have an account?{' '}
+            {t('patient_register.have_account')}{' '}
             <Link href="/patient-login" className="text-blue-600 hover:text-blue-700 hover:underline font-medium">
-              Sign in here
+              {t('patient_register.sign_in')}
             </Link>
           </p>
         </div>

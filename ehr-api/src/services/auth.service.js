@@ -1,10 +1,15 @@
 const crypto = require('crypto');
 const { query, transaction } = require('../database/connection');
 const KeycloakService = require('./keycloak.service');
+const postgresAuthService = require('./postgres-auth.service');
+
+// Get AUTH_PROVIDER from environment
+const AUTH_PROVIDER = process.env.AUTH_PROVIDER || 'keycloak';
 
 /**
  * Authentication Service
  * Handles password reset and email verification
+ * Supports both Keycloak and Postgres authentication
  */
 
 class AuthService {
@@ -56,7 +61,7 @@ class AuthService {
   async resetPassword(token, newPassword) {
     return await transaction(async (client) => {
       const tokenResult = await client.query(
-        `SELECT ev.*, u.id as user_id, u.keycloak_user_id
+        `SELECT ev.*, u.id as user_id, u.keycloak_user_id, u.email
          FROM email_verifications ev
          JOIN users u ON ev.email = u.email
          WHERE ev.token = $1 AND ev.type = 'password_reset'
@@ -71,19 +76,30 @@ class AuthService {
 
       const verification = tokenResult.rows[0];
 
-      await KeycloakService.resetPassword(
-        verification.keycloak_user_id,
-        newPassword,
-        false
-      );
+      // Reset password based on AUTH_PROVIDER
+      if (AUTH_PROVIDER === 'postgres') {
+        // Direct postgres password reset
+        await postgresAuthService.resetPassword(verification.user_id, newPassword);
+      } else {
+        // Keycloak password reset
+        if (!verification.keycloak_user_id) {
+          throw new Error('User not configured for Keycloak authentication');
+        }
+        await KeycloakService.resetPassword(
+          verification.keycloak_user_id,
+          newPassword,
+          false
+        );
+        await KeycloakService.logoutUser(verification.keycloak_user_id);
+      }
 
+      // Mark token as verified
       await client.query(
         'UPDATE email_verifications SET verified_at = CURRENT_TIMESTAMP WHERE token = $1',
         [token]
       );
 
-      await KeycloakService.logoutUser(verification.keycloak_user_id);
-
+      // Log audit event
       await client.query(
         `INSERT INTO audit_events (
           org_id, actor_user_id, action, target_type, target_id,

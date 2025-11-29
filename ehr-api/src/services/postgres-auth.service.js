@@ -274,6 +274,20 @@ class PostgresAuthService {
   }
 
   /**
+   * Reset password directly (for password reset flow)
+   */
+  async resetPassword(userId, newPassword) {
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+    await query(
+      'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [newPasswordHash, userId]
+    );
+
+    return { success: true, message: 'Password reset successfully' };
+  }
+
+  /**
    * Log authentication event
    */
   async logAuthEvent(userId, orgId, action, details) {

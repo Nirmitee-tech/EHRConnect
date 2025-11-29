@@ -25,6 +25,7 @@ import { useFacility } from '@/contexts/facility-context';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { io, Socket } from 'socket.io-client';
 import { useSession } from 'next-auth/react';
+import { useLocation } from '@/contexts/location-context';
 
 // Medical appointment categories
 const medicalCategories: EventCategory[] = [
@@ -39,6 +40,7 @@ export default function AppointmentsPage() {
   const router = useRouter();
   const { currentFacility } = useFacility();
   const { data: session } = useSession();
+  const { currentLocation, locations: orgLocations, loading: locationsLoading } = useLocation();
 
   // Socket.IO connection
   const socketRef = useRef<Socket | null>(null);
@@ -76,6 +78,12 @@ export default function AppointmentsPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [allPractitioners, setAllPractitioners] = useState<Array<{ id: string; name: string; color?: string; specialization?: string }>>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  useEffect(() => {
+    if (currentLocation?.id) {
+      setLocationFilter(currentLocation.id);
+    }
+  }, [currentLocation?.id]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -122,13 +130,23 @@ export default function AppointmentsPage() {
   const locations = useMemo(() => {
     const locationMap = new Map<string, number>();
     allAppointments.forEach(apt => {
-      const location = apt.location || 'Unassigned';
-      locationMap.set(location, (locationMap.get(location) || 0) + 1);
+      const key = apt.locationId || apt.location || 'Unassigned';
+      locationMap.set(key, (locationMap.get(key) || 0) + 1);
     });
-    return Array.from(locationMap.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [allAppointments]);
+
+    const mapped = orgLocations.map(loc => ({
+      id: loc.id,
+      name: loc.name,
+      count: locationMap.get(loc.id) || locationMap.get(loc.name) || 0
+    }));
+
+    const unassignedCount = locationMap.get('Unassigned');
+    if (unassignedCount) {
+      mapped.push({ id: 'unassigned', name: 'Unassigned', count: unassignedCount });
+    }
+
+    return mapped.sort((a, b) => b.count - a.count);
+  }, [allAppointments, orgLocations]);
 
   // Filter practitioners by search query
   const filteredPractitioners = useMemo(() => {
@@ -229,9 +247,18 @@ export default function AppointmentsPage() {
 
       // Location filter
       if (locationFilter) {
-        const aptLocation = apt.location || 'Unassigned';
-        if (aptLocation !== locationFilter) {
-          return false;
+        if (locationFilter === 'unassigned') {
+          const isUnassigned = !apt.locationId && (!apt.location || apt.location === 'Unassigned');
+          if (!isUnassigned) return false;
+        } else {
+          const filterName = orgLocations.find(loc => loc.id === locationFilter)?.name;
+          const matchesLocation =
+            (apt.locationId && apt.locationId === locationFilter) ||
+            (filterName && apt.location === filterName);
+
+          if (!matchesLocation) {
+            return false;
+          }
         }
       }
 
@@ -260,7 +287,7 @@ export default function AppointmentsPage() {
 
       return true;
     });
-  }, [allAppointments, categories, searchQuery, statusFilter, practitionerFilter, activeTab, viewMode, currentDoctorId, locationFilter]);
+  }, [allAppointments, categories, searchQuery, statusFilter, practitionerFilter, activeTab, viewMode, currentDoctorId, locationFilter, orgLocations]);
 
   // Load all practitioners on mount (for multi-provider view)
   useEffect(() => {
@@ -268,20 +295,26 @@ export default function AppointmentsPage() {
   }, []);
 
   // Track the last loaded range to avoid unnecessary reloads
-  const [lastLoadedRange, setLastLoadedRange] = React.useState<{ start: string; end: string } | null>(null);
+  const [lastLoadedRange, setLastLoadedRange] = React.useState<{ start: string; end: string; locationId: string | null } | null>(null);
 
   useEffect(() => {
+    if (locationsLoading) return;
+
     const { startDate, endDate } = getDateRange();
-    const rangeKey = `${startDate.toISOString()}-${endDate.toISOString()}`;
+    const locationKey = currentLocation?.id || null;
 
     // Only reload if we're viewing a different date range
-    if (lastLoadedRange?.start !== startDate.toISOString() || lastLoadedRange?.end !== endDate.toISOString()) {
+    if (
+      lastLoadedRange?.start !== startDate.toISOString() ||
+      lastLoadedRange?.end !== endDate.toISOString() ||
+      lastLoadedRange?.locationId !== locationKey
+    ) {
       // Silent load for date changes (no loading spinner), only show spinner on initial load
       loadAppointments(!isInitialLoad);
       loadStats();
-      setLastLoadedRange({ start: startDate.toISOString(), end: endDate.toISOString() });
+      setLastLoadedRange({ start: startDate.toISOString(), end: endDate.toISOString(), locationId: locationKey });
     }
-  }, [currentDate, view]);
+  }, [currentDate, view, currentLocation?.id, locationsLoading]);
 
   // Recalculate stats when active tab changes
   useEffect(() => {
@@ -405,8 +438,11 @@ export default function AppointmentsPage() {
     }
     try {
       const { startDate, endDate } = getDateRange();
-      console.log('📅 Loading appointments from:', startDate.toLocaleDateString(), 'to:', endDate.toLocaleDateString());
-      const data = await AppointmentService.getAppointments(startDate, endDate);
+      console.log('📅 Loading appointments from:', startDate.toLocaleDateString(), 'to:', endDate.toLocaleDateString(), 'for location:', currentLocation?.id || 'all');
+      const data = await AppointmentService.getAppointments(startDate, endDate, {
+        locationId: currentLocation?.id,
+        locationName: currentLocation?.name
+      });
       console.log('✅ Loaded appointments:', data.length);
 
       if (data.length > 0) {
@@ -476,7 +512,10 @@ export default function AppointmentsPage() {
       const endOfDay = new Date(today);
       endOfDay.setHours(23, 59, 59, 999);
 
-      const data = await AppointmentService.getAppointmentStats(startOfDay, endOfDay);
+      const data = await AppointmentService.getAppointmentStats(startOfDay, endOfDay, {
+        locationId: currentLocation?.id,
+        locationName: currentLocation?.name
+      });
       setStats(data);
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -966,7 +1005,7 @@ export default function AppointmentsPage() {
                     console.log('Instant meeting clicked');
                   }}
                   practitioners={practitioners.map(p => ({ id: p.name, name: p.name }))}
-                  locations={locations.map(l => ({ id: l.name, name: l.name }))}
+                  locations={locations.map(l => ({ id: l.id, name: l.name }))}
                 />
               )}
             </>
@@ -1281,10 +1320,10 @@ export default function AppointmentsPage() {
                     </button>
                     {filteredLocations.map((location) => (
                       <button
-                        key={location.name}
-                        onClick={() => setLocationFilter(location.name)}
+                        key={location.id}
+                        onClick={() => setLocationFilter(location.id)}
                         className={`w-full px-2 py-1.5 text-left text-xs rounded transition-colors flex items-center justify-between ${
-                          locationFilter === location.name
+                          locationFilter === location.id
                             ? 'bg-blue-100 text-blue-700 font-medium'
                             : 'hover:bg-gray-100 text-gray-700'
                         }`}

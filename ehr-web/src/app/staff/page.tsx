@@ -185,21 +185,19 @@ export default function StaffPage() {
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setActiveTab('doctor')}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                  activeTab === 'doctor'
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${activeTab === 'doctor'
                     ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
-                }`}
+                  }`}
               >
                 Doctor Staff
               </button>
               <button
                 onClick={() => setActiveTab('general')}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                  activeTab === 'general'
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${activeTab === 'general'
                     ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
-                }`}
+                  }`}
               >
                 General Staff
               </button>
@@ -226,7 +224,7 @@ export default function StaffPage() {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -280,9 +278,9 @@ export default function StaffPage() {
               <p className="text-sm text-red-600 mt-1">{error}</p>
             </div>
           </div>
-          <Button 
-            onClick={() => loadStaff(searchQuery)} 
-            className="mt-4" 
+          <Button
+            onClick={() => loadStaff(searchQuery)}
+            className="mt-4"
             variant="outline"
             size="sm"
           >
@@ -311,8 +309,8 @@ export default function StaffPage() {
               <p className="text-gray-600 mb-6">
                 {searchQuery ? 'No staff members match your search criteria.' : 'Get started by adding your first staff member.'}
               </p>
-              <Button onClick={handleAddStaff}>
-                <Plus className="h-4 w-4 mr-2" />
+              <Button className='text-white' onClick={handleAddStaff}>
+                <Plus className="h-4 w-4 mr-2 " />
                 Add First Staff Member
               </Button>
             </div>
@@ -403,11 +401,10 @@ export default function StaffPage() {
                       </td>
                       <td className="px-6 py-6">
                         <div className="flex flex-col space-y-2">
-                          <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-md ${
-                            staff.active
+                          <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-md ${staff.active
                               ? 'bg-[#E8F5E8] text-[#047857]'
                               : 'bg-[#F3F4F6] text-[#4B5563]'
-                          }`}>
+                            }`}>
                             {staff.active ? 'Active' : 'Inactive'}
                           </span>
                           <span className="inline-flex px-3 py-1 text-xs font-medium rounded-md bg-[#FFF4E0] text-[#D97706] uppercase">

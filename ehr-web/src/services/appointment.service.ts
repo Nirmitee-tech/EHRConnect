@@ -79,8 +79,16 @@ export class AppointmentService {
   static async getAppointments(
     startDate: Date,
     endDate: Date,
-    practitionerId?: string
+    options?: {
+      practitionerId?: string;
+      locationId?: string;
+      locationName?: string;
+    }
   ): Promise<Appointment[]> {
+    const practitionerId = options?.practitionerId;
+    const locationId = options?.locationId;
+    const locationName = options?.locationName;
+
     try {
       const searchParams: Record<string, string> = {
         date: `ge${startDate.toISOString()}`,
@@ -93,6 +101,10 @@ export class AppointmentService {
 
       if (practitionerId) {
         searchParams.actor = `Practitioner/${practitionerId}`;
+      }
+
+      if (locationId) {
+        searchParams.location = `Location/${locationId}`;
       }
 
       const bundle = await medplum.searchResources('Appointment', searchParams);
@@ -121,6 +133,24 @@ export class AppointmentService {
       if (allPractitionerIds.length > 0) {
         const vacationEvents = await AppointmentService.fetchPractitionerVacations(startDate, endDate, allPractitionerIds);
         allAppointments = [...allAppointments, ...vacationEvents];
+      }
+
+      if (locationId || locationName) {
+        allAppointments = allAppointments.filter(apt => {
+          if (locationId && apt.locationId) {
+            return apt.locationId === locationId;
+          }
+
+          if (locationId && !apt.locationId && locationName) {
+            return apt.location === locationName;
+          }
+
+          if (!locationId && locationName) {
+            return apt.location === locationName;
+          }
+
+          return false;
+        });
       }
 
       return allAppointments;
@@ -532,21 +562,32 @@ export class AppointmentService {
   /**
    * Get appointments for a specific date
    */
-  static async getAppointmentsByDate(date: Date, practitionerId?: string): Promise<Appointment[]> {
+  static async getAppointmentsByDate(
+    date: Date,
+    options?: {
+      practitionerId?: string;
+      locationId?: string;
+      locationName?: string;
+    }
+  ): Promise<Appointment[]> {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
-    return this.getAppointments(startOfDay, endOfDay, practitionerId);
+    return this.getAppointments(startOfDay, endOfDay, options);
   }
 
   /**
    * Get appointment statistics
    */
-  static async getAppointmentStats(startDate: Date, endDate: Date): Promise<AppointmentStats> {
-    const appointments = await this.getAppointments(startDate, endDate);
+  static async getAppointmentStats(
+    startDate: Date,
+    endDate: Date,
+    options?: { locationId?: string; locationName?: string; practitionerId?: string }
+  ): Promise<AppointmentStats> {
+    const appointments = await this.getAppointments(startDate, endDate, options);
 
     return {
       total: appointments.length,
@@ -617,6 +658,16 @@ export class AppointmentService {
         extension: extensions
       };
 
+      if (appointmentData.locationId || appointmentData.location) {
+        fhirAppointment.participant.push({
+          actor: {
+            reference: appointmentData.locationId ? `Location/${appointmentData.locationId}` : undefined,
+            display: appointmentData.location
+          },
+          status: 'accepted'
+        });
+      }
+
       console.log('[Appointment Service] Creating appointment with org_id:', finalOrgId);
 
       // Use direct fetch with org_id header (matching user's pattern)
@@ -649,11 +700,13 @@ export class AppointmentService {
     try {
       // If practitioner is being changed, we need to use PUT with full resource
       // because PATCH on nested participant arrays is unreliable
-      if (updates.practitionerId || updates.practitionerName) {
+      if (updates.practitionerId || updates.practitionerName || updates.locationId || updates.location) {
         console.log('🔄 Updating appointment with practitioner change:', {
           id,
           newPractitionerId: updates.practitionerId,
-          newPractitionerName: updates.practitionerName
+          newPractitionerName: updates.practitionerName,
+          newLocationId: updates.locationId,
+          newLocation: updates.location
         });
 
         // Get the current appointment
@@ -672,6 +725,30 @@ export class AppointmentService {
           }
           return p;
         }) || [];
+
+        // Update or add the location participant
+        if (updates.locationId || updates.location) {
+          const locationParticipantIndex = updatedParticipants.findIndex((p: any) =>
+            p.actor?.reference?.startsWith('Location/')
+          );
+
+          const locationParticipant = {
+            actor: {
+              reference: updates.locationId ? `Location/${updates.locationId}` : current.participant?.find((p: any) => p.actor?.reference?.startsWith('Location/'))?.actor?.reference,
+              display: updates.location || current.participant?.find((p: any) => p.actor?.reference?.startsWith('Location/'))?.actor?.display
+            },
+            status: 'accepted'
+          };
+
+          if (locationParticipantIndex >= 0) {
+            updatedParticipants[locationParticipantIndex] = {
+              ...updatedParticipants[locationParticipantIndex],
+              ...locationParticipant
+            };
+          } else {
+            updatedParticipants.push(locationParticipant);
+          }
+        }
 
         // Build updated resource
         const updatedResource = {
@@ -816,6 +893,7 @@ export class AppointmentService {
   private static transformFHIRAppointment(fhir: FHIRAppointment): Appointment {
     const patient = fhir.participant?.find((p) => p.actor?.reference?.startsWith('Patient/'));
     const practitioner = fhir.participant?.find((p) => p.actor?.reference?.startsWith('Practitioner/'));
+    const location = fhir.participant?.find((p) => p.actor?.reference?.startsWith('Location/'));
 
     // Extract appointment mode from extension
     const modeExtension = (fhir as any).extension?.find(
@@ -828,6 +906,8 @@ export class AppointmentService {
       patientName: patient?.actor?.display || 'Unknown Patient',
       practitionerId: practitioner?.actor?.reference?.split('/')[1] || '',
       practitionerName: practitioner?.actor?.display || 'Unknown Practitioner',
+      locationId: location?.actor?.reference?.split('/')[1] || undefined,
+      location: location?.actor?.display || (location ? 'Unassigned' : undefined),
       appointmentType: fhir.appointmentType?.coding?.[0]?.display || 'General',
       status: AppointmentService.mapStatusFromFHIR(fhir.status),
       startTime: new Date(fhir.start || ''),

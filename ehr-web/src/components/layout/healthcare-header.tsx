@@ -9,6 +9,7 @@ import { UserProfile } from './user-profile';
 import { NotificationBell } from './notification-bell';
 import { FacilitySwitcher } from '../facility-switcher';
 import { useUIPreferences } from '@/contexts/ui-preferences-context';
+import { LocationSwitcher } from '../location-switcher';
 
 // Routes where the entire header/navbar should be hidden
 const HIDE_HEADER_ROUTES = [
@@ -76,6 +77,7 @@ export function HealthcareHeader() {
               </Button>
             )}
 
+            <LocationSwitcher />
             <FacilitySwitcher />
             <NotificationBell />
             <UserProfile />

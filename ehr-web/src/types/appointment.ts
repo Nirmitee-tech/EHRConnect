@@ -27,6 +27,7 @@ export interface Appointment {
   color?: string;
   isAllDay?: boolean;
   allDayEventType?: AllDayEventType; // Type of all-day event
+  locationId?: string; // Location reference ID
   location?: string; // Location/room where appointment takes place
   encounterId?: string; // ID of active encounter if one exists
   patientAge?: string; // Patient age for display

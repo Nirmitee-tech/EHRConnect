@@ -1,8 +1,12 @@
 const { query, transaction } = require('../database/connection');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const KeycloakService = require('./keycloak.service');
 const RBACService = require('./rbac.service');
 const { syncUserLocations } = require('../utils/user-location-sync');
+
+// Get AUTH_PROVIDER from environment
+const AUTH_PROVIDER = process.env.AUTH_PROVIDER || 'keycloak';
 
 /**
  * Staff Invitation Service
@@ -35,6 +39,14 @@ class InvitationService {
 
     if (scope === 'LOCATION' && normalizedLocationIds.length === 0) {
       throw new Error('Location scoped invitations require at least one location_id');
+    }
+
+    const normalizedDepartmentIds = Array.isArray(department_ids)
+      ? [...new Set(department_ids.filter(Boolean))]
+      : [];
+
+    if (scope === 'DEPARTMENT' && normalizedDepartmentIds.length === 0) {
+      throw new Error('Department scoped invitations require at least one department_id');
     }
 
     // Check if user already exists in this org
@@ -98,7 +110,22 @@ class InvitationService {
         [org_id, invitedBy, result.rows[0].id, email, JSON.stringify({ role_keys, scope })]
       );
 
-      return result.rows[0];
+      const invitation = result.rows[0];
+
+      // Log invitation token in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('='.repeat(80));
+        console.log('INVITATION CREATED');
+        console.log('='.repeat(80));
+        console.log(`Email: ${email}`);
+        console.log(`Token: ${token}`);
+        console.log(`Accept URL: ${process.env.NEXT_PUBLIC_WEB_URL || 'http://localhost:3000'}/accept-invitation/${token}`);
+        console.log(`Expires: ${expiresAt.toISOString()}`);
+        console.log(`Auth Provider: ${AUTH_PROVIDER}`);
+        console.log('='.repeat(80));
+      }
+
+      return invitation;
     });
   }
 
@@ -152,33 +179,61 @@ class InvitationService {
     const invitation = await this.getInvitationByToken(token);
 
     return await transaction(async (client) => {
-      // Create user in Keycloak first
-      const keycloakUser = await KeycloakService.createUser({
-        email: invitation.email,
-        firstName: name.split(' ')[0],
-        lastName: name.split(' ').slice(1).join(' '),
-        password: password,
-        emailVerified: true, // Auto-verify since they accepted invite
-        enabled: true,
-        attributes: {
-          org_id: invitation.org_id,
-          org_slug: invitation.org_slug,
-          location_ids: invitation.location_ids || [],
-          permissions: [] // Will be set after role assignment
-        }
-      });
+      let user;
+      let keycloakUserId = null;
 
-      // Create user in database
-      const userResult = await client.query(
-        `INSERT INTO users (
-          email, name, keycloak_user_id, status
-        )
-        VALUES ($1, $2, $3, 'active')
-        RETURNING *`,
-        [invitation.email, name, keycloakUser.id]
-      );
+      if (AUTH_PROVIDER === 'postgres') {
+        // Postgres authentication mode
+        console.log('Creating user with Postgres authentication');
 
-      const user = userResult.rows[0];
+        // Hash the password
+        const password_hash = await bcrypt.hash(password, 10);
+
+        // Create user in database with password hash
+        const userResult = await client.query(
+          `INSERT INTO users (
+            email, name, password_hash, status
+          )
+          VALUES ($1, $2, $3, 'active')
+          RETURNING *`,
+          [invitation.email, name, password_hash]
+        );
+
+        user = userResult.rows[0];
+      } else {
+        // Keycloak authentication mode
+        console.log('Creating user with Keycloak authentication');
+
+        // Create user in Keycloak first
+        const keycloakUser = await KeycloakService.createUser({
+          email: invitation.email,
+          firstName: name.split(' ')[0],
+          lastName: name.split(' ').slice(1).join(' '),
+          password: password,
+          emailVerified: true, // Auto-verify since they accepted invite
+          enabled: true,
+          attributes: {
+            org_id: invitation.org_id,
+            org_slug: invitation.org_slug,
+            location_ids: invitation.location_ids || [],
+            permissions: [] // Will be set after role assignment
+          }
+        });
+
+        keycloakUserId = keycloakUser.id;
+
+        // Create user in database
+        const userResult = await client.query(
+          `INSERT INTO users (
+            email, name, keycloak_user_id, status
+          )
+          VALUES ($1, $2, $3, 'active')
+          RETURNING *`,
+          [invitation.email, name, keycloakUserId]
+        );
+
+        user = userResult.rows[0];
+      }
 
       // Assign roles
       const roleResults = await client.query(
@@ -217,11 +272,41 @@ class InvitationService {
               ]
             );
           }
+        } else if (invitation.scope === 'DEPARTMENT') {
+          for (const departmentId of invitation.department_ids || []) {
+            const exists = await client.query(
+              `SELECT 1 FROM role_assignments
+               WHERE user_id = $1 AND org_id = $2 AND role_id = $3
+                 AND scope = $4 AND department_id = $5
+                 AND revoked_at IS NULL
+               LIMIT 1`,
+              [user.id, invitation.org_id, role.id, invitation.scope, departmentId]
+            );
+
+            if (exists.rows.length > 0) {
+              continue;
+            }
+
+            await client.query(
+              `INSERT INTO role_assignments (
+                user_id, org_id, role_id, scope, department_id, assigned_by
+              )
+              VALUES ($1, $2, $3, $4, $5, $6)`,
+              [
+                user.id,
+                invitation.org_id,
+                role.id,
+                invitation.scope,
+                departmentId,
+                invitation.invited_by
+              ]
+            );
+          }
         } else {
           const exists = await client.query(
             `SELECT 1 FROM role_assignments
              WHERE user_id = $1 AND org_id = $2 AND role_id = $3
-               AND scope = $4 AND location_id IS NULL
+               AND scope = $4 AND location_id IS NULL AND department_id IS NULL
                AND revoked_at IS NULL
              LIMIT 1`,
             [user.id, invitation.org_id, role.id, invitation.scope]
@@ -230,9 +315,9 @@ class InvitationService {
           if (exists.rows.length === 0) {
             await client.query(
               `INSERT INTO role_assignments (
-                user_id, org_id, role_id, scope, location_id, assigned_by
+                user_id, org_id, role_id, scope, location_id, department_id, assigned_by
               )
-              VALUES ($1, $2, $3, $4, NULL, $5)`,
+              VALUES ($1, $2, $3, $4, NULL, NULL, $5)`,
               [
                 user.id,
                 invitation.org_id,
@@ -254,11 +339,13 @@ class InvitationService {
       // Get aggregated permissions (returns array directly)
       const permissions = await RBACService.getUserPermissions(user.id, invitation.org_id);
 
-      // Update Keycloak user with permissions
-      await KeycloakService.updateUserAttributes(keycloakUser.id, {
-        permissions: Array.isArray(permissions) ? permissions : [],
-        location_ids: syncedLocationIds
-      });
+      // Update Keycloak user with permissions (only if using Keycloak)
+      if (AUTH_PROVIDER === 'keycloak' && keycloakUserId) {
+        await KeycloakService.updateUserAttributes(keycloakUserId, {
+          permissions: Array.isArray(permissions) ? permissions : [],
+          location_ids: syncedLocationIds
+        });
+      }
 
       // Mark invitation as accepted
       await client.query(
@@ -278,6 +365,8 @@ class InvitationService {
         [invitation.org_id, user.id, user.id, user.email, JSON.stringify({ invitation_id: invitation.id })]
       );
 
+      console.log(`User ${user.email} successfully accepted invitation using ${AUTH_PROVIDER} authentication`);
+
       return {
         user: {
           id: user.id,
@@ -289,7 +378,8 @@ class InvitationService {
           name: invitation.org_name,
           slug: invitation.org_slug
         },
-        message: 'Invitation accepted successfully. You can now login.'
+        message: `Invitation accepted successfully. You can now login${AUTH_PROVIDER === 'postgres' ? ' with your email and password' : ''}.`,
+        auth_provider: AUTH_PROVIDER
       };
     });
   }
