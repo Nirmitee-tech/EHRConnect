@@ -1,0 +1,158 @@
+.queryBuilder :global(.queryBuilder-branches) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.queryBuilder :global(.ruleGroup) {
+  border: 1px solid rgb(229 231 235);
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  background-color: white;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.queryBuilder :global(.ruleGroup-header) {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgb(229 231 235);
+}
+
+.queryBuilder :global(.ruleGroup-body) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.queryBuilder :global(.ruleGroup-combinators select) {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid rgb(209 213 219);
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  background-color: white;
+}
+
+.queryBuilder :global(.ruleGroup-combinators select:focus) {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgb(59 130 246);
+  border-color: rgb(59 130 246);
+}
+
+.queryBuilder :global(.ruleGroup-addRule),
+.queryBuilder :global(.ruleGroup-addGroup) {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid rgb(209 213 219);
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  background-color: white;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.queryBuilder :global(.ruleGroup-addRule:hover),
+.queryBuilder :global(.ruleGroup-addGroup:hover) {
+  background-color: rgb(249 250 251);
+}
+
+.queryBuilder :global(.ruleGroup-addRule:focus),
+.queryBuilder :global(.ruleGroup-addGroup:focus) {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgb(59 130 246);
+}
+
+.queryBuilder :global(.ruleGroup-remove) {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid rgb(252 165 165);
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  color: rgb(220 38 38);
+  background-color: white;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.queryBuilder :global(.ruleGroup-remove:hover) {
+  background-color: rgb(254 242 242);
+}
+
+.queryBuilder :global(.ruleGroup-remove:focus) {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgb(239 68 68);
+}
+
+.queryBuilder :global(.rule) {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background-color: rgb(249 250 251);
+  border-radius: 0.25rem;
+  border: 1px solid rgb(229 231 235);
+}
+
+.queryBuilder :global(.rule-fields select),
+.queryBuilder :global(.rule-operators select),
+.queryBuilder :global(.rule-value input),
+.queryBuilder :global(.rule-value select) {
+  padding: 0.375rem 0.625rem;
+  border: 1.5px solid rgb(156 163 175);
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  background-color: white;
+  color: rgb(17 24 39);
+  font-weight: 500;
+}
+
+.queryBuilder :global(.rule-value input) {
+  min-width: 120px;
+}
+
+.queryBuilder :global(.rule-value input::placeholder) {
+  color: rgb(156 163 175);
+  font-weight: 400;
+}
+
+.queryBuilder :global(.rule-fields select:focus),
+.queryBuilder :global(.rule-operators select:focus),
+.queryBuilder :global(.rule-value input:focus),
+.queryBuilder :global(.rule-value select:focus) {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgb(59 130 246);
+  border-color: rgb(59 130 246);
+}
+
+.queryBuilder :global(.rule-remove) {
+  padding: 0.375rem 0.25rem;
+  border: 1px solid rgb(252 165 165);
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  color: rgb(220 38 38);
+  background-color: white;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.queryBuilder :global(.rule-remove:hover) {
+  background-color: rgb(254 242 242);
+}
+
+.queryBuilder :global(.rule-remove:focus) {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgb(239 68 68);
+}

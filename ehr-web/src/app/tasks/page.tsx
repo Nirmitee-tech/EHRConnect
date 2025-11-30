@@ -3,12 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import {
-  CheckCircle2,
-  Circle,
+  CheckCircle,
   Clock,
   Filter,
-  Grid,
-  List,
   Plus,
   Search,
   AlertCircle,
@@ -16,19 +13,16 @@ import {
   Calendar,
   User,
   Tag,
-  ChevronLeft,
-  ChevronRight
+  Edit2,
+  CheckSquare,
+  ListTodo,
+  Play,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import { useFacility } from '@/contexts/facility-context';
-import { TaskKanbanView } from '@/components/tasks/task-kanban-view';
-import { TaskListView } from '@/components/tasks/task-list-view';
-import { TaskFilters } from '@/components/tasks/task-filters';
-import { CreateTaskModal } from '@/components/tasks/create-task-modal';
+import { CreateTaskSidebar } from '@/components/tasks/create-task-sidebar';
+import { EditTaskSidebar } from '@/components/tasks/edit-task-sidebar';
 import * as taskService from '@/services/task.service';
 
 interface Task {
@@ -52,21 +46,8 @@ interface Task {
   completedAt?: string;
 }
 
-interface FilterState {
-  status: string[];
-  priority: string[];
-  category: string;
-  assignee: string;
-  labels: string[];
-  dueAfter: string;
-  dueBefore: string;
-  isOverdue: boolean;
-}
-
 export default function TasksPage() {
   const { data: session } = useSession();
-  const { currentFacility } = useFacility();
-  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,20 +55,9 @@ export default function TasksPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'my-tasks' | 'created-by-me'>('my-tasks');
-
-  const [filters, setFilters] = useState<FilterState>({
-    status: [],
-    priority: [],
-    category: '',
-    assignee: '',
-    labels: [],
-    dueAfter: '',
-    dueBefore: '',
-    isOverdue: false
-  });
+  const [isCreateSidebarOpen, setIsCreateSidebarOpen] = useState(false);
+  const [isEditSidebarOpen, setIsEditSidebarOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   // Load tasks from API
   const loadTasks = async (search: string = '', page: number = 1) => {
@@ -95,30 +65,12 @@ export default function TasksPage() {
     setError(null);
 
     try {
-      const taskFilters: taskService.TaskFilters = {
-        search,
-        status: filters.status.length > 0 ? filters.status : undefined,
-        priority: filters.priority.length > 0 ? filters.priority : undefined,
-        category: filters.category || undefined,
-        labels: filters.labels.length > 0 ? filters.labels : undefined,
-        dueAfter: filters.dueAfter || undefined,
-        dueBefore: filters.dueBefore || undefined,
-        isOverdue: filters.isOverdue || undefined
-      };
-
       const pagination: taskService.TaskPagination = {
         limit: pageSize,
         offset: (page - 1) * pageSize
       };
 
-      let data;
-      if (activeTab === 'my-tasks') {
-        data = await taskService.getMyTasks(session, taskFilters, pagination);
-      } else if (activeTab === 'created-by-me') {
-        data = await taskService.getCreatedByMeTasks(session, pagination);
-      } else {
-        data = await taskService.getTasks(session, taskFilters, pagination);
-      }
+      const data = await taskService.getMyTasks(session, {}, pagination);
 
       setTasks(data.data || []);
       setTotalCount(data.pagination?.total || 0);
@@ -130,10 +82,10 @@ export default function TasksPage() {
     }
   };
 
-  // Load tasks on mount and when filters/search change
+  // Load tasks on mount
   useEffect(() => {
     loadTasks(searchQuery, currentPage);
-  }, [currentPage, filters, activeTab]);
+  }, [currentPage]);
 
   // Handle search with debounce
   useEffect(() => {
@@ -147,206 +99,287 @@ export default function TasksPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const handleCreateTask = async (taskData: any) => {
-    try {
-      await taskService.createTask(session, taskData);
-
-      // Refresh tasks list
-      await loadTasks(searchQuery, currentPage);
-      setIsCreateModalOpen(false);
-    } catch (err) {
-      console.error('Error creating task:', err);
-      throw err;
-    }
+  const handleTaskCreated = async (task: any) => {
+    await loadTasks(searchQuery, currentPage);
   };
 
-  const totalPages = Math.ceil(totalCount / pageSize);
+  const handleTaskUpdated = async (task: any) => {
+    await loadTasks(searchQuery, currentPage);
+  };
 
-  if (loading && tasks.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const handleEditTask = (task: Task) => {
+    setSelectedTask(task);
+    setIsEditSidebarOpen(true);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const isOverdue = (dueDate: string, status: string) => {
+    if (status === 'completed' || status === 'cancelled') return false;
+    return new Date(dueDate) < new Date();
+  };
+
+  const filteredTasks = tasks.filter(task =>
+    task.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    task.identifier?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const statusCounts = {
+    ready: tasks.filter(t => t.status === 'ready').length,
+    inProgress: tasks.filter(t => t.status === 'in-progress').length,
+    completed: tasks.filter(t => t.status === 'completed').length,
+  };
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
+          <p className="text-sm text-gray-600 mt-0.5">
             Manage and track tasks across your organization
           </p>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)}>
+        <Button
+          onClick={() => setIsCreateSidebarOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Create Task
         </Button>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(value: any) => setActiveTab(value)}>
-        <TabsList>
-          <TabsTrigger value="my-tasks">
-            <User className="h-4 w-4 mr-2" />
-            My Tasks
-          </TabsTrigger>
-          <TabsTrigger value="all">
-            <List className="h-4 w-4 mr-2" />
-            All Tasks
-          </TabsTrigger>
-          <TabsTrigger value="created-by-me">
-            <CheckCircle2 className="h-4 w-4 mr-2" />
-            Created by Me
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      {/* Search and Filters */}
-      <div className="flex gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search tasks by description or identifier..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Button
-          variant={showFilters ? "default" : "outline"}
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          <Filter className="h-4 w-4 mr-2" />
-          Filters
-        </Button>
-        <div className="flex gap-2">
-          <Button
-            variant={viewMode === 'list' ? "default" : "outline"}
-            size="icon"
-            onClick={() => setViewMode('list')}
-          >
-            <List className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'kanban' ? "default" : "outline"}
-            size="icon"
-            onClick={() => setViewMode('kanban')}
-          >
-            <Grid className="h-4 w-4" />
-          </Button>
+      {/* Search */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex-1 max-w-md">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search tasks by description or identifier..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 h-9"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Filters Panel */}
-      {showFilters && (
-        <TaskFilters
-          filters={filters}
-          onFiltersChange={setFilters}
-          onClose={() => setShowFilters(false)}
-        />
-      )}
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xl font-bold text-gray-900">{statusCounts.ready}</div>
+              <div className="text-xs text-gray-600">Ready</div>
+            </div>
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <ListTodo className="h-5 w-5 text-blue-600" />
+            </div>
+          </div>
+        </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Total</p>
-              <h3 className="text-2xl font-bold">{totalCount}</h3>
+              <div className="text-xl font-bold text-gray-900">{statusCounts.inProgress}</div>
+              <div className="text-xs text-gray-600">In Progress</div>
             </div>
-            <Circle className="h-8 w-8 text-muted-foreground" />
+            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <Play className="h-5 w-5 text-yellow-600" />
+            </div>
           </div>
-        </Card>
-        <Card className="p-4">
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Ready</p>
-              <h3 className="text-2xl font-bold">
-                {tasks.filter(t => t.status === 'ready').length}
-              </h3>
+              <div className="text-xl font-bold text-gray-900">{statusCounts.completed}</div>
+              <div className="text-xs text-gray-600">Completed</div>
             </div>
-            <Clock className="h-8 w-8 text-blue-500" />
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-              <h3 className="text-2xl font-bold">
-                {tasks.filter(t => t.status === 'in-progress').length}
-              </h3>
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <CheckCircle className="h-5 w-5 text-green-600" />
             </div>
-            <Loader2 className="h-8 w-8 text-yellow-500" />
           </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Completed</p>
-              <h3 className="text-2xl font-bold">
-                {tasks.filter(t => t.status === 'completed').length}
-              </h3>
-            </div>
-            <CheckCircle2 className="h-8 w-8 text-green-500" />
-          </div>
-        </Card>
+        </div>
       </div>
 
       {/* Error State */}
       {error && (
-        <Card className="p-4 bg-destructive/10 border-destructive">
-          <div className="flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-5 w-5" />
-            <p>{error}</p>
-          </div>
-        </Card>
-      )}
-
-      {/* Tasks View */}
-      {viewMode === 'list' ? (
-        <TaskListView tasks={tasks} onTaskUpdate={loadTasks} loading={loading} />
-      ) : (
-        <TaskKanbanView tasks={tasks} onTaskUpdate={loadTasks} loading={loading} />
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} tasks
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start gap-2">
+          <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+          <div>
+            <strong>Error:</strong> {error}
           </div>
         </div>
       )}
 
-      {/* Create Task Modal */}
-      <CreateTaskModal
-        open={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateTask}
+      {/* Tasks Table */}
+      {loading ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-8">
+          <div className="flex items-center justify-center space-x-2">
+            <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+            <span className="text-sm text-gray-600">Loading tasks...</span>
+          </div>
+        </div>
+      ) : filteredTasks.length === 0 ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+          <CheckSquare className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+          <h3 className="text-base font-semibold text-gray-900 mb-1">No tasks found</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            {searchQuery ? 'No tasks match your search criteria.' : 'Get started by creating your first task'}
+          </p>
+          {!searchQuery && (
+            <Button onClick={() => setIsCreateSidebarOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Plus className="h-4 w-4 mr-2" />
+              Create First Task
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Task
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Priority
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Assigned To
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Due Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredTasks.map((task, index) => (
+                  <tr
+                    key={task.id}
+                    className="hover:bg-gray-50 transition-colors"
+                    style={{
+                      animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both`
+                    }}
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold">
+                          {task.description?.charAt(0).toUpperCase() || 'T'}
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{task.description}</div>
+                          <div className="text-xs text-gray-500">#{task.identifier}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`px-2 py-0.5 text-xs rounded ${
+                          task.priority === 'stat'
+                            ? 'bg-red-500 text-white'
+                            : task.priority === 'asap'
+                            ? 'bg-red-50 text-red-700'
+                            : task.priority === 'urgent'
+                            ? 'bg-orange-50 text-orange-700'
+                            : 'bg-gray-50 text-gray-700'
+                        }`}
+                      >
+                        {task.priority?.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">
+                        {task.assignedToUserName || task.assignedToPatientName || task.assignedToPoolName || '—'}
+                      </div>
+                      {task.patientName && (
+                        <div className="text-xs text-gray-500">Patient: {task.patientName}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div
+                        className={`text-sm ${
+                          isOverdue(task.dueDate, task.status)
+                            ? 'text-red-600 font-medium'
+                            : 'text-gray-900'
+                        }`}
+                      >
+                        {formatDate(task.dueDate)}
+                      </div>
+                      {isOverdue(task.dueDate, task.status) && (
+                        <div className="text-xs text-red-600">Overdue</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          task.status === 'completed'
+                            ? 'bg-green-100 text-green-800'
+                            : task.status === 'in-progress'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : task.status === 'cancelled'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}
+                      >
+                        {task.status.replace(/-/g, ' ')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <Button
+                        onClick={() => handleEditTask(task)}
+                        variant="ghost"
+                        size="sm"
+                        className="hover:bg-gray-100"
+                      >
+                        <Edit2 className="h-4 w-4 text-gray-600" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Create Task Sidebar */}
+      <CreateTaskSidebar
+        open={isCreateSidebarOpen}
+        onOpenChange={setIsCreateSidebarOpen}
+        onTaskCreated={handleTaskCreated}
+        orgId={session?.org_id || ''}
+        userId={session?.user?.id}
       />
+
+      {/* Edit Task Sidebar */}
+      {selectedTask && (
+        <EditTaskSidebar
+          open={isEditSidebarOpen}
+          onOpenChange={setIsEditSidebarOpen}
+          onTaskUpdated={handleTaskUpdated}
+          task={selectedTask}
+          orgId={session?.org_id || ''}
+          userId={session?.user?.id}
+        />
+      )}
     </div>
   );
 }

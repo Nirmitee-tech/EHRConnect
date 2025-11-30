@@ -34,6 +34,9 @@ const translationRoutes = require('./routes/translations');
 const initializeEpisodeRoutes = require('./routes/episodes');
 const formsRoutes = require('./routes/forms');
 const tasksRoutes = require('./routes/tasks');
+const taskRulesRoutes = require('./routes/task-rules');
+const ruleVariablesRoutes = require('./routes/rule-variables');
+const rulesRoutes = require('./routes/rules');
 const { initializeDatabase } = require('./database/init');
 const socketService = require('./services/socket.service');
 const billingJobs = require('./services/billing.jobs');
@@ -250,6 +253,9 @@ app.use('/api/translations', translationRoutes);
 app.use('/api', initializeEpisodeRoutes(dbPool)); // Episode routes (FHIR EpisodeOfCare)
 app.use('/api/forms', formsRoutes); // Forms/Questionnaire Builder routes
 app.use('/api/tasks', tasksRoutes); // Task Management System routes
+app.use('/api/task-rules', taskRulesRoutes); // Task Assignment Rules routes
+app.use('/api/rule-variables', ruleVariablesRoutes); // Rule Variables (aggregates, formulas) routes
+app.use('/api/rules', rulesRoutes); // Universal Rule Engine routes
 
 // Health check
 app.get('/health', (req, res) => {

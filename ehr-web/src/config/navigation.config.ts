@@ -28,7 +28,9 @@ import {
   ClipboardList,
   Puzzle,
   Globe,
-  CheckSquare
+  CheckSquare,
+  Zap,
+  Variable
 } from 'lucide-react';
 import { NavSection, PageInfo } from '@/types/navigation';
 
@@ -136,6 +138,15 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
       { name: 'Locations', href: '/settings/locations', icon: MapPin },
       { name: 'Roles & Permissions', href: '/roles', icon: Shield },
       { name: 'Forms Builder', href: '/forms', icon: ClipboardList },
+      {
+        name: 'Rule Engine',
+        href: '/rules',
+        icon: Zap,
+        children: [
+          { name: 'Rules', href: '/rules', icon: Zap },
+          { name: 'Variables', href: '/rules/variables', icon: Variable }
+        ]
+      },
       { name: 'Specialty Packs', href: '/admin/specialties', icon: PackageIcon },
       { name: 'Audit Logs', href: '/audit-logs', icon: ScrollText },
       { name: 'Settings', href: '/settings', icon: Settings }
@@ -189,6 +200,10 @@ const PAGE_CONFIG: Record<string, PageInfo> = {
     actionButton: { label: 'Create Task', href: '/tasks' }
   },
   'patient-flow': { title: 'Patient Flow Board' },
+  rules: {
+    title: 'Rule Engine',
+    actionButton: { label: 'Create Rule', href: '/rules/new' }
+  },
   inventory: {
     title: 'Inventory',
     actionButton: { label: 'New Item', href: '/inventory' }

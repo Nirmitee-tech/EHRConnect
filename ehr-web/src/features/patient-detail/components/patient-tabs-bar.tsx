@@ -19,7 +19,8 @@ import {
   CreditCard,
   UserCircle,
   Globe,
-  X
+  X,
+  CheckSquare
 } from 'lucide-react';
 import { usePatientDetailStore } from '../store/patient-detail-store';
 
@@ -51,6 +52,7 @@ export function PatientTabsBar() {
     { id: 'imaging', label: 'Imaging', icon: ImageIcon, count: null },
     { id: 'history', label: 'History', icon: History, count: null },
     { id: 'documents', label: 'Documents', icon: FileText, count: null },
+    { id: 'tasks', label: 'Tasks', icon: CheckSquare, count: null },
     { id: 'encounters', label: 'Visit Details', icon: Calendar, count: null },
     { id: 'financial', label: 'Financial', icon: DollarSign, count: null },
     { id: 'billing', label: 'Billing', icon: FileCheck, count: null },

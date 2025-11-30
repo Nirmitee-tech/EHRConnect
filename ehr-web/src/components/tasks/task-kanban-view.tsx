@@ -8,7 +8,9 @@ import {
   Calendar,
   Tag,
   MoreVertical,
-  AlertCircle
+  AlertCircle,
+  Edit,
+  Eye
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -45,6 +47,7 @@ interface Task {
 interface TaskKanbanViewProps {
   tasks: Task[];
   onTaskUpdate: () => void;
+  onTaskEdit?: (task: Task) => void;
   loading: boolean;
 }
 
@@ -62,7 +65,7 @@ const priorityColors = {
   'stat': 'border-l-4 border-l-red-600'
 };
 
-export function TaskKanbanView({ tasks, onTaskUpdate, loading }: TaskKanbanViewProps) {
+export function TaskKanbanView({ tasks, onTaskUpdate, onTaskEdit, loading }: TaskKanbanViewProps) {
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
 
   const formatDate = (dateString: string) => {
@@ -190,10 +193,17 @@ export function TaskKanbanView({ tasks, onTaskUpdate, loading }: TaskKanbanViewP
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link href={`/tasks/${task.id}`}>
+                            <Link href={`/tasks/${task.id}`} className="flex items-center">
+                              <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </Link>
                           </DropdownMenuItem>
+                          {onTaskEdit && (
+                            <DropdownMenuItem onClick={() => onTaskEdit(task)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit Task
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>

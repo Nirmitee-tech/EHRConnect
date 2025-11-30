@@ -10,7 +10,8 @@ import {
   Calendar,
   Tag,
   MoreVertical,
-  Eye
+  Eye,
+  Edit
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,7 @@ interface Task {
 interface TaskListViewProps {
   tasks: Task[];
   onTaskUpdate: () => void;
+  onTaskEdit?: (task: Task) => void;
   loading: boolean;
 }
 
@@ -81,7 +83,7 @@ const StatusIcon = ({ status }: { status: string }) => {
   }
 };
 
-export function TaskListView({ tasks, onTaskUpdate, loading }: TaskListViewProps) {
+export function TaskListView({ tasks, onTaskUpdate, onTaskEdit, loading }: TaskListViewProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -263,6 +265,12 @@ export function TaskListView({ tasks, onTaskUpdate, loading }: TaskListViewProps
                       View Details
                     </Link>
                   </DropdownMenuItem>
+                  {onTaskEdit && (
+                    <DropdownMenuItem onClick={() => onTaskEdit(task)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Task
+                    </DropdownMenuItem>
+                  )}
                   {task.status !== 'in-progress' && task.status !== 'completed' && (
                     <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'in-progress')}>
                       Start Task
