@@ -5,9 +5,11 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { ruleService } from '@/services/rule.service';
 import { RuleConditionBuilder } from '@/components/rules/rule-condition-builder-v2';
-import { FHIR_FIELDS_ENTERPRISE } from '@/components/rules/fhir-fields-enterprise.config';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -15,34 +17,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/useToast';
-import {
-  ArrowLeft,
-  Save,
-  Play,
-  Menu,
-  X,
-  Activity,
-  Zap,
-  GitBranch,
-  Target,
-  FileText,
-} from 'lucide-react';
+import { ArrowLeft, Check, TestTube2, Save } from 'lucide-react';
 
-const FIELD_CATEGORIES = [
-  { icon: Activity, label: 'Patient Demographics', count: 9, color: 'text-blue-600 bg-blue-50' },
-  { icon: Activity, label: 'Vital Signs & Observations', count: 10, color: 'text-green-600 bg-green-50' },
-  { icon: FileText, label: 'Laboratory Results', count: 20, color: 'text-purple-600 bg-purple-50' },
-  { icon: Target, label: 'Medications', count: 11, color: 'text-orange-600 bg-orange-50' },
-  { icon: Zap, label: 'Conditions & Diagnoses', count: 5, color: 'text-red-600 bg-red-50' },
-];
-
+// Action type configurations
 const ACTION_TYPES = [
-  { id: 'task_assignment', label: 'Task', icon: '📋', desc: 'Create task' },
-  { id: 'alert', label: 'Alert', icon: '🔔', desc: 'Send alert' },
-  { id: 'cds_hook', label: 'CDS', icon: '💡', desc: 'CDS card' },
-  { id: 'care_plan', label: 'Care Plan', icon: '📝', desc: 'Update plan' },
-  { id: 'service_request', label: 'Order', icon: '🔬', desc: 'Create order' },
+  { id: 'task_assignment', label: 'Task Assignment', icon: '📋', desc: 'Create a task for care team' },
+  { id: 'alert', label: 'Alert', icon: '🔔', desc: 'Send notification/alert' },
+  { id: 'cds_hook', label: 'CDS Hook', icon: '💡', desc: 'Clinical decision support card' },
+  { id: 'care_plan', label: 'Care Plan', icon: '📝', desc: 'Update care plan' },
+  { id: 'service_request', label: 'Service Order', icon: '🔬', desc: 'Order lab/imaging' },
+  { id: 'medication_request', label: 'Medication', icon: '💊', desc: 'Prescribe medication' },
+  { id: 'referral', label: 'Referral', icon: '👨‍⚕️', desc: 'Refer to specialist' },
+  { id: 'communication', label: 'Communication', icon: '💬', desc: 'Send message' },
 ];
 
 export default function CreateRulePage() {
@@ -51,7 +40,7 @@ export default function CreateRulePage() {
   const { success, error } = useToast();
 
   const [loading, setLoading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState('basic');
   const [ruleTypes, setRuleTypes] = useState<any[]>([]);
   const [triggerEvents, setTriggerEvents] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -60,6 +49,9 @@ export default function CreateRulePage() {
     name: '',
     rule_type: 'task_assignment',
     category: '',
+    description: '',
+    active: true,
+    priority: 0,
     trigger_event: '',
     trigger_timing: 'immediate',
     conditions: { combinator: 'and', rules: [] },
@@ -69,29 +61,49 @@ export default function CreateRulePage() {
     },
   });
 
+  // Tab completion status
+  const [tabsCompleted, setTabsCompleted] = useState({
+    basic: false,
+    trigger: false,
+    conditions: false,
+    actions: false,
+  });
+
   useEffect(() => {
     loadMetadata();
   }, [session]);
+
+  useEffect(() => {
+    // Update tab completion status
+    setTabsCompleted({
+      basic: !!(formData.name && formData.rule_type),
+      trigger: !!formData.trigger_event,
+      conditions: !!(formData.conditions?.rules && formData.conditions.rules.length > 0),
+      actions: !!(formData.actions?.type && formData.actions?.config),
+    });
+  }, [formData]);
 
   const loadMetadata = async () => {
     try {
       const [typesRes, eventsRes, catsRes] = await Promise.all([
         ruleService.getRuleTypes().catch(() => ({
           data: [
-            { id: 'task_assignment', label: 'Task Assignment' },
-            { id: 'alert', label: 'Alert' },
-            { id: 'cds_hook', label: 'CDS Hook' },
-            { id: 'workflow_automation', label: 'Workflow' },
+            { id: 'task_assignment', label: 'Task Assignment', description: 'Assign tasks to care team' },
+            { id: 'alert', label: 'Alert', description: 'Send alerts and notifications' },
+            { id: 'cds_hook', label: 'CDS Hook', description: 'Clinical decision support' },
+            { id: 'notification', label: 'Notification', description: 'System notifications' },
+            { id: 'workflow_automation', label: 'Workflow Automation', description: 'Automate workflows' },
           ]
         })),
         ruleService.getTriggerEvents().catch(() => ({
           data: [
-            { id: 'observation_created', label: 'Observation Created', description: 'New observation' },
-            { id: 'appointment_scheduled', label: 'Appointment Scheduled', description: 'Appointment booked' },
-            { id: 'patient_registered', label: 'Patient Registered', description: 'New patient' },
-            { id: 'lab_result_received', label: 'Lab Result', description: 'Lab results' },
-            { id: 'medication_prescribed', label: 'Medication Prescribed', description: 'Medication ordered' },
-            { id: 'condition_diagnosed', label: 'Condition Diagnosed', description: 'Diagnosis made' },
+            { id: 'observation_created', label: 'Observation Created', description: 'When a new observation is recorded' },
+            { id: 'appointment_scheduled', label: 'Appointment Scheduled', description: 'When an appointment is booked' },
+            { id: 'patient_registered', label: 'Patient Registered', description: 'When a new patient registers' },
+            { id: 'lab_result_received', label: 'Lab Result Received', description: 'When lab results arrive' },
+            { id: 'medication_prescribed', label: 'Medication Prescribed', description: 'When medication is ordered' },
+            { id: 'condition_diagnosed', label: 'Condition Diagnosed', description: 'When a condition is diagnosed' },
+            { id: 'encounter_completed', label: 'Encounter Completed', description: 'When visit is completed' },
           ]
         })),
         ruleService.getCategories().catch(() => ({
@@ -100,6 +112,9 @@ export default function CreateRulePage() {
             { id: 'population_health', label: 'Population Health' },
             { id: 'quality_measures', label: 'Quality Measures' },
             { id: 'patient_safety', label: 'Patient Safety' },
+            { id: 'chronic_disease', label: 'Chronic Disease Management' },
+            { id: 'preventive_care', label: 'Preventive Care' },
+            { id: 'medication_safety', label: 'Medication Safety' },
           ]
         })),
       ]);
@@ -113,8 +128,25 @@ export default function CreateRulePage() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.trigger_event) {
-      error('Name and trigger event are required');
+    // Validate all tabs
+    if (!tabsCompleted.basic) {
+      error('Please complete the Basic Information tab');
+      setActiveTab('basic');
+      return;
+    }
+    if (!tabsCompleted.trigger) {
+      error('Please complete the Trigger tab');
+      setActiveTab('trigger');
+      return;
+    }
+    if (!tabsCompleted.conditions) {
+      error('Please add at least one condition');
+      setActiveTab('conditions');
+      return;
+    }
+    if (!tabsCompleted.actions) {
+      error('Please configure the action');
+      setActiveTab('actions');
       return;
     }
 
@@ -130,301 +162,362 @@ export default function CreateRulePage() {
     }
   };
 
+  const allTabsComplete = Object.values(tabsCompleted).every(Boolean);
+
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Left Sidebar - Collapsible */}
-      <div
-        className={`
-          ${sidebarOpen ? 'w-64' : 'w-0'}
-          transition-all duration-300 ease-in-out
-          bg-white border-r border-gray-200 overflow-hidden
-          lg:block
-        `}
-      >
-        <div className="h-full overflow-y-auto">
-          <div className="p-3 border-b border-gray-200 sticky top-0 bg-white z-10">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                Quick Access
-              </h3>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="lg:hidden p-1 hover:bg-gray-100 rounded"
-              >
-                <X className="h-4 w-4 text-gray-500" />
-              </button>
-            </div>
-            <p className="text-[10px] text-gray-500">
-              200+ FHIR fields • LOINC • SNOMED • RxNorm
-            </p>
-          </div>
-
-          <div className="p-3 space-y-4">
-            {/* Field Categories */}
-            <div>
-              <h4 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Field Categories
-              </h4>
-              <div className="space-y-1">
-                {FIELD_CATEGORIES.map((category, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-2 p-2 rounded hover:bg-gray-50 transition-colors cursor-pointer group"
-                  >
-                    <div className={`p-1.5 rounded ${category.color}`}>
-                      <category.icon className="h-3.5 w-3.5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-gray-700 truncate">
-                        {category.label}
-                      </div>
-                      <div className="text-[10px] text-gray-500">
-                        {category.count} fields
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Logic Operators */}
-            <div className="pt-3 border-t border-gray-200">
-              <h4 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Logic Operators
-              </h4>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
-                  <GitBranch className="h-3.5 w-3.5 text-blue-600" />
-                  <div>
-                    <div className="text-xs font-medium text-gray-700">AND</div>
-                    <div className="text-[10px] text-gray-500">All must be true</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
-                  <GitBranch className="h-3.5 w-3.5 text-purple-600" />
-                  <div>
-                    <div className="text-xs font-medium text-gray-700">OR</div>
-                    <div className="text-[10px] text-gray-500">Any can be true</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Types */}
-            <div className="pt-3 border-t border-gray-200">
-              <h4 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Action Types
-              </h4>
-              <div className="space-y-1">
-                {ACTION_TYPES.map((action) => (
-                  <button
-                    key={action.id}
-                    onClick={() =>
-                      setFormData({
-                        ...formData,
-                        actions: { type: action.id, config: {} },
-                      })
-                    }
-                    className={`
-                      w-full flex items-center gap-2 p-2 rounded text-left transition-colors
-                      ${formData.actions.type === action.id
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                        : 'hover:bg-gray-50'
-                      }
-                    `}
-                  >
-                    <span className="text-base">{action.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium truncate">{action.label}</div>
-                      <div className="text-[10px] text-gray-500 truncate">{action.desc}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        {/* Header - Compact & Responsive */}
-        <div className="bg-white border-b border-gray-200 px-3 py-2 flex-shrink-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Mobile menu button */}
-            {!sidebarOpen && (
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-1.5 hover:bg-gray-100 rounded"
-              >
-                <Menu className="h-4 w-4 text-gray-600" />
-              </button>
-            )}
-
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-5xl mx-auto p-4 sm:p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => router.back()}
-              className="h-7 text-xs px-2"
+              className="h-9"
             >
-              <ArrowLeft className="h-3 w-3 mr-1" />
-              <span className="hidden sm:inline">Back</span>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
             </Button>
-
-            <div className="hidden sm:block h-4 w-px bg-gray-300" />
-
-            <Input
-              placeholder="Rule name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="h-7 text-xs flex-1 min-w-[150px] max-w-[250px]"
-            />
-
-            <Select
-              value={formData.trigger_event}
-              onValueChange={(value) => setFormData({ ...formData, trigger_event: value })}
-            >
-              <SelectTrigger className="h-7 text-xs w-[140px] sm:w-[180px]">
-                <SelectValue placeholder="Trigger" />
-              </SelectTrigger>
-              <SelectContent>
-                {triggerEvents.map((event) => (
-                  <SelectItem key={event.id} value={event.id} className="text-xs">
-                    <div>
-                      <div className="font-medium">{event.label}</div>
-                      <div className="text-[10px] text-gray-500">{event.description}</div>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <div className="flex items-center gap-2 ml-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {}}
-                className="h-7 text-xs px-2 hidden sm:flex"
-              >
-                <Play className="h-3 w-3 mr-1" />
-                Test
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleSubmit}
-                disabled={loading || !formData.name || !formData.trigger_event}
-                className="h-7 bg-blue-600 hover:bg-blue-700 text-xs px-3"
-              >
-                <Save className="h-3 w-3 mr-1" />
-                {loading ? 'Creating...' : 'Create'}
-              </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Create Rule</h1>
+              <p className="text-sm text-gray-600">Define clinical automation rule</p>
             </div>
           </div>
-
-          {/* Secondary row - Basic info */}
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <Select
-              value={formData.rule_type}
-              onValueChange={(value) => setFormData({ ...formData, rule_type: value })}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!allTabsComplete}
+              className="h-9"
             >
-              <SelectTrigger className="h-6 text-xs w-[120px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ruleTypes.map((type) => (
-                  <SelectItem key={type.id} value={type.id} className="text-xs">
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={formData.category}
-              onValueChange={(value) => setFormData({ ...formData, category: value })}
+              <TestTube2 className="h-4 w-4 mr-2" />
+              Test
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSubmit}
+              disabled={loading || !allTabsComplete}
+              className="h-9 bg-blue-600 hover:bg-blue-700"
             >
-              <SelectTrigger className="h-6 text-xs w-[140px]">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id} className="text-xs">
-                    {cat.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={formData.trigger_timing}
-              onValueChange={(value) => setFormData({ ...formData, trigger_timing: value })}
-            >
-              <SelectTrigger className="h-6 text-xs w-[100px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="immediate" className="text-xs">Immediate</SelectItem>
-                <SelectItem value="scheduled" className="text-xs">Scheduled</SelectItem>
-                <SelectItem value="on_demand" className="text-xs">On Demand</SelectItem>
-              </SelectContent>
-            </Select>
+              <Save className="h-4 w-4 mr-2" />
+              {loading ? 'Creating...' : 'Create Rule'}
+            </Button>
           </div>
         </div>
 
-        {/* Rules Editor - All 3 Modes with Full Features */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-              <div className="border-b border-gray-200 px-3 py-2 bg-gray-50">
-                <h3 className="text-xs font-semibold text-gray-700 flex items-center gap-2">
-                  <GitBranch className="h-3.5 w-3.5" />
-                  Conditions
-                  <span className="text-[10px] font-normal text-gray-500">
-                    • 200+ FHIR fields • All builder modes available
-                  </span>
-                </h3>
+        {/* Tabbed Interface */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          {/* Tab Navigation */}
+          <TabsList className="grid w-full grid-cols-4 h-auto p-1">
+            <TabsTrigger
+              value="basic"
+              className="relative data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
+              <div className="flex items-center gap-2">
+                {tabsCompleted.basic && (
+                  <Check className="h-4 w-4 text-green-600" />
+                )}
+                <span>Basic</span>
               </div>
+            </TabsTrigger>
+            <TabsTrigger
+              value="trigger"
+              className="relative data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
+              <div className="flex items-center gap-2">
+                {tabsCompleted.trigger && (
+                  <Check className="h-4 w-4 text-green-600" />
+                )}
+                <span>Trigger</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger
+              value="conditions"
+              className="relative data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
+              <div className="flex items-center gap-2">
+                {tabsCompleted.conditions && (
+                  <Check className="h-4 w-4 text-green-600" />
+                )}
+                <span>Conditions</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger
+              value="actions"
+              className="relative data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
+              <div className="flex items-center gap-2">
+                {tabsCompleted.actions && (
+                  <Check className="h-4 w-4 text-green-600" />
+                )}
+                <span>Actions</span>
+              </div>
+            </TabsTrigger>
+          </TabsList>
 
-              <div className="p-3">
-                {/* Rule Condition Builder with ALL 3 modes */}
+          {/* Tab 1: Basic Information */}
+          <TabsContent value="basic">
+            <Card>
+              <CardHeader>
+                <CardTitle>Basic Information</CardTitle>
+                <CardDescription>Rule name, type, and description</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="rule-name">Rule Name *</Label>
+                  <Input
+                    id="rule-name"
+                    placeholder="e.g., Elevated BP Alert"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="h-10"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="rule-type">Type *</Label>
+                    <Select
+                      value={formData.rule_type}
+                      onValueChange={(value) => setFormData({ ...formData, rule_type: value })}
+                    >
+                      <SelectTrigger id="rule-type" className="h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ruleTypes.map((type) => (
+                          <SelectItem key={type.id} value={type.id}>
+                            <div>
+                              <div className="font-medium">{type.label}</div>
+                              {type.description && (
+                                <div className="text-xs text-gray-500">{type.description}</div>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    >
+                      <SelectTrigger id="category" className="h-10">
+                        <SelectValue placeholder="Select category..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Brief description of what this rule does..."
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="min-h-[80px]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="active"
+                      checked={formData.active}
+                      onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
+                    />
+                    <Label htmlFor="active" className="cursor-pointer">Active</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="priority">Priority:</Label>
+                    <Input
+                      id="priority"
+                      type="number"
+                      value={formData.priority}
+                      onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) || 0 })}
+                      className="w-20 h-9"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4">
+                  <Button
+                    onClick={() => setActiveTab('trigger')}
+                    disabled={!formData.name || !formData.rule_type}
+                  >
+                    Next: Trigger
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tab 2: Trigger */}
+          <TabsContent value="trigger">
+            <Card>
+              <CardHeader>
+                <CardTitle>Trigger Event</CardTitle>
+                <CardDescription>When should this rule execute?</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="trigger-event">Event *</Label>
+                  <Select
+                    value={formData.trigger_event}
+                    onValueChange={(value) => setFormData({ ...formData, trigger_event: value })}
+                  >
+                    <SelectTrigger id="trigger-event" className="h-10">
+                      <SelectValue placeholder="Select trigger event..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {triggerEvents.map((event) => (
+                        <SelectItem key={event.id} value={event.id}>
+                          <div>
+                            <div className="font-medium">{event.label}</div>
+                            {event.description && (
+                              <div className="text-xs text-gray-500">{event.description}</div>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="timing">Timing</Label>
+                  <Select
+                    value={formData.trigger_timing}
+                    onValueChange={(value) => setFormData({ ...formData, trigger_timing: value })}
+                  >
+                    <SelectTrigger id="timing" className="h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="immediate">Immediate</SelectItem>
+                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                      <SelectItem value="on_demand">On Demand</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex justify-between pt-4">
+                  <Button variant="outline" onClick={() => setActiveTab('basic')}>
+                    Back
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('conditions')}
+                    disabled={!formData.trigger_event}
+                  >
+                    Next: Conditions
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tab 3: Conditions */}
+          <TabsContent value="conditions">
+            <Card>
+              <CardHeader>
+                <CardTitle>Conditions</CardTitle>
+                <CardDescription>
+                  200+ FHIR fields • LOINC • SNOMED • RxNorm • ICD-10 • CPT
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <RuleConditionBuilder
                   value={formData.conditions}
                   onChange={(conditions) => setFormData({ ...formData, conditions })}
                 />
-              </div>
-            </div>
 
-            {/* Action Configuration - Compact */}
-            {formData.actions.type && (
-              <div className="mt-3 bg-white rounded-lg border border-gray-200 shadow-sm">
-                <div className="border-b border-gray-200 px-3 py-2 bg-gray-50">
-                  <h3 className="text-xs font-semibold text-gray-700 flex items-center gap-2">
-                    <Zap className="h-3.5 w-3.5" />
-                    Then Action
-                    <span className="text-[10px] font-normal text-gray-500">
-                      • {ACTION_TYPES.find(a => a.id === formData.actions.type)?.label}
-                    </span>
-                  </h3>
+                <div className="flex justify-between pt-6 mt-6 border-t">
+                  <Button variant="outline" onClick={() => setActiveTab('trigger')}>
+                    Back
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('actions')}
+                    disabled={!formData.conditions?.rules || formData.conditions.rules.length === 0}
+                  >
+                    Next: Actions
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tab 4: Actions */}
+          <TabsContent value="actions">
+            <Card>
+              <CardHeader>
+                <CardTitle>Actions</CardTitle>
+                <CardDescription>What happens when conditions are met?</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Action Type Selection */}
+                <div className="space-y-3">
+                  <Label>Action Type *</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {ACTION_TYPES.map((action) => (
+                      <button
+                        key={action.id}
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            actions: { type: action.id, config: {} },
+                          })
+                        }
+                        className={`
+                          p-3 rounded-lg border-2 text-left transition-all
+                          ${formData.actions.type === action.id
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                          }
+                        `}
+                      >
+                        <div className="text-2xl mb-1">{action.icon}</div>
+                        <div className="font-medium text-sm">{action.label}</div>
+                        <div className="text-xs text-gray-500 mt-1">{action.desc}</div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="p-3">
-                  {formData.actions.type === 'task_assignment' && (
+                {/* Action Configuration */}
+                {formData.actions.type === 'task_assignment' && (
+                  <div className="space-y-4 pt-4 border-t">
                     <div className="space-y-2">
-                      <Input
-                        placeholder="Task description (e.g., Review patient for elevated BP)"
+                      <Label>Task Description *</Label>
+                      <Textarea
+                        placeholder="e.g., Review patient for elevated blood pressure"
                         value={(formData.actions.config as any).description || ''}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
                             actions: {
                               ...formData.actions,
-                              config: { description: e.target.value },
+                              config: { ...(formData.actions.config as any), description: e.target.value },
                             },
                           })
                         }
-                        className="h-8 text-xs"
+                        className="min-h-[60px]"
                       />
-                      <div className="grid grid-cols-2 gap-2">
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Priority</Label>
                         <Select
                           value={(formData.actions.config as any).priority || 'routine'}
                           onValueChange={(value) =>
@@ -437,18 +530,21 @@ export default function CreateRulePage() {
                             })
                           }
                         >
-                          <SelectTrigger className="h-8 text-xs">
+                          <SelectTrigger className="h-10">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="routine" className="text-xs">Routine</SelectItem>
-                            <SelectItem value="urgent" className="text-xs">Urgent</SelectItem>
-                            <SelectItem value="stat" className="text-xs">STAT</SelectItem>
+                            <SelectItem value="routine">Routine</SelectItem>
+                            <SelectItem value="urgent">Urgent</SelectItem>
+                            <SelectItem value="stat">STAT</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Due (hours)</Label>
                         <Input
                           type="number"
-                          placeholder="Due (hours)"
+                          placeholder="24"
                           value={(formData.actions.config as any).due_hours || ''}
                           onChange={(e) =>
                             setFormData({
@@ -459,30 +555,36 @@ export default function CreateRulePage() {
                               },
                             })
                           }
-                          className="h-8 text-xs"
+                          className="h-10"
                         />
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {formData.actions.type === 'alert' && (
+                {formData.actions.type === 'alert' && (
+                  <div className="space-y-4 pt-4 border-t">
                     <div className="space-y-2">
+                      <Label>Alert Title *</Label>
                       <Input
-                        placeholder="Alert title"
+                        placeholder="e.g., High Blood Pressure Detected"
                         value={(formData.actions.config as any).title || ''}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
                             actions: {
                               ...formData.actions,
-                              config: { title: e.target.value },
+                              config: { ...(formData.actions.config as any), title: e.target.value },
                             },
                           })
                         }
-                        className="h-8 text-xs"
+                        className="h-10"
                       />
-                      <Input
-                        placeholder="Message"
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Message</Label>
+                      <Textarea
+                        placeholder="Alert message..."
                         value={(formData.actions.config as any).message || ''}
                         onChange={(e) =>
                           setFormData({
@@ -493,8 +595,11 @@ export default function CreateRulePage() {
                             },
                           })
                         }
-                        className="h-8 text-xs"
+                        className="min-h-[60px]"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Severity</Label>
                       <Select
                         value={(formData.actions.config as any).severity || 'medium'}
                         onValueChange={(value) =>
@@ -507,21 +612,24 @@ export default function CreateRulePage() {
                           })
                         }
                       >
-                        <SelectTrigger className="h-8 text-xs">
+                        <SelectTrigger className="h-10">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="low" className="text-xs">Low</SelectItem>
-                          <SelectItem value="medium" className="text-xs">Medium</SelectItem>
-                          <SelectItem value="high" className="text-xs">High</SelectItem>
-                          <SelectItem value="critical" className="text-xs">Critical</SelectItem>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="critical">Critical</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {formData.actions.type === 'cds_hook' && (
+                {formData.actions.type === 'cds_hook' && (
+                  <div className="space-y-4 pt-4 border-t">
                     <div className="space-y-2">
+                      <Label>Card Title *</Label>
                       <Input
                         placeholder="CDS card title"
                         value={(formData.actions.config as any).title || ''}
@@ -530,14 +638,17 @@ export default function CreateRulePage() {
                             ...formData,
                             actions: {
                               ...formData.actions,
-                              config: { title: e.target.value },
+                              config: { ...(formData.actions.config as any), title: e.target.value },
                             },
                           })
                         }
-                        className="h-8 text-xs"
+                        className="h-10"
                       />
-                      <Input
-                        placeholder="Summary"
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Summary</Label>
+                      <Textarea
+                        placeholder="Clinical decision support summary..."
                         value={(formData.actions.config as any).summary || ''}
                         onChange={(e) =>
                           setFormData({
@@ -548,15 +659,29 @@ export default function CreateRulePage() {
                             },
                           })
                         }
-                        className="h-8 text-xs"
+                        className="min-h-[60px]"
                       />
                     </div>
-                  )}
+                  </div>
+                )}
+
+                <div className="flex justify-between pt-4">
+                  <Button variant="outline" onClick={() => setActiveTab('conditions')}>
+                    Back
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={loading || !allTabsComplete}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {loading ? 'Creating...' : 'Create Rule'}
+                  </Button>
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
