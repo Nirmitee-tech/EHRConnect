@@ -25,7 +25,11 @@ export type QuestionnaireItemType =
   | 'open-choice'
   | 'attachment'
   | 'reference'
-  | 'quantity';
+  | 'quantity'
+  | 'heading'
+  | 'separator'
+  | 'description'
+  | 'columns';
 
 export interface QuestionnaireItemAnswerOption {
   valueString?: string;

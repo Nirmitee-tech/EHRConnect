@@ -12,6 +12,9 @@ const invitationRoutes = require('./routes/invitations');
 const rbacRoutes = require('./routes/rbac');
 const rbacEnhancedRoutes = require('./routes/rbac.enhanced');
 const authRoutes = require('./routes/auth');
+const mfaRoutes = require('./routes/mfa');
+const sessionsRoutes = require('./routes/sessions');
+const notificationSettingsRoutes = require('./routes/notification-settings');
 const rolesRoutes = require('./routes/roles');
 const teamRoutes = require('./routes/team');
 const userRoutes = require('./routes/users');
@@ -233,6 +236,9 @@ app.use('/api/invitations', invitationRoutes);
 app.use('/api/rbac/v2', rbacEnhancedRoutes); // Enhanced RBAC with permission matrix (must be before /api/rbac)
 app.use('/api/rbac', rbacRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/mfa', mfaRoutes);
+app.use('/api/sessions', sessionsRoutes);
+app.use('/api/notification-settings', notificationSettingsRoutes);
 app.use('/api/roles', rolesRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/user', userDataRoutes); // Separate endpoints for user data with Redis caching

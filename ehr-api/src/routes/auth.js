@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authService = require('../services/auth.service');
 const postgresAuthService = require('../services/postgres-auth.service');
+const mfaService = require('../services/mfa.service');
 const { query } = require('../database/connection');
 
 // Get AUTH_PROVIDER from environment (defaults to 'keycloak')
@@ -26,7 +27,12 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const result = await postgresAuthService.login(email, password);
+    const metadata = {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    };
+
+    const result = await postgresAuthService.login(email, password, false, metadata);
     res.json(result);
   } catch (error) {
     console.error('Login error:', error);
@@ -344,6 +350,51 @@ router.patch('/me', async (req, res) => {
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/auth/verify-mfa
+ * Verify MFA code and complete login
+ */
+router.post('/verify-mfa', async (req, res) => {
+  try {
+    if (AUTH_PROVIDER !== 'postgres') {
+      return res.status(400).json({
+        error: 'Postgres authentication not enabled',
+      });
+    }
+
+    const { userId, code } = req.body;
+
+    if (!userId || !code) {
+      return res.status(400).json({
+        error: 'userId and code are required',
+      });
+    }
+
+    // Verify the MFA code
+    const verifyResult = await mfaService.verifyCode(userId, code, 'login');
+
+    if (!verifyResult.success) {
+      return res.status(400).json(verifyResult);
+    }
+
+    const metadata = {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    };
+
+    // Complete the login and get JWT token
+    const result = await postgresAuthService.completeMFALogin(userId, metadata);
+
+    res.json(result);
+  } catch (error) {
+    console.error('MFA verification error:', error);
+    res.status(500).json({
+      error: 'Failed to verify MFA code',
+      message: error.message,
+    });
   }
 });
 

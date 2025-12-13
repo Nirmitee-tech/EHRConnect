@@ -185,11 +185,75 @@ export function CompactFormRenderer({
     const error = errors[item.linkId];
     const spacing = compact ? 'space-y-1' : 'space-y-2';
 
-    // Display item (info only)
+    // Check if this is a columns layout
+    const isColumns = item.type === 'group' && item.extension?.some(ext =>
+      ext.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
+      ext.valueCode === 'columns'
+    );
+
+    const columnCount = isColumns ? (item.extension?.find(ext =>
+      ext.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-columns'
+    )?.valueInteger || 2) : 2;
+
+    // Check for display category
+    const displayCategory = item.type === 'display' ? item.extension?.find(ext =>
+      ext.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-displayCategory'
+    )?.valueCode : null;
+
+    // Separator
+    if (displayCategory === 'separator') {
+      return (
+        <hr key={item.linkId} className={compact ? 'my-2 border-t' : 'my-3 border-t-2'} />
+      );
+    }
+
+    // Heading
+    if (displayCategory === 'heading') {
+      return (
+        <h3 key={item.linkId} className={compact ? 'text-sm font-bold mt-3 mb-1' : 'text-base font-bold mt-4 mb-2'}>
+          {item.text}
+        </h3>
+      );
+    }
+
+    // Description
+    if (displayCategory === 'description') {
+      return (
+        <p key={item.linkId} className={compact ? 'text-xs text-muted-foreground mb-2' : 'text-sm text-muted-foreground mb-3'}>
+          {item.text}
+        </p>
+      );
+    }
+
+    // Display item (info only) - default display
     if (item.type === 'display') {
       return (
         <div key={item.linkId} className="text-sm text-muted-foreground py-1">
           {item.text}
+        </div>
+      );
+    }
+
+    // Columns layout
+    if (isColumns) {
+      return (
+        <div key={item.linkId} className={spacing}>
+          {item.text && (
+            <Label className={compact ? 'text-xs font-semibold' : 'text-sm font-semibold'}>
+              {item.text}
+              {item.required && <span className="text-destructive ml-1">*</span>}
+            </Label>
+          )}
+          <div
+            className={`grid gap-${compact ? '2' : '3'} ${
+              columnCount === 2 ? 'grid-cols-2' :
+              columnCount === 3 ? 'grid-cols-3' :
+              columnCount === 4 ? 'grid-cols-4' :
+              'grid-cols-2'
+            }`}
+          >
+            {item.item?.map(renderItem)}
+          </div>
         </div>
       );
     }

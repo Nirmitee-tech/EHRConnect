@@ -55,6 +55,10 @@ import {
   Loader2,
   X,
   Check,
+  Heading,
+  Minus,
+  FileText,
+  Columns,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,6 +70,22 @@ import { cn } from '@/lib/utils';
 
 // Component Categories
 const COMPONENT_CATEGORIES = {
+  layout: {
+    label: 'Layout',
+    components: [
+      { type: 'columns', label: 'Columns', icon: Columns },
+      { type: 'group', label: 'Group', icon: Layout },
+      { type: 'separator', label: 'Separator', icon: Minus },
+    ]
+  },
+  display: {
+    label: 'Display',
+    components: [
+      { type: 'heading', label: 'Heading', icon: Heading },
+      { type: 'description', label: 'Description', icon: FileText },
+      { type: 'display', label: 'Info Text', icon: AlertCircle },
+    ]
+  },
   basic: {
     label: 'Basic',
     components: [
@@ -74,7 +94,6 @@ const COMPONENT_CATEGORIES = {
       { type: 'integer', label: 'Number', icon: Hash },
       { type: 'decimal', label: 'Decimal', icon: Hash },
       { type: 'boolean', label: 'Yes/No', icon: CheckSquare },
-      { type: 'display', label: 'Display', icon: AlertCircle },
     ]
   },
   datetime: {
@@ -113,7 +132,6 @@ const COMPONENT_CATEGORIES = {
   composite: {
     label: 'Composites',
     components: [
-      { type: 'group', label: 'Group', icon: Layout },
       { type: 'address', label: 'Address', icon: MapPin },
       { type: 'human-name', label: 'Name', icon: Users },
       { type: 'vitals-bp', label: 'BP', icon: Activity },
@@ -222,6 +240,50 @@ export default function FormBuilderPage() {
     };
 
     switch (type) {
+      case 'heading':
+        return {
+          ...baseQuestion,
+          text: 'Section Heading',
+          type: 'display' as any,
+          extension: [{
+            url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-displayCategory',
+            valueCode: 'heading'
+          }]
+        };
+      case 'description':
+        return {
+          ...baseQuestion,
+          text: 'Add descriptive text here...',
+          type: 'display' as any,
+          extension: [{
+            url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-displayCategory',
+            valueCode: 'description'
+          }]
+        };
+      case 'separator':
+        return {
+          ...baseQuestion,
+          text: '---',
+          type: 'display' as any,
+          extension: [{
+            url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-displayCategory',
+            valueCode: 'separator'
+          }]
+        };
+      case 'columns':
+        return {
+          ...baseQuestion,
+          text: '2 Columns',
+          type: 'group' as any,
+          extension: [{
+            url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+            valueCode: 'columns'
+          }, {
+            url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-columns',
+            valueInteger: 2
+          }],
+          item: []
+        };
       case 'group':
         return { ...baseQuestion, text: 'New Group', item: [] };
       case 'address':
@@ -315,6 +377,22 @@ export default function FormBuilderPage() {
     }
 
     setSelectedLinkId(newQuestion.linkId);
+  };
+
+  // Helper to check if item is a columns container
+  const isColumnsLayout = (item: QuestionnaireItem) => {
+    return item.type === 'group' && item.extension?.some(ext =>
+      ext.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
+      ext.valueCode === 'columns'
+    );
+  };
+
+  // Helper to get display category
+  const getDisplayCategory = (item: QuestionnaireItem) => {
+    if (item.type !== 'display') return null;
+    return item.extension?.find(ext =>
+      ext.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-displayCategory'
+    )?.valueCode;
   };
 
   const handleUpdateQuestion = (linkId: string, updates: Partial<QuestionnaireItem>) => {
@@ -1212,6 +1290,25 @@ function TreeItem({
   const hasChildren = item.item && item.item.length > 0;
   const isGroup = item.type === 'group';
 
+  // Check if it's a columns layout
+  const isColumns = isGroup && item.extension?.some(ext =>
+    ext.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
+    ext.valueCode === 'columns'
+  );
+
+  // Check if it's a special display type
+  const displayCategory = item.type === 'display' ? item.extension?.find(ext =>
+    ext.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-displayCategory'
+  )?.valueCode : null;
+
+  const getIcon = () => {
+    if (isColumns) return 'COL';
+    if (displayCategory === 'heading') return 'H';
+    if (displayCategory === 'separator') return '---';
+    if (displayCategory === 'description') return 'TXT';
+    return item.type.substring(0, 3).toUpperCase();
+  };
+
   return (
     <div>
       <div
@@ -1239,8 +1336,15 @@ function TreeItem({
           )}
         </div>
 
-        <span className="text-[10px] font-mono px-1 py-0.5 bg-gray-100 rounded">
-          {item.type.substring(0, 3).toUpperCase()}
+        <span className={cn(
+          "text-[10px] font-mono px-1 py-0.5 rounded",
+          isColumns ? "bg-blue-100 text-blue-700" :
+          displayCategory === 'heading' ? "bg-purple-100 text-purple-700" :
+          displayCategory === 'separator' ? "bg-gray-200 text-gray-600" :
+          displayCategory === 'description' ? "bg-green-100 text-green-700" :
+          "bg-gray-100"
+        )}>
+          {getIcon()}
         </span>
 
         <span className="flex-1 truncate">{item.text || item.linkId}</span>
@@ -1306,6 +1410,97 @@ function CanvasPanel({
   const renderItem = (item: QuestionnaireItem): React.ReactNode => {
     const isSelected = selectedId === item.linkId;
 
+    // Check if this is a columns layout
+    const isColumns = item.type === 'group' && item.extension?.some(ext =>
+      ext.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
+      ext.valueCode === 'columns'
+    );
+
+    const columnCount = isColumns ? (item.extension?.find(ext =>
+      ext.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-columns'
+    )?.valueInteger || 2) : 2;
+
+    // Check for display category
+    const displayCategory = item.type === 'display' ? item.extension?.find(ext =>
+      ext.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-displayCategory'
+    )?.valueCode : null;
+
+    // Render separator
+    if (displayCategory === 'separator') {
+      return (
+        <div
+          key={item.linkId}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect(item.linkId);
+          }}
+          className={cn(
+            "py-2 cursor-pointer",
+            isSelected && "bg-blue-50 rounded px-2"
+          )}
+        >
+          <hr className="border-t-2 border-gray-300" />
+        </div>
+      );
+    }
+
+    // Render heading
+    if (displayCategory === 'heading') {
+      return (
+        <div
+          key={item.linkId}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect(item.linkId);
+          }}
+          className={cn(
+            "cursor-pointer transition-all rounded",
+            isSelected ? "bg-blue-50 px-3 py-2" : "py-2"
+          )}
+        >
+          <Input
+            value={item.text || ''}
+            onChange={(e) => {
+              e.stopPropagation();
+              onUpdate(item.linkId, { text: e.target.value });
+            }}
+            placeholder="Heading text..."
+            className="border-none bg-transparent p-0 h-auto text-xl font-bold focus:ring-0"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      );
+    }
+
+    // Render description
+    if (displayCategory === 'description') {
+      return (
+        <div
+          key={item.linkId}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect(item.linkId);
+          }}
+          className={cn(
+            "cursor-pointer transition-all rounded",
+            isSelected ? "bg-blue-50 p-3" : "py-2"
+          )}
+        >
+          <Textarea
+            value={item.text || ''}
+            onChange={(e) => {
+              e.stopPropagation();
+              onUpdate(item.linkId, { text: e.target.value });
+            }}
+            placeholder="Description text..."
+            className="border-none bg-transparent p-0 text-sm text-gray-600 focus:ring-0 resize-none"
+            onClick={(e) => e.stopPropagation()}
+            rows={2}
+          />
+        </div>
+      );
+    }
+
     return (
       <div
         key={item.linkId}
@@ -1333,13 +1528,26 @@ function CanvasPanel({
               onClick={(e) => e.stopPropagation()}
             />
             <div className="text-xs text-gray-500">
-              {item.type}
+              {isColumns ? `${columnCount} Columns` : item.type}
               {item.required && <span className="text-red-500 ml-1">* required</span>}
             </div>
           </div>
         </div>
 
-        {item.type === 'group' && item.item && item.item.length > 0 && (
+        {/* Render columns layout */}
+        {isColumns && item.item && item.item.length > 0 && (
+          <div className={cn(
+            "mt-3 grid gap-3",
+            columnCount === 2 && "grid-cols-2",
+            columnCount === 3 && "grid-cols-3",
+            columnCount === 4 && "grid-cols-4"
+          )}>
+            {item.item.map(child => renderItem(child))}
+          </div>
+        )}
+
+        {/* Render regular group */}
+        {item.type === 'group' && !isColumns && item.item && item.item.length > 0 && (
           <div className="mt-3 pl-3 border-l-2 border-gray-200 space-y-2">
             {item.item.map(child => renderItem(child))}
           </div>
@@ -1349,12 +1557,52 @@ function CanvasPanel({
   };
 
   const renderPreview = (item: QuestionnaireItem): React.ReactNode => {
+    // Check if this is a columns layout
+    const isColumns = item.type === 'group' && item.extension?.some(ext =>
+      ext.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
+      ext.valueCode === 'columns'
+    );
+
+    const columnCount = isColumns ? (item.extension?.find(ext =>
+      ext.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-columns'
+    )?.valueInteger || 2) : 2;
+
+    // Check for display category
+    const displayCategory = item.type === 'display' ? item.extension?.find(ext =>
+      ext.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-displayCategory'
+    )?.valueCode : null;
+
+    // Render separator
+    if (displayCategory === 'separator') {
+      return <hr key={item.linkId} className="my-4 border-t-2 border-gray-300" />;
+    }
+
+    // Render heading
+    if (displayCategory === 'heading') {
+      return (
+        <h2 key={item.linkId} className="text-xl font-bold text-gray-900 mt-6 mb-3">
+          {item.text || 'Heading'}
+        </h2>
+      );
+    }
+
+    // Render description
+    if (displayCategory === 'description') {
+      return (
+        <p key={item.linkId} className="text-sm text-gray-600 mb-4">
+          {item.text || 'Description text'}
+        </p>
+      );
+    }
+
     return (
       <div key={item.linkId} className="space-y-2">
-        <Label className="text-sm font-medium">
-          {item.text || 'Untitled'}
-          {item.required && <span className="text-red-500 ml-1">*</span>}
-        </Label>
+        {item.type !== 'display' && (
+          <Label className="text-sm font-medium">
+            {item.text || 'Untitled'}
+            {item.required && <span className="text-red-500 ml-1">*</span>}
+          </Label>
+        )}
 
         {item.type === 'string' && <Input placeholder="Your answer" className="h-9" />}
         {item.type === 'text' && <Textarea placeholder="Your answer" rows={3} />}
@@ -1382,7 +1630,21 @@ function CanvasPanel({
             ))}
           </div>
         )}
-        {item.type === 'group' && item.item && (
+
+        {/* Render columns layout */}
+        {isColumns && item.item && (
+          <div className={cn(
+            "grid gap-4",
+            columnCount === 2 && "grid-cols-2",
+            columnCount === 3 && "grid-cols-3",
+            columnCount === 4 && "grid-cols-4"
+          )}>
+            {item.item.map(child => renderPreview(child))}
+          </div>
+        )}
+
+        {/* Render regular group */}
+        {item.type === 'group' && !isColumns && item.item && (
           <div className="pl-4 space-y-3 border-l-2 border-gray-200">
             {item.item.map(child => renderPreview(child))}
           </div>
@@ -1456,6 +1718,16 @@ function PropertyPanel({
   tab: 'basic' | 'validation' | 'logic' | 'advanced';
   onUpdate: (updates: Partial<QuestionnaireItem>) => void;
 }) {
+  // Check if this is a columns layout
+  const isColumns = question.type === 'group' && question.extension?.some(ext =>
+    ext.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
+    ext.valueCode === 'columns'
+  );
+
+  const columnCount = isColumns ? (question.extension?.find(ext =>
+    ext.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-columns'
+  )?.valueInteger || 2) : 2;
+
   if (tab === 'basic') {
     return (
       <div className="space-y-4">
@@ -1486,9 +1758,35 @@ function PropertyPanel({
             <option value="choice">Choice</option>
             <option value="open-choice">Open Choice</option>
             <option value="attachment">Attachment</option>
+            <option value="display">Display</option>
             <option value="group">Group</option>
           </select>
         </div>
+
+        {/* Column Count for Columns Layout */}
+        {isColumns && (
+          <div>
+            <Label className="text-xs font-medium">Number of Columns</Label>
+            <select
+              value={columnCount}
+              onChange={(e) => {
+                const newCount = parseInt(e.target.value);
+                const newExtensions = question.extension?.map(ext => {
+                  if (ext.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-columns') {
+                    return { ...ext, valueInteger: newCount };
+                  }
+                  return ext;
+                }) || [];
+                onUpdate({ extension: newExtensions });
+              }}
+              className="w-full mt-1.5 h-8 px-3 text-sm border rounded-md"
+            >
+              <option value="2">2 Columns</option>
+              <option value="3">3 Columns</option>
+              <option value="4">4 Columns</option>
+            </select>
+          </div>
+        )}
 
         <div>
           <Label className="text-xs font-medium">Question Text</Label>

@@ -6,6 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const formsService = require('../services/forms.service');
+const formsVersioningService = require('../services/forms-versioning.service');
 const { requireAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/rbac');
 
@@ -171,6 +172,126 @@ router.delete('/templates/:id', requirePermission('forms:delete'), async (req, r
     console.error('Error deleting form template:', error);
     res.status(error.message.includes('not found') ? 404 : 500).json({
       error: 'Failed to delete form template',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/forms/templates/:id/retire
+ * Retire form template (no longer available for new responses)
+ */
+router.post('/templates/:id/retire', requirePermission('forms:write'), async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const userId = req.userContext.userId;
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    const template = await formsVersioningService.retireTemplate(id, orgId, userId, { reason });
+
+    res.json(template);
+  } catch (error) {
+    console.error('Error retiring form template:', error);
+    res.status(error.message.includes('not found') ? 404 : 400).json({
+      error: 'Failed to retire form template',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/forms/templates/:id/restore
+ * Restore archived form template to draft status
+ */
+router.post('/templates/:id/restore', requirePermission('forms:write'), async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const userId = req.userContext.userId;
+    const { id } = req.params;
+
+    const template = await formsVersioningService.restoreTemplate(id, orgId, userId);
+
+    res.json(template);
+  } catch (error) {
+    console.error('Error restoring form template:', error);
+    res.status(error.message.includes('not found') ? 404 : 400).json({
+      error: 'Failed to restore form template',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/forms/templates/:id/versions
+ * Create a new version of an existing form template
+ */
+router.post('/templates/:id/versions', requirePermission('forms:write'), async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const userId = req.userContext.userId;
+    const { id } = req.params;
+    const { versionType = 'minor', title, description, changeNotes } = req.body;
+
+    const newVersion = await formsVersioningService.createVersion(id, orgId, userId, {
+      versionType,
+      title,
+      description,
+      changeNotes,
+    });
+
+    res.status(201).json(newVersion);
+  } catch (error) {
+    console.error('Error creating form version:', error);
+    res.status(error.message.includes('not found') ? 404 : 400).json({
+      error: 'Failed to create form version',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/forms/templates/:id/versions
+ * Get version history for a form template
+ */
+router.get('/templates/:id/versions', async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const { id } = req.params;
+
+    const versions = await formsVersioningService.getVersionHistory(id, orgId);
+
+    res.json({ versions });
+  } catch (error) {
+    console.error('Error getting version history:', error);
+    res.status(error.message.includes('not found') ? 404 : 500).json({
+      error: 'Failed to get version history',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/forms/templates/:id/versions/compare
+ * Compare two versions of a form template
+ */
+router.get('/templates/:id/versions/compare', async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const { id } = req.params;
+    const { compareWith } = req.query;
+
+    if (!compareWith) {
+      return res.status(400).json({ error: 'compareWith parameter is required' });
+    }
+
+    const comparison = await formsVersioningService.compareVersions(id, compareWith, orgId);
+
+    res.json(comparison);
+  } catch (error) {
+    console.error('Error comparing versions:', error);
+    res.status(error.message.includes('not found') ? 404 : 500).json({
+      error: 'Failed to compare versions',
       message: error.message,
     });
   }
