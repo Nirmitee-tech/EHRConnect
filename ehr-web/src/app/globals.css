@@ -349,3 +349,51 @@ body.hide-sidebar header {
 body.hide-sidebar .tab-bar {
   display: none !important;
 }
+
+/* Preview Viewport Responsive Styles - Phase 3 */
+/* Apply responsive design based on viewport width */
+
+.mobile-viewport {
+  font-size: 14px;
+}
+
+.mobile-viewport h1 {
+  font-size: 1.5rem;
+}
+
+.mobile-viewport h2 {
+  font-size: 1.25rem;
+}
+
+.mobile-viewport h3 {
+  font-size: 1.1rem;
+}
+
+.mobile-viewport input,
+.mobile-viewport textarea,
+.mobile-viewport select {
+  font-size: 16px; /* Prevent zoom on iOS */
+}
+
+.tablet-viewport {
+  font-size: 15px;
+}
+
+.tablet-viewport h1 {
+  font-size: 1.75rem;
+}
+
+.tablet-viewport h2 {
+  font-size: 1.5rem;
+}
+
+.desktop-viewport {
+  font-size: 16px;
+}
+
+/* Smooth transitions for responsive changes */
+.mobile-viewport *,
+.tablet-viewport *,
+.desktop-viewport * {
+  transition: font-size 0.2s ease;
+}

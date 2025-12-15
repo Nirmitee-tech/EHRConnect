@@ -631,4 +631,389 @@ router.put('/responses/:id', async (req, res) => {
   }
 });
 
+// ============================================================================
+// Multi-Step Forms
+// ============================================================================
+
+/**
+ * POST /api/forms/templates/:id/steps
+ * Create a new form step
+ */
+router.post('/templates/:id/steps', requirePermission('forms:write'), async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const userId = req.userContext.userId;
+    const { id: formTemplateId } = req.params;
+
+    const step = await formsService.createStep(formTemplateId, req.body, userId, orgId);
+
+    res.status(201).json(step);
+  } catch (error) {
+    console.error('Error creating form step:', error);
+    res.status(error.message === 'Form template not found' ? 404 : 400).json({
+      error: 'Failed to create form step',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/forms/templates/:id/steps
+ * Get all steps for a form template
+ */
+router.get('/templates/:id/steps', async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const { id: formTemplateId } = req.params;
+
+    const steps = await formsService.getSteps(formTemplateId, orgId);
+
+    res.json(steps);
+  } catch (error) {
+    console.error('Error getting form steps:', error);
+    res.status(500).json({
+      error: 'Failed to get form steps',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/forms/steps/:stepId
+ * Get single step by ID
+ */
+router.get('/steps/:stepId', async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const { stepId } = req.params;
+
+    const step = await formsService.getStep(stepId, orgId);
+
+    res.json(step);
+  } catch (error) {
+    console.error('Error getting form step:', error);
+    res.status(error.message === 'Form step not found' ? 404 : 500).json({
+      error: 'Failed to get form step',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * PUT /api/forms/steps/:stepId
+ * Update form step
+ */
+router.put('/steps/:stepId', requirePermission('forms:write'), async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const userId = req.userContext.userId;
+    const { stepId } = req.params;
+
+    const step = await formsService.updateStep(stepId, req.body, userId, orgId);
+
+    res.json(step);
+  } catch (error) {
+    console.error('Error updating form step:', error);
+    res.status(error.message === 'Form step not found' ? 404 : 400).json({
+      error: 'Failed to update form step',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * DELETE /api/forms/steps/:stepId
+ * Delete form step
+ */
+router.delete('/steps/:stepId', requirePermission('forms:write'), async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const userId = req.userContext.userId;
+    const { stepId } = req.params;
+
+    await formsService.deleteStep(stepId, userId, orgId);
+
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting form step:', error);
+    res.status(error.message === 'Form step not found' ? 404 : 500).json({
+      error: 'Failed to delete form step',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/forms/templates/:id/steps/reorder
+ * Reorder form steps
+ */
+router.post('/templates/:id/steps/reorder', requirePermission('forms:write'), async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const userId = req.userContext.userId;
+    const { id: formTemplateId } = req.params;
+    const { stepOrder } = req.body;
+
+    if (!Array.isArray(stepOrder)) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: 'stepOrder must be an array of {id, order} objects',
+      });
+    }
+
+    await formsService.reorderSteps(formTemplateId, stepOrder, userId, orgId);
+
+    res.json({ message: 'Steps reordered successfully' });
+  } catch (error) {
+    console.error('Error reordering form steps:', error);
+    res.status(500).json({
+      error: 'Failed to reorder form steps',
+      message: error.message,
+    });
+  }
+});
+
+// ============================================================================
+// Form Progress Tracking
+// ============================================================================
+
+/**
+ * POST /api/forms/templates/:id/progress
+ * Save form progress (auto-save)
+ */
+router.post('/templates/:id/progress', async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const userId = req.userContext.userId;
+    const { id: formTemplateId } = req.params;
+    const { sessionId, ...progressData } = req.body;
+
+    if (!sessionId) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: 'sessionId is required',
+      });
+    }
+
+    const progress = await formsService.saveProgress(
+      formTemplateId,
+      userId,
+      sessionId,
+      progressData,
+      orgId
+    );
+
+    res.json(progress);
+  } catch (error) {
+    console.error('Error saving form progress:', error);
+    res.status(500).json({
+      error: 'Failed to save form progress',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/forms/templates/:id/progress
+ * Get user's progress for a form
+ */
+router.get('/templates/:id/progress', async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const userId = req.userContext.userId;
+    const { id: formTemplateId } = req.params;
+    const { sessionId } = req.query;
+
+    if (!sessionId) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: 'sessionId query parameter is required',
+      });
+    }
+
+    const progress = await formsService.getProgress(formTemplateId, userId, sessionId, orgId);
+
+    if (!progress) {
+      return res.status(404).json({
+        error: 'Progress not found',
+        message: 'No progress found for this form and session',
+      });
+    }
+
+    res.json(progress);
+  } catch (error) {
+    console.error('Error getting form progress:', error);
+    res.status(500).json({
+      error: 'Failed to get form progress',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * PUT /api/forms/progress/:progressId/complete
+ * Mark form progress as completed
+ */
+router.put('/progress/:progressId/complete', async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const { progressId } = req.params;
+
+    const progress = await formsService.completeProgress(progressId, orgId);
+
+    res.json(progress);
+  } catch (error) {
+    console.error('Error completing form progress:', error);
+    res.status(error.message === 'Progress record not found' ? 404 : 500).json({
+      error: 'Failed to complete form progress',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/forms/templates/:id/progress/list
+ * List all progress records for a form (admin)
+ */
+router.get('/templates/:id/progress/list', requirePermission('forms:read'), async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const { id: formTemplateId } = req.params;
+    const { userId, isCompleted } = req.query;
+
+    const filters = {};
+    if (userId) filters.userId = userId;
+    if (isCompleted !== undefined) filters.isCompleted = isCompleted === 'true';
+
+    const progressList = await formsService.listProgress(formTemplateId, orgId, filters);
+
+    res.json(progressList);
+  } catch (error) {
+    console.error('Error listing form progress:', error);
+    res.status(500).json({
+      error: 'Failed to list form progress',
+      message: error.message,
+    });
+  }
+});
+
+// ============================================================================
+// Visit Templates (eCRF)
+// ============================================================================
+
+/**
+ * POST /api/forms/visit-templates
+ * Create visit template
+ */
+router.post('/visit-templates', requirePermission('forms:write'), async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const userId = req.userContext.userId;
+    const { trialId, ...templateData } = req.body;
+
+    if (!trialId) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: 'trialId is required',
+      });
+    }
+
+    const template = await formsService.createVisitTemplate(orgId, trialId, templateData, userId);
+
+    res.status(201).json(template);
+  } catch (error) {
+    console.error('Error creating visit template:', error);
+    res.status(400).json({
+      error: 'Failed to create visit template',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/forms/visit-templates/trial/:trialId
+ * Get visit templates for a trial
+ */
+router.get('/visit-templates/trial/:trialId', async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const { trialId } = req.params;
+
+    const templates = await formsService.getVisitTemplates(orgId, trialId);
+
+    res.json(templates);
+  } catch (error) {
+    console.error('Error getting visit templates:', error);
+    res.status(500).json({
+      error: 'Failed to get visit templates',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/forms/visit-templates/:id
+ * Get single visit template
+ */
+router.get('/visit-templates/:id', async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const { id } = req.params;
+
+    const template = await formsService.getVisitTemplate(id, orgId);
+
+    res.json(template);
+  } catch (error) {
+    console.error('Error getting visit template:', error);
+    res.status(error.message === 'Visit template not found' ? 404 : 500).json({
+      error: 'Failed to get visit template',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * PUT /api/forms/visit-templates/:id
+ * Update visit template
+ */
+router.put('/visit-templates/:id', requirePermission('forms:write'), async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const userId = req.userContext.userId;
+    const { id } = req.params;
+
+    const template = await formsService.updateVisitTemplate(id, req.body, userId, orgId);
+
+    res.json(template);
+  } catch (error) {
+    console.error('Error updating visit template:', error);
+    res.status(error.message === 'Visit template not found' ? 404 : 400).json({
+      error: 'Failed to update visit template',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * DELETE /api/forms/visit-templates/:id
+ * Delete visit template (soft delete)
+ */
+router.delete('/visit-templates/:id', requirePermission('forms:write'), async (req, res) => {
+  try {
+    const orgId = req.userContext.orgId;
+    const userId = req.userContext.userId;
+    const { id } = req.params;
+
+    await formsService.deleteVisitTemplate(id, userId, orgId);
+
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting visit template:', error);
+    res.status(error.message === 'Visit template not found' ? 404 : 500).json({
+      error: 'Failed to delete visit template',
+      message: error.message,
+    });
+  }
+});
+
 module.exports = router;

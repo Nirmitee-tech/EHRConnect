@@ -105,6 +105,11 @@ ehr-web/src/
 │
 ├── components/              # Reusable UI components
 │   ├── forms/              # Form components
+│   │   ├── StepNavigator.tsx       # Multi-step navigation sidebar
+│   │   ├── StepEditor.tsx          # Step configuration editor
+│   │   ├── WizardProgress.tsx      # Progress bar component
+│   │   ├── StepNavigationControls.tsx  # Next/Previous buttons
+│   │   └── preview/                # Preview components
 │   ├── layouts/            # Layout components
 │   └── ui/                 # Base UI components
 │

@@ -861,6 +861,679 @@ class FormsService {
       data.metadata ? JSON.stringify(data.metadata) : null,
     ]);
   }
+
+  // ============================================================================
+  // Multi-Step Forms
+  // ============================================================================
+
+  /**
+   * Create a form step
+   * @param {string} formTemplateId - Form template UUID
+   * @param {object} stepData - Step definition
+   * @param {string} userId - Creator user ID
+   * @param {string} orgId - Organization ID
+   * @returns {object} Created step
+   */
+  async createStep(formTemplateId, stepData, userId, orgId) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Verify form exists and user has access
+      const formCheck = await client.query(
+        'SELECT id, is_multi_step FROM form_templates WHERE id = $1 AND org_id = $2',
+        [formTemplateId, orgId]
+      );
+
+      if (formCheck.rows.length === 0) {
+        throw new Error('Form template not found');
+      }
+
+      // Enable multi-step mode if not already enabled
+      if (!formCheck.rows[0].is_multi_step) {
+        await client.query(
+          'UPDATE form_templates SET is_multi_step = true WHERE id = $1',
+          [formTemplateId]
+        );
+      }
+
+      // Create step
+      const query = `
+        INSERT INTO form_steps (
+          form_template_id, org_id, step_order, title, description,
+          navigation_config, validation_config, fields, conditional_logic,
+          created_by, updated_by
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        RETURNING *
+      `;
+
+      const result = await client.query(query, [
+        formTemplateId,
+        orgId,
+        stepData.step_order,
+        stepData.title,
+        stepData.description || '',
+        stepData.navigation_config || { allowBack: true, allowSkip: false, showProgress: true },
+        stepData.validation_config || { validateOnNext: true, validateOnBlur: false, required: false },
+        stepData.fields || [],
+        stepData.conditional_logic || null,
+        userId,
+        userId
+      ]);
+
+      // Update form step count
+      await this.updateFormStepConfig(client, formTemplateId);
+
+      // Audit log
+      await this.logAudit(client, {
+        org_id: orgId,
+        entity_type: 'form_step',
+        entity_id: result.rows[0].id,
+        action: 'created',
+        actor_id: userId,
+        metadata: { form_template_id: formTemplateId, step_order: stepData.step_order }
+      });
+
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error creating form step:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get all steps for a form template
+   * @param {string} formTemplateId - Form template UUID
+   * @param {string} orgId - Organization ID
+   * @returns {array} Array of steps ordered by step_order
+   */
+  async getSteps(formTemplateId, orgId) {
+    const query = `
+      SELECT * FROM form_steps
+      WHERE form_template_id = $1 AND org_id = $2
+      ORDER BY step_order ASC
+    `;
+    const result = await pool.query(query, [formTemplateId, orgId]);
+    return result.rows;
+  }
+
+  /**
+   * Get single step by ID
+   * @param {string} stepId - Step UUID
+   * @param {string} orgId - Organization ID
+   * @returns {object} Step data
+   */
+  async getStep(stepId, orgId) {
+    const query = `
+      SELECT * FROM form_steps
+      WHERE id = $1 AND org_id = $2
+    `;
+    const result = await pool.query(query, [stepId, orgId]);
+
+    if (result.rows.length === 0) {
+      throw new Error('Form step not found');
+    }
+
+    return result.rows[0];
+  }
+
+  /**
+   * Update form step
+   * @param {string} stepId - Step UUID
+   * @param {object} stepData - Updated step data
+   * @param {string} userId - Updater user ID
+   * @param {string} orgId - Organization ID
+   * @returns {object} Updated step
+   */
+  async updateStep(stepId, stepData, userId, orgId) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Get existing step
+      const existing = await client.query(
+        'SELECT * FROM form_steps WHERE id = $1 AND org_id = $2',
+        [stepId, orgId]
+      );
+
+      if (existing.rows.length === 0) {
+        throw new Error('Form step not found');
+      }
+
+      // Build update query dynamically based on provided fields
+      const updates = [];
+      const values = [];
+      let paramIndex = 1;
+
+      if (stepData.title !== undefined) {
+        updates.push(`title = $${paramIndex++}`);
+        values.push(stepData.title);
+      }
+      if (stepData.description !== undefined) {
+        updates.push(`description = $${paramIndex++}`);
+        values.push(stepData.description);
+      }
+      if (stepData.step_order !== undefined) {
+        updates.push(`step_order = $${paramIndex++}`);
+        values.push(stepData.step_order);
+      }
+      if (stepData.navigation_config !== undefined) {
+        updates.push(`navigation_config = $${paramIndex++}`);
+        values.push(stepData.navigation_config);
+      }
+      if (stepData.validation_config !== undefined) {
+        updates.push(`validation_config = $${paramIndex++}`);
+        values.push(stepData.validation_config);
+      }
+      if (stepData.fields !== undefined) {
+        updates.push(`fields = $${paramIndex++}`);
+        values.push(stepData.fields);
+      }
+      if (stepData.conditional_logic !== undefined) {
+        updates.push(`conditional_logic = $${paramIndex++}`);
+        values.push(stepData.conditional_logic);
+      }
+
+      updates.push(`updated_by = $${paramIndex++}`);
+      values.push(userId);
+      updates.push(`updated_at = CURRENT_TIMESTAMP`);
+
+      values.push(stepId);
+      values.push(orgId);
+
+      const query = `
+        UPDATE form_steps
+        SET ${updates.join(', ')}
+        WHERE id = $${paramIndex++} AND org_id = $${paramIndex++}
+        RETURNING *
+      `;
+
+      const result = await client.query(query, values);
+
+      // Update form step config if step order changed
+      if (stepData.step_order !== undefined) {
+        await this.updateFormStepConfig(client, existing.rows[0].form_template_id);
+      }
+
+      // Audit log
+      await this.logAudit(client, {
+        org_id: orgId,
+        entity_type: 'form_step',
+        entity_id: stepId,
+        action: 'updated',
+        actor_id: userId,
+        changes: stepData
+      });
+
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error updating form step:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Delete form step
+   * @param {string} stepId - Step UUID
+   * @param {string} userId - User performing deletion
+   * @param {string} orgId - Organization ID
+   */
+  async deleteStep(stepId, userId, orgId) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Get step to retrieve form_template_id before deletion
+      const stepResult = await client.query(
+        'SELECT form_template_id FROM form_steps WHERE id = $1 AND org_id = $2',
+        [stepId, orgId]
+      );
+
+      if (stepResult.rows.length === 0) {
+        throw new Error('Form step not found');
+      }
+
+      const formTemplateId = stepResult.rows[0].form_template_id;
+
+      // Delete step
+      await client.query(
+        'DELETE FROM form_steps WHERE id = $1 AND org_id = $2',
+        [stepId, orgId]
+      );
+
+      // Update form step config
+      await this.updateFormStepConfig(client, formTemplateId);
+
+      // Audit log
+      await this.logAudit(client, {
+        org_id: orgId,
+        entity_type: 'form_step',
+        entity_id: stepId,
+        action: 'deleted',
+        actor_id: userId
+      });
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error deleting form step:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Reorder form steps
+   * @param {string} formTemplateId - Form template UUID
+   * @param {array} stepOrder - Array of {id, order} objects
+   * @param {string} userId - User performing reorder
+   * @param {string} orgId - Organization ID
+   */
+  async reorderSteps(formTemplateId, stepOrder, userId, orgId) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Update each step's order
+      for (const item of stepOrder) {
+        await client.query(
+          'UPDATE form_steps SET step_order = $1, updated_by = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 AND org_id = $4',
+          [item.order, userId, item.id, orgId]
+        );
+      }
+
+      // Update form step config
+      await this.updateFormStepConfig(client, formTemplateId);
+
+      // Audit log
+      await this.logAudit(client, {
+        org_id: orgId,
+        entity_type: 'form_step',
+        entity_id: formTemplateId,
+        action: 'reordered',
+        actor_id: userId,
+        metadata: { step_order: stepOrder }
+      });
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error reordering form steps:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Update form template step configuration
+   * Internal helper to sync step count
+   * @param {object} client - Database client
+   * @param {string} formTemplateId - Form template UUID
+   */
+  async updateFormStepConfig(client, formTemplateId) {
+    const countResult = await client.query(
+      'SELECT COUNT(*) as total FROM form_steps WHERE form_template_id = $1',
+      [formTemplateId]
+    );
+
+    const totalSteps = parseInt(countResult.rows[0].total);
+
+    // Update form template step_config
+    await client.query(
+      `UPDATE form_templates
+       SET step_config = jsonb_set(
+         COALESCE(step_config, '{}'::jsonb),
+         '{totalSteps}',
+         $1::text::jsonb
+       )
+       WHERE id = $2`,
+      [totalSteps, formTemplateId]
+    );
+  }
+
+  // ============================================================================
+  // Form Progress Tracking
+  // ============================================================================
+
+  /**
+   * Save form progress (auto-save support)
+   * @param {string} formTemplateId - Form template UUID
+   * @param {string} userId - User ID
+   * @param {string} sessionId - Session identifier
+   * @param {object} progressData - Progress data including current_step and step_data
+   * @param {string} orgId - Organization ID
+   * @returns {object} Saved progress
+   */
+  async saveProgress(formTemplateId, userId, sessionId, progressData, orgId) {
+    const query = `
+      INSERT INTO form_progress (
+        form_template_id, user_id, org_id, current_step, step_data,
+        session_id, patient_id, encounter_id, episode_id, completed_steps
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ON CONFLICT (form_template_id, user_id, session_id)
+      DO UPDATE SET
+        current_step = EXCLUDED.current_step,
+        step_data = EXCLUDED.step_data,
+        completed_steps = EXCLUDED.completed_steps,
+        last_saved_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, [
+      formTemplateId,
+      userId,
+      orgId,
+      progressData.current_step,
+      progressData.step_data || {},
+      sessionId,
+      progressData.patient_id || null,
+      progressData.encounter_id || null,
+      progressData.episode_id || null,
+      progressData.completed_steps || []
+    ]);
+
+    return result.rows[0];
+  }
+
+  /**
+   * Get user progress for a form
+   * @param {string} formTemplateId - Form template UUID
+   * @param {string} userId - User ID
+   * @param {string} sessionId - Session identifier
+   * @param {string} orgId - Organization ID
+   * @returns {object} Progress data or null
+   */
+  async getProgress(formTemplateId, userId, sessionId, orgId) {
+    const query = `
+      SELECT * FROM form_progress
+      WHERE form_template_id = $1 AND user_id = $2 AND session_id = $3 AND org_id = $4
+      ORDER BY last_saved_at DESC
+      LIMIT 1
+    `;
+
+    const result = await pool.query(query, [formTemplateId, userId, sessionId, orgId]);
+    return result.rows.length > 0 ? result.rows[0] : null;
+  }
+
+  /**
+   * Mark form progress as completed
+   * @param {string} progressId - Progress UUID
+   * @param {string} orgId - Organization ID
+   * @returns {object} Updated progress
+   */
+  async completeProgress(progressId, orgId) {
+    const query = `
+      UPDATE form_progress
+      SET is_completed = true, completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1 AND org_id = $2
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, [progressId, orgId]);
+
+    if (result.rows.length === 0) {
+      throw new Error('Progress record not found');
+    }
+
+    return result.rows[0];
+  }
+
+  /**
+   * List progress records for a form
+   * @param {string} formTemplateId - Form template UUID
+   * @param {string} orgId - Organization ID
+   * @param {object} filters - Optional filters (userId, isCompleted)
+   * @returns {array} Progress records
+   */
+  async listProgress(formTemplateId, orgId, filters = {}) {
+    let query = `
+      SELECT fp.*, u.email as user_email, u.first_name, u.last_name
+      FROM form_progress fp
+      LEFT JOIN users u ON fp.user_id = u.id
+      WHERE fp.form_template_id = $1 AND fp.org_id = $2
+    `;
+    const params = [formTemplateId, orgId];
+    let paramIndex = 3;
+
+    if (filters.userId) {
+      query += ` AND fp.user_id = $${paramIndex++}`;
+      params.push(filters.userId);
+    }
+
+    if (filters.isCompleted !== undefined) {
+      query += ` AND fp.is_completed = $${paramIndex++}`;
+      params.push(filters.isCompleted);
+    }
+
+    query += ' ORDER BY fp.updated_at DESC';
+
+    const result = await pool.query(query, params);
+    return result.rows;
+  }
+
+  // ============================================================================
+  // Visit Templates (eCRF)
+  // ============================================================================
+
+  /**
+   * Create visit template for clinical trials
+   * @param {string} orgId - Organization ID
+   * @param {string} trialId - Trial identifier
+   * @param {object} templateData - Visit template data
+   * @param {string} userId - Creator user ID
+   * @returns {object} Created visit template
+   */
+  async createVisitTemplate(orgId, trialId, templateData, userId) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const query = `
+        INSERT INTO visit_templates (
+          org_id, trial_id, visit_name, visit_code, visit_type,
+          frequency_config, form_template_ids, cdash_annotations,
+          display_order, description, instructions, created_by, updated_by
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        RETURNING *
+      `;
+
+      const result = await client.query(query, [
+        orgId,
+        trialId,
+        templateData.visit_name,
+        templateData.visit_code || null,
+        templateData.visit_type,
+        templateData.frequency_config || null,
+        templateData.form_template_ids || [],
+        templateData.cdash_annotations || null,
+        templateData.display_order || null,
+        templateData.description || null,
+        templateData.instructions || null,
+        userId,
+        userId
+      ]);
+
+      // Audit log
+      await this.logAudit(client, {
+        org_id: orgId,
+        entity_type: 'visit_template',
+        entity_id: result.rows[0].id,
+        action: 'created',
+        actor_id: userId,
+        metadata: { trial_id: trialId }
+      });
+
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error creating visit template:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get visit templates for a trial
+   * @param {string} orgId - Organization ID
+   * @param {string} trialId - Trial identifier
+   * @returns {array} Visit templates
+   */
+  async getVisitTemplates(orgId, trialId) {
+    const query = `
+      SELECT * FROM visit_templates
+      WHERE org_id = $1 AND trial_id = $2 AND is_active = true
+      ORDER BY display_order ASC, created_at ASC
+    `;
+
+    const result = await pool.query(query, [orgId, trialId]);
+    return result.rows;
+  }
+
+  /**
+   * Get single visit template
+   * @param {string} templateId - Visit template UUID
+   * @param {string} orgId - Organization ID
+   * @returns {object} Visit template
+   */
+  async getVisitTemplate(templateId, orgId) {
+    const query = `
+      SELECT * FROM visit_templates
+      WHERE id = $1 AND org_id = $2
+    `;
+
+    const result = await pool.query(query, [templateId, orgId]);
+
+    if (result.rows.length === 0) {
+      throw new Error('Visit template not found');
+    }
+
+    return result.rows[0];
+  }
+
+  /**
+   * Update visit template
+   * @param {string} templateId - Visit template UUID
+   * @param {object} templateData - Updated data
+   * @param {string} userId - Updater user ID
+   * @param {string} orgId - Organization ID
+   * @returns {object} Updated visit template
+   */
+  async updateVisitTemplate(templateId, templateData, userId, orgId) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Build dynamic update query
+      const updates = [];
+      const values = [];
+      let paramIndex = 1;
+
+      const updateFields = [
+        'visit_name', 'visit_code', 'visit_type', 'frequency_config',
+        'form_template_ids', 'cdash_annotations', 'display_order',
+        'description', 'instructions', 'is_active'
+      ];
+
+      for (const field of updateFields) {
+        if (templateData[field] !== undefined) {
+          updates.push(`${field} = $${paramIndex++}`);
+          values.push(templateData[field]);
+        }
+      }
+
+      updates.push(`updated_by = $${paramIndex++}`);
+      values.push(userId);
+      updates.push(`updated_at = CURRENT_TIMESTAMP`);
+
+      values.push(templateId);
+      values.push(orgId);
+
+      const query = `
+        UPDATE visit_templates
+        SET ${updates.join(', ')}
+        WHERE id = $${paramIndex++} AND org_id = $${paramIndex++}
+        RETURNING *
+      `;
+
+      const result = await client.query(query, values);
+
+      if (result.rows.length === 0) {
+        throw new Error('Visit template not found');
+      }
+
+      // Audit log
+      await this.logAudit(client, {
+        org_id: orgId,
+        entity_type: 'visit_template',
+        entity_id: templateId,
+        action: 'updated',
+        actor_id: userId,
+        changes: templateData
+      });
+
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error updating visit template:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Delete visit template
+   * @param {string} templateId - Visit template UUID
+   * @param {string} userId - User performing deletion
+   * @param {string} orgId - Organization ID
+   */
+  async deleteVisitTemplate(templateId, userId, orgId) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Soft delete by setting is_active = false
+      const result = await client.query(
+        'UPDATE visit_templates SET is_active = false, updated_by = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND org_id = $3 RETURNING *',
+        [userId, templateId, orgId]
+      );
+
+      if (result.rows.length === 0) {
+        throw new Error('Visit template not found');
+      }
+
+      // Audit log
+      await this.logAudit(client, {
+        org_id: orgId,
+        entity_type: 'visit_template',
+        entity_id: templateId,
+        action: 'deleted',
+        actor_id: userId
+      });
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error deleting visit template:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 }
 
 module.exports = new FormsService();

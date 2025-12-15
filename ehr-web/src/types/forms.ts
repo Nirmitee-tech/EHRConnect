@@ -570,3 +570,56 @@ export interface FormAuditLog {
   metadata?: Record<string, unknown>;
   created_at: string;
 }
+
+// ============================================================================
+// Multi-Step Form Types (Wizard/Step-by-Step)
+// ============================================================================
+
+export type StepStatus = 'incomplete' | 'complete' | 'error';
+
+export interface StepNavigationConfig {
+  allowBack: boolean;
+  allowSkip: boolean;
+  nextButtonText?: string;
+  prevButtonText?: string;
+  conditionalNext?: string; // Rule ID for conditional routing
+}
+
+export interface StepValidationConfig {
+  validateOnNext: boolean;
+  requiredFields: string[]; // linkId[] of required fields
+  customValidation?: ValidationRule[];
+}
+
+export interface ValidationRule {
+  id: string;
+  type: 'required' | 'pattern' | 'range' | 'custom';
+  expression?: string; // FHIRPath or JSON Logic expression
+  message: string;
+}
+
+export interface FormStep {
+  id: string;
+  formId: string;
+  stepOrder: number;
+  title: string;
+  description?: string;
+  fields: QuestionnaireItem[]; // FHIR items for this step
+  navigationConfig: StepNavigationConfig;
+  validationConfig: StepValidationConfig;
+  status?: StepStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface FormProgress {
+  id: string;
+  formId: string;
+  userId: string;
+  orgId: string;
+  currentStep: number;
+  stepData: Record<string, any>; // Step-specific response data
+  lastSavedAt: Date;
+  sessionId: string;
+  isCompleted: boolean;
+}

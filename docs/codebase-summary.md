@@ -44,11 +44,13 @@ EHRConnect/
 │       │   ├── inventory/       # Inventory management
 │       │   └── auth/            # Authentication
 │       ├── components/          # Reusable React components
+│       │   └── forms/           # Form components (StepNavigator, StepEditor, WizardProgress)
 │       ├── contexts/            # React Context providers
 │       ├── services/            # API client services
+│       ├── stores/              # Zustand state stores (form-builder-store)
 │       ├── types/               # TypeScript type definitions
 │       ├── utils/               # Utility functions
-│       └── hooks/               # Custom React hooks
+│       └── hooks/               # Custom React hooks (use-form-preview)
 │
 ├── ehr-design-system/            # Shared UI component library
 ├── ehr-integration-gateway/     # Integration service (future)
@@ -114,9 +116,10 @@ EHRConnect/
 - @100mslive/react-sdk 0.10 (Video conferencing)
 
 **State Management**:
-- Zustand 5.0 (Lightweight state)
+- Zustand 5.0 (Lightweight state, form builder store)
 - React Context (Global state)
 - SWR 2.3 (Data fetching & caching)
+- localStorage persistence (form builder state)
 
 **Authentication**:
 - next-auth 4.24 (Authentication)
@@ -251,7 +254,8 @@ EHRConnect/
 - `auth.service.ts` - Authentication
 - `patient.service.ts` - Patient operations
 - `appointment.service.ts` - Scheduling
-- `forms.service.ts` - Form management
+- `forms.service.ts` - Form management with multi-step support
+- `preview.service.ts` - Form preview rendering
 - `specialty.service.ts` - Specialty packs
 - `country.service.ts` - Country settings
 - `rule.service.ts` - Rules engine
@@ -312,10 +316,13 @@ EHRConnect/
 
 ### 5. Form Builder
 - Visual form builder
+- Multi-step/wizard mode support
 - FHIR Questionnaire-based
 - Form versioning
 - Draft/published states
 - Form templates library
+- Step navigation with progress tracking
+- Auto-save and state persistence
 
 ### 6. Universal Rule Engine
 - Visual rule builder

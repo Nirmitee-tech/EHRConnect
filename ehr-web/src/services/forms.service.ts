@@ -19,6 +19,8 @@ import type {
   PopulateResponse,
   ExtractRequest,
   ExtractResponse,
+  FormStep,
+  FormProgress,
 } from '@/types/forms';
 
 export const formsService = {
@@ -288,5 +290,70 @@ export const formsService = {
   async extractFromResponse(data: ExtractRequest): Promise<ExtractResponse> {
     const response = await apiClient.post('/forms/$extract', data);
     return response.data;
+  },
+
+  // ============================================================================
+  // Multi-Step Form API Methods
+  // ============================================================================
+
+  /**
+   * Create a new step for a form
+   */
+  async createStep(formId: string, stepData: Partial<FormStep>): Promise<FormStep> {
+    const response = await apiClient.post(`/forms/${formId}/steps`, stepData);
+    return response.data;
+  },
+
+  /**
+   * Get all steps for a form
+   */
+  async getSteps(formId: string): Promise<FormStep[]> {
+    const response = await apiClient.get(`/forms/${formId}/steps`);
+    return response.data;
+  },
+
+  /**
+   * Update a specific step
+   */
+  async updateStep(formId: string, stepId: string, data: Partial<FormStep>): Promise<FormStep> {
+    const response = await apiClient.put(`/forms/${formId}/steps/${stepId}`, data);
+    return response.data;
+  },
+
+  /**
+   * Delete a step
+   */
+  async deleteStep(formId: string, stepId: string): Promise<void> {
+    await apiClient.delete(`/forms/${formId}/steps/${stepId}`);
+  },
+
+  /**
+   * Reorder steps
+   */
+  async reorderSteps(formId: string, stepOrder: string[]): Promise<void> {
+    await apiClient.put(`/forms/${formId}/steps/reorder`, { stepOrder });
+  },
+
+  /**
+   * Save user progress on a multi-step form
+   */
+  async saveProgress(formId: string, progressData: Partial<FormProgress>): Promise<FormProgress> {
+    const response = await apiClient.post(`/forms/${formId}/progress`, progressData);
+    return response.data;
+  },
+
+  /**
+   * Get saved progress for a form session
+   */
+  async getProgress(formId: string, sessionId: string): Promise<FormProgress | null> {
+    try {
+      const response = await apiClient.get(`/forms/${formId}/progress`, {
+        params: { sessionId }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to load progress:', error);
+      return null;
+    }
   },
 };
