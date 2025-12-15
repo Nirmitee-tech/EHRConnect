@@ -85,11 +85,29 @@ export async function apiRequest<T = any>(
   const headers = new Headers(fetchOptions.headers)
 
   // Add session headers if not skipping auth
-  if (!skipAuth && session) {
-    const sessionHeaders = getApiHeaders(session)
-    Object.entries(sessionHeaders).forEach(([key, value]) => {
-      headers.set(key, value)
-    })
+  if (!skipAuth) {
+    if (session) {
+      const sessionHeaders = getApiHeaders(session)
+      Object.entries(sessionHeaders).forEach(([key, value]) => {
+        headers.set(key, value)
+      })
+
+      // Log headers in development for easier debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[API Request]', {
+          method: fetchOptions.method || 'GET',
+          endpoint,
+          headers: {
+            'Authorization': session.accessToken ? `Bearer ${session.accessToken.substring(0, 20)}...` : 'none',
+            'x-user-id': session.user?.id || 'none',
+            'x-org-id': session.org_id || 'none',
+            'x-org-slug': session.org_slug || 'none',
+          }
+        })
+      }
+    } else {
+      console.warn('[API Request] No session provided for authenticated endpoint:', endpoint)
+    }
   }
 
   // Make request
@@ -98,12 +116,23 @@ export async function apiRequest<T = any>(
     headers,
   })
 
-  // Handle errors
+  // Handle errors with better details
   if (!response.ok) {
     const error = await response.json().catch(() => ({
       error: `HTTP ${response.status}: ${response.statusText}`,
     }))
-    throw new Error(error.error || error.message || 'API request failed')
+
+    // Log error details in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[API Error]', {
+        endpoint,
+        status: response.status,
+        error: error.error || error.message || error.details,
+        details: error.details || error
+      })
+    }
+
+    throw new Error(error.error || error.message || error.details || 'API request failed')
   }
 
   // Parse response
@@ -210,4 +239,53 @@ export function hasRole(
 
   const roles = Array.isArray(role) ? role : [role]
   return roles.some((r) => session.roles?.includes(r))
+}
+
+/**
+ * Generate a complete cURL command with all auth headers for testing
+ * Perfect for copying to Postman or terminal
+ */
+export function generateCurlCommand(
+  endpoint: string,
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  session: Session | null | undefined,
+  body?: any
+): string {
+  const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`
+  const headers = session ? getApiHeaders(session) : { 'Content-Type': 'application/json' }
+
+  let curl = `curl -X ${method} '${url}'`
+
+  // Add headers
+  Object.entries(headers).forEach(([key, value]) => {
+    curl += ` \\\n  -H "${key}: ${value}"`
+  })
+
+  // Add body if present
+  if (body) {
+    const bodyStr = typeof body === 'string' ? body : JSON.stringify(body, null, 2)
+    curl += ` \\\n  -d '${bodyStr}'`
+  }
+
+  return curl
+}
+
+/**
+ * Generate HTTP headers as a formatted object for display/copying
+ */
+export function getFormattedHeaders(session: Session | null | undefined): Record<string, string> {
+  if (!session) {
+    return { 'Content-Type': 'application/json' }
+  }
+
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': session.accessToken ? `Bearer ${session.accessToken}` : '',
+    'x-user-id': session.user?.id || '',
+    'x-org-id': session.org_id || '',
+    'x-org-slug': session.org_slug || '',
+    'x-location-ids': session.location_ids ? JSON.stringify(session.location_ids) : '',
+    'x-user-roles': session.roles ? JSON.stringify(session.roles) : '',
+    'x-user-permissions': session.permissions ? JSON.stringify(session.permissions) : '',
+  }
 }

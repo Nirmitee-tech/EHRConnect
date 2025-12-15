@@ -10,6 +10,7 @@ const agoraHandler = require('./agora.handler');
 const vonageHandler = require('./vonage.handler');
 const customHL7Handler = require('./custom-hl7.handler');
 const claimMDHandler = require('./claimmd.handler');
+const abdmHandler = require('./abdm.handler');
 
 // Task System Integrations
 const TaskAppointmentIntegration = require('./task-appointment.integration');
@@ -44,6 +45,9 @@ function registerAllHandlers(integrationService) {
   // HL7/FHIR Integration
   integrationService.registerHandler('custom-hl7', customHL7Handler);
 
+  // Health Data Exchange
+  integrationService.registerHandler('abdm', abdmHandler);
+
   // TODO: Register additional handlers as they are implemented
   // integrationService.registerHandler('twilio', twilioHandler);
   // integrationService.registerHandler('availity', availityHandler);
@@ -61,6 +65,7 @@ module.exports = {
   agoraHandler,
   vonageHandler,
   customHL7Handler,
+  abdmHandler,
   // Task System Integrations
   TaskAppointmentIntegration,
   TaskFormIntegration
