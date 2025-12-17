@@ -384,7 +384,7 @@ export function DayView({
               <div
                 className={`flex h-14 w-14 items-center justify-center rounded-xl text-2xl font-bold shadow-md ${
                   isToday
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-primary text-primary-foreground'
                     : 'bg-white text-gray-700 border-2 border-gray-200'
                 }`}
               >

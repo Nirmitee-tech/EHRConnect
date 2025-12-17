@@ -65,23 +65,20 @@ export const EncountersTab = memo(function EncountersTab({ encounters, observati
 
                   <div
                     onClick={() => onEncounterClick?.(encounter.id)}
-                    className={`rounded-lg border p-4 ml-0 transition-all cursor-pointer hover:shadow-md ${
-                      isSelected
-                        ? 'bg-blue-50 border-blue-300 shadow-lg ring-2 ring-blue-200'
+                    className={`rounded-lg border p-4 ml-0 transition-all cursor-pointer hover:shadow-md ${isSelected
+                        ? 'bg-primary/5 border-primary/30 shadow-lg ring-2 ring-primary/20'
                         : 'bg-white border-gray-200'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start gap-4">
-                      <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${
-                        encounter.status === 'in-progress' ? 'bg-blue-100' :
-                        encounter.status === 'finished' ? 'bg-green-100' :
-                        'bg-gray-100'
-                      }`}>
-                        <Calendar className={`h-6 w-6 ${
-                          encounter.status === 'in-progress' ? 'text-blue-600' :
-                          encounter.status === 'finished' ? 'text-green-600' :
-                          'text-gray-600'
-                        }`} />
+                      <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${encounter.status === 'in-progress' ? 'bg-primary/10' :
+                          encounter.status === 'finished' ? 'bg-green-100' :
+                            'bg-gray-100'
+                        }`}>
+                        <Calendar className={`h-6 w-6 ${encounter.status === 'in-progress' ? 'text-primary' :
+                            encounter.status === 'finished' ? 'text-green-600' :
+                              'text-gray-600'
+                          }`} />
                       </div>
 
                       <div className="flex-1">
@@ -91,11 +88,10 @@ export const EncountersTab = memo(function EncountersTab({ encounters, observati
                               <h3 className="text-sm font-bold text-gray-900">
                                 {encounter.type?.[0]?.text || encounter.class?.display || 'Visit'}
                               </h3>
-                              <Badge className={`text-xs ${
-                                encounter.status === 'finished' ? 'bg-green-50 text-green-700 border-green-200' :
-                                encounter.status === 'in-progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                'bg-gray-50 text-gray-700 border-gray-200'
-                              }`}>
+                              <Badge className={`text-xs ${encounter.status === 'finished' ? 'bg-green-50 text-green-700 border-green-200' :
+                                  encounter.status === 'in-progress' ? 'bg-primary/10 text-primary border-primary/20' :
+                                    'bg-gray-50 text-gray-700 border-gray-200'
+                                }`}>
                                 {encounter.status}
                               </Badge>
                             </div>

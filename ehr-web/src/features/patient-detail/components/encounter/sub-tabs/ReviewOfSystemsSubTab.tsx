@@ -43,7 +43,7 @@ export function ReviewOfSystemsSubTab({
       </div>
       <button
         onClick={onSave}
-        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700"
+        className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded text-sm font-medium hover:opacity-90"
       >
         {isEditing ? 'Update ROS' : 'Save ROS'}
       </button>

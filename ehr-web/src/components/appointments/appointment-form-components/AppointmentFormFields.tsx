@@ -699,7 +699,7 @@ export function AppointmentFormFields({
                       className={`
                         h-9 w-9 rounded-lg text-xs font-semibold transition-all duration-150
                         ${isSelected
-                          ? 'bg-blue-600 text-white shadow-sm scale-105'
+                          ? 'bg-primary text-primary-foreground shadow-sm scale-105'
                           : 'bg-gray-50 text-gray-500 border border-gray-200 hover:border-gray-300 hover:bg-gray-100'
                         }
                       `}

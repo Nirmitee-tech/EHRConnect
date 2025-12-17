@@ -281,7 +281,7 @@ export function EncounterTab({
                     </h2>
                     <button
                       onClick={onCarePlanAdd}
-                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700"
+                      className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded hover:opacity-90"
                     >
                       + Add New Care Plan
                     </button>

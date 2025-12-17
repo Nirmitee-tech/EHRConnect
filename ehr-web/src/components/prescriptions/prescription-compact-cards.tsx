@@ -74,7 +74,7 @@ export function PrescriptionCompactCards({
         <h3 className="text-sm font-semibold text-gray-700">Prescriptions ({items.length})</h3>
         <button
           onClick={() => setShowAdd(!showAdd)}
-          className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+          className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded hover:opacity-90"
         >
           <Plus className="h-4 w-4" />
           Add
@@ -148,7 +148,7 @@ export function PrescriptionCompactCards({
             <button
               onClick={handleAdd}
               disabled={!med}
-              className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-primary text-primary-foreground text-sm rounded hover:opacity-90 disabled:opacity-50"
             >
               Add Prescription
             </button>

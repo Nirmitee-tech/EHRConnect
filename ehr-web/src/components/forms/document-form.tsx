@@ -239,7 +239,7 @@ export function DocumentForm({ patientId, patientName, onSuccess, onCancel }: Do
         <Button
           type="submit"
           disabled={saving}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+          className="flex-1 bg-blue-600 hover:opacity-90 text-white"
         >
           {saving ? (
             <>

@@ -131,7 +131,7 @@ export function MonthView({
                     className={cn(
                       'flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium',
                       'transition-colors',
-                      isToday && 'bg-blue-600 text-white',
+                      isToday && 'bg-primary text-primary-foreground',
                       !isToday && isCurrentMonth && 'text-gray-900',
                       !isToday && !isCurrentMonth && 'text-gray-400'
                     )}

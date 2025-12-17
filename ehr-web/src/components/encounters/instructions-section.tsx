@@ -92,7 +92,7 @@ export function InstructionsSection({
       <div className="flex justify-end">
         <button
           onClick={handleAddItem}
-          className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs font-medium transition-colors"
+          className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg hover:opacity-90 text-xs font-medium transition-colors"
         >
           <Plus className="h-3.5 w-3.5" />
           Add Instruction

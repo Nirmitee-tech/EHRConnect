@@ -466,7 +466,7 @@ export function ClaimForm({
                   className={cn(
                     "px-4 py-1.5 rounded-md transition-colors text-xs font-medium flex items-center gap-1.5",
                     isValid
-                      ? "bg-blue-600 text-white hover:bg-blue-700"
+                      ? "bg-primary text-primary-foreground hover:opacity-90"
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
                   )}
                 >
@@ -748,14 +748,14 @@ export function ClaimForm({
                             key={diagnosis.id}
                             className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-md px-3 py-2"
                           >
-                            <div className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded text-[10px] font-bold">
+                            <div className="flex items-center justify-center w-6 h-6 bg-primary text-primary-foreground rounded text-[10px] font-bold">
                               {diagnosis.pointer}
                             </div>
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold text-blue-900">{diagnosis.code}</span>
                                 {diagnosis.isPrimary && (
-                                  <span className="px-1.5 py-0.5 bg-blue-600 text-white text-[9px] font-bold rounded">
+                                  <span className="px-1.5 py-0.5 bg-primary text-primary-foreground text-[9px] font-bold rounded">
                                     PRIMARY
                                   </span>
                                 )}
@@ -970,7 +970,7 @@ export function ClaimForm({
                                       className={cn(
                                         "flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-medium transition-all",
                                         proc.diagnosisPointers.includes(diagnosis.pointer)
-                                          ? "bg-blue-600 text-white shadow-sm"
+                                          ? "bg-primary text-primary-foreground shadow-sm"
                                           : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                       )}
                                     >
@@ -1409,7 +1409,7 @@ export function ClaimForm({
                     <div className="space-y-1">
                       {diagnosisCodes.map(diagnosis => (
                         <div key={diagnosis.id} className="flex items-center gap-2 text-[10px]">
-                          <span className="w-4 h-4 bg-blue-600 text-white rounded flex items-center justify-center font-bold">
+                          <span className="w-4 h-4 bg-primary text-primary-foreground rounded flex items-center justify-center font-bold">
                             {diagnosis.pointer}
                           </span>
                           <span className="font-bold">{diagnosis.code}</span>

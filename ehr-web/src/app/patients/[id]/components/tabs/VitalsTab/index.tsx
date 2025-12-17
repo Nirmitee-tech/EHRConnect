@@ -143,7 +143,7 @@ export const VitalsTab = memo(function VitalsTab({ observations, onRecordVitals 
           </Select>
           <button
             onClick={onRecordVitals}
-            className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
+            className="px-3 py-1 text-xs font-medium text-primary-foreground bg-primary hover:opacity-90 rounded"
           >
             + Record Vitals
           </button>

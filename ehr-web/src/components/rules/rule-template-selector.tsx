@@ -164,7 +164,7 @@ export function RuleTemplateSelector({ onSelect, onClose }: RuleTemplateSelector
                           onSelect(example);
                         }}
                         size="sm"
-                        className="w-full h-7 bg-blue-600 hover:bg-blue-700"
+                        className="w-full h-7 bg-blue-600 hover:opacity-90"
                       >
                         <Sparkles className="h-3 w-3 mr-1.5" />
                         Use This Template

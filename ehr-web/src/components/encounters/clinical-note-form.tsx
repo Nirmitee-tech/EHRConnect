@@ -224,7 +224,7 @@ export function ClinicalNoteForm({
           <div className="flex items-center gap-2">
             <label className="text-xs font-semibold text-blue-900 uppercase tracking-wide cursor-pointer">Vitals</label>
             {vitalsData.size > 0 && (
-              <span className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full font-medium">
+              <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs rounded-full font-medium">
                 {vitalsData.size} recorded
               </span>
             )}
@@ -321,7 +321,7 @@ export function ClinicalNoteForm({
                 type="button"
                 onClick={handleSaveVitals}
                 disabled={isSaving || vitalsData.size === 0}
-                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-sm font-semibold shadow-md hover:shadow-lg"
+                className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-lg hover:opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-sm font-semibold shadow-md hover:shadow-lg"
               >
                 {isSaving ? (
                   <>

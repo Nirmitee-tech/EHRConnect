@@ -670,7 +670,7 @@ export function AppointmentDetailsDrawer({
               <button
                 onClick={handleDocumentVisit}
                 disabled={isCompleting}
-                className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-colors font-medium disabled:opacity-50"
               >
                 Document Visit
               </button>

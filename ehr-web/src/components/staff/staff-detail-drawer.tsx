@@ -253,7 +253,7 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
                   <h3 className="text-lg font-medium text-gray-900">Vacation & Blocked Time</h3>
                   <button
                     onClick={addVacation}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-colors text-sm"
                   >
                     <Plus className="h-4 w-4" />
                     Add Block
@@ -387,7 +387,7 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
             </button>
             <button
               onClick={handleSave}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-colors"
             >
               <Save className="h-4 w-4" />
               {isNewStaff ? 'Create Staff Member' : 'Save Changes'}

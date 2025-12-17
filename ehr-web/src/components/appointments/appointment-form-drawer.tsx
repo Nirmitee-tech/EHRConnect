@@ -455,7 +455,7 @@ export function AppointmentFormDrawer({
                 type="button"
                 onClick={handleConfirmBooking}
                 disabled={loading}
-                className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
               >
                 {loading ? 'Booking...' : 'Book Anyway'}
               </button>
@@ -535,7 +535,7 @@ export function AppointmentFormDrawer({
                       setShowCategoryDrawer(false);
                     }
                   }}
-                  className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90"
                 >
                   Add Appointment Type
                 </button>

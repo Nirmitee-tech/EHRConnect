@@ -63,7 +63,7 @@ export function ImagingTab() {
         <h2 className="text-lg font-semibold text-gray-900">Imaging Studies</h2>
         <button
           onClick={() => setDrawerState('imaging', true)}
-          className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
+          className="px-3 py-1 text-xs font-medium text-primary-foreground bg-primary hover:opacity-90 rounded"
         >
           + Add Imaging
         </button>

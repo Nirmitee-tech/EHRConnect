@@ -475,7 +475,7 @@ export function PatientDetailShell() {
                     <h2 className="text-lg font-semibold text-gray-900">Insurance Information</h2>
                     <button
                       onClick={() => setDrawerState('insurance', true)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-colors flex items-center gap-2"
                     >
                       <Plus className="h-4 w-4" />
                       Add Insurance
@@ -1294,7 +1294,7 @@ export function PatientDetailShell() {
                                       }]
                                     } as CarePlanFormData);
                                   }}
-                                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700"
+                                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:opacity-90"
                                 >
                                   + Add New Care Plan
                                 </button>
@@ -1479,7 +1479,7 @@ export function PatientDetailShell() {
                               setRosForm(encounterId, {});
                               setEncounterActiveSubTab(encounterId, 'summary');
                             }}
-                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700"
+                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:opacity-90"
                           >
                             {editingSection[encounterId] !== null && editingSection[encounterId] !== undefined ? 'Update ROS' : 'Save ROS'}
                           </button>
@@ -1560,7 +1560,7 @@ export function PatientDetailShell() {
                                 setSoapForm(encounterId, { subjective: '', objective: '', assessment: '', plan: '' });
                                 setEncounterActiveSubTab(encounterId, 'summary');
                               }}
-                              className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700"
+                              className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:opacity-90"
                             >
                               {editingSection[encounterId] !== null && editingSection[encounterId] !== undefined ? 'Update SOAP Note' : 'Save SOAP Note'}
                             </button>
@@ -1579,7 +1579,7 @@ export function PatientDetailShell() {
                               </div>
                               <button
                                 onClick={() => setDrawerState('vitals', true)}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-colors shadow-sm"
                               >
                                 Record Vitals
                               </button>
@@ -1637,7 +1637,7 @@ export function PatientDetailShell() {
                               <textarea className="w-full p-3 border border-gray-300 rounded text-sm" rows={6} placeholder="Document eye exam findings..." />
                             </div>
                             <div className="col-span-2">
-                              <button className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700">
+                              <button className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:opacity-90">
                                 Save Eye Exam
                               </button>
                             </div>
@@ -1657,7 +1657,7 @@ export function PatientDetailShell() {
                               <label className="block text-sm font-medium text-gray-700 mb-2">Cognitive Status</label>
                               <textarea className="w-full p-3 border border-gray-300 rounded text-sm" rows={4} placeholder="Document cognitive status..." />
                             </div>
-                            <button className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700">
+                            <button className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:opacity-90">
                               Save Assessment
                             </button>
                           </div>
@@ -1681,7 +1681,7 @@ export function PatientDetailShell() {
                               <label className="block text-sm font-medium text-gray-700 mb-2">Observation Details</label>
                               <textarea className="w-full p-3 border border-gray-300 rounded text-sm" rows={6} placeholder="Document observation details..." />
                             </div>
-                            <button className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700">
+                            <button className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:opacity-90">
                               Save Observation
                             </button>
                           </div>
@@ -1709,7 +1709,7 @@ export function PatientDetailShell() {
                               </label>
                             ))}
                           </div>
-                          <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700">
+                          <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:opacity-90">
                             Save ROS Checks
                           </button>
                         </div>
@@ -1729,7 +1729,7 @@ export function PatientDetailShell() {
                               <label className="block text-sm font-medium text-gray-700 mb-2">Transcription</label>
                               <textarea className="w-full p-3 border border-gray-300 rounded text-sm font-mono" rows={12} placeholder="Transcribed text will appear here..." />
                             </div>
-                            <button className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700">
+                            <button className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:opacity-90">
                               Save Dictation
                             </button>
                           </div>
@@ -1770,7 +1770,7 @@ export function PatientDetailShell() {
                                 <option>STAT</option>
                               </select>
                             </div>
-                            <button className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700">
+                            <button className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:opacity-90">
                               Order Procedure
                             </button>
                           </div>
@@ -1814,7 +1814,7 @@ export function PatientDetailShell() {
                                 <option>Custom Questionnaire</option>
                               </select>
                             </div>
-                            <button className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700">
+                            <button className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:opacity-90">
                               Load Questionnaire
                             </button>
                           </div>

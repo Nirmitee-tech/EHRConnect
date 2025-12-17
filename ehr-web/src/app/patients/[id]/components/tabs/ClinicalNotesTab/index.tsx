@@ -183,18 +183,18 @@ export function ClinicalNotesTab({
   return (
     <div className="space-y-6">
       {/* Header with Stats */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-200">
+      <div className="bg-gradient-to-r from-primary/5 to-purple-50/50 rounded-lg p-6 border border-primary/20">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <FileText className="h-6 w-6 text-blue-600" />
+              <FileText className="h-6 w-6 text-primary" />
               Clinical Notes
             </h2>
             <p className="text-sm text-gray-600 mt-1">Comprehensive encounter documentation and clinical narratives</p>
           </div>
           <button
             onClick={onAddNote}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-colors shadow-md hover:shadow-lg"
           >
             <Plus className="h-4 w-4" />
             New Note
@@ -208,7 +208,7 @@ export function ClinicalNotesTab({
             <div className="text-xs text-gray-600 mt-1">Total Notes</div>
           </div>
           <div className="bg-white rounded-lg p-4 border border-gray-200">
-            <div className="text-2xl font-bold text-blue-600">{stats.thisWeek}</div>
+            <div className="text-2xl font-bold text-primary">{stats.thisWeek}</div>
             <div className="text-xs text-gray-600 mt-1">This Week</div>
           </div>
           <div className="bg-white rounded-lg p-4 border border-gray-200">
@@ -240,16 +240,15 @@ export function ClinicalNotesTab({
           {/* Filter Toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg text-sm font-medium transition-colors ${
-              showFilters || selectedType !== 'all' || selectedCategory !== 'all'
-                ? 'bg-blue-50 text-blue-700 border-blue-300'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg text-sm font-medium transition-colors ${showFilters || selectedType !== 'all' || selectedCategory !== 'all'
+              ? 'bg-blue-50 text-blue-700 border-blue-300'
+              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
           >
             <Filter className="h-4 w-4" />
             Filters
             {(selectedType !== 'all' || selectedCategory !== 'all') && (
-              <span className="ml-1 px-1.5 py-0.5 bg-blue-600 text-white rounded-full text-xs">
+              <span className="ml-1 px-1.5 py-0.5 bg-primary text-primary-foreground rounded-full text-xs">
                 {(selectedType !== 'all' ? 1 : 0) + (selectedCategory !== 'all' ? 1 : 0)}
               </span>
             )}
@@ -365,7 +364,7 @@ export function ClinicalNotesTab({
             {notes.length === 0 && (
               <button
                 onClick={onAddNote}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 Create First Note
