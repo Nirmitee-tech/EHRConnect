@@ -41,6 +41,7 @@ const taskRulesRoutes = require('./routes/task-rules');
 const ruleVariablesRoutes = require('./routes/rule-variables');
 const rulesRoutes = require('./routes/rules');
 const abdmRoutes = require('./routes/abdm');
+const aiClinicalRoutes = require('./routes/ai-clinical');
 const { initializeDatabase } = require('./database/init');
 const socketService = require('./services/socket.service');
 const billingJobs = require('./services/billing.jobs');
@@ -264,6 +265,7 @@ app.use('/api/task-rules', taskRulesRoutes); // Task Assignment Rules routes
 app.use('/api/rule-variables', ruleVariablesRoutes); // Rule Variables (aggregates, formulas) routes
 app.use('/api/rules', rulesRoutes); // Universal Rule Engine routes
 app.use('/api/abdm', abdmRoutes); // ABDM (Ayushman Bharat Digital Mission) Integration routes
+app.use('/api/ai-clinical', aiClinicalRoutes); // AI-Powered Clinical Intelligence routes
 
 // Health check
 app.get('/health', (req, res) => {
