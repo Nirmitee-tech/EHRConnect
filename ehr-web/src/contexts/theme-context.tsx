@@ -105,12 +105,25 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     root.style.setProperty('--theme-sidebar-active', theme.sidebarActiveColor);
     root.style.setProperty('--theme-accent', theme.accentColor);
     root.style.setProperty('--theme-font-family', theme.fontFamily);
+    
+    // Also update the primary color used by UI components
+    root.style.setProperty('--primary', theme.primaryColor);
+    root.style.setProperty('--sidebar-primary', theme.primaryColor);
   };
 
   // Update theme settings
   const updateTheme = async (settings: Partial<ThemeSettings>) => {
-    if (!session?.user?.orgId) {
-      throw new Error('No organization context');
+    // Check if session is loaded
+    if (!session) {
+      const errorMessage = 'Session not loaded. Please wait or refresh the page.';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+
+    if (!session.user?.orgId) {
+      const errorMessage = 'No organization context found. Please ensure you are logged in.';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     }
 
     setError(null);

@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useTheme } from '@/contexts/theme-context'
 
 // Import dashboard views
 import ExecutiveDashboard from './views/executive-dashboard'
@@ -22,6 +23,7 @@ import QualityDashboard from './views/quality-dashboard'
 
 export default function DashboardPage() {
   const { data: session } = useSession()
+  const { themeSettings } = useTheme()
   const [currentTime, setCurrentTime] = useState(new Date())
   const [dateRange, setDateRange] = useState('30d')
   const [location, setLocation] = useState('all')
@@ -37,15 +39,18 @@ export default function DashboardPage() {
 
   return (
     <div className="h-full flex flex-col bg-gray-50 -m-6">
-      {/* Sticky Header with Sidebar Color */}
-      <div className="sticky top-0 z-50 bg-[#0F1E56] text-white shadow-lg">
+      {/* Sticky Header with Theme Sidebar Color */}
+      <div 
+        className="sticky top-0 z-50 text-white shadow-lg"
+        style={{ backgroundColor: themeSettings.sidebarBackgroundColor }}
+      >
         <div className="px-6 py-3">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-lg font-semibold">
                 {greeting}, {userName}
               </h1>
-              <p className="text-xs text-blue-200 mt-0.5">
+              <p className="text-xs mt-0.5" style={{ color: themeSettings.sidebarTextColor }}>
                 {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
               </p>
             </div>
@@ -54,7 +59,7 @@ export default function DashboardPage() {
               {/* Filters */}
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-blue-300" />
+                  <Calendar className="h-4 w-4" style={{ color: themeSettings.sidebarTextColor }} />
                   <Select value={dateRange} onValueChange={setDateRange}>
                     <SelectTrigger className="w-[140px] h-8 bg-white/10 border-white/20 text-white text-xs">
                       <SelectValue />
@@ -70,7 +75,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-blue-300" />
+                  <MapPin className="h-4 w-4" style={{ color: themeSettings.sidebarTextColor }} />
                   <Select value={location} onValueChange={setLocation}>
                     <SelectTrigger className="w-[140px] h-8 bg-white/10 border-white/20 text-white text-xs">
                       <SelectValue />
@@ -85,7 +90,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-blue-300" />
+                  <Building2 className="h-4 w-4" style={{ color: themeSettings.sidebarTextColor }} />
                   <Select value={department} onValueChange={setDepartment}>
                     <SelectTrigger className="w-[140px] h-8 bg-white/10 border-white/20 text-white text-xs">
                       <SelectValue />

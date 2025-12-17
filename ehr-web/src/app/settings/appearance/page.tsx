@@ -30,6 +30,7 @@ export default function AppearancePage() {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       console.error('Failed to save theme:', err);
+      // Error is already set in the context
     } finally {
       setIsSaving(false);
     }
@@ -43,8 +44,11 @@ export default function AppearancePage() {
       try {
         await resetTheme();
         setLocalSettings(defaultTheme);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
       } catch (err) {
         console.error('Failed to reset theme:', err);
+        // Error is already set in the context
       } finally {
         setIsSaving(false);
       }
