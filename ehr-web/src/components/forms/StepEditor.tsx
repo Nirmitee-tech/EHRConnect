@@ -5,7 +5,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFormBuilderStore } from '@/stores/form-builder-store';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,10 +14,87 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Settings2, Navigation, ShieldCheck } from 'lucide-react';
+import { StepRuleBuilder } from './StepRuleBuilder';
+import { formsService } from '@/services/forms.service';
+import type {
+  StepRule,
+  CreateStepRuleRequest,
+  RuleTestResult,
+} from '@/types/forms';
 
 export function StepEditor() {
   const { steps, currentStepIndex, updateStep } = useFormBuilderStore();
   const currentStep = steps[currentStepIndex];
+  const [stepRules, setStepRules] = useState<StepRule[]>([]);
+  const [rulesLoading, setRulesLoading] = useState(false);
+
+  // Load rules when step changes
+  useEffect(() => {
+    if (currentStep?.id) {
+      loadStepRules();
+    }
+  }, [currentStep?.id]);
+
+  const loadStepRules = async () => {
+    if (!currentStep?.id) return;
+
+    try {
+      setRulesLoading(true);
+      const response = await formsService.getStepRules(currentStep.id);
+      setStepRules(response.rules || []);
+    } catch (error) {
+      console.error('Failed to load step rules:', error);
+    } finally {
+      setRulesLoading(false);
+    }
+  };
+
+  const handleCreateRule = async (ruleData: CreateStepRuleRequest) => {
+    if (!currentStep?.id) return;
+
+    try {
+      await formsService.createStepRule(currentStep.id, ruleData);
+      await loadStepRules(); // Reload rules
+    } catch (error) {
+      console.error('Failed to create rule:', error);
+      throw error;
+    }
+  };
+
+  const handleUpdateRule = async (ruleId: string, ruleData: Partial<StepRule>) => {
+    if (!currentStep?.id) return;
+
+    try {
+      await formsService.updateStepRule(currentStep.id, ruleId, ruleData);
+      await loadStepRules(); // Reload rules
+    } catch (error) {
+      console.error('Failed to update rule:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteRule = async (ruleId: string) => {
+    if (!currentStep?.id) return;
+
+    try {
+      await formsService.deleteStepRule(currentStep.id, ruleId);
+      await loadStepRules(); // Reload rules
+    } catch (error) {
+      console.error('Failed to delete rule:', error);
+      throw error;
+    }
+  };
+
+  const handleTestRule = async (ruleId: string, mockData: Record<string, any>): Promise<RuleTestResult> => {
+    if (!currentStep?.id) throw new Error('No step selected');
+
+    try {
+      return await formsService.testStepRule(currentStep.id, ruleId, mockData);
+    } catch (error) {
+      console.error('Failed to test rule:', error);
+      throw error;
+    }
+  };
 
   if (!currentStep) {
     return (
@@ -59,6 +136,21 @@ export function StepEditor() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-muted/30">
+      {/* Active Step Header */}
+      <div className="sticky top-0 z-10 bg-primary text-primary-foreground px-6 py-3 border-b shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-primary-foreground/20 flex items-center justify-center text-sm font-bold">
+              {currentStepIndex + 1}
+            </div>
+            <div>
+              <div className="text-sm font-semibold">{currentStep.title || 'Untitled Step'}</div>
+              <div className="text-xs opacity-80">Step Configuration</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Step Header Information */}
         <Card>
@@ -182,6 +274,26 @@ export function StepEditor() {
                 onCheckedChange={(checked) => handleValidationChange('validateOnNext', checked)}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Step Validation Rules */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Step Validation Rules</CardTitle>
+            <CardDescription>
+              Advanced rules for validation, visibility, and navigation logic
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StepRuleBuilder
+              stepId={currentStep.id}
+              rules={stepRules}
+              onCreateRule={handleCreateRule}
+              onUpdateRule={handleUpdateRule}
+              onDeleteRule={handleDeleteRule}
+              onTestRule={handleTestRule}
+            />
           </CardContent>
         </Card>
 

@@ -1357,10 +1357,10 @@ function ABHAVerificationFlow({
       }
 
       // Extract token and profile from response
-      const responseData = result.data || result;
-      const authToken = responseData.token || result.tokens?.token || '';
+      const responseData = (result as any).data || result;
+      const authToken = responseData.token || (result as any).tokens?.token || '';
       const accounts = responseData.accounts || [];
-      const profileData = accounts.length > 0 ? accounts[0] : (result.profile || responseData);
+      const profileData = accounts.length > 0 ? accounts[0] : ((result as any).profile || responseData);
 
       setXToken(authToken);
       setProfile(profileData);
@@ -2142,8 +2142,8 @@ function SearchABHAByMobile({ session, onResponse }: { session: any; onResponse?
         result = await ABDM.searchAbhaByAbhaAddress(abhaAddress, undefined, { session });
       }
 
-      if (result && result.success && result.profile) {
-        setProfile(result.profile);
+      if (result && result.success && (result as any).profile) {
+        setProfile((result as any).profile);
         setSearchPerformed(true);
         setAuthStep('select-method');
         if (onResponse) {

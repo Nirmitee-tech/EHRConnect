@@ -28,9 +28,9 @@ interface FormProgress {
 export default function FormFillPage() {
   const router = useRouter();
   const params = useParams();
-  const templateId = params.id as string;
-  const patientId = params.patientId as string | undefined;
-  const encounterId = params.encounterId as string | undefined;
+  const templateId = params?.id as string;
+  const patientId = params?.patientId as string | undefined;
+  const encounterId = params?.encounterId as string | undefined;
 
   const [questionnaire, setQuestionnaire] = useState<FHIRQuestionnaire | null>(null);
   const [answers, setAnswers] = useState<Record<string, any>>({});

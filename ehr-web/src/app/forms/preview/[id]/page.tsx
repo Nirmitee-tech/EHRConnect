@@ -12,7 +12,7 @@ import { SidebarToggle } from '@/components/forms/sidebar-toggle';
 export default function FormPreviewPage() {
   const router = useRouter();
   const params = useParams();
-  const templateId = params.id as string;
+  const templateId = params?.id as string;
 
   const [template, setTemplate] = useState<FormTemplate | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,7 +35,7 @@ export default function FormPreviewPage() {
     try {
       setLoading(true);
       const data = await formsService.getTemplate(templateId);
-      setTemplate(data);
+      setTemplate(data.template);
     } catch (error) {
       console.error('Failed to load template:', error);
     } finally {

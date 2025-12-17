@@ -71,6 +71,8 @@ export default function PriorAuthDetailPage() {
   const [error, setError] = useState('');
 
   const loadDetail = async () => {
+    if (!params?.id) return;
+
     try {
       setLoading(true);
       setError('');
@@ -98,10 +100,10 @@ export default function PriorAuthDetailPage() {
   };
 
   useEffect(() => {
-    if (params.id) {
+    if (params?.id) {
       loadDetail();
     }
-  }, [params.id]);
+  }, [params?.id]);
 
   return (
     <div className="p-8 max-w-5xl mx-auto">

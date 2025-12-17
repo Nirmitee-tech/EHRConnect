@@ -75,7 +75,7 @@ const priorityColors = {
 export default function TaskDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const taskId = params.id as string;
+  const taskId = params?.id as string;
 
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);

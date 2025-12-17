@@ -64,9 +64,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { formsService } from '@/services/forms.service';
 import type { FHIRQuestionnaire, QuestionnaireItem } from '@/types/forms';
 import { cn } from '@/lib/utils';
+import { useFormBuilderStore } from '@/stores/form-builder-store';
+import { StepNavigator } from '@/components/forms/StepNavigator';
+import { StepEditor } from '@/components/forms/StepEditor';
+import { WizardProgress } from '@/components/forms/WizardProgress';
+import { StepNavigationControls } from '@/components/forms/StepNavigationControls';
+import { PreviewPanel } from '@/components/forms/preview/PreviewPanel';
+import { VisualFormBuilder } from '@/components/forms/VisualFormBuilder';
 
 // Component Categories
 const COMPONENT_CATEGORIES = {
@@ -142,7 +150,18 @@ const COMPONENT_CATEGORIES = {
 export default function FormBuilderPage() {
   const router = useRouter();
   const params = useParams();
-  const templateId = params.id?.[0];
+  const templateId = params?.id?.[0];
+
+  // Multi-step wizard store
+  const {
+    isMultiStep,
+    setMultiStep,
+    setFormId,
+    loadProgress,
+    saveProgress: saveStoreProgress,
+    isDirty: isStoreDirty,
+    isAutoSaving,
+  } = useFormBuilderStore();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -167,6 +186,27 @@ export default function FormBuilderPage() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [aiPrompt, setAIPrompt] = useState('');
 
+  // Initialize store with form ID
+  useEffect(() => {
+    if (templateId && templateId !== 'undefined') {
+      setFormId(templateId);
+      loadProgress(templateId);
+    }
+  }, [templateId, setFormId, loadProgress]);
+
+  // Auto-save interval (30s)
+  useEffect(() => {
+    if (!isStoreDirty || !isMultiStep) return;
+
+    const timer = setTimeout(() => {
+      saveStoreProgress().catch(err => {
+        console.error('Auto-save failed:', err);
+      });
+    }, 30000); // 30 seconds
+
+    return () => clearTimeout(timer);
+  }, [isStoreDirty, isMultiStep, saveStoreProgress]);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       if (!localStorage.getItem('userId')) {
@@ -190,15 +230,15 @@ export default function FormBuilderPage() {
 
     try {
       setLoading(true);
-      const template = await formsService.getTemplate(templateId);
-      setTitle(template.title);
-      setDescription(template.description || '');
-      setCategory(template.category || 'general');
-      setQuestions(template.questionnaire.item || []);
-      setHistory([template.questionnaire.item || []]);
+      const response = await formsService.getTemplate(templateId);
+      setTitle(response.template.title);
+      setDescription(response.template.description || '');
+      setCategory(response.template.category || 'general');
+      setQuestions(response.questionnaire.item || []);
+      setHistory([response.questionnaire.item || []]);
       setHistoryIndex(0);
-      if (template.settings?.contextTypes) {
-        setContextTypes(template.settings.contextTypes);
+      if (response.template.settings?.contextTypes) {
+        setContextTypes(response.template.settings.contextTypes);
       }
     } catch (error) {
       console.error('Failed to load template:', error);
@@ -471,18 +511,21 @@ export default function FormBuilderPage() {
           title,
           description,
           category,
-          questionnaire,
-          settings: { contextTypes }
+          questionnaire
         });
       } else {
-        await formsService.createTemplate({
+        const result = await formsService.createTemplate({
           title,
           description,
           category,
           tags: ['custom'],
-          questionnaire,
-          settings: { contextTypes }
+          questionnaire
         });
+
+        // Update formId in store if it was temporary
+        if (result?.id) {
+          setFormId(result.id);
+        }
       }
 
       alert('Form saved successfully!');
@@ -622,7 +665,7 @@ export default function FormBuilderPage() {
       comp.label.toLowerCase().includes(searchQuery.toLowerCase())
     );
     if (filtered.length > 0) {
-      acc[key] = { ...cat, components: filtered };
+      acc[key as keyof typeof COMPONENT_CATEGORIES] = { ...cat, components: filtered };
     }
     return acc;
   }, {} as typeof COMPONENT_CATEGORIES);
@@ -711,6 +754,22 @@ export default function FormBuilderPage() {
             AI Generate
           </Button>
 
+          <div className="h-5 w-px bg-gray-300 mx-1"></div>
+
+          {/* Multi-Step Toggle */}
+          <div className="flex items-center gap-2 px-2">
+            <Label htmlFor="multi-step-toggle" className="text-xs font-medium text-gray-700">
+              Multi-Step
+            </Label>
+            <Switch
+              id="multi-step-toggle"
+              checked={isMultiStep}
+              onCheckedChange={setMultiStep}
+            />
+          </div>
+
+          <div className="h-5 w-px bg-gray-300 mx-1"></div>
+
           <Button
             onClick={handleSave}
             disabled={!title || saving}
@@ -718,13 +777,21 @@ export default function FormBuilderPage() {
             className="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white"
           >
             <Save className="h-4 w-4 mr-1" />
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? 'Saving...' : isAutoSaving ? 'Auto-saving...' : 'Save'}
           </Button>
         </div>
       </div>
 
+      {/* Progress Bar (Multi-Step Mode) */}
+      {isMultiStep && <WizardProgress />}
+
       {/* Main Layout */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+        {isMultiStep ? (
+          /* New Visual Builder for Multi-Step Forms */
+          <VisualFormBuilder />
+        ) : (
+        <>
         <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Left: Component Library */}
           {leftPanelCollapsed ? (
@@ -980,9 +1047,16 @@ export default function FormBuilderPage() {
             ) : null}
           </div>
           )}
+
+          {/* Preview Panel (Right Side) */}
+          <PreviewPanel
+            title={title || 'Untitled Form'}
+            description={description}
+            questions={questions}
+          />
         </div>
 
-        {/* Bottom Panel */}
+        {/* Bottom Panel (for single-page forms) */}
         {bottomPanelCollapsed ? (
           <div className="h-8 shrink-0 border-t border-gray-200 bg-white flex items-center px-2">
             <button
@@ -1102,6 +1176,8 @@ export default function FormBuilderPage() {
             )}
           </div>
         </div>
+        )}
+        </>
         )}
       </div>
 

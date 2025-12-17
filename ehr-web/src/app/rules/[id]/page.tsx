@@ -29,7 +29,7 @@ export default function RuleDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const { success, error } = useToast();
-  const ruleId = params.id as string;
+  const ruleId = params?.id as string;
 
   const [rule, setRule] = useState<Rule | null>(null);
   const [executions, setExecutions] = useState<RuleExecution[]>([]);

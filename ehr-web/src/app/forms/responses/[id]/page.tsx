@@ -140,7 +140,8 @@ export default function ResponseViewerPage() {
     );
   }
 
-  const responseData = response.response || {};
+  // TODO: Fetch FHIR QuestionnaireResponse separately
+  const responseData = (response as any).response || {};
   const items = responseData.item || [];
 
   return (

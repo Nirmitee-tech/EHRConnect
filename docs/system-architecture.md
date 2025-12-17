@@ -153,6 +153,17 @@ User Action → Component Handler
 → Component Re-render
 ```
 
+**Form Builder State Flow (Multi-Step)**:
+```
+User Edits Step → Zustand Store Update
+→ Mark as Dirty
+→ Auto-save Timer (30s debounce)
+→ Save to localStorage (formId, currentStep, sessionId)
+→ API Call to Save Progress
+→ Update isDirty flag
+→ Show "Saved" indicator
+```
+
 ### Backend Architecture (ehr-api)
 
 **Technology Stack**:
@@ -555,6 +566,72 @@ Features:
 - Database connectivity
 - Redis connectivity
 - External service status
+
+## Multi-Step Form Builder Architecture
+
+### Component Structure
+```
+FormBuilderPage (Multi-step mode toggle)
+├── WizardProgress (Progress bar, step X of Y)
+├── Layout
+│   ├── StepNavigator (Left sidebar)
+│   │   ├── Step list with status icons
+│   │   ├── Add step button
+│   │   └── Delete step action
+│   │
+│   ├── StepEditor (Center canvas)
+│   │   ├── Step title/description
+│   │   ├── Navigation config (allow back, allow skip)
+│   │   ├── Validation config (required fields)
+│   │   └── Field assignment area
+│   │
+│   └── PropertiesPanel (Right sidebar - existing)
+│
+└── StepNavigationControls (Footer)
+    ├── Previous button (conditional)
+    ├── Auto-save indicator
+    ├── Next/Skip buttons
+    └── Keyboard shortcuts (Ctrl+Arrow keys)
+```
+
+### State Management (Zustand)
+- **Store**: `form-builder-store.ts`
+- **State**: formId, steps[], currentStepIndex, isDirty, isAutoSaving, sessionId
+- **Persistence**: localStorage (formId, currentStepIndex, sessionId only)
+- **API Sync**: Auto-save every 30s when dirty, manual save on demand
+
+### Type Definitions
+```typescript
+FormStep {
+  id, formId, stepOrder, title, description
+  fields: QuestionnaireItem[] // FHIR items assigned to this step
+  navigationConfig: { allowBack, allowSkip, nextButtonText }
+  validationConfig: { validateOnNext, requiredFields[] }
+  status: 'incomplete' | 'complete' | 'error'
+}
+
+FormProgress {
+  formId, userId, orgId, currentStep, stepData,
+  lastSavedAt, sessionId, isCompleted
+}
+```
+
+### API Endpoints
+- POST `/forms/:formId/steps` - Create step
+- GET `/forms/:formId/steps` - Get all steps
+- PUT `/forms/:formId/steps/:stepId` - Update step
+- DELETE `/forms/:formId/steps/:stepId` - Delete step
+- PUT `/forms/:formId/steps/reorder` - Reorder steps
+- POST `/forms/:formId/progress` - Save progress
+- GET `/forms/:formId/progress?sessionId=` - Load progress
+
+### Key Features
+1. **Step Navigation**: Sidebar with visual indicators (complete/incomplete/error)
+2. **Progress Tracking**: Linear progress bar showing X of Y steps, % complete
+3. **Auto-save**: 30s debounce, localStorage backup, API persistence
+4. **Validation**: Per-step validation rules, validate on next navigation
+5. **Keyboard Shortcuts**: Ctrl+Left/Right for step navigation
+6. **Mobile Responsive**: Collapsible sidebar for small screens
 
 ## Data Flow Examples
 

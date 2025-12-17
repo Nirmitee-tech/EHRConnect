@@ -248,10 +248,10 @@ export default function CountrySettingsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {availablePacks.map((pack) => (
-                        <SelectItem key={pack.country_code} value={pack.country_code}>
+                        <SelectItem key={pack.countryCode} value={pack.countryCode}>
                           <div className="flex items-center gap-2">
-                            <span className="font-medium">{pack.country_name}</span>
-                            <span className="text-gray-500">({pack.country_code})</span>
+                            <span className="font-medium">{pack.countryName}</span>
+                            <span className="text-gray-500">({pack.countryCode})</span>
                           </div>
                         </SelectItem>
                       ))}
@@ -262,62 +262,62 @@ export default function CountrySettingsPage() {
                 {selectedPack && (
                   <div className="space-y-6 rounded-lg border border-gray-200 bg-gray-50 p-6">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{selectedPack.country_name}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">{selectedPack.countryName}</h3>
                       <p className="text-sm text-gray-600">{selectedPack.region}</p>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide font-medium">
-                          <DollarSign className="h-3 w-3" />
-                          Currency
+                          <Globe className="h-3 w-3" />
+                          Country Code
                         </div>
-                        <p className="text-sm font-semibold text-gray-900">{selectedPack.default_currency}</p>
+                        <p className="text-sm font-semibold text-gray-900">{selectedPack.countryCode}</p>
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide font-medium">
-                          <Clock className="h-3 w-3" />
-                          Timezone
+                          <CheckCircle2 className="h-3 w-3" />
+                          Pack Version
                         </div>
-                        <p className="text-sm font-semibold text-gray-900">{selectedPack.default_timezone}</p>
+                        <p className="text-sm font-semibold text-gray-900">{selectedPack.packVersion}</p>
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide font-medium">
-                          <Calendar className="h-3 w-3" />
-                          Date Format
+                          <MapPin className="h-3 w-3" />
+                          Region
                         </div>
-                        <p className="text-sm font-semibold text-gray-900">{selectedPack.date_format}</p>
+                        <p className="text-sm font-semibold text-gray-900">{selectedPack.region}</p>
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide font-medium">
-                          <Languages className="h-3 w-3" />
-                          Language
+                          <Settings className="h-3 w-3" />
+                          Pack Slug
                         </div>
-                        <p className="text-sm font-semibold text-gray-900">{selectedPack.default_language.toUpperCase()}</p>
+                        <p className="text-sm font-semibold text-gray-900">{selectedPack.packSlug}</p>
                       </div>
                     </div>
 
-                    {selectedPack.regulatory_body && (
+                    {selectedPack.regulatoryBody && (
                       <div className="pt-4 border-t border-gray-200">
                         <Label className="text-xs text-gray-500 uppercase tracking-wide font-medium">Regulatory Body</Label>
-                        <p className="text-sm font-medium text-gray-900 mt-1">{selectedPack.regulatory_body}</p>
+                        <p className="text-sm font-medium text-gray-900 mt-1">{selectedPack.regulatoryBody}</p>
                       </div>
                     )}
 
                     <div className="flex flex-wrap gap-2 pt-2">
-                      {selectedPack.hipaa_compliant && (
+                      {selectedPack.hipaaCompliant && (
                         <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-blue-200">
                           <Shield className="mr-1 h-3 w-3" />
                           HIPAA Compliant
                         </Badge>
                       )}
-                      {selectedPack.gdpr_compliant && (
+                      {selectedPack.gdprCompliant && (
                         <Badge variant="secondary" className="bg-purple-100 text-purple-700 border-purple-200">
                           <Shield className="mr-1 h-3 w-3" />
                           GDPR Compliant
                         </Badge>
                       )}
-                      {selectedPack.data_residency_required && (
+                      {selectedPack.dataResidencyRequired && (
                         <Badge variant="secondary" className="bg-orange-100 text-orange-700 border-orange-200">
                           Data Residency Required
                         </Badge>
@@ -357,7 +357,7 @@ export default function CountrySettingsPage() {
                   Country-Specific Modules
                 </CardTitle>
                 <CardDescription>
-                  Enable or disable modules for {selectedCountry ? `${selectedPack?.country_name}` : 'the selected country'}
+                  Enable or disable modules for {selectedCountry ? `${selectedPack?.countryName}` : 'the selected country'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
@@ -444,18 +444,19 @@ export default function CountrySettingsPage() {
                             <Label className="text-xs text-gray-500 uppercase tracking-wide font-medium">Country</Label>
                             <p className="text-lg font-semibold text-gray-900 mt-1">{countryPack.countryName}</p>
                           </div>
+                          {/* Localization info - requires separate Localization API call */}
                           <div className="grid grid-cols-3 gap-6">
                             <div>
-                              <Label className="text-xs text-gray-500 uppercase tracking-wide font-medium">Currency</Label>
-                              <p className="text-sm font-medium text-gray-900 mt-1">{countryPack.modules.default_currency}</p>
+                              <Label className="text-xs text-gray-500 uppercase tracking-wide font-medium">Country Code</Label>
+                              <p className="text-sm font-medium text-gray-900 mt-1">{countryPack.countryCode}</p>
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-500 uppercase tracking-wide font-medium">Language</Label>
-                              <p className="text-sm font-medium text-gray-900 mt-1">{countryPack.modules.default_language}</p>
+                              <Label className="text-xs text-gray-500 uppercase tracking-wide font-medium">Pack Version</Label>
+                              <p className="text-sm font-medium text-gray-900 mt-1">{countryPack.packVersion}</p>
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-500 uppercase tracking-wide font-medium">Timezone</Label>
-                              <p className="text-sm font-medium text-gray-900 mt-1">{countryPack.modules.default_timezone}</p>
+                              <Label className="text-xs text-gray-500 uppercase tracking-wide font-medium">Region</Label>
+                              <p className="text-sm font-medium text-gray-900 mt-1">{countryPack.region}</p>
                             </div>
                           </div>
                         </div>
