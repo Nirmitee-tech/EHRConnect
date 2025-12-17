@@ -68,12 +68,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           setThemeSettings(data.themeSettings);
           applyThemeToDOM(data.themeSettings);
         } else {
-          console.error('Failed to fetch theme settings');
+          const statusText = response.status === 404 ? 'Organization not found' : 
+                           response.status === 403 ? 'Access denied' :
+                           `Server error (${response.status})`;
+          console.error(`Failed to fetch theme settings: ${statusText}`);
           applyThemeToDOM(defaultTheme);
         }
       } catch (err) {
-        console.error('Error fetching theme settings:', err);
-        setError('Failed to load theme settings');
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        console.error('Error fetching theme settings:', errorMessage);
+        setError(`Failed to load theme settings: ${errorMessage}`);
         applyThemeToDOM(defaultTheme);
       } finally {
         setIsLoading(false);
@@ -85,6 +89,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Apply theme to DOM as CSS variables
   const applyThemeToDOM = (theme: ThemeSettings) => {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+    
     const root = document.documentElement;
     root.style.setProperty('--theme-primary', theme.primaryColor);
     root.style.setProperty('--theme-secondary', theme.secondaryColor);

@@ -36,6 +36,8 @@ export default function AppearancePage() {
   };
 
   const handleReset = async () => {
+    // TODO: Replace with custom confirmation modal for better UX
+    // For now using native confirm - should be replaced with a custom modal component
     if (confirm('Are you sure you want to reset to default theme?')) {
       setIsSaving(true);
       try {
@@ -53,11 +55,28 @@ export default function AppearancePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file type
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+    if (!validTypes.includes(file.type)) {
+      alert('Please upload a valid image file (PNG, JPG, or SVG)');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    if (file.size > maxSize) {
+      alert('File size must be less than 2MB');
+      return;
+    }
+
     // For now, we'll use a data URL. In production, upload to cloud storage
     const reader = new FileReader();
     reader.onloadend = () => {
       const dataUrl = reader.result as string;
       setLocalSettings({ ...localSettings, logoUrl: dataUrl });
+    };
+    reader.onerror = () => {
+      alert('Failed to read file. Please try again.');
     };
     reader.readAsDataURL(file);
   };

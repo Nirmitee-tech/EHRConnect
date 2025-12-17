@@ -621,6 +621,8 @@ class OrganizationService {
    */
   async updateThemeSettings(orgId, themeSettings, userId) {
     // Validate theme settings
+    // Note: Only accepts 6-digit hex colors (#RRGGBB format)
+    // 3-digit hex colors (#RGB) are not supported
     const validColors = /^#[0-9A-Fa-f]{6}$/;
     const colorFields = [
       'primaryColor',
@@ -634,7 +636,7 @@ class OrganizationService {
     // Validate color formats if provided
     for (const field of colorFields) {
       if (themeSettings[field] && !validColors.test(themeSettings[field])) {
-        throw new Error(`Invalid color format for ${field}. Use hex format (#RRGGBB)`);
+        throw new Error(`Invalid color format for ${field}. Use 6-digit hex format (#RRGGBB, e.g., #4A90E2)`);
       }
     }
 

@@ -89,8 +89,15 @@ export function ThemedBadge({ variant = 'primary', children, className }: Themed
 
   const backgroundColor = getThemeColor();
   
-  // Calculate a lighter version for background
-  const lighterBg = backgroundColor + '20'; // 20 = 12.5% opacity
+  // Convert hex to rgba with 0.12 opacity for background
+  const hexToRgba = (hex: string, alpha: number) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
+  const lighterBg = hexToRgba(backgroundColor, 0.12);
 
   return (
     <span
