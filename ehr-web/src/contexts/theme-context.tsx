@@ -46,7 +46,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Fetch theme settings on mount
   useEffect(() => {
     const fetchThemeSettings = async () => {
-      if (!session?.user?.orgId) {
+      // Use org_id from the root session object as defined in types/next-auth.d.ts
+      if (!session?.org_id) {
         setIsLoading(false);
         return;
       }
@@ -58,12 +59,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         }
 
         const response = await fetch(
-          `${apiUrl}/api/orgs/${session.user.orgId}/theme`,
+          `${apiUrl}/api/orgs/${session.org_id}/theme`,
           {
             headers: {
-              'x-user-id': session.user.id,
-              'x-org-id': session.user.orgId,
-              'x-user-roles': JSON.stringify(session.user.roles || []),
+              'x-user-id': session.user?.id || '',
+              'x-org-id': session.org_id,
+              'x-user-roles': JSON.stringify(session.roles || []),
             }
           }
         );
@@ -73,9 +74,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           setThemeSettings(data.themeSettings);
           applyThemeToDOM(data.themeSettings);
         } else {
-          const statusText = response.status === 404 ? 'Organization not found' : 
-                           response.status === 403 ? 'Access denied' :
-                           `Server error (${response.status})`;
+          const statusText = response.status === 404 ? 'Organization not found' :
+            response.status === 403 ? 'Access denied' :
+              `Server error (${response.status})`;
           console.error(`Failed to fetch theme settings: ${statusText}`);
           applyThemeToDOM(defaultTheme);
         }
@@ -96,7 +97,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const applyThemeToDOM = (theme: ThemeSettings) => {
     // Only run in browser environment
     if (typeof window === 'undefined') return;
-    
+
     const root = document.documentElement;
     root.style.setProperty('--theme-primary', theme.primaryColor);
     root.style.setProperty('--theme-secondary', theme.secondaryColor);
@@ -105,7 +106,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     root.style.setProperty('--theme-sidebar-active', theme.sidebarActiveColor);
     root.style.setProperty('--theme-accent', theme.accentColor);
     root.style.setProperty('--theme-font-family', theme.fontFamily);
-    
+
     // Also update the primary color used by UI components
     root.style.setProperty('--primary', theme.primaryColor);
     root.style.setProperty('--sidebar-primary', theme.primaryColor);
@@ -120,7 +121,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       throw new Error(errorMessage);
     }
 
-    if (!session.user?.orgId) {
+    if (!session.org_id) {
       const errorMessage = 'No organization context found. Please ensure you are logged in.';
       setError(errorMessage);
       throw new Error(errorMessage);
@@ -136,14 +137,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       }
 
       const response = await fetch(
-        `${apiUrl}/api/orgs/${session.user.orgId}/theme`,
+        `${apiUrl}/api/orgs/${session.org_id}/theme`,
         {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'x-user-id': session.user.id,
-            'x-org-id': session.user.orgId,
-            'x-user-roles': JSON.stringify(session.user.roles || []),
+            'x-user-id': session.user?.id || '',
+            'x-org-id': session.org_id,
+            'x-user-roles': JSON.stringify(session.roles || []),
           },
           body: JSON.stringify(settings)
         }
