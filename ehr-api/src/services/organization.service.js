@@ -586,6 +586,81 @@ class OrganizationService {
       };
     });
   }
+
+  /**
+   * Get organization theme settings
+   */
+  async getThemeSettings(orgId) {
+    const result = await query(
+      'SELECT theme_settings FROM organizations WHERE id = $1',
+      [orgId]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Organization not found');
+    }
+
+    // Return default theme if not set
+    const defaultTheme = {
+      primaryColor: '#4A90E2',
+      secondaryColor: '#9B59B6',
+      sidebarBackgroundColor: '#0F1E56',
+      sidebarTextColor: '#B0B7D0',
+      sidebarActiveColor: '#3342A5',
+      accentColor: '#10B981',
+      fontFamily: 'Inter, sans-serif',
+      logoUrl: null,
+      faviconUrl: null
+    };
+
+    return result.rows[0].theme_settings || defaultTheme;
+  }
+
+  /**
+   * Update organization theme settings
+   */
+  async updateThemeSettings(orgId, themeSettings, userId) {
+    // Validate theme settings
+    const validColors = /^#[0-9A-Fa-f]{6}$/;
+    const colorFields = [
+      'primaryColor',
+      'secondaryColor',
+      'sidebarBackgroundColor',
+      'sidebarTextColor',
+      'sidebarActiveColor',
+      'accentColor'
+    ];
+
+    // Validate color formats if provided
+    for (const field of colorFields) {
+      if (themeSettings[field] && !validColors.test(themeSettings[field])) {
+        throw new Error(`Invalid color format for ${field}. Use hex format (#RRGGBB)`);
+      }
+    }
+
+    // Get current theme settings
+    const currentTheme = await this.getThemeSettings(orgId);
+    
+    // Merge with new settings
+    const updatedTheme = {
+      ...currentTheme,
+      ...themeSettings
+    };
+
+    const result = await query(
+      `UPDATE organizations 
+       SET theme_settings = $1, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $2 
+       RETURNING theme_settings`,
+      [JSON.stringify(updatedTheme), orgId]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Organization not found');
+    }
+
+    return result.rows[0].theme_settings;
+  }
 }
 
 module.exports = new OrganizationService();

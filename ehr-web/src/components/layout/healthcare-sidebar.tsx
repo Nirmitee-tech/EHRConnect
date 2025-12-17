@@ -5,22 +5,33 @@ import { usePathname } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Building2, TrendingUp, Users, Search } from 'lucide-react';
 import { useFacility } from '@/contexts/facility-context';
 import { useResourceCounts } from '@/hooks/use-resource-counts';
+import { useTheme } from '@/contexts/theme-context';
 import { NAVIGATION_SECTIONS } from '@/config/navigation.config';
 import { NavItem } from './nav-item';
 import { cn } from '@/lib/utils';
 import { useUIPreferences } from '@/contexts/ui-preferences-context';
 
-const Logo = ({ isCollapsed }: { isCollapsed: boolean }) => (
+const Logo = ({ isCollapsed, logoUrl, primaryColor }: { 
+  isCollapsed: boolean; 
+  logoUrl: string | null;
+  primaryColor: string;
+}) => (
   <div className="flex items-center space-x-2">
-    <div className="w-8 h-8 bg-[#4A90E2] rounded-lg flex items-center justify-center">
-      <div className="w-4 h-4 bg-white rounded" />
-    </div>
+    {logoUrl ? (
+      <div className="w-8 h-8 flex items-center justify-center">
+        <img src={logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
+      </div>
+    ) : (
+      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: primaryColor }}>
+        <div className="w-4 h-4 bg-white rounded" />
+      </div>
+    )}
     {!isCollapsed && (
       <div>
         <h2 className="text-base font-bold text-white">
           EHR Connect
         </h2>
-        <p className="text-[9px] text-[#B0B7D0] font-medium tracking-wide">HEALTHCARE SYSTEM</p>
+        <p className="text-[9px] font-medium tracking-wide" style={{ color: 'var(--theme-sidebar-text)' }}>HEALTHCARE SYSTEM</p>
       </div>
     )}
   </div>
@@ -81,6 +92,7 @@ export function HealthcareSidebar() {
   const { currentFacility } = useFacility();
   const { patients, staff } = useResourceCounts(currentFacility?.id);
   const { sidebarCollapsed, setSidebarCollapsed } = useUIPreferences();
+  const { themeSettings } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
 
   // Use the context state for collapsed
@@ -108,13 +120,18 @@ export function HealthcareSidebar() {
   return (
     <aside
       className={cn(
-        'bg-[#0F1E56] flex flex-col h-full transition-all duration-300',
+        'flex flex-col h-full transition-all duration-300',
         isCollapsed ? 'w-16' : 'w-64'
       )}
+      style={{ 
+        backgroundColor: themeSettings.sidebarBackgroundColor,
+        color: themeSettings.sidebarTextColor,
+        fontFamily: themeSettings.fontFamily
+      }}
     >
-      <div className={cn('p-3 border-b border-[#1E2A70]/30', isCollapsed ? 'px-2' : 'px-3')}>
+      <div className={cn('p-3 border-b', isCollapsed ? 'px-2' : 'px-3')} style={{ borderColor: 'rgba(30, 42, 112, 0.3)' }}>
         <div className="flex items-center justify-between">
-          <Logo isCollapsed={isCollapsed} />
+          <Logo isCollapsed={isCollapsed} logoUrl={themeSettings.logoUrl} primaryColor={themeSettings.primaryColor} />
           <button
             onClick={() => setSidebarCollapsed(!isCollapsed)}
             className="p-1.5 rounded-lg border border-[#1E2A70] bg-[#1E2A70] hover:bg-[#3342A5] transition-colors"

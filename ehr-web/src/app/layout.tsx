@@ -4,6 +4,7 @@ import AuthSessionProvider from "@/providers/session-provider";
 import { FacilityProvider } from "@/contexts/facility-context";
 import { SpecialtyProvider } from "@/contexts/specialty-context";
 import { CountryProvider } from "@/contexts/country-context";
+import { ThemeProvider } from "@/contexts/theme-context";
 import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
 import { ToastProvider } from "@/hooks/useToast";
 import { cookies } from "next/headers";
@@ -33,17 +34,19 @@ export default async function RootLayout({
         <SpecialtyInitializer />
         <ToastProvider>
           <AuthSessionProvider>
-            <SpecialtyProvider>
-              <CountryProvider>
-                <LocationProvider>
-                  <FacilityProvider>
-                    <AuthenticatedLayout>
-                      {children}
-                    </AuthenticatedLayout>
-                  </FacilityProvider>
-                </LocationProvider>
-              </CountryProvider>
-            </SpecialtyProvider>
+            <ThemeProvider>
+              <SpecialtyProvider>
+                <CountryProvider>
+                  <LocationProvider>
+                    <FacilityProvider>
+                      <AuthenticatedLayout>
+                        {children}
+                      </AuthenticatedLayout>
+                    </FacilityProvider>
+                  </LocationProvider>
+                </CountryProvider>
+              </SpecialtyProvider>
+            </ThemeProvider>
           </AuthSessionProvider>
         </ToastProvider>
       </body>

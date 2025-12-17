@@ -236,4 +236,60 @@ router.patch('/:orgId/departments/:departmentId', checkOrgAccess, async (req, re
   }
 });
 
+// =====================================================
+// THEME SETTINGS ROUTES
+// =====================================================
+
+/**
+ * GET /api/orgs/:orgId/theme
+ * Get organization theme settings
+ */
+router.get('/:orgId/theme', checkOrgAccess, async (req, res) => {
+  try {
+    const themeSettings = await organizationService.getThemeSettings(req.params.orgId);
+    res.json({ themeSettings });
+  } catch (error) {
+    console.error('Get theme settings error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * PUT /api/orgs/:orgId/theme
+ * Update organization theme settings
+ */
+router.put('/:orgId/theme', checkOrgAccess, async (req, res) => {
+  try {
+    const themeSettings = await organizationService.updateThemeSettings(
+      req.params.orgId,
+      req.body,
+      req.userContext.userId
+    );
+    res.json({ themeSettings });
+  } catch (error) {
+    console.error('Update theme settings error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/orgs/:orgId/theme/logo
+ * Upload organization logo
+ */
+router.post('/:orgId/theme/logo', checkOrgAccess, async (req, res) => {
+  try {
+    // Logo upload will be handled by multer middleware
+    const { logoUrl } = req.body;
+    const themeSettings = await organizationService.updateThemeSettings(
+      req.params.orgId,
+      { logoUrl },
+      req.userContext.userId
+    );
+    res.json({ themeSettings });
+  } catch (error) {
+    console.error('Upload logo error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
 module.exports = router;
