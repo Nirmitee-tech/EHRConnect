@@ -49,6 +49,15 @@
   /* EHR Connect Theme - Keycloak Purple/Green Palette */
   --radius: 0.625rem;
   
+  /* Theme Builder Custom Variables */
+  --theme-primary: #4A90E2;
+  --theme-secondary: #9B59B6;
+  --theme-sidebar-bg: #0F1E56;
+  --theme-sidebar-text: #B0B7D0;
+  --theme-sidebar-active: #3342A5;
+  --theme-accent: #10B981;
+  --theme-font-family: 'Inter', sans-serif;
+  
   /* Background colors */
   --background: #F5F6F8;
   --foreground: #1F2937;
