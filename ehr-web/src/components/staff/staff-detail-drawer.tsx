@@ -104,8 +104,8 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
                   key={id}
                   onClick={() => setActiveSection(id as any)}
                   className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeSection === id
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
                     }`}
                 >
                   {Icon && <Icon className="h-4 w-4" />}
@@ -219,7 +219,7 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
                         type="checkbox"
                         checked={hours.isWorking}
                         onChange={(e) => updateOfficeHours(index, { isWorking: e.target.checked })}
-                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                        className="h-4 w-4 rounded border-gray-300 text-primary accent-primary focus:ring-primary"
                       />
                       <span className="ml-2 text-sm text-gray-700">Working</span>
                     </label>
@@ -351,8 +351,8 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
                         key={color}
                         onClick={() => setEditedStaff({ ...editedStaff, color })}
                         className={`h-12 rounded-lg transition-all ${editedStaff.color === color
-                            ? 'ring-4 ring-offset-2 ring-primary/50'
-                            : 'hover:scale-105'
+                          ? 'ring-4 ring-offset-2 ring-primary/50'
+                          : 'hover:scale-105'
                           }`}
                         style={{ backgroundColor: color }}
                       />
