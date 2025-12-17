@@ -4,6 +4,7 @@ import React from 'react';
 import { useTheme } from '@/contexts/theme-context';
 import { Button as DesignSystemButton, buttonVariants } from '@nirmitee.io/design-system';
 import { cn } from '@/lib/utils';
+import { hexToRgba } from '@/lib/theme-utils';
 
 interface ThemedButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'accent' | 'default';
@@ -88,15 +89,6 @@ export function ThemedBadge({ variant = 'primary', children, className }: Themed
   };
 
   const backgroundColor = getThemeColor();
-  
-  // Convert hex to rgba with 0.12 opacity for background
-  const hexToRgba = (hex: string, alpha: number) => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  };
-
   const lighterBg = hexToRgba(backgroundColor, 0.12);
 
   return (

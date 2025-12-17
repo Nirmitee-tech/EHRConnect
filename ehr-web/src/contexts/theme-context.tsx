@@ -52,8 +52,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        if (!apiUrl) {
+          throw new Error('API URL not configured');
+        }
+
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/orgs/${session.user.orgId}/theme`,
+          `${apiUrl}/api/orgs/${session.user.orgId}/theme`,
           {
             headers: {
               'x-user-id': session.user.id,
@@ -112,8 +117,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const newTheme = { ...themeSettings, ...settings };
 
     try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (!apiUrl) {
+        throw new Error('API URL not configured');
+      }
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/orgs/${session.user.orgId}/theme`,
+        `${apiUrl}/api/orgs/${session.user.orgId}/theme`,
         {
           method: 'PUT',
           headers: {
