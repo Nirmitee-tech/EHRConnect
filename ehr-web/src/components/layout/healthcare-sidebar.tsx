@@ -11,8 +11,8 @@ import { NavItem } from './nav-item';
 import { cn } from '@/lib/utils';
 import { useUIPreferences } from '@/contexts/ui-preferences-context';
 
-const Logo = ({ isCollapsed, logoUrl, primaryColor }: { 
-  isCollapsed: boolean; 
+const Logo = ({ isCollapsed, logoUrl, primaryColor }: {
+  isCollapsed: boolean;
   logoUrl: string | null;
   primaryColor: string;
 }) => (
@@ -123,7 +123,7 @@ export function HealthcareSidebar() {
         'flex flex-col h-full transition-all duration-300',
         isCollapsed ? 'w-16' : 'w-64'
       )}
-      style={{ 
+      style={{
         backgroundColor: themeSettings.sidebarBackgroundColor,
         color: themeSettings.sidebarTextColor,
         fontFamily: themeSettings.fontFamily
@@ -134,13 +134,13 @@ export function HealthcareSidebar() {
           <Logo isCollapsed={isCollapsed} logoUrl={themeSettings.logoUrl} primaryColor={themeSettings.primaryColor} />
           <button
             onClick={() => setSidebarCollapsed(!isCollapsed)}
-            className="p-1.5 rounded-lg border border-[#1E2A70] bg-[#1E2A70] hover:bg-[#3342A5] transition-colors"
+            className="p-1.5 rounded-lg border border-white/20 bg-white/10 hover:bg-white/20 transition-colors"
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isCollapsed ? (
-              <ChevronRight className="h-3.5 w-3.5 text-[#B0B7D0]" />
+              <ChevronRight className="h-3.5 w-3.5 text-white/80" />
             ) : (
-              <ChevronLeft className="h-3.5 w-3.5 text-[#B0B7D0]" />
+              <ChevronLeft className="h-3.5 w-3.5 text-white/80" />
             )}
           </button>
         </div>

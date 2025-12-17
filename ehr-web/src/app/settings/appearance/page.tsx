@@ -85,13 +85,13 @@ export default function AppearancePage() {
     reader.readAsDataURL(file);
   };
 
-  const ColorInput = ({ 
-    label, 
-    field, 
-    description 
-  }: { 
-    label: string; 
-    field: keyof typeof localSettings; 
+  const ColorInput = ({
+    label,
+    field,
+    description
+  }: {
+    label: string;
+    field: keyof typeof localSettings;
     description: string;
   }) => (
     <div className="space-y-2">
@@ -108,7 +108,7 @@ export default function AppearancePage() {
           type="text"
           value={localSettings[field] as string}
           onChange={(e) => handleColorChange(field, e.target.value)}
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
           placeholder="#4A90E2"
         />
       </div>
@@ -119,7 +119,7 @@ export default function AppearancePage() {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading theme settings...</p>
         </div>
       </div>
@@ -133,8 +133,8 @@ export default function AppearancePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
-              <Link 
-                href="/settings" 
+              <Link
+                href="/settings"
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="h-5 w-5 text-gray-600" />
@@ -163,7 +163,7 @@ export default function AppearancePage() {
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:opacity-90 transition-colors flex items-center space-x-2 disabled:opacity-50"
               >
                 <Save className="h-4 w-4" />
                 <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
@@ -198,7 +198,7 @@ export default function AppearancePage() {
             {/* Logo Upload */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center space-x-3 mb-4">
-                <Palette className="h-5 w-5 text-blue-600" />
+                <Palette className="h-5 w-5 text-primary" />
                 <h2 className="text-lg font-semibold text-gray-900">Logo & Branding</h2>
               </div>
               <div className="space-y-4">
@@ -209,9 +209,9 @@ export default function AppearancePage() {
                   <div className="flex items-center space-x-4">
                     {localSettings.logoUrl && (
                       <div className="w-24 h-24 rounded-lg border-2 border-gray-200 flex items-center justify-center bg-gray-50 overflow-hidden">
-                        <img 
-                          src={localSettings.logoUrl} 
-                          alt="Logo" 
+                        <img
+                          src={localSettings.logoUrl}
+                          alt="Logo"
                           className="max-w-full max-h-full object-contain"
                         />
                       </div>
@@ -223,7 +223,7 @@ export default function AppearancePage() {
                         onChange={handleLogoUpload}
                         className="hidden"
                       />
-                      <div className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+                      <div className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:opacity-90 transition-colors flex items-center space-x-2">
                         <Upload className="h-4 w-4" />
                         <span>Upload Logo</span>
                       </div>
@@ -239,7 +239,7 @@ export default function AppearancePage() {
             {/* Primary Colors */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center space-x-3 mb-4">
-                <Palette className="h-5 w-5 text-blue-600" />
+                <Palette className="h-5 w-5 text-primary" />
                 <h2 className="text-lg font-semibold text-gray-900">Primary Colors</h2>
               </div>
               <div className="space-y-4">
@@ -264,7 +264,7 @@ export default function AppearancePage() {
             {/* Sidebar Colors */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center space-x-3 mb-4">
-                <Palette className="h-5 w-5 text-blue-600" />
+                <Palette className="h-5 w-5 text-primary" />
                 <h2 className="text-lg font-semibold text-gray-900">Sidebar Theme</h2>
               </div>
               <div className="space-y-4">
@@ -289,7 +289,7 @@ export default function AppearancePage() {
             {/* Typography */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center space-x-3 mb-4">
-                <Palette className="h-5 w-5 text-blue-600" />
+                <Palette className="h-5 w-5 text-primary" />
                 <h2 className="text-lg font-semibold text-gray-900">Typography</h2>
               </div>
               <div className="space-y-2">
@@ -297,7 +297,7 @@ export default function AppearancePage() {
                 <select
                   value={localSettings.fontFamily}
                   onChange={(e) => setLocalSettings({ ...localSettings, fontFamily: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 >
                   <option value="Inter, sans-serif">Inter (Default)</option>
                   <option value="Roboto, sans-serif">Roboto</option>
@@ -315,26 +315,26 @@ export default function AppearancePage() {
             <div className="lg:sticky lg:top-8 h-fit">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Live Preview</h2>
-                
+
                 {/* Sidebar Preview */}
-                <div 
+                <div
                   className="rounded-lg overflow-hidden border border-gray-200"
                   style={{ fontFamily: localSettings.fontFamily }}
                 >
-                  <div 
+                  <div
                     className="p-4"
                     style={{ backgroundColor: localSettings.sidebarBackgroundColor }}
                   >
                     {/* Logo Area */}
                     <div className="flex items-center space-x-2 mb-6">
                       {localSettings.logoUrl ? (
-                        <img 
-                          src={localSettings.logoUrl} 
-                          alt="Logo" 
+                        <img
+                          src={localSettings.logoUrl}
+                          alt="Logo"
                           className="w-8 h-8 object-contain"
                         />
                       ) : (
-                        <div 
+                        <div
                           className="w-8 h-8 rounded-lg flex items-center justify-center"
                           style={{ backgroundColor: localSettings.primaryColor }}
                         >
@@ -342,13 +342,13 @@ export default function AppearancePage() {
                         </div>
                       )}
                       <div>
-                        <h2 
+                        <h2
                           className="text-base font-bold"
                           style={{ color: '#ffffff' }}
                         >
                           EHR Connect
                         </h2>
-                        <p 
+                        <p
                           className="text-[9px] font-medium tracking-wide"
                           style={{ color: localSettings.sidebarTextColor }}
                         >
@@ -368,7 +368,7 @@ export default function AppearancePage() {
                             color: '#ffffff'
                           }}
                         >
-                          <div 
+                          <div
                             className="w-1.5 h-1.5 rounded-full"
                             style={{ backgroundColor: localSettings.accentColor }}
                           />
@@ -396,7 +396,7 @@ export default function AppearancePage() {
                         </button>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <div 
+                        <div
                           className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: localSettings.accentColor }}
                         />

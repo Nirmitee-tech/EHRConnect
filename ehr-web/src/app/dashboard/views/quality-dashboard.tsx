@@ -306,12 +306,11 @@ export default function QualityDashboard({ filters }: DashboardProps) {
                     ) : (
                       <TrendingUp className={`h-3.5 w-3.5 ${metric.better === 'higher' ? 'text-emerald-600' : 'text-red-600'}`} />
                     )}
-                    <span className={`text-sm font-bold ${
-                      (metric.better === 'lower' && metric.value <= metric.target) ||
-                      (metric.better === 'higher' && metric.value >= metric.target)
+                    <span className={`text-sm font-bold ${(metric.better === 'lower' && metric.value <= metric.target) ||
+                        (metric.better === 'higher' && metric.value >= metric.target)
                         ? 'text-emerald-600'
                         : 'text-amber-600'
-                    }`}>
+                      }`}>
                       {metric.value}%
                     </span>
                   </div>
@@ -375,14 +374,14 @@ export default function QualityDashboard({ filters }: DashboardProps) {
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-3 rounded border border-blue-200 bg-blue-50/50">
-                <Star className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 p-3 rounded border border-primary/20 bg-primary/5">
+                <Star className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900">Patient Satisfaction Trending Up</p>
                   <p className="text-xs text-gray-600 mt-0.5">Average rating increased from 4.4 to 4.6 - all categories improved</p>
                   <div className="mt-2 flex gap-2">
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">1,245 responses</span>
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">+0.2 improvement</span>
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">1,245 responses</span>
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">+0.2 improvement</span>
                   </div>
                 </div>
               </div>

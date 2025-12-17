@@ -28,8 +28,8 @@ export function DayView({
   const [createStart, setCreateStart] = useState<number | null>(null);
   const [createEnd, setCreateEnd] = useState<number | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [resizingAppointment, setResizingAppointment] = useState<{appointment: Appointment; edge: 'top' | 'bottom'} | null>(null);
-  const [resizePreview, setResizePreview] = useState<{newStart?: Date; newEnd?: Date} | null>(null);
+  const [resizingAppointment, setResizingAppointment] = useState<{ appointment: Appointment; edge: 'top' | 'bottom' } | null>(null);
+  const [resizePreview, setResizePreview] = useState<{ newStart?: Date; newEnd?: Date } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
 
@@ -265,7 +265,7 @@ export function DayView({
       const newEndTime = resizePreview.newEnd || new Date(appointment.endTime);
 
       if (newStartTime.getTime() !== new Date(appointment.startTime).getTime() ||
-          newEndTime.getTime() !== new Date(appointment.endTime).getTime()) {
+        newEndTime.getTime() !== new Date(appointment.endTime).getTime()) {
         onAppointmentResize?.(appointment, newStartTime, newEndTime);
       }
     }
@@ -377,16 +377,15 @@ export function DayView({
       }}
     >
       {/* Day header with stats */}
-      <div className="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white shadow-sm">
+      <div className="border-b border-gray-200 bg-gradient-to-r from-primary/5 to-white shadow-sm">
         <div className="px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
               <div
-                className={`flex h-14 w-14 items-center justify-center rounded-xl text-2xl font-bold shadow-md ${
-                  isToday
+                className={`flex h-14 w-14 items-center justify-center rounded-xl text-2xl font-bold shadow-md ${isToday
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-white text-gray-700 border-2 border-gray-200'
-                }`}
+                  }`}
               >
                 {currentDate.getDate()}
               </div>
@@ -444,9 +443,8 @@ export function DayView({
                   <div
                     key={apt.id}
                     onClick={() => onAppointmentClick?.(apt)}
-                    className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-medium shadow-sm hover:shadow transition-all ${
-                      useCustomColor ? '' : style.bg
-                    } ${style.text}`}
+                    className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-medium shadow-sm hover:shadow transition-all ${useCustomColor ? '' : style.bg
+                      } ${style.text}`}
                     style={useCustomColor ? {
                       backgroundColor: apt.practitionerColor
                     } : undefined}
@@ -498,11 +496,9 @@ export function DayView({
               return (
                 <div
                   key={idx}
-                  className={`relative border-b border-gray-200 transition-colors ${
-                    isToday ? 'bg-blue-50/10' : 'bg-white'
-                  } ${isDraggedOver ? 'bg-blue-100 ring-2 ring-inset ring-blue-400' : ''} ${
-                    inCreateRange ? 'bg-green-50 ring-2 ring-inset ring-green-400' : ''
-                  } hover:bg-gray-50/50`}
+                  className={`relative border-b border-gray-200 transition-colors ${isToday ? 'bg-primary/5' : 'bg-white'
+                    } ${isDraggedOver ? 'bg-primary/10 ring-2 ring-inset ring-primary/40' : ''} ${inCreateRange ? 'bg-green-50 ring-2 ring-inset ring-green-400' : ''
+                    } hover:bg-gray-50/50`}
                   style={{ height: `${slotHeightPx}px` }}
                   onDragOver={(e) => handleDragOver(e, hour)}
                   onDrop={(e) => handleDrop(e, hour)}
@@ -510,7 +506,7 @@ export function DayView({
                   onMouseEnter={() => handleMouseEnter(hour)}
                 >
                   {isDraggedOver && (
-                    <div className="absolute inset-0 border-2 border-blue-500 bg-blue-100/40 pointer-events-none" />
+                    <div className="absolute inset-0 border-2 border-primary bg-primary/20 pointer-events-none" />
                   )}
                 </div>
               );
@@ -524,8 +520,8 @@ export function DayView({
 
                 // Calculate style based on 80px per hour
                 let style = {
-                  top: baseStyle.top * (80/60),
-                  height: Math.max(baseStyle.height * (80/60), 60) // Minimum 60px for details
+                  top: baseStyle.top * (80 / 60),
+                  height: Math.max(baseStyle.height * (80 / 60), 60) // Minimum 60px for details
                 };
 
                 if (isBeingResized && resizePreview) {
@@ -534,7 +530,7 @@ export function DayView({
 
                   const startHour = previewStart.getHours();
                   const startMinutes = previewStart.getMinutes();
-                  const top = (startHour * 60 + startMinutes) * (80/60);
+                  const top = (startHour * 60 + startMinutes) * (80 / 60);
 
                   const durationMs = previewEnd.getTime() - previewStart.getTime();
                   const durationMinutes = durationMs / (1000 * 60);
@@ -565,7 +561,7 @@ export function DayView({
                 return (
                   <div
                     key={apt.id}
-                    className={`absolute pointer-events-auto ${isDragging ? 'opacity-50' : ''} ${isBeingResized ? 'opacity-80 ring-2 ring-blue-500' : ''}`}
+                    className={`absolute pointer-events-auto ${isDragging ? 'opacity-50' : ''} ${isBeingResized ? 'opacity-80 ring-2 ring-primary' : ''}`}
                     style={{
                       top: `${style.top}px`,
                       height: `${style.height}px`,
@@ -594,7 +590,7 @@ export function DayView({
                           onMouseDown={(e) => handleResizeStart(apt, 'top', e)}
                           title="Drag to change start time"
                         >
-                          <div className="w-12 h-1.5 bg-blue-600 rounded-full mt-1.5 shadow-md" />
+                          <div className="w-12 h-1.5 bg-primary rounded-full mt-1.5 shadow-md" />
                         </div>
                       )}
 
@@ -604,7 +600,7 @@ export function DayView({
                         onMouseDown={(e) => handleResizeStart(apt, 'bottom', e)}
                         title="Drag to change end time"
                       >
-                        <div className="w-12 h-1.5 bg-blue-600 rounded-full mb-1.5 shadow-md" />
+                        <div className="w-12 h-1.5 bg-primary rounded-full mb-1.5 shadow-md" />
                       </div>
                     </div>
                   </div>
@@ -616,7 +612,7 @@ export function DayView({
             {isToday && (
               <div
                 className="absolute left-0 right-0 z-20 pointer-events-none"
-                style={{ top: `${getCurrentTimePosition() * (80/60)}px` }}
+                style={{ top: `${getCurrentTimePosition() * (80 / 60)}px` }}
               >
                 <div className="h-0.5 bg-red-600 shadow-lg" style={{ width: '100%' }}>
                   <div className="absolute -top-1.5 -left-1 w-3 h-3 bg-red-600 rounded-full shadow-lg animate-pulse" />

@@ -775,7 +775,7 @@ export default function AppointmentsPage() {
       {/* Floating Add Button */}
       <Button
         onClick={handleNewAppointment}
-        className="fixed bottom-8 right-8 z-30 h-14 w-14 rounded-full bg-blue-600 text-white p-0 shadow-lg hover:bg-blue-700"
+        className="fixed bottom-8 right-8 z-30 h-14 w-14 rounded-full bg-primary text-white p-0 shadow-lg hover:opacity-90"
         title="New Appointment (Ctrl+N)"
       >
         <Plus className="h-6 w-6 text-white" />
@@ -903,83 +903,83 @@ export default function AppointmentsPage() {
                     practitioners={practitionersForMultiView}
                     currentDate={currentDate}
                     onDateChange={handleDateChange}
-                  onAppointmentClick={handleAppointmentClick}
-                  onTimeSlotClick={(practitionerId, time) => {
-                    setClickedDate(time);
-                    setIsDrawerOpen(true);
-                  }}
-                  onAppointmentDrop={async (appointment, newDate, newHour, newPractitionerId) => {
-                    console.log('🎯 Drag & Drop Started:', {
-                      appointmentId: appointment.id,
-                      patientName: appointment.patientName,
-                      oldPractitionerId: appointment.practitionerId,
-                      oldPractitionerName: appointment.practitionerName,
-                      newPractitionerId,
-                      oldTime: appointment.startTime,
-                      newTime: `${Math.floor(newHour)}:${Math.round((newHour - Math.floor(newHour)) * 60)}`
-                    });
-
-                    try {
-                      // Calculate new start and end times
-                      const hours = Math.floor(newHour);
-                      const minutes = Math.round((newHour - hours) * 60);
-
-                      const newStartTime = new Date(newDate);
-                      newStartTime.setHours(hours, minutes, 0, 0);
-
-                      const duration = appointment.duration;
-                      const newEndTime = new Date(newStartTime.getTime() + duration * 60000);
-
-                      // Get the new practitioner details
-                      const newPractitioner = practitionersForMultiView.find(p => p.id === newPractitionerId);
-
-                      if (!newPractitioner) {
-                        console.error('❌ Practitioner not found:', newPractitionerId);
-                        throw new Error('Target practitioner not found');
-                      }
-
-                      const newPractitionerName = newPractitioner.name;
-
-                      console.log('📤 Sending update to backend:', {
+                    onAppointmentClick={handleAppointmentClick}
+                    onTimeSlotClick={(practitionerId, time) => {
+                      setClickedDate(time);
+                      setIsDrawerOpen(true);
+                    }}
+                    onAppointmentDrop={async (appointment, newDate, newHour, newPractitionerId) => {
+                      console.log('🎯 Drag & Drop Started:', {
                         appointmentId: appointment.id,
-                        updates: {
-                          startTime: newStartTime.toISOString(),
-                          endTime: newEndTime.toISOString(),
+                        patientName: appointment.patientName,
+                        oldPractitionerId: appointment.practitionerId,
+                        oldPractitionerName: appointment.practitionerName,
+                        newPractitionerId,
+                        oldTime: appointment.startTime,
+                        newTime: `${Math.floor(newHour)}:${Math.round((newHour - Math.floor(newHour)) * 60)}`
+                      });
+
+                      try {
+                        // Calculate new start and end times
+                        const hours = Math.floor(newHour);
+                        const minutes = Math.round((newHour - hours) * 60);
+
+                        const newStartTime = new Date(newDate);
+                        newStartTime.setHours(hours, minutes, 0, 0);
+
+                        const duration = appointment.duration;
+                        const newEndTime = new Date(newStartTime.getTime() + duration * 60000);
+
+                        // Get the new practitioner details
+                        const newPractitioner = practitionersForMultiView.find(p => p.id === newPractitionerId);
+
+                        if (!newPractitioner) {
+                          console.error('❌ Practitioner not found:', newPractitionerId);
+                          throw new Error('Target practitioner not found');
+                        }
+
+                        const newPractitionerName = newPractitioner.name;
+
+                        console.log('📤 Sending update to backend:', {
+                          appointmentId: appointment.id,
+                          updates: {
+                            startTime: newStartTime.toISOString(),
+                            endTime: newEndTime.toISOString(),
+                            practitionerId: newPractitionerId,
+                            practitionerName: newPractitionerName
+                          }
+                        });
+
+                        // Update in backend FIRST - no optimistic update
+                        const updated = await AppointmentService.updateAppointment(appointment.id, {
+                          startTime: newStartTime,
+                          endTime: newEndTime,
                           practitionerId: newPractitionerId,
                           practitionerName: newPractitionerName
-                        }
-                      });
+                        });
 
-                      // Update in backend FIRST - no optimistic update
-                      const updated = await AppointmentService.updateAppointment(appointment.id, {
-                        startTime: newStartTime,
-                        endTime: newEndTime,
-                        practitionerId: newPractitionerId,
-                        practitionerName: newPractitionerName
-                      });
+                        console.log('✅ Backend update successful:', {
+                          id: updated.id,
+                          practitionerId: updated.practitionerId,
+                          practitionerName: updated.practitionerName,
+                          startTime: updated.startTime,
+                          endTime: updated.endTime
+                        });
 
-                      console.log('✅ Backend update successful:', {
-                        id: updated.id,
-                        practitionerId: updated.practitionerId,
-                        practitionerName: updated.practitionerName,
-                        startTime: updated.startTime,
-                        endTime: updated.endTime
-                      });
+                        // Now reload from backend to get the actual saved state (silent reload)
+                        console.log('🔄 Reloading appointments from backend...');
+                        await loadAppointments(true); // Silent reload - no loading spinner
+                        console.log('✅ Appointments reloaded');
 
-                      // Now reload from backend to get the actual saved state (silent reload)
-                      console.log('🔄 Reloading appointments from backend...');
-                      await loadAppointments(true); // Silent reload - no loading spinner
-                      console.log('✅ Appointments reloaded');
-
-                    } catch (error) {
-                      console.error('❌ Error rescheduling appointment:', error);
-                      alert('Failed to reschedule appointment. Please try again.');
-                      // Reload to ensure consistency (silent reload)
-                      await loadAppointments(true);
-                    }
-                  }}
-                  onAppointmentResize={handleAppointmentResize}
-                />
+                      } catch (error) {
+                        console.error('❌ Error rescheduling appointment:', error);
+                        alert('Failed to reschedule appointment. Please try again.');
+                        // Reload to ensure consistency (silent reload)
+                        await loadAppointments(true);
+                      }
+                    }}
+                    onAppointmentResize={handleAppointmentResize}
+                  />
                 );
               })()}
               {view === 'dashboard' && (
@@ -1014,398 +1014,380 @@ export default function AppointmentsPage() {
 
         {/* Right Sidebar - Compact Style (hidden when dashboard, list, or multi-provider is active) */}
         {view !== 'dashboard' && view !== 'list' && view !== 'multi-provider' && (
-        <div className={`border-l border-gray-200 bg-gray-50 flex flex-col transition-all duration-300 ${
-          isSidebarCollapsed ? 'w-12' : 'w-80'
-        }`}>
-          {/* Toggle Button */}
-          <div className="bg-white border-b border-gray-200 flex items-center justify-between px-2 py-2.5">
-            <button
-              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="p-1 hover:bg-gray-100 rounded transition-colors"
-              title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              {isSidebarCollapsed ? (
-                <ChevronLeft className="h-4 w-4 text-gray-600" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-gray-600" />
+          <div className={`border-l border-gray-200 bg-gray-50 flex flex-col transition-all duration-300 ${isSidebarCollapsed ? 'w-12' : 'w-80'
+            }`}>
+            {/* Toggle Button */}
+            <div className="bg-white border-b border-gray-200 flex items-center justify-between px-2 py-2.5">
+              <button
+                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {isSidebarCollapsed ? (
+                  <ChevronLeft className="h-4 w-4 text-gray-600" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-gray-600" />
+                )}
+              </button>
+              {!isSidebarCollapsed && (
+                <h2 className="text-sm font-semibold text-gray-900 flex-1 ml-2">Today</h2>
               )}
-            </button>
-            {!isSidebarCollapsed && (
-              <h2 className="text-sm font-semibold text-gray-900 flex-1 ml-2">Today</h2>
-            )}
-          </div>
-
-          {/* Tabs */}
-          {!isSidebarCollapsed && (
-            <div className="bg-white border-b border-gray-200 flex">
-              <button
-                onClick={() => setActiveTab('appointments')}
-                className={`flex-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
-                  activeTab === 'appointments'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <div className="flex items-center justify-center gap-1.5">
-                  <span>Appointments</span>
-                  {tabCounts.inPersonCount > 0 && (
-                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                      activeTab === 'appointments' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-                    }`}>
-                      {tabCounts.inPersonCount}
-                    </span>
-                  )}
-                </div>
-              </button>
-              <button
-                onClick={() => setActiveTab('online')}
-                className={`flex-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
-                  activeTab === 'online'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <div className="flex items-center justify-center gap-1.5">
-                  <span>Online</span>
-                  {tabCounts.onlineCount > 0 && (
-                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                      activeTab === 'online' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-                    }`}>
-                      {tabCounts.onlineCount}
-                    </span>
-                  )}
-                </div>
-              </button>
-              <button
-                onClick={() => setActiveTab('followups')}
-                className={`flex-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
-                  activeTab === 'followups'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <div className="flex items-center justify-center gap-1.5">
-                  <span>Follow ups</span>
-                  {tabCounts.followupCount > 0 && (
-                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                      activeTab === 'followups' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-                    }`}>
-                      {tabCounts.followupCount}
-                    </span>
-                  )}
-                </div>
-              </button>
             </div>
-          )}
 
-          {/* Status Filters - Compact */}
-          {!isSidebarCollapsed && (
-            <div className="bg-white px-3 py-2 border-b border-gray-200">
-              <div className="flex items-center gap-1.5 overflow-x-auto">
+            {/* Tabs */}
+            {!isSidebarCollapsed && (
+              <div className="bg-white border-b border-gray-200 flex">
                 <button
-                  onClick={() => setStatusFilter(null)}
-                  className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
-                    statusFilter === null
-                      ? 'bg-blue-900 text-white ring-2 ring-blue-900 ring-offset-1'
-                      : 'bg-blue-100 text-blue-900 hover:bg-blue-200'
-                  }`}
+                  onClick={() => setActiveTab('appointments')}
+                  className={`flex-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === 'appointments'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                    }`}
                 >
-                  <div className="text-center">
-                    <div className="text-lg font-bold">{stats.total}</div>
-                    <div className="text-[10px] font-medium uppercase tracking-wide">All</div>
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span>Appointments</span>
+                    {tabCounts.inPersonCount > 0 && (
+                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${activeTab === 'appointments' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'
+                        }`}>
+                        {tabCounts.inPersonCount}
+                      </span>
+                    )}
                   </div>
                 </button>
                 <button
-                  onClick={() => setStatusFilter(statusFilter === 'scheduled' ? null : 'scheduled')}
-                  className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
-                    statusFilter === 'scheduled'
+                  onClick={() => setActiveTab('online')}
+                  className={`flex-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === 'online'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                    }`}
+                >
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span>Online</span>
+                    {tabCounts.onlineCount > 0 && (
+                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${activeTab === 'online' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'
+                        }`}>
+                        {tabCounts.onlineCount}
+                      </span>
+                    )}
+                  </div>
+                </button>
+                <button
+                  onClick={() => setActiveTab('followups')}
+                  className={`flex-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === 'followups'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                    }`}
+                >
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span>Follow ups</span>
+                    {tabCounts.followupCount > 0 && (
+                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${activeTab === 'followups' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'
+                        }`}>
+                        {tabCounts.followupCount}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              </div>
+            )}
+
+            {/* Status Filters - Compact */}
+            {!isSidebarCollapsed && (
+              <div className="bg-white px-3 py-2 border-b border-gray-200">
+                <div className="flex items-center gap-1.5 overflow-x-auto">
+                  <button
+                    onClick={() => setStatusFilter(null)}
+                    className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${statusFilter === null
+                      ? 'bg-primary text-white ring-2 ring-primary ring-offset-1'
+                      : 'bg-primary/10 text-primary hover:bg-primary/20'
+                      }`}
+                  >
+                    <div className="text-center">
+                      <div className="text-lg font-bold">{stats.total}</div>
+                      <div className="text-[10px] font-medium uppercase tracking-wide">All</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter(statusFilter === 'scheduled' ? null : 'scheduled')}
+                    className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${statusFilter === 'scheduled'
                       ? 'bg-gray-700 text-white ring-2 ring-gray-700 ring-offset-1'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  <div className="text-center">
-                    <div className="text-base font-bold">{stats.scheduled}</div>
-                    <div className="text-[10px] font-medium uppercase tracking-wide">Sched</div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setStatusFilter(statusFilter === 'in-progress' ? null : 'in-progress')}
-                  className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
-                    statusFilter === 'in-progress'
+                      }`}
+                  >
+                    <div className="text-center">
+                      <div className="text-base font-bold">{stats.scheduled}</div>
+                      <div className="text-[10px] font-medium uppercase tracking-wide">Sched</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter(statusFilter === 'in-progress' ? null : 'in-progress')}
+                    className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${statusFilter === 'in-progress'
                       ? 'bg-red-600 text-white ring-2 ring-red-600 ring-offset-1'
                       : 'bg-red-100 text-red-700 hover:bg-red-200'
-                  }`}
-                >
-                  <div className="text-center">
-                    <div className="text-base font-bold">{stats.inProgress}</div>
-                    <div className="text-[10px] font-medium uppercase tracking-wide">In Out</div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setStatusFilter(statusFilter === 'completed' ? null : 'completed')}
-                  className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
-                    statusFilter === 'completed'
+                      }`}
+                  >
+                    <div className="text-center">
+                      <div className="text-base font-bold">{stats.inProgress}</div>
+                      <div className="text-[10px] font-medium uppercase tracking-wide">In Out</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter(statusFilter === 'completed' ? null : 'completed')}
+                    className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${statusFilter === 'completed'
                       ? 'bg-green-600 text-white ring-2 ring-green-600 ring-offset-1'
                       : 'bg-green-100 text-green-700 hover:bg-green-200'
-                  }`}
-                >
-                  <div className="text-center">
-                    <div className="text-base font-bold">{stats.completed}</div>
-                    <div className="text-[10px] font-medium uppercase tracking-wide">Done</div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setStatusFilter(statusFilter === 'cancelled' ? null : 'cancelled')}
-                  className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${
-                    statusFilter === 'cancelled'
+                      }`}
+                  >
+                    <div className="text-center">
+                      <div className="text-base font-bold">{stats.completed}</div>
+                      <div className="text-[10px] font-medium uppercase tracking-wide">Done</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter(statusFilter === 'cancelled' ? null : 'cancelled')}
+                    className={`flex items-center justify-center min-w-[58px] h-14 rounded transition-all ${statusFilter === 'cancelled'
                       ? 'bg-gray-700 text-white ring-2 ring-gray-700 ring-offset-1'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  <div className="text-center">
-                    <div className="text-base font-bold">{stats.cancelled}</div>
-                    <div className="text-[10px] font-medium uppercase tracking-wide">Cancel</div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => {
-                    loadAppointments();
-                    loadStats();
-                  }}
-                  className="flex items-center justify-center min-w-[44px] h-14 text-gray-400 hover:text-gray-600 transition-colors"
-                  title="Refresh"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Collapsible Filters */}
-          {!isSidebarCollapsed && (
-            <div className="flex-1 overflow-y-auto">
-            {/* Treatment Categories */}
-            <div className="bg-white border-b border-gray-200">
-              <button
-                onClick={() => setShowTreatmentCategories(!showTreatmentCategories)}
-                className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <h3 className="text-xs font-medium text-gray-900">Treatment Categories</h3>
-                <ChevronDown
-                  className={`h-3 w-3 text-gray-500 transition-transform ${
-                    showTreatmentCategories ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-              {showTreatmentCategories && (
-                <div className="px-4 pb-3">
-                  <EventFilters
-                    categories={categories}
-                    searchQuery=""
-                    onCategoryToggle={handleCategoryToggle}
-                    onSearchChange={() => {}}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Practitioners */}
-            {viewMode === 'admin' && (
-              <div className="bg-white border-b border-gray-200">
-                <button
-                  onClick={() => setShowDoctors(!showDoctors)}
-                  className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                >
-                  <h3 className="text-xs font-medium text-gray-900">Practitioners</h3>
-                  <ChevronDown
-                    className={`h-3 w-3 text-gray-500 transition-transform ${showDoctors ? 'rotate-180' : ''}`}
-                  />
-                </button>
-                {showDoctors && (
-                  <div className="px-4 pb-3 space-y-2">
-                    <input
-                      type="text"
-                      placeholder="Search practitioners..."
-                      value={practitionerSearchQuery}
-                      onChange={(e) => setPractitionerSearchQuery(e.target.value)}
-                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                    <div className="space-y-1 max-h-48 overflow-y-auto">
-                      <button
-                        onClick={() => setPractitionerFilter(null)}
-                        className={`w-full px-2 py-1.5 text-left text-xs rounded transition-colors flex items-center justify-between ${
-                          practitionerFilter === null
-                            ? 'bg-blue-100 text-blue-700 font-medium'
-                            : 'hover:bg-gray-100 text-gray-700'
-                        }`}
-                      >
-                        <span>All Practitioners</span>
-                        <span className="text-xs font-semibold">{practitioners.reduce((sum, p) => sum + p.count, 0)}</span>
-                      </button>
-                      {filteredPractitioners.map((practitioner) => (
-                        <button
-                          key={practitioner.name}
-                          onClick={() => setPractitionerFilter(practitioner.name)}
-                          className={`w-full px-2 py-1.5 text-left text-xs rounded transition-colors flex items-center justify-between ${
-                            practitionerFilter === practitioner.name
-                              ? 'bg-blue-100 text-blue-700 font-medium'
-                              : 'hover:bg-gray-100 text-gray-700'
-                          }`}
-                        >
-                          <span className="truncate">{practitioner.name}</span>
-                          <span className="text-xs font-semibold ml-2">{practitioner.count}</span>
-                        </button>
-                      ))}
-                      {filteredPractitioners.length === 0 && practitionerSearchQuery && (
-                        <div className="px-2 py-2 text-xs text-gray-500 text-center">
-                          No practitioners found
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Doctor Selector for Doctor View */}
-            {viewMode === 'doctor' && (
-              <div className="bg-white border-b border-gray-200">
-                <div className="px-4 py-2.5">
-                  <SearchableSelect
-                    label="Select Practitioner"
-                    options={practitioners.map(p => ({
-                      value: p.name,
-                      label: p.name,
-                      subtitle: `${p.count} appointment${p.count !== 1 ? 's' : ''}`
-                    }))}
-                    value={currentDoctorId || ''}
-                    onChange={(value) => setCurrentDoctorId(value)}
-                    placeholder="Choose a practitioner..."
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Locations */}
-            <div className="bg-white border-b border-gray-200">
-              <button
-                onClick={() => setShowLocations(!showLocations)}
-                className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <h3 className="text-xs font-medium text-gray-900">Locations</h3>
-                <ChevronDown
-                  className={`h-3 w-3 text-gray-500 transition-transform ${showLocations ? 'rotate-180' : ''}`}
-                />
-              </button>
-              {showLocations && (
-                <div className="px-4 pb-3 space-y-2">
-                  <input
-                    type="text"
-                    placeholder="Search locations..."
-                    value={locationSearchQuery}
-                    onChange={(e) => setLocationSearchQuery(e.target.value)}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                  <div className="space-y-1 max-h-48 overflow-y-auto">
-                    <button
-                      onClick={() => setLocationFilter(null)}
-                      className={`w-full px-2 py-1.5 text-left text-xs rounded transition-colors flex items-center justify-between ${
-                        locationFilter === null
-                          ? 'bg-blue-100 text-blue-700 font-medium'
-                          : 'hover:bg-gray-100 text-gray-700'
                       }`}
-                    >
-                      <span>All Locations</span>
-                      <span className="text-xs font-semibold">{locations.reduce((sum, l) => sum + l.count, 0)}</span>
-                    </button>
-                    {filteredLocations.map((location) => (
-                      <button
-                        key={location.id}
-                        onClick={() => setLocationFilter(location.id)}
-                        className={`w-full px-2 py-1.5 text-left text-xs rounded transition-colors flex items-center justify-between ${
-                          locationFilter === location.id
-                            ? 'bg-blue-100 text-blue-700 font-medium'
-                            : 'hover:bg-gray-100 text-gray-700'
+                  >
+                    <div className="text-center">
+                      <div className="text-base font-bold">{stats.cancelled}</div>
+                      <div className="text-[10px] font-medium uppercase tracking-wide">Cancel</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      loadAppointments();
+                      loadStats();
+                    }}
+                    className="flex items-center justify-center min-w-[44px] h-14 text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Refresh"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Collapsible Filters */}
+            {!isSidebarCollapsed && (
+              <div className="flex-1 overflow-y-auto">
+                {/* Treatment Categories */}
+                <div className="bg-white border-b border-gray-200">
+                  <button
+                    onClick={() => setShowTreatmentCategories(!showTreatmentCategories)}
+                    className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                  >
+                    <h3 className="text-xs font-medium text-gray-900">Treatment Categories</h3>
+                    <ChevronDown
+                      className={`h-3 w-3 text-gray-500 transition-transform ${showTreatmentCategories ? 'rotate-180' : ''
                         }`}
-                      >
-                        <span className="truncate">{location.name}</span>
-                        <span className="text-xs font-semibold ml-2">{location.count}</span>
-                      </button>
-                    ))}
-                    {filteredLocations.length === 0 && locationSearchQuery && (
-                      <div className="px-2 py-2 text-xs text-gray-500 text-center">
-                        No locations found
+                    />
+                  </button>
+                  {showTreatmentCategories && (
+                    <div className="px-4 pb-3">
+                      <EventFilters
+                        categories={categories}
+                        searchQuery=""
+                        onCategoryToggle={handleCategoryToggle}
+                        onSearchChange={() => { }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Practitioners */}
+                {viewMode === 'admin' && (
+                  <div className="bg-white border-b border-gray-200">
+                    <button
+                      onClick={() => setShowDoctors(!showDoctors)}
+                      className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                    >
+                      <h3 className="text-xs font-medium text-gray-900">Practitioners</h3>
+                      <ChevronDown
+                        className={`h-3 w-3 text-gray-500 transition-transform ${showDoctors ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                    {showDoctors && (
+                      <div className="px-4 pb-3 space-y-2">
+                        <input
+                          type="text"
+                          placeholder="Search practitioners..."
+                          value={practitionerSearchQuery}
+                          onChange={(e) => setPractitionerSearchQuery(e.target.value)}
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                        <div className="space-y-1 max-h-48 overflow-y-auto">
+                          <button
+                            onClick={() => setPractitionerFilter(null)}
+                            className={`w-full px-2 py-1.5 text-left text-xs rounded transition-colors flex items-center justify-between ${practitionerFilter === null
+                              ? 'bg-primary/10 text-primary font-medium'
+                              : 'hover:bg-gray-100 text-gray-700'
+                              }`}
+                          >
+                            <span>All Practitioners</span>
+                            <span className="text-xs font-semibold">{practitioners.reduce((sum, p) => sum + p.count, 0)}</span>
+                          </button>
+                          {filteredPractitioners.map((practitioner) => (
+                            <button
+                              key={practitioner.name}
+                              onClick={() => setPractitionerFilter(practitioner.name)}
+                              className={`w-full px-2 py-1.5 text-left text-xs rounded transition-colors flex items-center justify-between ${practitionerFilter === practitioner.name
+                                ? 'bg-primary/10 text-primary font-medium'
+                                : 'hover:bg-gray-100 text-gray-700'
+                                }`}
+                            >
+                              <span className="truncate">{practitioner.name}</span>
+                              <span className="text-xs font-semibold ml-2">{practitioner.count}</span>
+                            </button>
+                          ))}
+                          {filteredPractitioners.length === 0 && practitionerSearchQuery && (
+                            <div className="px-2 py-2 text-xs text-gray-500 text-center">
+                              No practitioners found
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
-                </div>
-              )}
-            </div>
+                )}
 
-            {/* Appointments List */}
-            <div className="divide-y divide-gray-100">
-              {filteredAppointments.length === 0 ? (
-                <div className="p-4 text-center">
-                  <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center mx-auto mb-1.5">
-                    <Info className="h-4 w-4 text-gray-400" />
+                {/* Doctor Selector for Doctor View */}
+                {viewMode === 'doctor' && (
+                  <div className="bg-white border-b border-gray-200">
+                    <div className="px-4 py-2.5">
+                      <SearchableSelect
+                        label="Select Practitioner"
+                        options={practitioners.map(p => ({
+                          value: p.name,
+                          label: p.name,
+                          subtitle: `${p.count} appointment${p.count !== 1 ? 's' : ''}`
+                        }))}
+                        value={currentDoctorId || ''}
+                        onChange={(value) => setCurrentDoctorId(value)}
+                        placeholder="Choose a practitioner..."
+                      />
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500">No appointments</p>
+                )}
+
+                {/* Locations */}
+                <div className="bg-white border-b border-gray-200">
+                  <button
+                    onClick={() => setShowLocations(!showLocations)}
+                    className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                  >
+                    <h3 className="text-xs font-medium text-gray-900">Locations</h3>
+                    <ChevronDown
+                      className={`h-3 w-3 text-gray-500 transition-transform ${showLocations ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  {showLocations && (
+                    <div className="px-4 pb-3 space-y-2">
+                      <input
+                        type="text"
+                        placeholder="Search locations..."
+                        value={locationSearchQuery}
+                        onChange={(e) => setLocationSearchQuery(e.target.value)}
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                      <div className="space-y-1 max-h-48 overflow-y-auto">
+                        <button
+                          onClick={() => setLocationFilter(null)}
+                          className={`w-full px-2 py-1.5 text-left text-xs rounded transition-colors flex items-center justify-between ${locationFilter === null
+                            ? 'bg-primary/10 text-primary font-medium'
+                            : 'hover:bg-gray-100 text-gray-700'
+                            }`}
+                        >
+                          <span>All Locations</span>
+                          <span className="text-xs font-semibold">{locations.reduce((sum, l) => sum + l.count, 0)}</span>
+                        </button>
+                        {filteredLocations.map((location) => (
+                          <button
+                            key={location.id}
+                            onClick={() => setLocationFilter(location.id)}
+                            className={`w-full px-2 py-1.5 text-left text-xs rounded transition-colors flex items-center justify-between ${locationFilter === location.id
+                              ? 'bg-primary/10 text-primary font-medium'
+                              : 'hover:bg-gray-100 text-gray-700'
+                              }`}
+                          >
+                            <span className="truncate">{location.name}</span>
+                            <span className="text-xs font-semibold ml-2">{location.count}</span>
+                          </button>
+                        ))}
+                        {filteredLocations.length === 0 && locationSearchQuery && (
+                          <div className="px-2 py-2 text-xs text-gray-500 text-center">
+                            No locations found
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                filteredAppointments
-                  .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-                  .map((appointment) => (
-                    <div
-                      key={appointment.id}
-                      onClick={() => handleAppointmentClick(appointment)}
-                      className="px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <Info className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-semibold text-gray-900 truncate">
-                              {appointment.patientName}
+
+                {/* Appointments List */}
+                <div className="divide-y divide-gray-100">
+                  {filteredAppointments.length === 0 ? (
+                    <div className="p-4 text-center">
+                      <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center mx-auto mb-1.5">
+                        <Info className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <p className="text-xs text-gray-500">No appointments</p>
+                    </div>
+                  ) : (
+                    filteredAppointments
+                      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+                      .map((appointment) => (
+                        <div
+                          key={appointment.id}
+                          onClick={() => handleAppointmentClick(appointment)}
+                          className="px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <Info className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-semibold text-gray-900 truncate">
+                                  {appointment.patientName}
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[10px] text-gray-600 mt-0.5">
+                                  <span>
+                                    {new Date(appointment.startTime).toLocaleTimeString('en-US', {
+                                      hour: 'numeric',
+                                      minute: '2-digit',
+                                      hour12: true
+                                    })}
+                                  </span>
+                                  <span className="text-gray-400">•</span>
+                                  <span>{appointment.duration}m</span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1.5 text-[10px] text-gray-600 mt-0.5">
-                              <span>
-                                {new Date(appointment.startTime).toLocaleTimeString('en-US', {
-                                  hour: 'numeric',
-                                  minute: '2-digit',
-                                  hour12: true
-                                })}
+                            <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide ${appointment.status === 'scheduled'
+                                  ? 'bg-gray-200 text-gray-700'
+                                  : appointment.status === 'in-progress'
+                                    ? 'bg-red-100 text-red-700'
+                                    : appointment.status === 'completed'
+                                      ? 'bg-green-100 text-green-700'
+                                      : 'bg-gray-100 text-gray-600'
+                                  }`}
+                              >
+                                {appointment.status === 'scheduled' ? 'Sched' :
+                                  appointment.status === 'in-progress' ? 'In Out' :
+                                    appointment.status === 'completed' ? 'Done' : 'Cancel'}
                               </span>
-                              <span className="text-gray-400">•</span>
-                              <span>{appointment.duration}m</span>
+                              <ArrowRight className="h-3 w-3 text-gray-400" />
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide ${
-                              appointment.status === 'scheduled'
-                                ? 'bg-gray-200 text-gray-700'
-                                : appointment.status === 'in-progress'
-                                ? 'bg-red-100 text-red-700'
-                                : appointment.status === 'completed'
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}
-                          >
-                            {appointment.status === 'scheduled' ? 'Sched' :
-                             appointment.status === 'in-progress' ? 'In Out' :
-                             appointment.status === 'completed' ? 'Done' : 'Cancel'}
-                          </span>
-                          <ArrowRight className="h-3 w-3 text-gray-400" />
-                        </div>
-                      </div>
-                    </div>
-                  ))
-              )}
-            </div>
+                      ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-          )}
-        </div>
         )}
       </div>
 

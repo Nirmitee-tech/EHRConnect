@@ -28,6 +28,7 @@ export default function DashboardPage() {
   const [dateRange, setDateRange] = useState('30d')
   const [location, setLocation] = useState('all')
   const [department, setDepartment] = useState('all')
+  const [activeTab, setActiveTab] = useState('quality')
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000)
@@ -40,7 +41,7 @@ export default function DashboardPage() {
   return (
     <div className="h-full flex flex-col bg-gray-50 -m-6">
       {/* Sticky Header with Theme Sidebar Color */}
-      <div 
+      <div
         className="sticky top-0 z-50 text-white shadow-lg"
         style={{ backgroundColor: themeSettings.sidebarBackgroundColor }}
       >
@@ -106,7 +107,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="text-right border-l border-white/20 pl-6">
-                <div className="text-xs text-blue-200 uppercase tracking-wider">System Status</div>
+                <div className="text-xs text-white/70 uppercase tracking-wider">System Status</div>
                 <div className="flex items-center gap-1.5 text-white text-xs font-medium mt-0.5">
                   <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
                   All Systems Operational
@@ -118,39 +119,59 @@ export default function DashboardPage() {
 
         {/* Tabs Navigation */}
         <div className="border-t border-white/10">
-          <Tabs defaultValue="quality" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="h-11 bg-transparent border-0 p-0 px-6 w-full justify-start rounded-none">
               <TabsTrigger
                 value="executive"
-                className="data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white rounded-none px-4 py-2 text-blue-200 hover:text-white hover:bg-white/5 transition-all"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-4 py-2 text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                style={{
+                  backgroundColor: activeTab === 'executive' ? themeSettings.sidebarActiveColor : undefined,
+                  color: activeTab === 'executive' ? '#ffffff' : undefined
+                }}
               >
                 <LayoutDashboard className="h-4 w-4 mr-2" />
                 Executive
               </TabsTrigger>
               <TabsTrigger
                 value="clinical"
-                className="data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white rounded-none px-4 py-2 text-blue-200 hover:text-white hover:bg-white/5 transition-all"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-4 py-2 text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                style={{
+                  backgroundColor: activeTab === 'clinical' ? themeSettings.sidebarActiveColor : undefined,
+                  color: activeTab === 'clinical' ? '#ffffff' : undefined
+                }}
               >
                 <Activity className="h-4 w-4 mr-2" />
                 Clinical
               </TabsTrigger>
               <TabsTrigger
                 value="operations"
-                className="data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white rounded-none px-4 py-2 text-blue-200 hover:text-white hover:bg-white/5 transition-all"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-4 py-2 text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                style={{
+                  backgroundColor: activeTab === 'operations' ? themeSettings.sidebarActiveColor : undefined,
+                  color: activeTab === 'operations' ? '#ffffff' : undefined
+                }}
               >
                 <Building2 className="h-4 w-4 mr-2" />
                 Operations
               </TabsTrigger>
               <TabsTrigger
                 value="rcm"
-                className="data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white rounded-none px-4 py-2 text-blue-200 hover:text-white hover:bg-white/5 transition-all"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-4 py-2 text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                style={{
+                  backgroundColor: activeTab === 'rcm' ? themeSettings.sidebarActiveColor : undefined,
+                  color: activeTab === 'rcm' ? '#ffffff' : undefined
+                }}
               >
                 <DollarSign className="h-4 w-4 mr-2" />
                 Revenue Cycle
               </TabsTrigger>
               <TabsTrigger
                 value="quality"
-                className="data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white rounded-none px-4 py-2 text-blue-200 hover:text-white hover:bg-white/5 transition-all"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-4 py-2 text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                style={{
+                  backgroundColor: activeTab === 'quality' ? themeSettings.sidebarActiveColor : undefined,
+                  color: activeTab === 'quality' ? '#ffffff' : undefined
+                }}
               >
                 <TrendingUp className="h-4 w-4 mr-2" />
                 Quality
