@@ -38,6 +38,23 @@ class TaskService {
         showAssignee = true
       } = taskData;
 
+      // Validate required fields
+      if (!orgId || !description) {
+        throw new Error('Missing required fields: orgId, description');
+      }
+
+      // Validate subtasks input (prevent SQL injection)
+      if (subtasks && subtasks.length > 0) {
+        for (const st of subtasks) {
+          if (!st.title || typeof st.title !== 'string') {
+            throw new Error('Invalid subtask: title is required and must be a string');
+          }
+          if (st.description && typeof st.description !== 'string') {
+            throw new Error('Invalid subtask: description must be a string');
+          }
+        }
+      }
+
       // Validate assignee
       if (!assignedToUserId && !assignedToPatientId && !assignedToPoolId) {
         throw new Error('Task must be assigned to a user, patient, or pool');

@@ -71,9 +71,7 @@ class Logger {
           console.warn(formatted);
           break;
         case LOG_LEVELS.DEBUG:
-          if (this.isDevelopment) {
-            console.debug(formatted);
-          }
+          console.debug(formatted);
           break;
         default:
           console.log(formatted);
@@ -103,7 +101,7 @@ class Logger {
   }
 
   /**
-   * Log debug messages (only in development or when LOG_LEVEL=DEBUG)
+   * Log debug messages (when LOG_LEVEL=DEBUG or in development)
    */
   debug(message, metadata = {}) {
     this.log(LOG_LEVELS.DEBUG, message, metadata);

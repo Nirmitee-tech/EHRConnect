@@ -56,6 +56,8 @@ module.exports = {
         WHERE assigned_to_pool_id IS NOT NULL AND deleted_at IS NULL;
       
       -- Index for overdue tasks queries
+      -- Note: Status values must match task.service.js status constants
+      -- Current valid statuses: 'ready', 'in-progress', 'accepted', 'on-hold', 'cancelled', 'completed'
       CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_tasks_overdue 
         ON tasks(org_id, due_date, status) 
         WHERE due_date < NOW() 

@@ -132,21 +132,44 @@ class QueryCache {
   }
 
   /**
-   * Set value in cache
+   * Set value in cache with LRU eviction
    * @param {string} key - Cache key
    * @param {any} value - Value to cache
    * @param {number} ttl - Time to live in seconds (optional)
    */
   set(key, value, ttl) {
-    // Enforce max keys limit
+    // Enforce max keys limit with LRU eviction
     if (this.cache.size >= this.maxKeys && !this.cache.has(key)) {
-      // Remove oldest entry
-      const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
+      // Find and remove least recently used entry (first expired or oldest)
+      let oldestKey = null;
+      let oldestTime = Infinity;
+      
+      for (const [k, entry] of this.cache.entries()) {
+        // Remove if expired
+        if (entry.expiresAt && entry.expiresAt < Date.now()) {
+          this.cache.delete(k);
+          break;
+        }
+        // Track oldest by expiration time
+        const entryTime = entry.expiresAt || entry.createdAt || 0;
+        if (entryTime < oldestTime) {
+          oldestTime = entryTime;
+          oldestKey = k;
+        }
+      }
+      
+      // If no expired entry found, remove oldest
+      if (this.cache.size >= this.maxKeys && oldestKey) {
+        this.cache.delete(oldestKey);
+      }
     }
 
     const expiresAt = ttl ? Date.now() + (ttl * 1000) : null;
-    this.cache.set(key, { value, expiresAt });
+    this.cache.set(key, { 
+      value, 
+      expiresAt,
+      createdAt: Date.now() // Track creation time for LRU
+    });
     
     return true;
   }
@@ -200,7 +223,6 @@ class QueryCache {
    */
   getStats() {
     return {
-      ...this.stats,
       keys: this.cache.size,
       hits: this.stats.hits,
       misses: this.stats.misses,
