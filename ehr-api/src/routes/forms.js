@@ -9,6 +9,7 @@ const formsService = require('../services/forms.service');
 const formsVersioningService = require('../services/forms-versioning.service');
 const { requireAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/rbac');
+const logger = require('../utils/logger');
 
 // All routes require authentication
 router.use(requireAuth);
@@ -44,7 +45,12 @@ router.get('/templates', async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error('Error listing form templates:', error);
+    logger.error('Error listing form templates', {
+      error: error.message,
+      stack: error.stack,
+      orgId: req.userContext?.orgId,
+      userId: req.userContext?.userId
+    });
     res.status(500).json({ error: 'Failed to list form templates', message: error.message });
   }
 });
@@ -62,7 +68,12 @@ router.get('/templates/:id', async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error('Error getting form template:', error);
+    logger.error('Error getting form template', {
+      error: error.message,
+      stack: error.stack,
+      templateId: req.params.id,
+      orgId: req.userContext?.orgId
+    });
     res.status(error.message === 'Form template not found' ? 404 : 500).json({
       error: 'Failed to get form template',
       message: error.message,
@@ -83,7 +94,12 @@ router.post('/templates', requirePermission('forms:write'), async (req, res) => 
 
     res.status(201).json(template);
   } catch (error) {
-    console.error('Error creating form template:', error);
+    logger.error('Error creating form template', {
+      error: error.message,
+      stack: error.stack,
+      orgId: req.userContext?.orgId,
+      userId: req.userContext?.userId
+    });
     res.status(500).json({ error: 'Failed to create form template', message: error.message });
   }
 });
@@ -102,7 +118,7 @@ router.put('/templates/:id', requirePermission('forms:write'), async (req, res) 
 
     res.json(template);
   } catch (error) {
-    console.error('Error updating form template:', error);
+    logger.error('Error updating form template', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message.includes('not found') ? 404 : 500).json({
       error: 'Failed to update form template',
       message: error.message,
@@ -125,7 +141,7 @@ router.post('/templates/:id/publish', requirePermission('forms:publish'), async 
 
     res.json(template);
   } catch (error) {
-    console.error('Error publishing form template:', error);
+    logger.error('Error publishing form template', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message.includes('not found') ? 404 : 400).json({
       error: 'Failed to publish form template',
       message: error.message,
@@ -147,7 +163,7 @@ router.post('/templates/:id/archive', requirePermission('forms:delete'), async (
 
     res.json(template);
   } catch (error) {
-    console.error('Error archiving form template:', error);
+    logger.error('Error archiving form template', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message.includes('not found') ? 404 : 500).json({
       error: 'Failed to archive form template',
       message: error.message,
@@ -169,7 +185,7 @@ router.delete('/templates/:id', requirePermission('forms:delete'), async (req, r
 
     res.json({ message: 'Form template deleted successfully', template });
   } catch (error) {
-    console.error('Error deleting form template:', error);
+    logger.error('Error deleting form template', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message.includes('not found') ? 404 : 500).json({
       error: 'Failed to delete form template',
       message: error.message,
@@ -192,7 +208,7 @@ router.post('/templates/:id/retire', requirePermission('forms:write'), async (re
 
     res.json(template);
   } catch (error) {
-    console.error('Error retiring form template:', error);
+    logger.error('Error retiring form template', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message.includes('not found') ? 404 : 400).json({
       error: 'Failed to retire form template',
       message: error.message,
@@ -214,7 +230,7 @@ router.post('/templates/:id/restore', requirePermission('forms:write'), async (r
 
     res.json(template);
   } catch (error) {
-    console.error('Error restoring form template:', error);
+    logger.error('Error restoring form template', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message.includes('not found') ? 404 : 400).json({
       error: 'Failed to restore form template',
       message: error.message,
@@ -242,7 +258,7 @@ router.post('/templates/:id/versions', requirePermission('forms:write'), async (
 
     res.status(201).json(newVersion);
   } catch (error) {
-    console.error('Error creating form version:', error);
+    logger.error('Error creating form version', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message.includes('not found') ? 404 : 400).json({
       error: 'Failed to create form version',
       message: error.message,
@@ -263,7 +279,7 @@ router.get('/templates/:id/versions', async (req, res) => {
 
     res.json({ versions });
   } catch (error) {
-    console.error('Error getting version history:', error);
+    logger.error('Error getting version history', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message.includes('not found') ? 404 : 500).json({
       error: 'Failed to get version history',
       message: error.message,
@@ -289,7 +305,7 @@ router.get('/templates/:id/versions/compare', async (req, res) => {
 
     res.json(comparison);
   } catch (error) {
-    console.error('Error comparing versions:', error);
+    logger.error('Error comparing versions', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message.includes('not found') ? 404 : 500).json({
       error: 'Failed to compare versions',
       message: error.message,
@@ -312,7 +328,7 @@ router.post('/templates/:id/duplicate', requirePermission('forms:write'), async 
 
     res.status(201).json(template);
   } catch (error) {
-    console.error('Error duplicating form template:', error);
+    logger.error('Error duplicating form template', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message.includes('not found') ? 404 : 500).json({
       error: 'Failed to duplicate form template',
       message: error.message,
@@ -344,7 +360,7 @@ router.post('/templates/import', requirePermission('forms:write'), async (req, r
 
     res.status(201).json(template);
   } catch (error) {
-    console.error('Error importing questionnaire:', error);
+    logger.error('Error importing questionnaire', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({ error: 'Failed to import questionnaire', message: error.message });
   }
 });
@@ -371,7 +387,7 @@ router.get('/templates/:id/export', async (req, res) => {
     );
     res.json(questionnaire);
   } catch (error) {
-    console.error('Error exporting questionnaire:', error);
+    logger.error('Error exporting questionnaire', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({ error: 'Failed to export questionnaire', message: error.message });
   }
 });
@@ -392,7 +408,7 @@ router.get('/themes', async (req, res) => {
 
     res.json({ themes });
   } catch (error) {
-    console.error('Error listing themes:', error);
+    logger.error('Error listing themes', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({ error: 'Failed to list themes', message: error.message });
   }
 });
@@ -410,7 +426,7 @@ router.post('/themes', requirePermission('forms:write'), async (req, res) => {
 
     res.status(201).json(theme);
   } catch (error) {
-    console.error('Error creating theme:', error);
+    logger.error('Error creating theme', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({ error: 'Failed to create theme', message: error.message });
   }
 });
@@ -431,7 +447,7 @@ router.get('/templates/:id/population-rules', async (req, res) => {
 
     res.json({ rules });
   } catch (error) {
-    console.error('Error getting population rules:', error);
+    logger.error('Error getting population rules', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({ error: 'Failed to get population rules', message: error.message });
   }
 });
@@ -448,7 +464,7 @@ router.post('/templates/:id/population-rules', requirePermission('forms:write'),
 
     res.status(201).json(rule);
   } catch (error) {
-    console.error('Error creating population rule:', error);
+    logger.error('Error creating population rule', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({ error: 'Failed to create population rule', message: error.message });
   }
 });
@@ -469,7 +485,7 @@ router.get('/templates/:id/extraction-rules', async (req, res) => {
 
     res.json({ rules });
   } catch (error) {
-    console.error('Error getting extraction rules:', error);
+    logger.error('Error getting extraction rules', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({ error: 'Failed to get extraction rules', message: error.message });
   }
 });
@@ -486,7 +502,7 @@ router.post('/templates/:id/extraction-rules', requirePermission('forms:write'),
 
     res.status(201).json(rule);
   } catch (error) {
-    console.error('Error creating extraction rule:', error);
+    logger.error('Error creating extraction rule', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({ error: 'Failed to create extraction rule', message: error.message });
   }
 });
@@ -515,7 +531,7 @@ router.post('/$populate', async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error('Error populating questionnaire:', error);
+    logger.error('Error populating questionnaire', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({ error: 'Failed to populate questionnaire', message: error.message });
   }
 });
@@ -536,7 +552,7 @@ router.post('/$extract', async (req, res) => {
 
     res.json({ resources });
   } catch (error) {
-    console.error('Error extracting from response:', error);
+    logger.error('Error extracting from response', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({ error: 'Failed to extract data', message: error.message });
   }
 });
@@ -565,7 +581,7 @@ router.get('/responses', async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error('Error listing form responses:', error);
+    logger.error('Error listing form responses', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({ error: 'Failed to list form responses', message: error.message });
   }
 });
@@ -583,7 +599,7 @@ router.post('/responses', async (req, res) => {
 
     res.status(201).json(response);
   } catch (error) {
-    console.error('Error creating form response:', error);
+    logger.error('Error creating form response', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({ error: 'Failed to create form response', message: error.message });
   }
 });
@@ -601,7 +617,7 @@ router.get('/responses/:id', async (req, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error('Error getting form response:', error);
+    logger.error('Error getting form response', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message === 'Form response not found' ? 404 : 500).json({
       error: 'Failed to get form response',
       message: error.message,
@@ -623,7 +639,7 @@ router.put('/responses/:id', async (req, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error('Error updating form response:', error);
+    logger.error('Error updating form response', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message.includes('not found') ? 404 : 400).json({
       error: 'Failed to update form response',
       message: error.message,
@@ -649,7 +665,7 @@ router.post('/templates/:id/steps', requirePermission('forms:write'), async (req
 
     res.status(201).json(step);
   } catch (error) {
-    console.error('Error creating form step:', error);
+    logger.error('Error creating form step', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message === 'Form template not found' ? 404 : 400).json({
       error: 'Failed to create form step',
       message: error.message,
@@ -670,7 +686,7 @@ router.get('/templates/:id/steps', async (req, res) => {
 
     res.json(steps);
   } catch (error) {
-    console.error('Error getting form steps:', error);
+    logger.error('Error getting form steps', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({
       error: 'Failed to get form steps',
       message: error.message,
@@ -691,7 +707,7 @@ router.get('/steps/:stepId', async (req, res) => {
 
     res.json(step);
   } catch (error) {
-    console.error('Error getting form step:', error);
+    logger.error('Error getting form step', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message === 'Form step not found' ? 404 : 500).json({
       error: 'Failed to get form step',
       message: error.message,
@@ -713,7 +729,7 @@ router.put('/steps/:stepId', requirePermission('forms:write'), async (req, res) 
 
     res.json(step);
   } catch (error) {
-    console.error('Error updating form step:', error);
+    logger.error('Error updating form step', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message === 'Form step not found' ? 404 : 400).json({
       error: 'Failed to update form step',
       message: error.message,
@@ -735,7 +751,7 @@ router.delete('/steps/:stepId', requirePermission('forms:write'), async (req, re
 
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting form step:', error);
+    logger.error('Error deleting form step', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message === 'Form step not found' ? 404 : 500).json({
       error: 'Failed to delete form step',
       message: error.message,
@@ -765,7 +781,7 @@ router.post('/templates/:id/steps/reorder', requirePermission('forms:write'), as
 
     res.json({ message: 'Steps reordered successfully' });
   } catch (error) {
-    console.error('Error reordering form steps:', error);
+    logger.error('Error reordering form steps', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({
       error: 'Failed to reorder form steps',
       message: error.message,
@@ -805,7 +821,7 @@ router.post('/templates/:id/progress', async (req, res) => {
 
     res.json(progress);
   } catch (error) {
-    console.error('Error saving form progress:', error);
+    logger.error('Error saving form progress', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({
       error: 'Failed to save form progress',
       message: error.message,
@@ -842,7 +858,7 @@ router.get('/templates/:id/progress', async (req, res) => {
 
     res.json(progress);
   } catch (error) {
-    console.error('Error getting form progress:', error);
+    logger.error('Error getting form progress', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({
       error: 'Failed to get form progress',
       message: error.message,
@@ -863,7 +879,7 @@ router.put('/progress/:progressId/complete', async (req, res) => {
 
     res.json(progress);
   } catch (error) {
-    console.error('Error completing form progress:', error);
+    logger.error('Error completing form progress', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message === 'Progress record not found' ? 404 : 500).json({
       error: 'Failed to complete form progress',
       message: error.message,
@@ -889,7 +905,7 @@ router.get('/templates/:id/progress/list', requirePermission('forms:read'), asyn
 
     res.json(progressList);
   } catch (error) {
-    console.error('Error listing form progress:', error);
+    logger.error('Error listing form progress', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({
       error: 'Failed to list form progress',
       message: error.message,
@@ -922,7 +938,7 @@ router.post('/visit-templates', requirePermission('forms:write'), async (req, re
 
     res.status(201).json(template);
   } catch (error) {
-    console.error('Error creating visit template:', error);
+    logger.error('Error creating visit template', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(400).json({
       error: 'Failed to create visit template',
       message: error.message,
@@ -943,7 +959,7 @@ router.get('/visit-templates/trial/:trialId', async (req, res) => {
 
     res.json(templates);
   } catch (error) {
-    console.error('Error getting visit templates:', error);
+    logger.error('Error getting visit templates', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(500).json({
       error: 'Failed to get visit templates',
       message: error.message,
@@ -964,7 +980,7 @@ router.get('/visit-templates/:id', async (req, res) => {
 
     res.json(template);
   } catch (error) {
-    console.error('Error getting visit template:', error);
+    logger.error('Error getting visit template', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message === 'Visit template not found' ? 404 : 500).json({
       error: 'Failed to get visit template',
       message: error.message,
@@ -986,7 +1002,7 @@ router.put('/visit-templates/:id', requirePermission('forms:write'), async (req,
 
     res.json(template);
   } catch (error) {
-    console.error('Error updating visit template:', error);
+    logger.error('Error updating visit template', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message === 'Visit template not found' ? 404 : 400).json({
       error: 'Failed to update visit template',
       message: error.message,
@@ -1008,7 +1024,7 @@ router.delete('/visit-templates/:id', requirePermission('forms:write'), async (r
 
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting visit template:', error);
+    logger.error('Error deleting visit template', { error: error.message, stack: error.stack, orgId: req.userContext?.orgId, userId: req.userContext?.userId });
     res.status(error.message === 'Visit template not found' ? 404 : 500).json({
       error: 'Failed to delete visit template',
       message: error.message,
