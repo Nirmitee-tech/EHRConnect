@@ -13,41 +13,36 @@ class FormsService {
 
   /**
    * List form templates with filtering and pagination
+   * Optimized with CTE to avoid double query execution
    */
   async listTemplates(orgId, { status, category, search, specialty, page = 1, pageSize = 20 }) {
     const offset = (page - 1) * pageSize;
-    let query = `
-      SELECT
-        ft.*,
-        ft_theme.name as theme_name,
-        ft_theme.config as theme_config
-      FROM form_templates ft
-      LEFT JOIN form_themes ft_theme ON ft.theme_id = ft_theme.id
-      WHERE ft.org_id = $1
-    `;
+    
+    // Build filter conditions
+    let filterClause = 'WHERE ft.org_id = $1';
     const params = [orgId];
     let paramIndex = 2;
 
     if (status) {
-      query += ` AND ft.status = $${paramIndex}`;
+      filterClause += ` AND ft.status = $${paramIndex}`;
       params.push(status);
       paramIndex++;
     }
 
     if (category) {
-      query += ` AND ft.category = $${paramIndex}`;
+      filterClause += ` AND ft.category = $${paramIndex}`;
       params.push(category);
       paramIndex++;
     }
 
     if (specialty) {
-      query += ` AND ft.specialty_slug = $${paramIndex}`;
+      filterClause += ` AND ft.specialty_slug = $${paramIndex}`;
       params.push(specialty);
       paramIndex++;
     }
 
     if (search) {
-      query += ` AND (
+      filterClause += ` AND (
         ft.title ILIKE $${paramIndex}
         OR ft.description ILIKE $${paramIndex}
         OR $${paramIndex + 1} = ANY(ft.tags)
@@ -56,19 +51,54 @@ class FormsService {
       paramIndex += 2;
     }
 
-    // Get total count
-    const countQuery = `SELECT COUNT(*) FROM (${query}) as count_query`;
-    const countResult = await pool.query(countQuery, params);
-    const total = parseInt(countResult.rows[0].count);
-
-    // Get paginated results
-    query += ` ORDER BY ft.updated_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    // Use CTE with window function to get count and data in single query
+    const query = `
+      WITH filtered_templates AS (
+        SELECT
+          ft.id,
+          ft.org_id,
+          ft.title,
+          ft.description,
+          ft.status,
+          ft.version,
+          ft.questionnaire,
+          ft.fhir_url,
+          ft.category,
+          ft.tags,
+          ft.specialty_slug,
+          ft.theme_id,
+          ft.created_by,
+          ft.created_at,
+          ft.updated_by,
+          ft.updated_at,
+          ft.published_at,
+          ft.archived_at,
+          ft.parent_version_id,
+          ft.is_latest_version,
+          ft.usage_count,
+          ft.last_used_at,
+          ft_theme.name as theme_name,
+          ft_theme.config as theme_config,
+          COUNT(*) OVER() as total_count
+        FROM form_templates ft
+        LEFT JOIN form_themes ft_theme ON ft.theme_id = ft_theme.id
+        ${filterClause}
+        ORDER BY ft.updated_at DESC
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      )
+      SELECT * FROM filtered_templates
+    `;
+    
     params.push(pageSize, offset);
 
     const result = await pool.query(query, params);
+    const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0;
+
+    // Remove total_count from each row
+    const templates = result.rows.map(({ total_count, ...row }) => row);
 
     return {
-      templates: result.rows,
+      templates,
       total,
       page,
       pageSize,
