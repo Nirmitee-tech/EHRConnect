@@ -146,13 +146,13 @@ export function DetailedAppointmentCard({
               </span>
               {/* Video Call Badge - Prominent */}
               {appointment.mode === 'video-call' && (
-                <div className="flex items-center gap-1 px-2 py-0.5 bg-green-600 text-white rounded-full text-[10px] font-bold">
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-theme-accent text-white rounded-full text-[10px] font-bold">
                   <Video className="h-3 w-3" />
                   <span>VIDEO CALL</span>
                 </div>
               )}
               {appointment.mode === 'voice-call' && (
-                <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-600 text-white rounded-full text-[10px] font-bold">
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-theme-secondary text-white rounded-full text-[10px] font-bold">
                   <Phone className="h-3 w-3" />
                   <span>VOICE CALL</span>
                 </div>
@@ -235,7 +235,7 @@ export function DetailedAppointmentCard({
                 <>
                   <button
                     onClick={(e) => handleQuickAction(e, 'start')}
-                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-[10px] font-medium"
+                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-primary text-primary-foreground rounded hover:opacity-90 transition-colors text-[10px] font-medium"
                     title="Start Encounter"
                   >
                     <Play className="h-3 w-3" />
@@ -255,7 +255,7 @@ export function DetailedAppointmentCard({
                 <>
                   <button
                     onClick={(e) => handleQuickAction(e, 'complete')}
-                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-[10px] font-medium"
+                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-theme-accent text-white rounded hover:opacity-90 transition-colors text-[10px] font-medium"
                     title="Complete"
                   >
                     <CheckCircle className="h-3 w-3" />

@@ -264,27 +264,27 @@ export function FamilyMemberDrawer({
         name: name || undefined,
         relationship: relationshipObj
           ? {
-              coding: [
-                {
-                  system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
-                  code: relationshipObj.value,
-                  display: relationshipObj.label
-                }
-              ],
-              text: relationshipObj.label
-            }
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+                code: relationshipObj.value,
+                display: relationshipObj.label
+              }
+            ],
+            text: relationshipObj.label
+          }
           : undefined,
         sex: genderObj
           ? {
-              coding: [
-                {
-                  system: 'http://hl7.org/fhir/administrative-gender',
-                  code: genderObj.value,
-                  display: genderObj.label
-                }
-              ],
-              text: genderObj.label
-            }
+            coding: [
+              {
+                system: 'http://hl7.org/fhir/administrative-gender',
+                code: genderObj.value,
+                display: genderObj.label
+              }
+            ],
+            text: genderObj.label
+          }
           : undefined,
         date: recordedDate ? new Date(recordedDate).toISOString() : undefined,
         bornDate: birthDate || undefined
@@ -332,12 +332,12 @@ export function FamilyMemberDrawer({
               code: {
                 coding: c.code
                   ? [
-                      {
-                        system: 'http://snomed.info/sct',
-                        code: c.code,
-                        display: c.display
-                      }
-                    ]
+                    {
+                      system: 'http://snomed.info/sct',
+                      code: c.code,
+                      display: c.display
+                    }
+                  ]
                   : undefined,
                 text: c.display
               }
@@ -501,7 +501,7 @@ export function FamilyMemberDrawer({
                       onChange={(e) => setDeceased(e.target.checked)}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                   </label>
                 </div>
 
@@ -528,7 +528,7 @@ export function FamilyMemberDrawer({
                   <Button
                     type="button"
                     onClick={addCondition}
-                    className="h-9 bg-blue-600 text-white hover:bg-blue-700"
+                    className="h-9 bg-primary text-primary-foreground hover:opacity-90"
                   >
                     <Plus className="h-4 w-4 mr-1.5" />
                     Add Condition
@@ -603,7 +603,7 @@ export function FamilyMemberDrawer({
                                 onChange={(e) => updateCondition(index, 'contributedToDeath', e.target.checked)}
                                 className="sr-only peer"
                               />
-                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                             </label>
                           </div>
 
@@ -615,7 +615,7 @@ export function FamilyMemberDrawer({
                               value={condition.notes}
                               onChange={(e) => updateCondition(index, 'notes', e.target.value)}
                               rows={2}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                               placeholder="Notes about this condition"
                             />
                           </div>
@@ -636,7 +636,7 @@ export function FamilyMemberDrawer({
                   value={generalNotes}
                   onChange={(e) => setGeneralNotes(e.target.value)}
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                   placeholder="Add any additional notes about this family member's health history..."
                 />
               </div>
@@ -658,7 +658,7 @@ export function FamilyMemberDrawer({
             <Button
               onClick={handleSave}
               disabled={saving || !relationship}
-              className="h-11 px-8 bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300"
+              className="h-11 px-8 bg-primary text-primary-foreground hover:opacity-90 disabled:bg-gray-300"
             >
               {saving ? 'Saving...' : member ? 'Update Member' : 'Add Member'}
             </Button>

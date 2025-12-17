@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import { 
-  AlertCircle, 
-  Pill, 
-  FileText, 
-  User, 
-  CreditCard, 
+import {
+  AlertCircle,
+  Pill,
+  FileText,
+  User,
+  CreditCard,
   Shield,
   Calendar,
   Syringe,
@@ -41,10 +41,10 @@ function SectionCard({ title, icon, children, badge, isEmpty, onEdit }: SectionC
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
       <div className="border-b border-gray-200 px-4 py-3 flex items-center justify-between bg-gray-50">
         <div className="flex items-center gap-2">
-          <div className="text-blue-600">{icon}</div>
+          <div className="text-primary">{icon}</div>
           <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
           {badge !== undefined && (
-            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
+            <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded-full">
               {badge}
             </span>
           )}
@@ -52,7 +52,7 @@ function SectionCard({ title, icon, children, badge, isEmpty, onEdit }: SectionC
         {onEdit && (
           <button
             onClick={onEdit}
-            className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+            className="text-primary hover:text-primary/80 text-xs font-medium"
           >
             Edit
           </button>
@@ -252,11 +252,10 @@ export function DashboardTab({
                         <td className="px-3 py-2 text-xs text-gray-600">{vital.config.normalRange}</td>
                         <td className="px-3 py-2">
                           {trend && (
-                            <span className={`text-xs ${
-                              trend.direction === 'up' ? 'text-red-600' :
+                            <span className={`text-xs ${trend.direction === 'up' ? 'text-red-600' :
                               trend.direction === 'down' ? 'text-green-600' :
-                              'text-gray-600'
-                            }`}>
+                                'text-gray-600'
+                              }`}>
                               {trend.direction === 'up' ? '↑' : trend.direction === 'down' ? '↓' : '→'}
                               {Math.abs(trend.percentChange).toFixed(1)}%
                             </span>
@@ -286,16 +285,16 @@ export function DashboardTab({
                     : encounter.class || 'Visit';
 
                   return (
-                    <div key={encounter.id || idx} className="p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
+                    <div key={encounter.id || idx} className="p-3 bg-primary/5 border-l-4 border-primary rounded">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-blue-900">{encounterType}</p>
-                          <p className="text-xs text-blue-700 mt-1">{dateStr}</p>
+                          <p className="text-sm font-semibold text-primary">{encounterType}</p>
+                          <p className="text-xs text-primary/80 mt-1">{dateStr}</p>
                           <p className="text-xs text-gray-600 mt-2">
                             Chief Complaint: Routine checkup and medication review
                           </p>
                         </div>
-                        <button className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                        <button className="text-xs text-primary hover:text-primary/80 font-medium">
                           View →
                         </button>
                       </div>
@@ -439,21 +438,21 @@ export function DashboardTab({
           >
             <div className="space-y-2">
               <div className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                <FileCheck className="h-4 w-4 text-blue-600" />
+                <FileCheck className="h-4 w-4 text-primary" />
                 <div className="flex-1">
                   <p className="text-xs font-medium text-gray-900">Lab Report - Lipid Panel</p>
                   <p className="text-xs text-gray-500">Oct 10, 2025</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                <FileCheck className="h-4 w-4 text-blue-600" />
+                <FileCheck className="h-4 w-4 text-primary" />
                 <div className="flex-1">
                   <p className="text-xs font-medium text-gray-900">Consultation Note</p>
                   <p className="text-xs text-gray-500">Oct 8, 2025</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                <FileCheck className="h-4 w-4 text-blue-600" />
+                <FileCheck className="h-4 w-4 text-primary" />
                 <div className="flex-1">
                   <p className="text-xs font-medium text-gray-900">Prescription - Atorvastatin</p>
                   <p className="text-xs text-gray-500">Oct 5, 2025</p>

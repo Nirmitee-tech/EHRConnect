@@ -31,31 +31,28 @@ export function FacesheetTab({ patientId }: FacesheetTabProps) {
         <div className="flex gap-6">
           <button
             onClick={() => setActiveSubTab('summary')}
-            className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
-              activeSubTab === 'summary'
+            className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${activeSubTab === 'summary'
                 ? 'border-gray-900 text-gray-900'
                 : 'border-transparent text-gray-600 hover:text-gray-900'
-            }`}
+              }`}
           >
             Face Sheet
           </button>
           <button
             onClick={() => setActiveSubTab('timeline')}
-            className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
-              activeSubTab === 'timeline'
+            className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${activeSubTab === 'timeline'
                 ? 'border-gray-900 text-gray-900'
                 : 'border-transparent text-gray-600 hover:text-gray-900'
-            }`}
+              }`}
           >
             Timeline
           </button>
           <button
             onClick={() => setActiveSubTab('forms')}
-            className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
-              activeSubTab === 'forms'
+            className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${activeSubTab === 'forms'
                 ? 'border-gray-900 text-gray-900'
                 : 'border-transparent text-gray-600 hover:text-gray-900'
-            }`}
+              }`}
           >
             Forms
           </button>
@@ -86,11 +83,11 @@ export function FacesheetTab({ patientId }: FacesheetTabProps) {
 
                   return (
                     <div key={encounter.id} className="relative pl-10">
-                      <div className="absolute left-2.5 top-1 w-3 h-3 rounded-full bg-blue-600 border-2 border-white"></div>
+                      <div className="absolute left-2.5 top-1 w-3 h-3 rounded-full bg-primary border-2 border-white"></div>
                       <div className="bg-white border border-gray-300 rounded p-3 shadow-sm">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-blue-600" />
+                            <Calendar className="h-4 w-4 text-primary" />
                             <span className="font-semibold text-sm text-gray-900">{type}</span>
                           </div>
                           <span className="text-xs text-gray-500">
@@ -135,8 +132,8 @@ export function FacesheetTab({ patientId }: FacesheetTabProps) {
                 {medications?.slice(0, 10).map((medication: any) => {
                   const date = medication.authoredOn;
                   const name = medication.medicationCodeableConcept?.text ||
-                              medication.medicationCodeableConcept?.coding?.[0]?.display ||
-                              'Unknown';
+                    medication.medicationCodeableConcept?.coding?.[0]?.display ||
+                    'Unknown';
 
                   return (
                     <div key={medication.id} className="relative pl-10">
@@ -168,11 +165,11 @@ export function FacesheetTab({ patientId }: FacesheetTabProps) {
 
                   return (
                     <div key={lab.id} className="relative pl-10">
-                      <div className="absolute left-2.5 top-1 w-3 h-3 rounded-full bg-purple-600 border-2 border-white"></div>
+                      <div className="absolute left-2.5 top-1 w-3 h-3 rounded-full bg-theme-secondary border-2 border-white"></div>
                       <div className="bg-white border border-gray-300 rounded p-3 shadow-sm">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-2">
-                            <TestTube className="h-4 w-4 text-purple-600" />
+                            <TestTube className="h-4 w-4 text-theme-secondary" />
                             <span className="font-semibold text-sm text-gray-900">{name}</span>
                           </div>
                           <span className="text-xs text-gray-500">

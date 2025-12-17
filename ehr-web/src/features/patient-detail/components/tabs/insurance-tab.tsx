@@ -23,7 +23,7 @@ export function InsuranceTab() {
         <h2 className="text-lg font-semibold text-gray-900">Insurance Information</h2>
         <button
           onClick={() => setDrawerState('insurance', true)}
-          className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
+          className="px-3 py-1 text-xs font-medium text-white bg-primary hover:opacity-90 rounded"
         >
           + Add Insurance
         </button>
@@ -36,19 +36,19 @@ export function InsuranceTab() {
             const policyNumber = insurance.subscriberId || '-';
             const planName = insurance.type?.text || insurance.class?.[0]?.name || '-';
             const orderBadge = insurance.order === 1 ? 'Primary' : insurance.order === 2 ? 'Secondary' : 'Tertiary';
-            const orderColor = insurance.order === 1 ? 'bg-blue-100 text-blue-800' : insurance.order === 2 ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800';
+            const orderColor = insurance.order === 1 ? 'bg-primary/10 text-primary' : insurance.order === 2 ? 'bg-theme-secondary/10 text-theme-secondary' : 'bg-gray-100 text-gray-800';
 
             return (
               <div key={idx} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <Shield className="h-5 w-5 text-green-600" />
+                      <Shield className="h-5 w-5 text-theme-accent" />
                       <h3 className="text-base font-semibold text-gray-900">{payorName}</h3>
                       <span className={`px-2 py-0.5 text-xs font-medium rounded ${orderColor}`}>
                         {orderBadge}
                       </span>
-                      <span className={`px-2 py-0.5 text-xs font-medium rounded ${insurance.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                      <span className={`px-2 py-0.5 text-xs font-medium rounded ${insurance.status === 'active' ? 'bg-theme-accent/10 text-theme-accent' : 'bg-gray-100 text-gray-800'}`}>
                         {insurance.status}
                       </span>
                     </div>

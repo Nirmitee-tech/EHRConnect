@@ -43,7 +43,7 @@ export function VaccinesTab() {
         <h2 className="text-lg font-semibold text-gray-900">Immunization Records</h2>
         <button
           onClick={() => setDrawerState('immunization', true)}
-          className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
+          className="px-3 py-1 text-xs font-medium text-primary-foreground bg-primary hover:opacity-90 rounded"
         >
           + Add Vaccine
         </button>
@@ -53,8 +53,8 @@ export function VaccinesTab() {
         <div className="space-y-3">
           {immunizations.map((immunization: any, idx: number) => {
             const vaccineCode = immunization.vaccineCode?.text ||
-                               immunization.vaccineCode?.coding?.[0]?.display ||
-                               'Unknown Vaccine';
+              immunization.vaccineCode?.coding?.[0]?.display ||
+              'Unknown Vaccine';
             const occurrenceDate = immunization.occurrenceDateTime || immunization.occurrenceString;
             const lotNumber = immunization.lotNumber || '-';
             const status = immunization.status || 'unknown';
@@ -70,7 +70,7 @@ export function VaccinesTab() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <Syringe className="h-5 w-5 text-blue-600" />
+                      <Syringe className="h-5 w-5 text-primary" />
                       <h3 className="text-base font-semibold text-gray-900">{vaccineCode}</h3>
                       <span className={`px-2 py-0.5 text-xs font-medium rounded ${statusBadge.bg} ${statusBadge.text} flex items-center gap-1`}>
                         <StatusIcon className="h-3 w-3" />

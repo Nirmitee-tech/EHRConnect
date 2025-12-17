@@ -260,7 +260,7 @@ export function ImmunizationForm({ patientId, patientName, onSuccess, onCancel }
         <Button
           type="submit"
           disabled={saving}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+          className="flex-1 bg-primary text-primary-foreground hover:opacity-90"
         >
           {saving ? (
             <>

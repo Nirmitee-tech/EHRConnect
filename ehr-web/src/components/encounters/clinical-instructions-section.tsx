@@ -169,7 +169,7 @@ export function ClinicalInstructionsSection({
   if (loading && items.length === 0) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Clock className="h-5 w-5 animate-spin text-blue-600 mr-2" />
+        <Clock className="h-5 w-5 animate-spin text-primary mr-2" />
         <span className="text-sm text-gray-600">Loading clinical instructions...</span>
       </div>
     );
@@ -180,14 +180,14 @@ export function ClinicalInstructionsSection({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-blue-600" />
+          <FileText className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-semibold text-gray-900">Clinical Instructions</h3>
           <span className="text-xs text-gray-500">(For Healthcare Providers)</span>
         </div>
         <button
           onClick={handleAddItem}
           disabled={loading}
-          className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs font-medium transition-colors disabled:opacity-50"
+          className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg hover:opacity-90 text-xs font-medium transition-colors disabled:opacity-50"
         >
           <Plus className="h-3.5 w-3.5" />
           Add Clinical Instruction
@@ -319,7 +319,7 @@ export function ClinicalInstructionsSection({
             <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3 flex-1">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex-shrink-0 mt-0.5">
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex-shrink-0 mt-0.5">
                     {index + 1}
                   </div>
                   <div className="flex-1">
@@ -343,7 +343,7 @@ export function ClinicalInstructionsSection({
                   <button
                     onClick={() => setEditingItem(item)}
                     disabled={loading}
-                    className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
+                    className="p-1 text-primary hover:bg-primary/10 rounded transition-colors disabled:opacity-50"
                     title="Edit"
                   >
                     <Edit2 className="h-4 w-4" />

@@ -501,7 +501,7 @@ export function PrenatalFlowsheet({ patientId }: PrenatalFlowsheetProps) {
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
-              <Activity className="h-6 w-6 text-blue-600" />
+              <Activity className="h-6 w-6 text-primary" />
               <div>
                 <h1 className="text-lg font-bold text-gray-900">Prenatal Flowsheet</h1>
                 <p className="text-xs text-gray-600">
@@ -536,11 +536,10 @@ export function PrenatalFlowsheet({ patientId }: PrenatalFlowsheetProps) {
               </button>
               <button
                 onClick={() => setHighlightAbnormal(!highlightAbnormal)}
-                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
-                  highlightAbnormal
+                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${highlightAbnormal
                     ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 {highlightAbnormal ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                 Highlight
@@ -548,7 +547,7 @@ export function PrenatalFlowsheet({ patientId }: PrenatalFlowsheetProps) {
               <div className="w-px h-6 bg-gray-300 mx-1" />
               <button
                 onClick={() => setShowAddVisitDialog(true)}
-                className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded hover:opacity-90 transition-colors flex items-center gap-1.5"
                 title="Add a new prenatal visit"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -701,7 +700,7 @@ export function PrenatalFlowsheet({ patientId }: PrenatalFlowsheetProps) {
               </div>
               <button
                 onClick={() => setFilterGARange([0, 42])}
-                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                className="text-xs text-primary hover:text-primary/80 font-medium"
               >
                 Reset
               </button>
@@ -745,7 +744,7 @@ export function PrenatalFlowsheet({ patientId }: PrenatalFlowsheetProps) {
                   filteredVisits.map((visit, index) => (
                     <tr
                       key={visit.id}
-                      className="border-b border-gray-200 hover:bg-blue-50 transition-colors"
+                      className="border-b border-gray-200 hover:bg-primary/5 transition-colors"
                     >
                       <td className="p-2 text-center font-semibold text-gray-700 border-r border-gray-200">
                         {index + 1}
@@ -759,7 +758,7 @@ export function PrenatalFlowsheet({ patientId }: PrenatalFlowsheetProps) {
                         <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => setEditingVisitId(visit.id)}
-                            className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                            className="p-1 text-primary hover:bg-primary/10 rounded"
                             title="Edit visit"
                           >
                             <Edit2 className="h-3 w-3" />
