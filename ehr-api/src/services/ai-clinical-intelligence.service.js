@@ -20,6 +20,7 @@ class AIClinicalIntelligenceService {
     this.apiKey = process.env.OPENAI_API_KEY || process.env.AI_API_KEY;
     this.apiUrl = process.env.AI_API_URL || 'https://api.openai.com/v1/chat/completions';
     this.model = process.env.AI_MODEL || 'gpt-4';
+    this.timeout = parseInt(process.env.AI_TIMEOUT || '30000', 10); // Configurable timeout
     this.enabled = !!this.apiKey;
   }
 
@@ -409,13 +410,17 @@ Format as JSON:
     }
 
     try {
-      // Fetch patient data
+      // Configurable limits to prevent performance issues with extensive medical histories
+      const encounterLimit = parseInt(process.env.AI_PATIENT_SUMMARY_ENCOUNTERS || '10', 10);
+      const observationLimit = parseInt(process.env.AI_PATIENT_SUMMARY_OBSERVATIONS || '20', 10);
+
+      // Fetch patient data with pagination limits
       const patient = await db.Patient.findOne({
         where: { id: patientId, org_id: orgId },
         include: [
-          { model: db.Encounter, limit: 10, order: [['encounter_date', 'DESC']] },
+          { model: db.Encounter, limit: encounterLimit, order: [['encounter_date', 'DESC']] },
           { model: db.Medication, where: { status: 'active' }, required: false },
-          { model: db.Observation, limit: 20, order: [['date', 'DESC']] }
+          { model: db.Observation, limit: observationLimit, order: [['date', 'DESC']] }
         ]
       });
 
@@ -461,7 +466,7 @@ Format as structured text with clear sections.`;
     }
 
     const maxRetries = options.maxRetries || 2;
-    const temperature = options.temperature || 0.3; // Lower temperature for medical accuracy
+    const temperature = options.temperature || 0.3; // Lower temperature (0.0-1.0) for medical accuracy - reduces creativity, increases factual consistency
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
@@ -487,7 +492,7 @@ Format as structured text with clear sections.`;
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${this.apiKey}`
             },
-            timeout: 30000 // 30 second timeout
+            timeout: this.timeout // Configurable timeout from environment or default 30s
           }
         );
 

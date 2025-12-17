@@ -19,6 +19,12 @@ import {
   Sparkles,
   Loader2
 } from 'lucide-react';
+import type {
+  NoteCompletion,
+  DifferentialDiagnosisResult,
+  MedicationInteractions,
+  CodingSuggestions
+} from '@/types/ai-clinical';
 
 export default function AIClinicalAssistant() {
   const [loading, setLoading] = useState(false);
@@ -27,19 +33,19 @@ export default function AIClinicalAssistant() {
 
   // Auto-complete state
   const [partialNote, setPartialNote] = useState('');
-  const [noteCompletion, setNoteCompletion] = useState<any>(null);
+  const [noteCompletion, setNoteCompletion] = useState<NoteCompletion | null>(null);
 
   // Differential diagnosis state
   const [symptoms, setSymptoms] = useState('');
-  const [diagnoses, setDiagnoses] = useState<any[]>([]);
+  const [diagnosesResult, setDiagnosesResult] = useState<DifferentialDiagnosisResult | null>(null);
 
   // Medication interaction state
   const [medications, setMedications] = useState('');
-  const [interactions, setInteractions] = useState<any>(null);
+  const [interactions, setInteractions] = useState<MedicationInteractions | null>(null);
 
   // Coding suggestions state
   const [encounterText, setEncounterText] = useState('');
-  const [codingSuggestions, setCodingSuggestions] = useState<any>(null);
+  const [codingSuggestions, setCodingSuggestions] = useState<CodingSuggestions | null>(null);
 
   const handleAutoComplete = async () => {
     if (!partialNote.trim()) return;
@@ -85,7 +91,7 @@ export default function AIClinicalAssistant() {
         })
       });
       const data = await response.json();
-      setDiagnoses(data.diagnoses || []);
+      setDiagnosesResult(data);
       setAiEnabled(data.aiEnabled !== false);
     } catch (error) {
       console.error('Differential diagnosis error:', error);
@@ -229,7 +235,7 @@ export default function AIClinicalAssistant() {
                   {noteCompletion.suggestions && noteCompletion.suggestions.length > 0 && (
                     <div>
                       <h4 className="font-semibold mb-2">Alternative Suggestions:</h4>
-                      {noteCompletion.suggestions.map((suggestion: string, idx: number) => (
+                      {noteCompletion.suggestions.map((suggestion, idx) => (
                         <div key={idx} className="p-3 bg-gray-50 border rounded mb-2">
                           <p className="text-sm font-mono">{suggestion}</p>
                         </div>
@@ -269,10 +275,10 @@ export default function AIClinicalAssistant() {
                 Analyze Symptoms
               </Button>
 
-              {diagnoses && diagnoses.length > 0 && (
+              {diagnosesResult && diagnosesResult.diagnoses && diagnosesResult.diagnoses.length > 0 && (
                 <div className="mt-4 space-y-3">
                   <h4 className="font-semibold">Differential Diagnoses:</h4>
-                  {diagnoses.map((dx: any, idx: number) => (
+                  {diagnosesResult.diagnoses.map((dx, idx) => (
                     <Card key={idx} className="p-4">
                       <div className="flex justify-between items-start mb-2">
                         <div>
@@ -352,7 +358,7 @@ export default function AIClinicalAssistant() {
                   {interactions.critical && interactions.critical.length > 0 && (
                     <div>
                       <h4 className="font-semibold text-red-600 mb-2">Critical Interactions:</h4>
-                      {interactions.critical.map((interaction: any, idx: number) => (
+                      {interactions.critical.map((interaction, idx) => (
                         <Card key={idx} className="p-4 mb-2 border-red-200">
                           <p><strong>Drugs:</strong> {interaction.drugs.join(' + ')}</p>
                           <p><strong>Risk:</strong> {interaction.risk}</p>
@@ -399,7 +405,7 @@ export default function AIClinicalAssistant() {
                   {codingSuggestions.icd10 && codingSuggestions.icd10.length > 0 && (
                     <div>
                       <h4 className="font-semibold mb-2">ICD-10 Codes:</h4>
-                      {codingSuggestions.icd10.map((code: any, idx: number) => (
+                      {codingSuggestions.icd10.map((code, idx) => (
                         <Card key={idx} className="p-3 mb-2">
                           <div className="flex justify-between items-start">
                             <div>
@@ -417,7 +423,7 @@ export default function AIClinicalAssistant() {
                   {codingSuggestions.cpt && codingSuggestions.cpt.length > 0 && (
                     <div>
                       <h4 className="font-semibold mb-2">CPT Codes:</h4>
-                      {codingSuggestions.cpt.map((code: any, idx: number) => (
+                      {codingSuggestions.cpt.map((code, idx) => (
                         <Card key={idx} className="p-3 mb-2">
                           <div className="flex justify-between items-start">
                             <div>
