@@ -77,7 +77,7 @@ export function EncounterHeader({
           <div className="relative">
             <button
               onClick={onAmcPopoverToggle}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+              className="px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary rounded hover:opacity-90"
             >
               AMC Requires
             </button>

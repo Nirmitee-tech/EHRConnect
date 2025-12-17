@@ -572,7 +572,7 @@ export function PatientHeader({
         <div className="flex items-center flex-wrap lg:flex-nowrap gap-y-2 text-xs gap-x-1">
           {/* Medical Info */}
           <div className="flex items-center gap-1.5 pr-4 border-r-2 border-gray-300 group flex-shrink-0">
-            <Heart className="h-3.5 w-3.5 text-blue-600 flex-shrink-0" />
+            <Heart className="h-3.5 w-3.5 text-primary flex-shrink-0" />
             <div className="flex items-center gap-1.5 text-gray-800 whitespace-nowrap">
               <span className="text-gray-600 font-medium">Blood:</span>
               <span className="font-semibold">-</span>

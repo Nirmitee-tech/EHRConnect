@@ -60,7 +60,7 @@ const TabItem = memo(({
         : 'bg-gray-200 hover:bg-gray-300 border-t border-x border-transparent'
       }
       ${isDragging ? 'opacity-50' : ''}
-      ${isDragOver ? 'border-l-2 border-l-blue-500' : ''}
+      ${isDragOver ? 'border-l-2 border-l-primary' : ''}
     `}
   >
     {tab.icon && React.isValidElement(tab.icon) && (
@@ -214,7 +214,7 @@ export const TabBar = memo(function TabBar() {
               className={`
                 flex items-center gap-2 px-3 py-1 rounded-md text-xs font-medium transition-all
                 ${hideHeaderOnDetailPages
-                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  ? 'bg-primary text-primary-foreground hover:opacity-90'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }
               `}

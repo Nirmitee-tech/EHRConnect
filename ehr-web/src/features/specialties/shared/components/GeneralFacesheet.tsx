@@ -1009,7 +1009,7 @@ export function GeneralFacesheet({ patientId: _ }: GeneralFacesheetProps) {
                   <p className="text-[10px] text-gray-500 mb-2">No surgeries reported</p>
                   <button
                     onClick={() => openDrawer('medicalInfo')}
-                    className="text-[10px] text-blue-600 hover:text-blue-800 font-medium"
+                    className="text-[10px] text-primary hover:text-primary/80 font-medium"
                   >
                     + Add Surgery
                   </button>

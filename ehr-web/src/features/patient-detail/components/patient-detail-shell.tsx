@@ -293,451 +293,451 @@ export function PatientDetailShell() {
 
             {/* Tab Content */}
             <div className="flex-1 overflow-y-auto p-2">
-            {/* Browser-style tabs - all tabs rendered and cached, instant switching */}
-            <div style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}>
-              <DashboardTab
-                patient={patient}
-                allergies={allergies}
-                problems={problems}
-                medications={medications}
-                encounters={encounters}
-                observations={observations}
-              />
-            </div>
-            <div style={{ display: activeTab === 'chart' ? 'block' : 'none' }}>
-              <OverviewTab
-                encounters={encounters}
-                problems={problems}
-                medications={medications}
-                allergies={allergies}
-              />
-            </div>
-            <div style={{ display: activeTab === 'vitals' ? 'block' : 'none' }}>
-              <VitalsTab
-                observations={observations}
-                onRecordVitals={() => setDrawerState('vitals', true)}
-              />
-            </div>
-            <div style={{ display: activeTab === 'encounters' ? 'block' : 'none' }}>
-              <EncountersTab
-                encounters={encounters}
-                observations={observations}
-                onNewEncounter={() => setDrawerState('encounter', true)}
-                selectedEncounterId={selectedEncounter}
-                onEncounterClick={async (encounterId) => {
-                  setSelectedEncounter(encounterId);
-                  setOpenEncounterTab(encounterId);
-                  // Switch to the encounter tab
-                  setActiveTab(`encounter-${encounterId}`);
-                  // Load encounter documentation
-                  await loadEncounterDocumentation(encounterId);
-                }}
-              />
-            </div>
-            <div style={{ display: activeTab === 'problems' ? 'block' : 'none' }}>
-              <ProblemsTab
-                problems={problems}
-                onAddProblem={() => setDrawerState('problem', true)}
-              />
-            </div>
-            <div style={{ display: activeTab === 'medications' ? 'block' : 'none' }}>
-              <MedicationsTab
-                patientId={patientId}
-                medications={medications}
-                onPrescribe={() => setDrawerState('medication', true)}
-              />
-            </div>
-            <div style={{ display: activeTab === 'allergies' ? 'block' : 'none' }}>
-              <AllergiesTab
-                allergies={allergies}
-                onAddAllergy={() => setDrawerState('allergy', true)}
-              />
-            </div>
-            <div style={{ display: activeTab === 'family-history' ? 'block' : 'none' }}>
-              <FamilyHistoryTab patientId={patientId} />
-            </div>
-            <div style={{ display: activeTab === 'insurance' ? 'block' : 'none' }}>
-              <InsuranceTab />
-            </div>
-            <div style={{ display: activeTab === 'documents' ? 'block' : 'none' }}>
-              <DocumentsTab />
-            </div>
-
-            {/* Tasks Tab */}
-            <div style={{ display: activeTab === 'tasks' ? 'block' : 'none' }}>
-              <TasksTab patientId={patientId} />
-            </div>
-
-            {/* Vaccines Tab */}
-            <div style={{ display: activeTab === 'vaccines' ? 'block' : 'none' }}>
-              <VaccinesTab />
-            </div>
-
-            {/* Lab Tab */}
-            <div style={{ display: activeTab === 'lab' ? 'block' : 'none' }}>
-              <LabTab />
-            </div>
-
-            {/* Imaging Tab */}
-            <div style={{ display: activeTab === 'imaging' ? 'block' : 'none' }}>
-              <ImagingTab />
-            </div>
-
-            {/* Forms Tab */}
-            <div style={{ display: activeTab === 'forms' ? 'block' : 'none' }}>
-              <FormsTab patientId={patientId} encounterId={selectedEncounter?.id || undefined} />
-            </div>
-
-            {/* Facesheet Tab */}
-            <div style={{ display: activeTab === 'facesheet' ? 'block' : 'none' }}>
-              <FacesheetTab patientId={patientId} />
-            </div>
-
-            {/* Prenatal Facesheet Tab */}
-            <div style={{ display: activeTab === 'facesheet-pregnancy' ? 'block' : 'none' }}>
-              <PrenatalFacesheetTab patientId={patientId} />
-            </div>
-
-            {/* Prenatal Flowsheet Tab */}
-            <div style={{ display: activeTab === 'flowsheet-prenatal' ? 'block' : 'none' }}>
-              <PrenatalFlowsheet patientId={patientId} />
-            </div>
-
-            {/* Prenatal Vitals Tab */}
-            <div style={{ display: activeTab === 'vitals-prenatal' ? 'block' : 'none' }}>
-              <PrenatalVitals patientId={patientId} />
-            </div>
-
-            {/* History Tab */}
-            <div style={{ display: activeTab === 'history' ? 'block' : 'none' }}>
-              <PlaceholderTab
-                title="Medical History"
-                icon={History}
-                message="No medical history recorded"
-              />
-            </div>
-
-            {/* Financial Tab */}
-            <div style={{ display: activeTab === 'financial' ? 'block' : 'none' }}>
-              <PlaceholderTab
-                title="Financial Information"
-                icon={DollarSign}
-                message="No financial information available"
-              />
-            </div>
-
-            {/* Billing Tab */}
-            <div style={{ display: activeTab === 'billing' ? 'block' : 'none' }}>
-              <PlaceholderTab
-                title="Billing"
-                icon={FileCheck}
-                message="No billing information available"
-              />
-            </div>
-
-            {/* Card Details Tab */}
-            <div style={{ display: activeTab === 'card-details' ? 'block' : 'none' }}>
-              <PlaceholderTab
-                title="Payment Methods"
-                icon={CreditCard}
-                message="No payment methods on file"
-                showButton={true}
-                buttonLabel="Add Card"
-                onButtonClick={() => console.log('Add card clicked')}
-              />
-            </div>
-
-            {/* Profile Tab */}
-            <div style={{ display: activeTab === 'profile' ? 'block' : 'none' }}>
-              <ProfileTab />
-            </div>
-
-            {/* Portal Access Tab */}
-            <div style={{ display: activeTab === 'portal-access' ? 'block' : 'none' }}>
-              <PortalAccessTab />
-            </div>
-
-            {/* Phase 2: Dynamic Specialty Component Renderer */}
-            <SpecialtyComponentRenderer activeTab={activeTab} patientId={patientId} />
-
-            {/* Dynamic Encounter Tabs */}
-            {openEncounterTabs.map((encounterId) => {
-              const encounter = encounters.find(e => e.id === encounterId);
-              const isActive = activeTab === `encounter-${encounterId}`;
-              const encounterSubTabs = openEncounterSubTabs[encounterId] || [];
-              const activeSubTab = activeEncounterSubTab[encounterId] || 'summary';
-
-              if (!encounter) return null;
-
-              return (
-                <EncounterTab
-                  key={encounterId}
-                  encounterId={encounterId}
-                  encounter={encounter}
+              {/* Browser-style tabs - all tabs rendered and cached, instant switching */}
+              <div style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}>
+                <DashboardTab
                   patient={patient}
+                  allergies={allergies}
+                  problems={problems}
+                  medications={medications}
+                  encounters={encounters}
+                  observations={observations}
+                />
+              </div>
+              <div style={{ display: activeTab === 'chart' ? 'block' : 'none' }}>
+                <OverviewTab
+                  encounters={encounters}
+                  problems={problems}
+                  medications={medications}
+                  allergies={allergies}
+                />
+              </div>
+              <div style={{ display: activeTab === 'vitals' ? 'block' : 'none' }}>
+                <VitalsTab
+                  observations={observations}
+                  onRecordVitals={() => setDrawerState('vitals', true)}
+                />
+              </div>
+              <div style={{ display: activeTab === 'encounters' ? 'block' : 'none' }}>
+                <EncountersTab
+                  encounters={encounters}
+                  observations={observations}
+                  onNewEncounter={() => setDrawerState('encounter', true)}
+                  selectedEncounterId={selectedEncounter}
+                  onEncounterClick={async (encounterId) => {
+                    setSelectedEncounter(encounterId);
+                    setOpenEncounterTab(encounterId);
+                    // Switch to the encounter tab
+                    setActiveTab(`encounter-${encounterId}`);
+                    // Load encounter documentation
+                    await loadEncounterDocumentation(encounterId);
+                  }}
+                />
+              </div>
+              <div style={{ display: activeTab === 'problems' ? 'block' : 'none' }}>
+                <ProblemsTab
+                  problems={problems}
+                  onAddProblem={() => setDrawerState('problem', true)}
+                />
+              </div>
+              <div style={{ display: activeTab === 'medications' ? 'block' : 'none' }}>
+                <MedicationsTab
                   patientId={patientId}
-                  isActive={isActive}
-                  openSubTabs={encounterSubTabs}
-                  activeSubTab={activeSubTab}
-                  onSubTabChange={(tabId) => setEncounterActiveSubTab(encounterId, tabId)}
-                  onSubTabAdd={(tabId) => addEncounterSubTab(encounterId, tabId)}
-                  onSubTabRemove={(tabId) => removeEncounterSubTab(encounterId, tabId)}
-                  openDropdown={openDropdown[encounterId] || null}
-                  onDropdownToggle={(category) => setEncounterDropdown(encounterId, category)}
-                  showAmcPopover={showAmcPopover[encounterId] || false}
-                  onAmcPopoverToggle={() =>
-                    setShowAmcPopover({ ...showAmcPopover, [encounterId]: !showAmcPopover[encounterId] })
-                  }
-                  onAmcPopoverClose={() =>
-                    setShowAmcPopover({ ...showAmcPopover, [encounterId]: false })
-                  }
-                  onAmcSave={(requirements) => {
-                    console.log('AMC Requirements saved for encounter:', encounterId, requirements);
-                  }}
-                  savedSections={encounterSavedData[encounterId] || []}
-                  expandedSections={expandedSections}
-                  onToggleSectionExpand={(sectionKey) =>
-                    setExpandedSections({
-                      ...expandedSections,
-                      [sectionKey]: !expandedSections[sectionKey]
-                    })
-                  }
-                  onEditSection={(idx, section) => {
-                    setEditingSection({ ...editingSection, [encounterId]: idx });
+                  medications={medications}
+                  onPrescribe={() => setDrawerState('medication', true)}
+                />
+              </div>
+              <div style={{ display: activeTab === 'allergies' ? 'block' : 'none' }}>
+                <AllergiesTab
+                  allergies={allergies}
+                  onAddAllergy={() => setDrawerState('allergy', true)}
+                />
+              </div>
+              <div style={{ display: activeTab === 'family-history' ? 'block' : 'none' }}>
+                <FamilyHistoryTab patientId={patientId} />
+              </div>
+              <div style={{ display: activeTab === 'insurance' ? 'block' : 'none' }}>
+                <InsuranceTab />
+              </div>
+              <div style={{ display: activeTab === 'documents' ? 'block' : 'none' }}>
+                <DocumentsTab />
+              </div>
 
-                    if (section.type === 'soap') {
-                      setSoapForm(encounterId, section.data as any);
-                      setEncounterActiveSubTab(encounterId, 'soap');
-                      addEncounterSubTab(encounterId, 'soap');
-                    } else if (section.type === 'care-plan') {
-                      setEditingCarePlanId(encounterId, section.id || null);
-                      setCurrentCarePlanData(encounterId, section.data as any);
-                      setEncounterActiveSubTab(encounterId, 'care-plan');
-                      addEncounterSubTab(encounterId, 'care-plan');
-                    } else if (section.type === 'clinical-instructions') {
-                      setClinicalInstructionsForm(encounterId, section.data as any);
-                      setEncounterActiveSubTab(encounterId, 'clinical-instructions');
-                      addEncounterSubTab(encounterId, 'clinical-instructions');
-                    } else if (section.type === 'clinical-notes') {
-                      setClinicalNotesForm(encounterId, {
-                        notes: typeof section.data === 'string' ? section.data : section.data.notes || ''
-                      });
-                      setEncounterActiveSubTab(encounterId, 'clinical-notes');
-                      addEncounterSubTab(encounterId, 'clinical-notes');
-                    } else if (section.type === 'review-of-systems') {
-                      const rosData: any = {};
-                      section.data.systems?.forEach((sys: any) => {
-                        rosData[sys.name] = sys.findings;
-                      });
-                      setRosForm(encounterId, rosData);
-                      setEncounterActiveSubTab(encounterId, 'review-of-systems');
-                      addEncounterSubTab(encounterId, 'review-of-systems');
-                    } else if (section.type === 'eye-exam') {
-                      setEyeExamForm(encounterId, section.data as any);
-                      setEncounterActiveSubTab(encounterId, 'eye-exam');
-                      addEncounterSubTab(encounterId, 'eye-exam');
-                    } else if (section.type === 'functional-and-cognitive-status') {
-                      setFunctionalCognitiveForm(encounterId, section.data as any);
-                      setEncounterActiveSubTab(encounterId, 'functional-and-cognitive-status');
-                      addEncounterSubTab(encounterId, 'functional-and-cognitive-status');
-                    } else if (section.type === 'observation') {
-                      setObservationForm(encounterId, section.data as any);
-                      setEncounterActiveSubTab(encounterId, 'observation');
-                      addEncounterSubTab(encounterId, 'observation');
-                    } else if (section.type === 'speech-dictation') {
-                      setSpeechDictationForm(encounterId, section.data as any);
-                      setEncounterActiveSubTab(encounterId, 'speech-dictation');
-                      addEncounterSubTab(encounterId, 'speech-dictation');
-                    } else if (section.type === 'procedure-order') {
-                      setProcedureOrderForm(encounterId, section.data as any);
-                      setEncounterActiveSubTab(encounterId, 'procedure-order');
-                      addEncounterSubTab(encounterId, 'procedure-order');
-                    } else if (section.type === 'lab-results') {
-                      setLabResultsForm(encounterId, section.data as any);
-                      setEncounterActiveSubTab(encounterId, 'lab-results');
-                      addEncounterSubTab(encounterId, 'lab-results');
-                    } else if (section.type === 'imaging-orders') {
-                      setImagingOrdersForm(encounterId, section.data as any);
-                      setEncounterActiveSubTab(encounterId, 'imaging-orders');
-                      addEncounterSubTab(encounterId, 'imaging-orders');
-                    } else if (section.type === 'new-questionnaire' || section.type === 'questionnaire-responses') {
-                      setQuestionnaireForm(encounterId, section.data as any);
-                      setEncounterActiveSubTab(encounterId, section.type as any);
-                      addEncounterSubTab(encounterId, section.type as any);
-                    } else if (['forms', 'track-anything', 'patient-reminders', 'clinical-reminders', 'amendments', 'letters', 'review-of-systems-checks'].includes(section.type)) {
-                      setGenericAdminForm(encounterId, section.data as any);
-                      setEncounterActiveSubTab(encounterId, section.type as any);
-                      addEncounterSubTab(encounterId, section.type as any);
+              {/* Tasks Tab */}
+              <div style={{ display: activeTab === 'tasks' ? 'block' : 'none' }}>
+                <TasksTab patientId={patientId} />
+              </div>
+
+              {/* Vaccines Tab */}
+              <div style={{ display: activeTab === 'vaccines' ? 'block' : 'none' }}>
+                <VaccinesTab />
+              </div>
+
+              {/* Lab Tab */}
+              <div style={{ display: activeTab === 'lab' ? 'block' : 'none' }}>
+                <LabTab />
+              </div>
+
+              {/* Imaging Tab */}
+              <div style={{ display: activeTab === 'imaging' ? 'block' : 'none' }}>
+                <ImagingTab />
+              </div>
+
+              {/* Forms Tab */}
+              <div style={{ display: activeTab === 'forms' ? 'block' : 'none' }}>
+                <FormsTab patientId={patientId} encounterId={selectedEncounter || undefined} />
+              </div>
+
+              {/* Facesheet Tab */}
+              <div style={{ display: activeTab === 'facesheet' ? 'block' : 'none' }}>
+                <FacesheetTab patientId={patientId} />
+              </div>
+
+              {/* Prenatal Facesheet Tab */}
+              <div style={{ display: activeTab === 'facesheet-pregnancy' ? 'block' : 'none' }}>
+                <PrenatalFacesheetTab patientId={patientId} />
+              </div>
+
+              {/* Prenatal Flowsheet Tab */}
+              <div style={{ display: activeTab === 'flowsheet-prenatal' ? 'block' : 'none' }}>
+                <PrenatalFlowsheet patientId={patientId} />
+              </div>
+
+              {/* Prenatal Vitals Tab */}
+              <div style={{ display: activeTab === 'vitals-prenatal' ? 'block' : 'none' }}>
+                <PrenatalVitals patientId={patientId} />
+              </div>
+
+              {/* History Tab */}
+              <div style={{ display: activeTab === 'history' ? 'block' : 'none' }}>
+                <PlaceholderTab
+                  title="Medical History"
+                  icon={History}
+                  message="No medical history recorded"
+                />
+              </div>
+
+              {/* Financial Tab */}
+              <div style={{ display: activeTab === 'financial' ? 'block' : 'none' }}>
+                <PlaceholderTab
+                  title="Financial Information"
+                  icon={DollarSign}
+                  message="No financial information available"
+                />
+              </div>
+
+              {/* Billing Tab */}
+              <div style={{ display: activeTab === 'billing' ? 'block' : 'none' }}>
+                <PlaceholderTab
+                  title="Billing"
+                  icon={FileCheck}
+                  message="No billing information available"
+                />
+              </div>
+
+              {/* Card Details Tab */}
+              <div style={{ display: activeTab === 'card-details' ? 'block' : 'none' }}>
+                <PlaceholderTab
+                  title="Payment Methods"
+                  icon={CreditCard}
+                  message="No payment methods on file"
+                  showButton={true}
+                  buttonLabel="Add Card"
+                  onButtonClick={() => console.log('Add card clicked')}
+                />
+              </div>
+
+              {/* Profile Tab */}
+              <div style={{ display: activeTab === 'profile' ? 'block' : 'none' }}>
+                <ProfileTab />
+              </div>
+
+              {/* Portal Access Tab */}
+              <div style={{ display: activeTab === 'portal-access' ? 'block' : 'none' }}>
+                <PortalAccessTab />
+              </div>
+
+              {/* Phase 2: Dynamic Specialty Component Renderer */}
+              <SpecialtyComponentRenderer activeTab={activeTab} patientId={patientId} />
+
+              {/* Dynamic Encounter Tabs */}
+              {openEncounterTabs.map((encounterId) => {
+                const encounter = encounters.find(e => e.id === encounterId);
+                const isActive = activeTab === `encounter-${encounterId}`;
+                const encounterSubTabs = openEncounterSubTabs[encounterId] || [];
+                const activeSubTab = activeEncounterSubTab[encounterId] || 'summary';
+
+                if (!encounter) return null;
+
+                return (
+                  <EncounterTab
+                    key={encounterId}
+                    encounterId={encounterId}
+                    encounter={encounter}
+                    patient={patient}
+                    patientId={patientId}
+                    isActive={isActive}
+                    openSubTabs={encounterSubTabs}
+                    activeSubTab={activeSubTab}
+                    onSubTabChange={(tabId) => setEncounterActiveSubTab(encounterId, tabId)}
+                    onSubTabAdd={(tabId) => addEncounterSubTab(encounterId, tabId)}
+                    onSubTabRemove={(tabId) => removeEncounterSubTab(encounterId, tabId)}
+                    openDropdown={openDropdown[encounterId] || null}
+                    onDropdownToggle={(category) => setEncounterDropdown(encounterId, category)}
+                    showAmcPopover={showAmcPopover[encounterId] || false}
+                    onAmcPopoverToggle={() =>
+                      setShowAmcPopover({ ...showAmcPopover, [encounterId]: !showAmcPopover[encounterId] })
                     }
-                  }}
-                  onDeleteSection={async (idx, section) => {
-                    if (section.type === 'care-plan' && section.id) {
+                    onAmcPopoverClose={() =>
+                      setShowAmcPopover({ ...showAmcPopover, [encounterId]: false })
+                    }
+                    onAmcSave={(requirements) => {
+                      console.log('AMC Requirements saved for encounter:', encounterId, requirements);
+                    }}
+                    savedSections={encounterSavedData[encounterId] || []}
+                    expandedSections={expandedSections}
+                    onToggleSectionExpand={(sectionKey) =>
+                      setExpandedSections({
+                        ...expandedSections,
+                        [sectionKey]: !expandedSections[sectionKey]
+                      })
+                    }
+                    onEditSection={(idx, section) => {
+                      setEditingSection({ ...editingSection, [encounterId]: idx });
+
+                      if (section.type === 'soap') {
+                        setSoapForm(encounterId, section.data as any);
+                        setEncounterActiveSubTab(encounterId, 'soap');
+                        addEncounterSubTab(encounterId, 'soap');
+                      } else if (section.type === 'care-plan') {
+                        setEditingCarePlanId(encounterId, section.id || null);
+                        setCurrentCarePlanData(encounterId, section.data as any);
+                        setEncounterActiveSubTab(encounterId, 'care-plan');
+                        addEncounterSubTab(encounterId, 'care-plan');
+                      } else if (section.type === 'clinical-instructions') {
+                        setClinicalInstructionsForm(encounterId, section.data as any);
+                        setEncounterActiveSubTab(encounterId, 'clinical-instructions');
+                        addEncounterSubTab(encounterId, 'clinical-instructions');
+                      } else if (section.type === 'clinical-notes') {
+                        setClinicalNotesForm(encounterId, {
+                          notes: typeof section.data === 'string' ? section.data : section.data.notes || ''
+                        });
+                        setEncounterActiveSubTab(encounterId, 'clinical-notes');
+                        addEncounterSubTab(encounterId, 'clinical-notes');
+                      } else if (section.type === 'review-of-systems') {
+                        const rosData: any = {};
+                        section.data.systems?.forEach((sys: any) => {
+                          rosData[sys.name] = sys.findings;
+                        });
+                        setRosForm(encounterId, rosData);
+                        setEncounterActiveSubTab(encounterId, 'review-of-systems');
+                        addEncounterSubTab(encounterId, 'review-of-systems');
+                      } else if (section.type === 'eye-exam') {
+                        setEyeExamForm(encounterId, section.data as any);
+                        setEncounterActiveSubTab(encounterId, 'eye-exam');
+                        addEncounterSubTab(encounterId, 'eye-exam');
+                      } else if (section.type === 'functional-and-cognitive-status') {
+                        setFunctionalCognitiveForm(encounterId, section.data as any);
+                        setEncounterActiveSubTab(encounterId, 'functional-and-cognitive-status');
+                        addEncounterSubTab(encounterId, 'functional-and-cognitive-status');
+                      } else if (section.type === 'observation') {
+                        setObservationForm(encounterId, section.data as any);
+                        setEncounterActiveSubTab(encounterId, 'observation');
+                        addEncounterSubTab(encounterId, 'observation');
+                      } else if (section.type === 'speech-dictation') {
+                        setSpeechDictationForm(encounterId, section.data as any);
+                        setEncounterActiveSubTab(encounterId, 'speech-dictation');
+                        addEncounterSubTab(encounterId, 'speech-dictation');
+                      } else if (section.type === 'procedure-order') {
+                        setProcedureOrderForm(encounterId, section.data as any);
+                        setEncounterActiveSubTab(encounterId, 'procedure-order');
+                        addEncounterSubTab(encounterId, 'procedure-order');
+                      } else if (section.type === 'lab-results') {
+                        setLabResultsForm(encounterId, section.data as any);
+                        setEncounterActiveSubTab(encounterId, 'lab-results');
+                        addEncounterSubTab(encounterId, 'lab-results');
+                      } else if (section.type === 'imaging-orders') {
+                        setImagingOrdersForm(encounterId, section.data as any);
+                        setEncounterActiveSubTab(encounterId, 'imaging-orders');
+                        addEncounterSubTab(encounterId, 'imaging-orders');
+                      } else if (section.type === 'new-questionnaire' || section.type === 'questionnaire-responses') {
+                        setQuestionnaireForm(encounterId, section.data as any);
+                        setEncounterActiveSubTab(encounterId, section.type as any);
+                        addEncounterSubTab(encounterId, section.type as any);
+                      } else if (['forms', 'track-anything', 'patient-reminders', 'clinical-reminders', 'amendments', 'letters', 'review-of-systems-checks'].includes(section.type)) {
+                        setGenericAdminForm(encounterId, section.data as any);
+                        setEncounterActiveSubTab(encounterId, section.type as any);
+                        addEncounterSubTab(encounterId, section.type as any);
+                      }
+                    }}
+                    onDeleteSection={async (idx, section) => {
+                      if (section.type === 'care-plan' && section.id) {
+                        if (confirm('Are you sure you want to delete this Care Plan?')) {
+                          try {
+                            await carePlanService.deleteCarePlan(section.id);
+                            await loadEncounterDocumentation(encounterId);
+                            alert('Care Plan deleted successfully!');
+                          } catch (error) {
+                            console.error('Error deleting care plan:', error);
+                            alert('Failed to delete Care Plan. Please try again.');
+                          }
+                        }
+                      } else {
+                        updateEncounterSavedData(encounterId, (sections) =>
+                          (sections || []).filter((_, i) => i !== idx)
+                        );
+                      }
+                    }}
+                    soapForm={soapForms[encounterId] || { subjective: '', objective: '', assessment: '', plan: '' }}
+                    rosForm={rosForms[encounterId] || {}}
+                    clinicalNotes={clinicalNotes[encounterId] || []}
+                    onSoapFieldChange={(field, value) => updateSoapForm(encounterId, field, value)}
+                    onRosFieldChange={(system, value) => updateRosForm(encounterId, system, value)}
+                    onSoapSave={async () => {
+                      const currentData = encounterSavedData[encounterId] || [];
+                      const soapData = soapForms[encounterId] || {
+                        subjective: '',
+                        objective: '',
+                        assessment: '',
+                        plan: ''
+                      };
+                      const editingIdx = editingSection[encounterId];
+
+                      const section = {
+                        title: 'SOAP',
+                        type: 'soap',
+                        author: 'Billy Smith',
+                        date: new Date().toISOString(),
+                        data: soapData,
+                        signatures: []
+                      };
+
+                      const documentId =
+                        editingIdx !== null && editingIdx !== undefined
+                          ? currentData[editingIdx]?.id
+                          : undefined;
+
+                      await saveDocumentReference(encounterId, section, documentId);
+                      setEditingSection({ ...editingSection, [encounterId]: null });
+                      setSoapForm(encounterId, { subjective: '', objective: '', assessment: '', plan: '' });
+                      setEncounterActiveSubTab(encounterId, 'summary');
+                    }}
+                    onRosSave={async () => {
+                      const currentData = encounterSavedData[encounterId] || [];
+                      const rosData = rosForms[encounterId] || {};
+                      const editingIdx = editingSection[encounterId];
+                      const systems = Object.entries(rosData)
+                        .filter(([, findings]) => findings)
+                        .map(([name, findings]) => ({ name, findings }));
+
+                      const section: any = {
+                        title: 'Review Of Systems',
+                        type: 'review-of-systems',
+                        author: 'Billy Smith',
+                        date: new Date().toISOString(),
+                        data: { systems },
+                        signatures: []
+                      };
+
+                      const documentId =
+                        editingIdx !== null && editingIdx !== undefined
+                          ? currentData[editingIdx]?.id
+                          : undefined;
+
+                      await saveDocumentReference(encounterId, section, documentId);
+                      setEditingSection({ ...editingSection, [encounterId]: null });
+                      setRosForm(encounterId, {});
+                      setEncounterActiveSubTab(encounterId, 'summary');
+                    }}
+                    carePlans={carePlans[encounterId] || []}
+                    currentCarePlanData={currentCarePlanData[encounterId] || null}
+                    editingCarePlanId={editingCarePlanId[encounterId] || null}
+                    onCarePlanSave={async (formData) => {
+                      try {
+                        const editingId = editingCarePlanId[encounterId];
+
+                        if (editingId) {
+                          await carePlanService.updateCarePlan(editingId, patientId, encounterId, formData);
+                        } else {
+                          await carePlanService.createCarePlan(patientId, encounterId, formData);
+                        }
+
+                        setEditingCarePlanId(encounterId, null);
+                        setCurrentCarePlanData(encounterId, null);
+                        await loadEncounterDocumentation(encounterId);
+
+                        alert(editingId ? 'Care Plan updated successfully!' : 'Care Plan created successfully!');
+                      } catch (error) {
+                        console.error('Error saving care plan:', error);
+                        alert('Failed to save Care Plan. Please try again.');
+                      }
+                    }}
+                    onCarePlanCancel={() => {
+                      setEditingCarePlanId(encounterId, null);
+                      setCurrentCarePlanData(encounterId, null);
+                    }}
+                    onCarePlanEdit={(carePlan) => {
+                      setEditingCarePlanId(encounterId, carePlan.id);
+                      setCurrentCarePlanData(encounterId, carePlanService.convertToFormData(carePlan));
+                    }}
+                    onCarePlanDelete={async (carePlanId) => {
                       if (confirm('Are you sure you want to delete this Care Plan?')) {
                         try {
-                          await carePlanService.deleteCarePlan(section.id);
+                          await carePlanService.deleteCarePlan(carePlanId);
                           await loadEncounterDocumentation(encounterId);
                           alert('Care Plan deleted successfully!');
                         } catch (error) {
                           console.error('Error deleting care plan:', error);
-                          alert('Failed to delete Care Plan. Please try again.');
+                          alert('Failed to delete Care Plan.');
                         }
                       }
-                    } else {
-                      updateEncounterSavedData(encounterId, (sections) =>
-                        (sections || []).filter((_, i) => i !== idx)
+                    }}
+                    onCarePlanAdd={() => {
+                      setCurrentCarePlanData(encounterId, {
+                        status: 'active',
+                        intent: 'plan',
+                        activities: [
+                          {
+                            code: '',
+                            date: new Date().toISOString().split('T')[0],
+                            type: 'Task',
+                            description: '',
+                            status: 'not-started'
+                          }
+                        ]
+                      } as any);
+                    }}
+                    onAddClinicalNote={() => {
+                      setClinicalNoteEditorState({
+                        isOpen: true,
+                        mode: 'create',
+                        encounterId,
+                        note: null
+                      });
+                    }}
+                    onEditClinicalNote={(note) => {
+                      setClinicalNoteEditorState({
+                        isOpen: true,
+                        mode: 'edit',
+                        encounterId,
+                        note
+                      });
+                    }}
+                    onDeleteClinicalNote={(noteId) => {
+                      setClinicalNotes(encounterId, (notes) => (notes || []).filter((n) => n.id !== noteId));
+                    }}
+                    onToggleFavoriteClinicalNote={(noteId) => {
+                      setClinicalNotes(encounterId, (notes) =>
+                        (notes || []).map((n) => (n.id === noteId ? { ...n, isFavorite: !n.isFavorite } : n))
                       );
-                    }
-                  }}
-                  soapForm={soapForms[encounterId] || { subjective: '', objective: '', assessment: '', plan: '' }}
-                  rosForm={rosForms[encounterId] || {}}
-                  clinicalNotes={clinicalNotes[encounterId] || []}
-                  onSoapFieldChange={(field, value) => updateSoapForm(encounterId, field, value)}
-                  onRosFieldChange={(system, value) => updateRosForm(encounterId, system, value)}
-                  onSoapSave={async () => {
-                    const currentData = encounterSavedData[encounterId] || [];
-                    const soapData = soapForms[encounterId] || {
-                      subjective: '',
-                      objective: '',
-                      assessment: '',
-                      plan: ''
-                    };
-                    const editingIdx = editingSection[encounterId];
-
-                    const section = {
-                      title: 'SOAP',
-                      type: 'soap',
-                      author: 'Billy Smith',
-                      date: new Date().toISOString(),
-                      data: soapData,
-                      signatures: []
-                    };
-
-                    const documentId =
-                      editingIdx !== null && editingIdx !== undefined
-                        ? currentData[editingIdx]?.id
-                        : undefined;
-
-                    await saveDocumentReference(encounterId, section, documentId);
-                    setEditingSection({ ...editingSection, [encounterId]: null });
-                    setSoapForm(encounterId, { subjective: '', objective: '', assessment: '', plan: '' });
-                    setEncounterActiveSubTab(encounterId, 'summary');
-                  }}
-                  onRosSave={async () => {
-                    const currentData = encounterSavedData[encounterId] || [];
-                    const rosData = rosForms[encounterId] || {};
-                    const editingIdx = editingSection[encounterId];
-                    const systems = Object.entries(rosData)
-                      .filter(([, findings]) => findings)
-                      .map(([name, findings]) => ({ name, findings }));
-
-                    const section: any = {
-                      title: 'Review Of Systems',
-                      type: 'review-of-systems',
-                      author: 'Billy Smith',
-                      date: new Date().toISOString(),
-                      data: { systems },
-                      signatures: []
-                    };
-
-                    const documentId =
-                      editingIdx !== null && editingIdx !== undefined
-                        ? currentData[editingIdx]?.id
-                        : undefined;
-
-                    await saveDocumentReference(encounterId, section, documentId);
-                    setEditingSection({ ...editingSection, [encounterId]: null });
-                    setRosForm(encounterId, {});
-                    setEncounterActiveSubTab(encounterId, 'summary');
-                  }}
-                  carePlans={carePlans[encounterId] || []}
-                  currentCarePlanData={currentCarePlanData[encounterId] || null}
-                  editingCarePlanId={editingCarePlanId[encounterId] || null}
-                  onCarePlanSave={async (formData) => {
-                    try {
-                      const editingId = editingCarePlanId[encounterId];
-
-                      if (editingId) {
-                        await carePlanService.updateCarePlan(editingId, patientId, encounterId, formData);
-                      } else {
-                        await carePlanService.createCarePlan(patientId, encounterId, formData);
-                      }
-
-                      setEditingCarePlanId(encounterId, null);
-                      setCurrentCarePlanData(encounterId, null);
-                      await loadEncounterDocumentation(encounterId);
-
-                      alert(editingId ? 'Care Plan updated successfully!' : 'Care Plan created successfully!');
-                    } catch (error) {
-                      console.error('Error saving care plan:', error);
-                      alert('Failed to save Care Plan. Please try again.');
-                    }
-                  }}
-                  onCarePlanCancel={() => {
-                    setEditingCarePlanId(encounterId, null);
-                    setCurrentCarePlanData(encounterId, null);
-                  }}
-                  onCarePlanEdit={(carePlan) => {
-                    setEditingCarePlanId(encounterId, carePlan.id);
-                    setCurrentCarePlanData(encounterId, carePlanService.convertToFormData(carePlan));
-                  }}
-                  onCarePlanDelete={async (carePlanId) => {
-                    if (confirm('Are you sure you want to delete this Care Plan?')) {
-                      try {
-                        await carePlanService.deleteCarePlan(carePlanId);
-                        await loadEncounterDocumentation(encounterId);
-                        alert('Care Plan deleted successfully!');
-                      } catch (error) {
-                        console.error('Error deleting care plan:', error);
-                        alert('Failed to delete Care Plan.');
-                      }
-                    }
-                  }}
-                  onCarePlanAdd={() => {
-                    setCurrentCarePlanData(encounterId, {
-                      status: 'active',
-                      intent: 'plan',
-                      activities: [
-                        {
-                          code: '',
-                          date: new Date().toISOString().split('T')[0],
-                          type: 'Task',
-                          description: '',
-                          status: 'not-started'
-                        }
-                      ]
-                    } as any);
-                  }}
-                  onAddClinicalNote={() => {
-                    setClinicalNoteEditorState({
-                      isOpen: true,
-                      mode: 'create',
-                      encounterId,
-                      note: null
-                    });
-                  }}
-                  onEditClinicalNote={(note) => {
-                    setClinicalNoteEditorState({
-                      isOpen: true,
-                      mode: 'edit',
-                      encounterId,
-                      note
-                    });
-                  }}
-                  onDeleteClinicalNote={(noteId) => {
-                    setClinicalNotes(encounterId, (notes) => (notes || []).filter((n) => n.id !== noteId));
-                  }}
-                  onToggleFavoriteClinicalNote={(noteId) => {
-                    setClinicalNotes(encounterId, (notes) =>
-                      (notes || []).map((n) => (n.id === noteId ? { ...n, isFavorite: !n.isFavorite } : n))
-                    );
-                  }}
-                  observations={observations}
-                  onRecordVitals={() => setDrawerState('vitals', true)}
-                  isEditing={editingSection[encounterId] !== null && editingSection[encounterId] !== undefined}
-                  loadEncounterDocumentation={loadEncounterDocumentation}
-                />
-              );
-            })}
+                    }}
+                    observations={observations}
+                    onRecordVitals={() => setDrawerState('vitals', true)}
+                    isEditing={editingSection[encounterId] !== null && editingSection[encounterId] !== undefined}
+                    loadEncounterDocumentation={loadEncounterDocumentation}
+                  />
+                );
+              })}
             </div>
           </div>
         </div>
@@ -905,18 +905,23 @@ export function PatientDetailShell() {
           </DrawerContent>
         </Drawer>
 
-        {/* Medical Info Drawer (History, Habits, Allergies) */}
+        {/* Medical Info Drawer */}
         <MedicalInfoDrawer
           isOpen={drawers.medicalInfo}
           onClose={() => setDrawerState('medicalInfo', false)}
-          patientHistory=""
+          patientHistory={""}
           patientHabitsStructured={undefined}
           patientAllergiesStructured={undefined}
-          onUpdate={(data) => {
-            // Update patient data with the new medical info
-            console.log('Medical info updated:', data);
+          onUpdate={async (data) => {
+            // In a real app, this would update the backend
+            console.log('Updating medical info:', data);
+            // Refresh data
+            /*
+console.log('Medical info updated:', data);
             setDrawerState('medicalInfo', false);
             refreshData();
+            */
+            loadAllPatientData();
           }}
         />
 
@@ -1050,7 +1055,7 @@ function SpecialtyComponentRenderer({ activeTab, patientId }: SpecialtyComponent
         <Suspense
           fallback={
             <div className="p-8 flex items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
               <span className="ml-2 text-gray-600">Loading specialty component...</span>
             </div>
           }

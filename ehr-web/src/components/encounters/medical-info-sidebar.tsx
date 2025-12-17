@@ -162,7 +162,7 @@ export function MedicalInfoSidebar({
           <h3 className="text-sm font-semibold text-gray-900">Medical Information</h3>
           <button
             onClick={handleOpenModal}
-            className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+            className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
           >
             <Edit className="h-3 w-3" />
             Edit
@@ -170,12 +170,12 @@ export function MedicalInfoSidebar({
         </div>
 
         {/* Medical History */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
           <div className="flex items-center gap-2 mb-2">
-            <Heart className="h-4 w-4 text-blue-600" />
-            <h4 className="text-xs font-medium text-blue-900">History</h4>
+            <Heart className="h-4 w-4 text-primary" />
+            <h4 className="text-xs font-medium text-primary">History</h4>
           </div>
-          <p className="text-xs text-blue-800 whitespace-pre-wrap">
+          <p className="text-xs text-primary/80 whitespace-pre-wrap">
             {patientHistory || 'No medical history recorded'}
           </p>
         </div>
@@ -235,31 +235,28 @@ export function MedicalInfoSidebar({
             <div className="flex border-b border-gray-200">
               <button
                 onClick={() => setActiveTab('history')}
-                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                  activeTab === 'history'
-                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'history'
+                    ? 'text-primary border-b-2 border-primary bg-primary/5'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 MEDICAL HISTORY
               </button>
               <button
                 onClick={() => setActiveTab('habits')}
-                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                  activeTab === 'habits'
-                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'habits'
+                    ? 'text-primary border-b-2 border-primary bg-primary/5'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 HABITS
               </button>
               <button
                 onClick={() => setActiveTab('allergies')}
-                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                  activeTab === 'allergies'
-                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'allergies'
+                    ? 'text-primary border-b-2 border-primary bg-primary/5'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 ALLERGIES
               </button>
@@ -277,11 +274,10 @@ export function MedicalInfoSidebar({
                       <button
                         key={condition}
                         onClick={() => toggleCondition(condition)}
-                        className={`px-3 py-1.5 text-xs rounded border transition-colors ${
-                          selectedConditions.includes(condition)
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-blue-300 hover:bg-blue-50'
-                        }`}
+                        className={`px-3 py-1.5 text-xs rounded border transition-colors ${selectedConditions.includes(condition)
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-primary/50 hover:bg-primary/5'
+                          }`}
                       >
                         {condition}
                       </button>
@@ -294,7 +290,7 @@ export function MedicalInfoSidebar({
                       onChange={(e) => setCustomInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleAddCustom()}
                       placeholder="Add custom condition..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-primary/20 focus:border-transparent"
                     />
                     <button
                       onClick={handleAddCustom}
@@ -316,11 +312,10 @@ export function MedicalInfoSidebar({
                       <button
                         key={allergy}
                         onClick={() => toggleAllergy(allergy)}
-                        className={`px-3 py-1.5 text-xs rounded border transition-colors ${
-                          selectedAllergies.includes(allergy)
+                        className={`px-3 py-1.5 text-xs rounded border transition-colors ${selectedAllergies.includes(allergy)
                             ? 'bg-red-600 text-white border-red-600'
                             : 'bg-white text-gray-700 border-gray-300 hover:border-red-300 hover:bg-red-50'
-                        }`}
+                          }`}
                       >
                         {allergy}
                       </button>
@@ -333,7 +328,7 @@ export function MedicalInfoSidebar({
                       onChange={(e) => setCustomInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleAddCustom()}
                       placeholder="Add custom allergy..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-primary/20 focus:border-transparent"
                     />
                     <button
                       onClick={handleAddCustom}
@@ -355,11 +350,10 @@ export function MedicalInfoSidebar({
                       <button
                         key={habit}
                         onClick={() => toggleHabit(habit)}
-                        className={`px-3 py-1.5 text-xs rounded border transition-colors ${
-                          selectedHabits.includes(habit)
+                        className={`px-3 py-1.5 text-xs rounded border transition-colors ${selectedHabits.includes(habit)
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-white text-gray-700 border-gray-300 hover:border-purple-300 hover:bg-purple-50'
-                        }`}
+                          }`}
                       >
                         {habit}
                       </button>
@@ -372,7 +366,7 @@ export function MedicalInfoSidebar({
                       onChange={(e) => setCustomInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleAddCustom()}
                       placeholder="Add custom habit..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-primary/20 focus:border-transparent"
                     />
                     <button
                       onClick={handleAddCustom}
@@ -387,7 +381,7 @@ export function MedicalInfoSidebar({
 
             {/* Modal Footer */}
             <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
-              <a href="#" className="text-sm text-blue-600 hover:text-blue-700">Need Help?</a>
+              <a href="#" className="text-sm text-primary hover:text-primary/80">Need Help?</a>
               <div className="flex gap-2">
                 <button
                   onClick={handleCancel}
@@ -397,7 +391,7 @@ export function MedicalInfoSidebar({
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded hover:opacity-90 transition-colors"
                 >
                   SAVE
                 </button>

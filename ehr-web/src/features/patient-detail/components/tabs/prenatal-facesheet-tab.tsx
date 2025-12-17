@@ -60,7 +60,7 @@ export function PrenatalFacesheetTab({ patientId }: PrenatalFacesheetTabProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+            <button className="px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded hover:opacity-90 transition-colors">
               + Add Visit
             </button>
             <button className="px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
@@ -107,9 +107,9 @@ export function PrenatalFacesheetTab({ patientId }: PrenatalFacesheetTabProps) {
               <div className="space-y-3">
                 {/* Key Dates */}
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-blue-50 border border-blue-200 rounded p-2">
-                    <div className="text-[9px] text-blue-600 font-semibold uppercase mb-1">Current GA</div>
-                    <div className="text-lg font-bold text-blue-900">{prenatalData.currentGA}</div>
+                  <div className="bg-primary/5 border border-primary/20 rounded p-2">
+                    <div className="text-[9px] text-primary font-semibold uppercase mb-1">Current GA</div>
+                    <div className="text-lg font-bold text-primary">{prenatalData.currentGA}</div>
                   </div>
                   <div className="bg-gray-50 border border-gray-200 rounded p-2">
                     <div className="text-[9px] text-gray-500 font-semibold uppercase mb-1">LMP</div>
@@ -199,16 +199,16 @@ export function PrenatalFacesheetTab({ patientId }: PrenatalFacesheetTabProps) {
                 <thead className="bg-gray-100">
                   <tr className="border-b-2 border-gray-300">
                     <th className="text-left p-2 font-bold text-gray-700 border-r border-gray-200 min-w-[80px]">Date</th>
-                    <th className="text-center p-2 font-bold text-gray-700 border-r border-gray-200">GA<br/>Weeks</th>
-                    <th className="text-center p-2 font-bold text-gray-700 border-r border-gray-200">Weight<br/>(lbs)</th>
-                    <th className="text-center p-2 font-bold text-gray-700 border-r border-gray-200">FH<br/>(cm)</th>
+                    <th className="text-center p-2 font-bold text-gray-700 border-r border-gray-200">GA<br />Weeks</th>
+                    <th className="text-center p-2 font-bold text-gray-700 border-r border-gray-200">Weight<br />(lbs)</th>
+                    <th className="text-center p-2 font-bold text-gray-700 border-r border-gray-200">FH<br />(cm)</th>
                     <th className="text-center p-2 font-bold text-gray-700 border-r border-gray-200">FPR</th>
-                    <th className="text-center p-2 font-bold text-gray-700 border-r border-gray-200">FHR<br/>(bpm)</th>
+                    <th className="text-center p-2 font-bold text-gray-700 border-r border-gray-200">FHR<br />(bpm)</th>
                     <th className="text-center p-2 font-bold text-gray-700 border-r border-gray-200">FM</th>
                     <th className="text-center p-2 font-bold text-gray-700 border-r border-gray-200">PTL</th>
                     <th className="text-center p-2 font-bold text-gray-700 border-r border-gray-200">PES</th>
                     <th className="text-center p-2 font-bold text-gray-700 border-r border-gray-200">Cervix</th>
-                    <th className="text-center p-2 font-bold text-gray-700 border-r border-gray-200">BP<br/>(S/D)</th>
+                    <th className="text-center p-2 font-bold text-gray-700 border-r border-gray-200">BP<br />(S/D)</th>
                     <th className="text-center p-2 font-bold text-gray-700 border-r border-gray-200">Urine</th>
                     <th className="text-center p-2 font-bold text-gray-700">Edema</th>
                   </tr>
@@ -260,7 +260,7 @@ export function PrenatalFacesheetTab({ patientId }: PrenatalFacesheetTabProps) {
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-white border border-gray-300 rounded shadow-sm p-3">
               <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="h-3 w-3 text-blue-600" />
+                <TrendingUp className="h-3 w-3 text-primary" />
                 <h4 className="text-[10px] font-bold text-gray-800 uppercase">Weight Trend</h4>
               </div>
               <div className="h-24 bg-gray-50 border border-gray-200 rounded flex items-center justify-center text-[9px] text-gray-500">
