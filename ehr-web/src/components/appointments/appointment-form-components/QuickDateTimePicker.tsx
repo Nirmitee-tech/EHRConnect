@@ -50,7 +50,7 @@ export function QuickDateTimePicker({
             }}
             min={minDate}
             disabled={disabled}
-            className="block w-full pl-10 pr-3 py-2.5 rounded-md border border-gray-300 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+            className="block w-full pl-10 pr-3 py-2.5 rounded-md border border-gray-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:bg-gray-100 disabled:text-gray-500"
           />
         </div>
       </div>
@@ -64,7 +64,7 @@ export function QuickDateTimePicker({
             value={selectedTime}
             onChange={(e) => onTimeChange(e.target.value)}
             disabled={!selectedDate || disabled || availableTimeSlots.length === 0}
-            className="block w-full pl-10 pr-3 py-2.5 rounded-md border border-gray-300 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500 appearance-none"
+            className="block w-full pl-10 pr-3 py-2.5 rounded-md border border-gray-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:bg-gray-100 disabled:text-gray-500 appearance-none"
           >
             <option value="">Select Time</option>
             {availableTimeSlots.map((slot) => (
@@ -88,8 +88,8 @@ export function QuickDateTimePicker({
 
       {/* Selected Preview */}
       {selectedDate && selectedTime && (
-        <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
-          <p className="text-sm text-blue-900">
+        <div className="rounded-lg bg-primary/10 border border-primary/20 p-3">
+          <p className="text-sm text-primary">
             <span className="font-medium">Selected:</span>{' '}
             {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
               weekday: 'long',

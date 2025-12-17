@@ -94,7 +94,7 @@ export function MultiSelectFormDropdown({
         className={`
           min-h-[36px] w-full rounded-md border bg-white px-3 py-1.5 cursor-pointer transition-all
           ${isOpen
-            ? 'border-blue-500 ring-2 ring-blue-100'
+            ? 'border-primary ring-2 ring-primary/20'
             : 'border-gray-300 hover:border-gray-400'
           }
         `}
@@ -108,7 +108,7 @@ export function MultiSelectFormDropdown({
                 return (
                   <span
                     key={form?.id || index}
-                    className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-medium px-2 py-0.5 rounded border border-blue-200"
+                    className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs font-medium px-2 py-0.5 rounded border border-primary/20"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {name}
@@ -118,7 +118,7 @@ export function MultiSelectFormDropdown({
                         e.stopPropagation();
                         if (form) removeForm(form.id);
                       }}
-                      className="hover:text-blue-900 transition-colors"
+                      className="hover:text-primary/80 transition-colors"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -148,7 +148,7 @@ export function MultiSelectFormDropdown({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search forms..."
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-100"
+              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20"
               onClick={(e) => e.stopPropagation()}
             />
           </div>
@@ -163,7 +163,7 @@ export function MultiSelectFormDropdown({
                     key={form.id}
                     className={`
                       flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors
-                      ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'}
+                      ${isSelected ? 'bg-primary/10' : 'hover:bg-gray-50'}
                     `}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -171,9 +171,9 @@ export function MultiSelectFormDropdown({
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => toggleForm(form.id)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                      className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
                     />
-                    <span className={`text-sm ${isSelected ? 'text-blue-900 font-medium' : 'text-gray-700'}`}>
+                    <span className={`text-sm ${isSelected ? 'text-primary font-medium' : 'text-gray-700'}`}>
                       {form.name}
                     </span>
                   </label>

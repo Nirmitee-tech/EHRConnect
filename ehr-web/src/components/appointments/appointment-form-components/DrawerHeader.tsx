@@ -16,33 +16,30 @@ export function DrawerHeader({ activeTab, onTabChange, onClose }: DrawerHeaderPr
         <button
           type="button"
           onClick={() => onTabChange('appointment')}
-          className={`pb-2 text-sm font-semibold ${
-            activeTab === 'appointment'
-              ? 'border-b-2 border-blue-600 text-blue-600'
+          className={`pb-2 text-sm font-semibold ${activeTab === 'appointment'
+              ? 'border-b-2 border-primary text-primary'
               : 'text-gray-600'
-          }`}
+            }`}
         >
           Appointment
         </button>
         <button
           type="button"
           onClick={() => onTabChange('task')}
-          className={`pb-2 text-sm font-semibold ${
-            activeTab === 'task'
-              ? 'border-b-2 border-blue-600 text-blue-600'
+          className={`pb-2 text-sm font-semibold ${activeTab === 'task'
+              ? 'border-b-2 border-primary text-primary'
               : 'text-gray-600'
-          }`}
+            }`}
         >
           Task
         </button>
         <button
           type="button"
           onClick={() => onTabChange('unavailable')}
-          className={`pb-2 text-sm font-semibold ${
-            activeTab === 'unavailable'
-              ? 'border-b-2 border-blue-600 text-blue-600'
+          className={`pb-2 text-sm font-semibold ${activeTab === 'unavailable'
+              ? 'border-b-2 border-primary text-primary'
               : 'text-gray-600'
-          }`}
+            }`}
         >
           Doctor/Staff Unavailable
         </button>

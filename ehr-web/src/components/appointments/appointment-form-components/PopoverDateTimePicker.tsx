@@ -86,7 +86,7 @@ export function PopoverDateTimePicker({
         className={`
           relative flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-all cursor-pointer
           ${isOpen
-            ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+            ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
             : 'border-gray-300 bg-white hover:border-gray-400'
           }
           ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
@@ -176,11 +176,10 @@ export function PopoverDateTimePicker({
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className={`w-full py-2.5 rounded-lg transition-colors font-medium text-sm ${
-                  selectedDate && selectedTime
+                className={`w-full py-2.5 rounded-lg transition-colors font-medium text-sm ${selectedDate && selectedTime
                     ? 'bg-primary text-primary-foreground hover:opacity-90'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
+                  }`}
               >
                 {selectedDate && selectedTime ? 'Done' : 'Close'}
               </button>

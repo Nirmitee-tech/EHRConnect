@@ -112,14 +112,14 @@ export default function UsersPage() {
   }, [])
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = 
+    const matchesSearch =
       user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.username.toLowerCase().includes(searchQuery.toLowerCase())
-    
+
     const matchesRole = !selectedRole || user.roles.includes(selectedRole)
-    
+
     return matchesSearch && matchesRole
   })
 
@@ -154,7 +154,7 @@ export default function UsersPage() {
             <p className="text-gray-600 dark:text-gray-400">Manage system users and their permissions</p>
           </div>
         </div>
-        
+
         <Card>
           <CardContent className="p-6">
             <div className="animate-pulse space-y-4">
@@ -204,7 +204,7 @@ export default function UsersPage() {
                   placeholder="Search users..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
             </div>
@@ -212,7 +212,7 @@ export default function UsersPage() {
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               >
                 <option value="">All Roles</option>
                 <option value="Super Administrator">Super Administrator</option>
@@ -232,7 +232,7 @@ export default function UsersPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
-              <Users className="h-8 w-8 text-blue-600" />
+              <Users className="h-8 w-8 text-primary" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{users.length}</p>
@@ -240,7 +240,7 @@ export default function UsersPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
@@ -272,7 +272,7 @@ export default function UsersPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
-              <Shield className="h-8 w-8 text-purple-600" />
+              <Shield className="h-8 w-8 text-primary/70" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Administrators</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -309,7 +309,7 @@ export default function UsersPage() {
                   <tr key={user.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800">
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-3">
-                        <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
+                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                           <span className="text-sm font-medium text-white">
                             {user.firstName.charAt(0)}{user.lastName.charAt(0)}
                           </span>

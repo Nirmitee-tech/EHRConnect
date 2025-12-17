@@ -176,7 +176,7 @@ export default function RulesPage() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Loading rules...</p>
         </div>
       </div>
@@ -193,7 +193,7 @@ export default function RulesPage() {
             Automate tasks, alerts, and clinical decision support
           </p>
         </div>
-        <Button onClick={() => router.push('/rules/new')} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => router.push('/rules/new')} className="bg-primary hover:opacity-90">
           <Plus className="h-4 w-4 mr-2" />
           Create Rule
         </Button>
@@ -208,7 +208,7 @@ export default function RulesPage() {
                 <p className="text-sm text-gray-600">Total Rules</p>
                 <p className="text-2xl font-bold text-gray-900">{rules.length}</p>
               </div>
-              <Zap className="h-8 w-8 text-blue-600" />
+              <Zap className="h-8 w-8 text-primary" />
             </div>
           </CardContent>
         </Card>
@@ -247,7 +247,7 @@ export default function RulesPage() {
                   {rules.reduce((sum, r) => sum + r.execution_count, 0)}
                 </p>
               </div>
-              <GitBranch className="h-8 w-8 text-purple-600" />
+              <GitBranch className="h-8 w-8 text-primary/70" />
             </div>
           </CardContent>
         </Card>
@@ -307,7 +307,7 @@ export default function RulesPage() {
               <p className="text-gray-600 mb-4">
                 Get started by creating your first automation rule
               </p>
-              <Button onClick={() => router.push('/rules/new')} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={() => router.push('/rules/new')} className="bg-primary hover:opacity-90">
                 <Plus className="h-4 w-4 mr-2" />
                 Create Rule
               </Button>

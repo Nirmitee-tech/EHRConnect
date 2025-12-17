@@ -12,29 +12,29 @@ export function CarePlanRenderer({ data }: CarePlanRendererProps) {
     <div className="space-y-4 text-sm">
       {/* Care Plan Metadata */}
       {(data.status || data.intent || data.title) && (
-        <div className="grid grid-cols-3 gap-3 p-3 bg-blue-50 rounded border border-blue-200">
+        <div className="grid grid-cols-3 gap-3 p-3 bg-primary/5 rounded border border-primary/20">
           {data.status && (
             <div>
-              <span className="font-medium text-blue-900">Status:</span>{' '}
-              <span className="text-blue-700 capitalize">{data.status}</span>
+              <span className="font-medium text-primary/80">Status:</span>{' '}
+              <span className="text-primary capitalize">{data.status}</span>
             </div>
           )}
           {data.intent && (
             <div>
-              <span className="font-medium text-blue-900">Intent:</span>{' '}
-              <span className="text-blue-700 capitalize">{data.intent}</span>
+              <span className="font-medium text-primary/80">Intent:</span>{' '}
+              <span className="text-primary capitalize">{data.intent}</span>
             </div>
           )}
           {data.title && (
             <div className="col-span-3">
-              <span className="font-medium text-blue-900">Title:</span>{' '}
-              <span className="text-blue-700">{data.title}</span>
+              <span className="font-medium text-primary/80">Title:</span>{' '}
+              <span className="text-primary">{data.title}</span>
             </div>
           )}
           {data.description && (
             <div className="col-span-3">
-              <span className="font-medium text-blue-900">Description:</span>{' '}
-              <span className="text-blue-700">{data.description}</span>
+              <span className="font-medium text-primary/80">Description:</span>{' '}
+              <span className="text-primary">{data.description}</span>
             </div>
           )}
         </div>

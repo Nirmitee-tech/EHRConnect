@@ -321,13 +321,13 @@ export function EncounterTab({
                             <div className="flex gap-2">
                               <button
                                 onClick={() => onCarePlanEdit(carePlan)}
-                                className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-white border border-blue-600 rounded hover:bg-blue-50"
+                                className="px-3 py-1.5 text-sm font-medium text-primary bg-white border border-primary rounded hover:bg-primary/10"
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => onCarePlanDelete(carePlan.id)}
-                                className="px-3 py-1.5 text-sm font-medium text-red-600 bg-white border border-red-600 rounded hover:bg-red-50"
+                                className="px-3 py-1.5 text-sm font-medium text-destructive bg-white border border-destructive rounded hover:bg-destructive/10"
                               >
                                 Delete
                               </button>
