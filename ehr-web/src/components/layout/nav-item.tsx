@@ -161,9 +161,9 @@ export function NavItem({
                 'text-xs px-2 py-0.5 rounded-full font-medium',
                 isActive
                   ? 'bg-white/20 text-white'
-                  : 'bg-[#1E2A70]'
+                  : 'bg-black/20'
               )}
-              style={{ color: isActive ? 'white' : themeSettings.sidebarTextColor }}>
+                style={{ color: isActive ? 'white' : themeSettings.sidebarTextColor }}>
                 {count}
               </span>
             )}
