@@ -600,7 +600,7 @@
     },
     "tasks": {
         "title": "Tasks",
-        "new_task": "New Task",
+        "new_task": "Create Task",
         "my_tasks": "My Tasks",
         "assigned_to_me": "Assigned to Me",
         "assigned_by_me": "Assigned by Me",
@@ -613,7 +613,11 @@
         "completed": "Completed",
         "in_progress": "In Progress",
         "todo": "To Do",
-        "overdue": "Overdue"
+        "overdue": "Overdue",
+        "manage_tasks": "Manage and track tasks across your organization",
+        "search_placeholder": "Search tasks by description or identifier...",
+        "no_tasks_found": "No tasks found",
+        "loading_tasks": "Loading tasks..."
     },
     "inventory": {
         "title": "Inventory",

@@ -492,7 +492,7 @@
     },
     "tasks": {
         "title": "کام",
-        "new_task": "نیا کام",
+        "new_task": "کام بنائیں",
         "my_tasks": "میرے کام",
         "assigned_to_me": "مجھے سونپا گیا",
         "assigned_by_me": "میرے ذریعے سونپا گیا",
@@ -505,7 +505,11 @@
         "completed": "مکمل",
         "in_progress": "جاری",
         "todo": "کرنا ہے",
-        "overdue": "میعاد ختم"
+        "overdue": "میعاد ختم",
+        "manage_tasks": "اپنی تنظیم میں کاموں کا انتظام اور ٹریک کریں",
+        "search_placeholder": "تفصیل یا شناخت کنندہ کے لحاظ سے کام تلاش کریں...",
+        "no_tasks_found": "کوئی کام نہیں ملا",
+        "loading_tasks": "کام لوڈ ہو رہے ہیں..."
     },
     "inventory": {
         "title": "انوینٹری",

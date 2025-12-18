@@ -24,6 +24,8 @@ import { Badge } from '@/components/ui/badge';
 import { CreateTaskSidebar } from '@/components/tasks/create-task-sidebar';
 import { EditTaskSidebar } from '@/components/tasks/edit-task-sidebar';
 import * as taskService from '@/services/task.service';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface Task {
   id: string;
@@ -48,6 +50,7 @@ interface Task {
 
 export default function TasksPage() {
   const { data: session } = useSession();
+  const { t } = useTranslation('common');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -142,9 +145,9 @@ export default function TasksPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('tasks.title')}</h1>
           <p className="text-sm text-gray-600 mt-0.5">
-            Manage and track tasks across your organization
+            {t('tasks.manage_tasks')}
           </p>
         </div>
         <Button
@@ -152,7 +155,7 @@ export default function TasksPage() {
           className="bg-primary hover:opacity-90 text-white"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Create Task
+          {t('tasks.new_task')}
         </Button>
       </div>
 
@@ -163,7 +166,7 @@ export default function TasksPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search tasks by description or identifier..."
+                placeholder={t('tasks.search_placeholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 h-9"

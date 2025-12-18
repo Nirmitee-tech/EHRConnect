@@ -492,7 +492,7 @@
     },
     "tasks": {
         "title": "Tareas",
-        "new_task": "Nueva Tarea",
+        "new_task": "Crear Tarea",
         "my_tasks": "Mis Tareas",
         "assigned_to_me": "Asignadas a Mí",
         "assigned_by_me": "Asignadas por Mí",
@@ -505,7 +505,11 @@
         "completed": "Completada",
         "in_progress": "En Progreso",
         "todo": "Por Hacer",
-        "overdue": "Vencida"
+        "overdue": "Vencida",
+        "manage_tasks": "Gestionar y rastrear tareas en toda su organización",
+        "search_placeholder": "Buscar tareas por descripción o identificador...",
+        "no_tasks_found": "No se encontraron tareas",
+        "loading_tasks": "Cargando tareas..."
     },
     "inventory": {
         "title": "Inventario",
