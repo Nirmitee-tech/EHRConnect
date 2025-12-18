@@ -6,6 +6,7 @@ import { QuickDateTimePicker } from './QuickDateTimePicker';
 import { PopoverDateTimePicker } from './PopoverDateTimePicker';
 import { DateTimeModeSwitcher, DateTimeMode } from './DateTimeModeSwitcher';
 import { MultiSelectFormDropdown } from './MultiSelectFormDropdown';
+import { useTranslation } from '@/i18n/client';
 
 interface AppointmentFormFieldsProps {
   formData: any;
@@ -43,11 +44,27 @@ export function AppointmentFormFields({
   onOpenPatientDrawer,
   onOpenCategoryDrawer
 }: AppointmentFormFieldsProps) {
+  const { t, i18n } = useTranslation('common');
   const [showAddDoctor, setShowAddDoctor] = useState(false);
   const [dateTimeMode, setDateTimeMode] = useState<DateTimeMode>('enhanced');
 
   // Get selected practitioner
   const selectedPractitioner = practitioners.find(p => p.id === formData.doctorId);
+  const locale = i18n.language || 'en';
+
+  const formatShortDate = (value: string, options: Intl.DateTimeFormatOptions) => {
+    const date = new Date(value);
+    return new Intl.DateTimeFormat(locale, options).format(date);
+  };
+
+  const weekdayShort = React.useMemo(() => {
+    const baseSunday = new Date(Date.UTC(2024, 0, 7)); // Sunday
+    return Array.from({ length: 7 }, (_, idx) =>
+      new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }).format(
+        new Date(baseSunday.getTime() + idx * 86400000)
+      )
+    );
+  }, [locale]);
 
   const handleLocationChange = (value: string) => {
     const selected = locations.find(loc => loc.id === value);
@@ -203,9 +220,12 @@ export function AppointmentFormFields({
     const details = [];
     if (p.dateOfBirth) {
       const age = Math.floor((Date.now() - new Date(p.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-      details.push(`${age}y, DOB: ${new Date(p.dateOfBirth).toLocaleDateString()}`);
+      const dob = new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'short', day: 'numeric' }).format(
+        new Date(p.dateOfBirth)
+      );
+      details.push(t('appointment_form.patient_subtitle_age_dob', { age, dob }));
     }
-    if (p.gender) details.push(p.gender.charAt(0).toUpperCase() + p.gender.slice(1));
+    if (p.gender) details.push(t(`patient_form.${p.gender}`, { defaultValue: p.gender }));
     if (p.phone) details.push(`📞 ${p.phone}`);
     if (p.email) details.push(`📧 ${p.email}`);
 
@@ -222,7 +242,7 @@ export function AppointmentFormFields({
       <div>
         {!showAddDoctor ? (
           <SearchableSelect
-            label="Doctor"
+            label={t('appointment_form.doctor')}
             required
             options={doctorOptions}
             value={formData.doctorId}
@@ -231,23 +251,23 @@ export function AppointmentFormFields({
               const event = { target: { value } } as React.ChangeEvent<HTMLSelectElement>;
               onDoctorChange(event);
             }}
-            placeholder="Select Doctor"
+            placeholder={t('appointment_form.doctor_placeholder')}
             showColorInButton
             onAddNew={() => setShowAddDoctor(true)}
-            addNewLabel="Create New Practitioner"
+            addNewLabel={t('appointment_form.create_new_practitioner')}
           />
         ) : (
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Doctor</label>
+            <label className="block text-sm font-medium text-gray-700">{t('appointment_form.doctor')}</label>
             <p className="text-sm text-gray-600">
-              Please go to Staff Management to add a new practitioner, then return here.
+              {t('appointment_form.staff_management_add_practitioner_help')}
             </p>
             <button
               type="button"
               onClick={() => setShowAddDoctor(false)}
               className="text-sm text-primary hover:text-primary/80"
             >
-              ← Back to selection
+              ← {t('appointment_form.back_to_selection')}
             </button>
           </div>
         )}
@@ -256,7 +276,7 @@ export function AppointmentFormFields({
       {/* Patient */}
       <div>
         <SearchableSelect
-          label="Patient"
+          label={t('appointment_form.patient')}
           required
           options={patientOptions}
           value={formData.patientId}
@@ -265,28 +285,28 @@ export function AppointmentFormFields({
             const event = { target: { value } } as React.ChangeEvent<HTMLSelectElement>;
             onPatientChange(event);
           }}
-          placeholder="Select Patient"
+          placeholder={t('appointment_form.patient_placeholder')}
           onAddNew={onOpenPatientDrawer}
-          addNewLabel="Add New Patient"
+          addNewLabel={t('appointment_form.add_new_patient')}
         />
       </div>
 
       {/* Location/Room */}
       <div>
         <SearchableSelect
-          label="Location"
+          label={t('appointment_form.location')}
           required
           options={locations.map(loc => ({ value: loc.id, label: loc.name }))}
           value={formData.locationId || ''}
           onChange={handleLocationChange}
-          placeholder="Select Location"
+          placeholder={t('appointment_form.location_placeholder')}
         />
       </div>
 
       {/* Appointment Mode */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Appointment Mode<span className="text-red-500">*</span>
+          {t('appointment_form.appointment_mode')}<span className="text-red-500">*</span>
         </label>
         <div className="grid grid-cols-4 gap-2">
           <button
@@ -298,7 +318,7 @@ export function AppointmentFormFields({
               }`}
           >
             <Users className="h-5 w-5" />
-            <span className="text-xs font-medium">In-Person</span>
+            <span className="text-xs font-medium">{t('appointment_form.mode_in_person')}</span>
           </button>
           <button
             type="button"
@@ -309,7 +329,7 @@ export function AppointmentFormFields({
               }`}
           >
             <Video className="h-5 w-5" />
-            <span className="text-xs font-medium">Video Call</span>
+            <span className="text-xs font-medium">{t('appointment_form.mode_video_call')}</span>
           </button>
           <button
             type="button"
@@ -320,7 +340,7 @@ export function AppointmentFormFields({
               }`}
           >
             <Phone className="h-5 w-5" />
-            <span className="text-xs font-medium">Voice Call</span>
+            <span className="text-xs font-medium">{t('appointment_form.mode_voice_call')}</span>
           </button>
           <button
             type="button"
@@ -331,7 +351,7 @@ export function AppointmentFormFields({
               }`}
           >
             <FileText className="h-5 w-5" />
-            <span className="text-xs font-medium">Other</span>
+            <span className="text-xs font-medium">{t('appointment_form.mode_other')}</span>
           </button>
         </div>
       </div>
@@ -339,13 +359,15 @@ export function AppointmentFormFields({
       {/* Practitioner Availability Info */}
       {selectedPractitioner && !formData.isEmergency && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-          <h4 className="text-xs font-semibold text-primary mb-2">📅 {selectedPractitioner.name}'s Schedule</h4>
+          <h4 className="text-xs font-semibold text-primary mb-2">
+            {t('appointment_form.schedule_heading', { name: selectedPractitioner.name })}
+          </h4>
           <div className="space-y-1 text-xs text-primary/80">
             {/* Working Days */}
             {selectedPractitioner.officeHours && selectedPractitioner.officeHours.length > 0 && (
               <div>
-                <span className="font-medium">Working Days: </span>
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                <span className="font-medium">{t('appointment_form.working_days')}: </span>
+                {weekdayShort
                   .map((day, idx) => {
                     const schedule = selectedPractitioner.officeHours?.find((h: any) => h.dayOfWeek === idx);
                     return schedule?.isWorking ? day : null;
@@ -357,12 +379,12 @@ export function AppointmentFormFields({
             {/* Vacations */}
             {selectedPractitioner.vacations && selectedPractitioner.vacations.length > 0 && (
               <div>
-                <span className="font-medium">Upcoming Leaves: </span>
+                <span className="font-medium">{t('appointment_form.upcoming_leaves')}: </span>
                 {selectedPractitioner.vacations.slice(0, 2).map((vac: any, idx: number) => (
                   <span key={idx}>
-                    {new Date(vac.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {formatShortDate(vac.startDate, { month: 'short', day: 'numeric' })}
                     {' - '}
-                    {new Date(vac.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {formatShortDate(vac.endDate, { month: 'short', day: 'numeric' })}
                     {idx < Math.min(selectedPractitioner.vacations?.length || 0, 2) - 1 && ', '}
                   </span>
                 ))}
@@ -375,13 +397,13 @@ export function AppointmentFormFields({
       {/* Appointment Type */}
       <div>
         <SearchableSelect
-          label="Appointment Type"
+          label={t('appointment_form.appointment_type')}
           options={treatmentCategories.map(cat => ({ value: cat, label: cat }))}
           value={formData.treatmentCategory || ''}
           onChange={(value) => onFormDataChange('treatmentCategory', value)}
-          placeholder="Select Appointment Type"
+          placeholder={t('appointment_form.appointment_type_placeholder')}
           onAddNew={onOpenCategoryDrawer}
-          addNewLabel="Add New Appointment Type"
+          addNewLabel={t('appointment_form.add_new_appointment_type')}
         />
       </div>
 
@@ -389,7 +411,7 @@ export function AppointmentFormFields({
       <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
         <div className="flex items-center gap-2">
           <CalendarIcon className="h-4 w-4 text-gray-600" />
-          <span className="text-sm font-medium text-gray-700">All-Day Event</span>
+          <span className="text-sm font-medium text-gray-700">{t('appointment_form.all_day_event')}</span>
         </div>
         <button
           type="button"
@@ -408,7 +430,7 @@ export function AppointmentFormFields({
       {formData.isAllDay && (
         <div>
           <label className="block text-sm font-medium text-gray-700">
-            Event Type<span className="text-red-500">*</span>
+            {t('appointment_form.event_type')}<span className="text-red-500">*</span>
           </label>
           <select
             required={formData.isAllDay}
@@ -416,13 +438,13 @@ export function AppointmentFormFields({
             onChange={(e) => onFormDataChange('allDayEventType', e.target.value)}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           >
-            <option value="appointment">📅 Regular Appointment</option>
-            <option value="leave">🏖️ Leave</option>
-            <option value="vacation">✈️ Vacation</option>
-            <option value="holiday">🎉 Holiday</option>
-            <option value="conference">🎤 Conference</option>
-            <option value="training">📚 Training</option>
-            <option value="other">📌 Other</option>
+            <option value="appointment">{t('appointment_form.event_type_appointment')}</option>
+            <option value="leave">{t('appointment_form.event_type_leave')}</option>
+            <option value="vacation">{t('appointment_form.event_type_vacation')}</option>
+            <option value="holiday">{t('appointment_form.event_type_holiday')}</option>
+            <option value="conference">{t('appointment_form.event_type_conference')}</option>
+            <option value="training">{t('appointment_form.event_type_training')}</option>
+            <option value="other">{t('appointment_form.event_type_other')}</option>
           </select>
         </div>
       )}
@@ -433,7 +455,7 @@ export function AppointmentFormFields({
           {/* Label with Mode Switcher on Right */}
           <div className="flex items-center justify-between mb-3">
             <label className="block text-sm font-medium text-gray-700">
-              Date &amp; Time<span className="text-red-500">*</span>
+              {t('appointment_form.date_time')}<span className="text-red-500">*</span>
             </label>
             <DateTimeModeSwitcher
               mode={dateTimeMode}
@@ -465,7 +487,7 @@ export function AppointmentFormFields({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Date<span className="text-red-500">*</span>
+                  {t('appointment_form.date')}<span className="text-red-500">*</span>
                 </label>
                 <div className="mt-1">
                   <input
@@ -487,7 +509,7 @@ export function AppointmentFormFields({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Time<span className="text-red-500">*</span>
+                  {t('appointment_form.time')}<span className="text-red-500">*</span>
                 </label>
                 <div className="mt-1">
                   <input
@@ -545,7 +567,7 @@ export function AppointmentFormFields({
       ) : (
         <div>
           <label className="block text-sm font-medium text-gray-700">
-            Date<span className="text-red-500">*</span>
+            {t('appointment_form.date')}<span className="text-red-500">*</span>
           </label>
           <div className="mt-1">
             <input
@@ -565,17 +587,20 @@ export function AppointmentFormFields({
         <div className="rounded-lg border p-3 text-xs">
           {isOnVacation(new Date(formData.date)) && (
             <p className="text-orange-600 flex items-center gap-1">
-              ✈️ Practitioner is on vacation this day
+              ✈️ {t('appointment_form.practitioner_on_vacation_day')}
             </p>
           )}
           {!isWorkingDay(new Date(formData.date)) && !isOnVacation(new Date(formData.date)) && (
             <p className="text-red-600 flex items-center gap-1">
-              🚫 Practitioner is not working on this day
+              🚫 {t('appointment_form.practitioner_not_working_day')}
             </p>
           )}
           {isWorkingDay(new Date(formData.date)) && !isOnVacation(new Date(formData.date)) && (
             <p className="text-green-600 flex items-center gap-1">
-              ✓ Available - {getWorkingHours(new Date(formData.date))?.start} to {getWorkingHours(new Date(formData.date))?.end}
+              {t('appointment_form.available_hours_range', {
+                start: getWorkingHours(new Date(formData.date))?.start,
+                end: getWorkingHours(new Date(formData.date))?.end
+              })}
             </p>
           )}
         </div>
@@ -584,14 +609,14 @@ export function AppointmentFormFields({
       {/* Time slot warning for simple mode */}
       {formData.date && !formData.isEmergency && !formData.isAllDay && dateTimeMode === 'simple' && getAvailableTimeSlots().length === 0 && (
         <p className="text-xs text-red-600 bg-red-50 rounded-lg border border-red-200 p-2">
-          No available time slots for this date
+          {t('appointment_form.no_available_time_slots')}
         </p>
       )}
 
       {/* Duration - Hide for all-day events */}
       {!formData.isAllDay && (
         <div>
-          <label className="block text-sm font-medium text-gray-700">Duration</label>
+          <label className="block text-sm font-medium text-gray-700">{t('appointment_form.duration')}</label>
           <div className="mt-1 grid grid-cols-2 gap-4">
             <div>
               <input
@@ -602,7 +627,7 @@ export function AppointmentFormFields({
                 className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="0"
               />
-              <span className="mt-1 text-xs text-gray-500">Hour(s)</span>
+              <span className="mt-1 text-xs text-gray-500">{t('appointment_form.duration_hours_label')}</span>
             </div>
             <div>
               <input
@@ -614,7 +639,7 @@ export function AppointmentFormFields({
                 className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="30"
               />
-              <span className="mt-1 text-xs text-gray-500">Minute(s)</span>
+              <span className="mt-1 text-xs text-gray-500">{t('appointment_form.duration_minutes_label')}</span>
             </div>
           </div>
         </div>
@@ -622,13 +647,13 @@ export function AppointmentFormFields({
 
       {/* Notes */}
       <div>
-        <label className="block text-sm font-medium text-gray-700">Notes</label>
+        <label className="block text-sm font-medium text-gray-700">{t('appointment_form.notes')}</label>
         <textarea
           value={formData.notes}
           onChange={(e) => onFormDataChange('notes', e.target.value)}
           rows={3}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          placeholder="Add any additional notes..."
+          placeholder={t('appointment_form.notes_placeholder')}
         />
       </div>
 
@@ -643,7 +668,7 @@ export function AppointmentFormFields({
               onChange={(e) => onFormDataChange('isRecurring', e.target.checked)}
               className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
             />
-            <span className="text-sm font-medium text-gray-800">Repeat</span>
+            <span className="text-sm font-medium text-gray-800">{t('appointment_form.repeat')}</span>
           </label>
         </div>
 
@@ -651,7 +676,7 @@ export function AppointmentFormFields({
           <div className="space-y-2.5 ml-6 animate-in slide-in-from-top-2 duration-200">
             {/* Every - Ultra compact inline layout */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-gray-600 font-medium">Every</span>
+              <span className="text-xs text-gray-600 font-medium">{t('appointment_form.every')}</span>
               <input
                 type="number"
                 min="1"
@@ -664,10 +689,10 @@ export function AppointmentFormFields({
                 onChange={(e) => onFormDataChange('recurrencePeriod', e.target.value)}
                 className="h-7 rounded-md border border-gray-300 bg-white px-2.5 pr-7 text-sm text-gray-700 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3cpath%20fill%3D%22%23666%22%20d%3D%22M10.293%203.293L6%207.586%201.707%203.293A1%201%200%2000.293%204.707l5%205a1%201%200%20001.414%200l5-5a1%201%200%2010-1.414-1.414z%22%2F%3E%3c%2Fsvg%3E')] bg-[length:12px_12px] bg-[center_right_8px] bg-no-repeat"
               >
-                <option value="day">Day</option>
-                <option value="week">Week</option>
-                <option value="month">Month</option>
-                <option value="year">Year</option>
+                <option value="day">{t('appointment_form.period_day')}</option>
+                <option value="week">{t('appointment_form.period_week')}</option>
+                <option value="month">{t('appointment_form.period_month')}</option>
+                <option value="year">{t('appointment_form.period_year')}</option>
               </select>
             </div>
 
@@ -707,7 +732,7 @@ export function AppointmentFormFields({
 
             {/* End On - Clean inline with icon */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-600 font-medium whitespace-nowrap">End On</span>
+              <span className="text-xs text-gray-600 font-medium whitespace-nowrap">{t('appointment_form.end_on')}</span>
               <div className="relative flex-1">
                 <CalendarIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
                 <input
@@ -716,7 +741,7 @@ export function AppointmentFormFields({
                   onChange={(e) => onFormDataChange('recurrenceEndDate', e.target.value)}
                   min={formData.date || new Date().toISOString().split('T')[0]}
                   className="w-full h-7 rounded-md border border-gray-300 bg-white pl-8 pr-2 text-xs text-gray-700 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10"
-                  placeholder="Choose Date"
+                  placeholder={t('appointment_form.choose_date')}
                 />
               </div>
             </div>
@@ -726,31 +751,31 @@ export function AppointmentFormFields({
 
       {/* Chief Complaint - Elegant styling */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1.5">Chief Complaint</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('appointment_form.chief_complaint')}</label>
         <input
           type="text"
           value={formData.chiefComplaint || ''}
           onChange={(e) => onFormDataChange('chiefComplaint', e.target.value)}
           className="block w-full h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-800 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10"
-          placeholder=""
+          placeholder={t('appointment_form.chief_complaint_placeholder')}
         />
       </div>
 
       {/* Reason - Elegant multi-line */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1.5">Reason</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('appointment_form.reason')}</label>
         <textarea
           value={formData.reason || ''}
           onChange={(e) => onFormDataChange('reason', e.target.value)}
           rows={2}
           className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 resize-none"
-          placeholder=""
+          placeholder={t('appointment_form.reason_placeholder')}
         />
       </div>
 
       {/* Send Form - Multi-select with checkboxes */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1.5">Send Form</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('appointment_form.send_form')}</label>
         <MultiSelectFormDropdown
           selectedForms={formData.selectedForms || []}
           onSelectionChange={(selectedIds) => onFormDataChange('selectedForms', selectedIds)}
@@ -758,29 +783,29 @@ export function AppointmentFormFields({
       </div>
 
       {/* Emergency Appointment - Only show when doctor is unavailable */}
-      {isDoctorUnavailable() && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <label className="flex items-center gap-3 cursor-pointer">
+	      {isDoctorUnavailable() && (
+	        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+	          <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
               checked={formData.isEmergency}
               onChange={(e) => onFormDataChange('isEmergency', e.target.checked)}
               className="rounded border-red-300 text-red-600 focus:ring-red-500 h-5 w-5"
             />
-            <div>
-              <span className="text-sm font-medium text-red-900">Emergency Appointment</span>
-              <p className="text-xs text-red-700 mt-0.5">
-                Override availability restrictions (leaves, working hours)
-              </p>
-            </div>
-          </label>
-        </div>
-      )}
+	            <div>
+	              <span className="text-sm font-medium text-red-900">{t('appointment_form.emergency_appointment')}</span>
+	              <p className="text-xs text-red-700 mt-0.5">
+	                {t('appointment_form.emergency_override_description')}
+	              </p>
+	            </div>
+	          </label>
+	        </div>
+	      )}
 
       {/* Email & SMS */}
       <details className="rounded-lg border border-gray-200">
         <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-gray-700">
-          Email & SMS/WA
+          {t('appointment_form.notifications_section')}
         </summary>
         <div className="space-y-3 px-4 pb-4">
           <label className="flex items-center gap-2">
@@ -790,7 +815,7 @@ export function AppointmentFormFields({
               onChange={(e) => onFormDataChange('sendEmail', e.target.checked)}
               className="rounded border-gray-300"
             />
-            <span className="text-sm text-gray-700">Send Email Notification</span>
+            <span className="text-sm text-gray-700">{t('appointment_form.send_email_notification')}</span>
           </label>
           <label className="flex items-center gap-2">
             <input
@@ -799,7 +824,7 @@ export function AppointmentFormFields({
               onChange={(e) => onFormDataChange('sendSMS', e.target.checked)}
               className="rounded border-gray-300"
             />
-            <span className="text-sm text-gray-700">Send SMS/WhatsApp Notification</span>
+            <span className="text-sm text-gray-700">{t('appointment_form.send_sms_notification')}</span>
           </label>
         </div>
       </details>

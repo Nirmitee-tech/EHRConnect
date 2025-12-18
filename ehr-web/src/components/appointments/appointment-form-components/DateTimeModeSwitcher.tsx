@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar, Grid3x3, List, MousePointerClick } from 'lucide-react';
+import { useTranslation } from '@/i18n/client';
 
 export type DateTimeMode = 'simple' | 'enhanced' | 'quick' | 'popover';
 
@@ -9,30 +10,32 @@ interface DateTimeModeSwitcherProps {
 }
 
 export function DateTimeModeSwitcher({ mode, onModeChange }: DateTimeModeSwitcherProps) {
+  const { t } = useTranslation('common');
+
   const modes = [
     {
       value: 'popover' as DateTimeMode,
-      label: 'Popover',
+      label: t('appointment_form.datetime_picker_popover'),
       icon: MousePointerClick,
-      description: 'Click to expand picker'
+      description: t('appointment_form.datetime_picker_popover_desc')
     },
     {
       value: 'enhanced' as DateTimeMode,
-      label: 'Enhanced',
+      label: t('appointment_form.datetime_picker_enhanced'),
       icon: Grid3x3,
-      description: 'Calendar with time slots'
+      description: t('appointment_form.datetime_picker_enhanced_desc')
     },
     {
       value: 'quick' as DateTimeMode,
-      label: 'Quick',
+      label: t('appointment_form.datetime_picker_quick'),
       icon: Calendar,
-      description: 'Dropdown selection'
+      description: t('appointment_form.datetime_picker_quick_desc')
     },
     {
       value: 'simple' as DateTimeMode,
-      label: 'Simple',
+      label: t('appointment_form.datetime_picker_simple'),
       icon: List,
-      description: 'Basic date/time inputs'
+      description: t('appointment_form.datetime_picker_simple_desc')
     }
   ];
 

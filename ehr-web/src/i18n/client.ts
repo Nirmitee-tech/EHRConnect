@@ -2,8 +2,7 @@
 
 import i18next from 'i18next';
 import { initReactI18next, useTranslation as useTranslationOrg } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
-import { getOptions, languages, cookieName } from './settings';
+import { fallbackLng, getOptions, languages, cookieName } from './settings';
 import { resources } from './resources';
 
 const runsOnServerSide = typeof window === 'undefined';
@@ -40,25 +39,39 @@ function getInitialHtmlLang(): string | undefined {
     return lang.split('-')[0] || undefined;
 }
 
+function getInitialCookieLang(): string | undefined {
+    if (typeof document === 'undefined') return undefined;
+    const cookieHeader = document.cookie || '';
+    const cookieMatches = [...cookieHeader.matchAll(new RegExp(`(?:^|;\\s*)${cookieName}=([^;]*)`, 'g'))];
+    if (cookieMatches.length === 0) return undefined;
+    const lastCookieValueRaw = cookieMatches[cookieMatches.length - 1][1];
+    const lastCookieValue = lastCookieValueRaw ? decodeURIComponent(lastCookieValueRaw) : '';
+    const base = lastCookieValue.split('-')[0] || '';
+    return base || undefined;
+}
+
+function getInitialNavigatorLang(): string | undefined {
+    if (typeof navigator === 'undefined') return undefined;
+    const nav = navigator.language || '';
+    const base = nav.split('-')[0] || '';
+    return base || undefined;
+}
+
 normalizeLocaleCookie();
 const initialHtmlLang = getInitialHtmlLang();
+const initialCookieLang = getInitialCookieLang();
+const initialNavigatorLang = getInitialNavigatorLang();
+const initialLangCandidate = initialHtmlLang || initialCookieLang || initialNavigatorLang || fallbackLng;
+const initialLang = languages.includes(initialLangCandidate) ? initialLangCandidate : fallbackLng;
 
 // Initialize i18next for client side
 i18next
     .use(initReactI18next)
-    .use(LanguageDetector)
     .init({
         ...getOptions(),
         // Keep client hydration consistent with SSR by preferring the <html lang> set by the server.
-        lng: initialHtmlLang,
+        lng: initialLang,
         resources,
-        detection: {
-            order: ['htmlTag', 'cookie', 'localStorage', 'navigator'],
-            lookupCookie: cookieName,
-            caches: ['cookie', 'localStorage'],
-            cookieOptions: { path: '/', sameSite: 'lax' },
-            convertDetectedLanguage: (lng: string) => lng.split('-')[0],
-        },
         preload: runsOnServerSide ? languages : [],
     });
 

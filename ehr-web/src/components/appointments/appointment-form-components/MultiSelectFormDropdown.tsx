@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, X } from 'lucide-react';
+import { useTranslation } from '@/i18n/client';
 
 interface Form {
   id: string;
@@ -28,6 +29,7 @@ export function MultiSelectFormDropdown({
   onSelectionChange,
   availableForms = DEFAULT_FORMS
 }: MultiSelectFormDropdownProps) {
+  const { t } = useTranslation('common');
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -126,7 +128,7 @@ export function MultiSelectFormDropdown({
                 );
               })
             ) : (
-              <span className="text-sm text-gray-400">Search & Select Forms</span>
+              <span className="text-sm text-gray-400">{t('appointment_form.search_select_forms')}</span>
             )}
           </div>
 
@@ -147,7 +149,7 @@ export function MultiSelectFormDropdown({
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search forms..."
+              placeholder={t('appointment_form.search_forms_placeholder')}
               className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20"
               onClick={(e) => e.stopPropagation()}
             />
@@ -181,7 +183,7 @@ export function MultiSelectFormDropdown({
               })
             ) : (
               <div className="px-3 py-4 text-center text-sm text-gray-500">
-                No forms found
+                {t('appointment_form.no_forms_found')}
               </div>
             )}
           </div>
@@ -190,7 +192,7 @@ export function MultiSelectFormDropdown({
           {selectedForms.length > 0 && (
             <div className="p-2 border-t border-gray-200 flex items-center justify-between bg-gray-50">
               <span className="text-xs text-gray-600">
-                {selectedForms.length} form{selectedForms.length !== 1 ? 's' : ''} selected
+                {t('appointment_form.forms_selected', { count: selectedForms.length })}
               </span>
               <button
                 type="button"
@@ -200,7 +202,7 @@ export function MultiSelectFormDropdown({
                 }}
                 className="text-xs text-red-600 hover:text-red-700 font-medium transition-colors"
               >
-                Clear All
+                {t('common.clear_all')}
               </button>
             </div>
           )}

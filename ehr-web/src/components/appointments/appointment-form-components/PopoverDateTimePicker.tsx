@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, Clock, X } from 'lucide-react';
 import { EnhancedDateTimePicker } from './EnhancedDateTimePicker';
+import { useTranslation } from '@/i18n/client';
 
 interface PopoverDateTimePickerProps {
   selectedDate: string;
@@ -23,10 +24,12 @@ export function PopoverDateTimePicker({
   minDate,
   disabled = false
 }: PopoverDateTimePickerProps) {
+  const { t, i18n } = useTranslation('common');
   const [isOpen, setIsOpen] = useState(false);
   const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0, width: 0 });
   const popoverRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLDivElement>(null);
+  const locale = i18n.language || 'en';
 
   // Calculate popover position when opening
   useEffect(() => {
@@ -40,34 +43,37 @@ export function PopoverDateTimePicker({
     }
   }, [isOpen]);
 
-  // Format time to 12-hour format with AM/PM
-  const formatTime12Hour = (time24: string): string => {
+  const formatTime = (time24: string): string => {
     const [hours, minutes] = time24.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const hours12 = hours % 12 || 12;
-    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+    const date = new Date(Date.UTC(1970, 0, 1, hours, minutes));
+    return new Intl.DateTimeFormat(locale, {
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: 'UTC'
+    }).format(date);
   };
 
   // Format display text
   const getDisplayText = (): string => {
     if (selectedDate && selectedTime) {
       const date = new Date(selectedDate + 'T00:00:00');
-      const dateStr = date.toLocaleDateString('en-US', {
+      const dateStr = new Intl.DateTimeFormat(locale, {
         month: 'short',
         day: 'numeric',
         year: 'numeric'
-      });
-      return `${dateStr} at ${formatTime12Hour(selectedTime)}`;
+      }).format(date);
+      return t('appointment_form.date_time_display_full', { date: dateStr, time: formatTime(selectedTime) });
     }
     if (selectedDate) {
       const date = new Date(selectedDate + 'T00:00:00');
-      return date.toLocaleDateString('en-US', {
+      const dateStr = new Intl.DateTimeFormat(locale, {
         month: 'short',
         day: 'numeric',
         year: 'numeric'
-      }) + ' - Select time';
+      }).format(date);
+      return t('appointment_form.date_time_display_date_only', { date: dateStr });
     }
-    return 'Select date and time';
+    return t('appointment_form.date_time_display_empty');
   };
 
   // No automatic close on click outside - user must click X or Done button
@@ -147,7 +153,7 @@ export function PopoverDateTimePicker({
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-200">
-              <h3 className="text-base font-semibold text-gray-900">Select Date & Time</h3>
+              <h3 className="text-base font-semibold text-gray-900">{t('appointment_form.select_date_time_title')}</h3>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
@@ -172,18 +178,18 @@ export function PopoverDateTimePicker({
             </div>
 
             {/* Footer with Done Button - Always visible at bottom */}
-            <div className="px-5 pb-5 pt-3 border-t border-gray-200 bg-white">
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className={`w-full py-2.5 rounded-lg transition-colors font-medium text-sm ${selectedDate && selectedTime
-                    ? 'bg-primary text-primary-foreground hover:opacity-90'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-              >
-                {selectedDate && selectedTime ? 'Done' : 'Close'}
-              </button>
-            </div>
+	            <div className="px-5 pb-5 pt-3 border-t border-gray-200 bg-white">
+	              <button
+	                type="button"
+	                onClick={() => setIsOpen(false)}
+	                className={`w-full py-2.5 rounded-lg transition-colors font-medium text-sm ${selectedDate && selectedTime
+	                    ? 'bg-primary text-primary-foreground hover:opacity-90'
+	                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+	                  }`}
+	              >
+	                {selectedDate && selectedTime ? t('common.done') : t('common.close')}
+	              </button>
+	            </div>
           </div>
         </>
       )}

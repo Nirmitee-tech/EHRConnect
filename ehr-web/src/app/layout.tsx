@@ -43,7 +43,7 @@ export default async function RootLayout({
 
   return (
     <html lang={lang} dir={dir} translate="no" className="notranslate">
-      <body className="antialiased bg-gray-50" suppressHydrationWarning>
+      <body className="antialiased bg-gray-50 notranslate" translate="no" suppressHydrationWarning>
         <SpecialtyInitializer />
         <ToastProvider>
           <AuthSessionProvider>

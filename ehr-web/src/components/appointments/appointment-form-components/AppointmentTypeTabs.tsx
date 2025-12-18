@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from '@/i18n/client';
 
 type AppointmentType = 'single' | 'series' | 'group';
 
@@ -8,6 +9,8 @@ interface AppointmentTypeTabsProps {
 }
 
 export function AppointmentTypeTabs({ appointmentType, onTypeChange }: AppointmentTypeTabsProps) {
+  const { t } = useTranslation('common');
+
   return (
     <div className="flex gap-2 border-b border-gray-200 px-6 py-3">
       <button
@@ -18,7 +21,7 @@ export function AppointmentTypeTabs({ appointmentType, onTypeChange }: Appointme
             : 'text-gray-600 hover:bg-gray-50'
           }`}
       >
-        Single Appointment
+        {t('appointment_form.single')}
       </button>
       <button
         type="button"
@@ -28,7 +31,7 @@ export function AppointmentTypeTabs({ appointmentType, onTypeChange }: Appointme
             : 'text-gray-600 hover:bg-gray-50'
           }`}
       >
-        Appointment Series
+        {t('appointment_form.series')}
       </button>
       <button
         type="button"
@@ -38,7 +41,7 @@ export function AppointmentTypeTabs({ appointmentType, onTypeChange }: Appointme
             : 'text-gray-600 hover:bg-gray-50'
           }`}
       >
-        Group Appointment
+        {t('appointment_form.group')}
       </button>
     </div>
   );
