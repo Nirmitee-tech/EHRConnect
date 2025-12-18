@@ -248,7 +248,7 @@ export default function StaffPage() {
               <div className="text-2xl font-bold text-gray-900">
                 {staffData.filter(s => s.specialty.toLowerCase().includes('doctor') || s.specialty.toLowerCase().includes('physician')).length}
               </div>
-              <div className="text-sm text-gray-600">Doctors</div>
+              <div className="text-sm text-gray-600">{t('staff.doctors')}</div>
             </div>
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
               <Award className="h-6 w-6 text-purple-600" />
@@ -262,7 +262,7 @@ export default function StaffPage() {
               <div className="text-2xl font-bold text-gray-900">
                 {staffData.filter(s => !s.specialty.toLowerCase().includes('doctor') && !s.specialty.toLowerCase().includes('physician')).length}
               </div>
-              <div className="text-sm text-gray-600">Other Staff</div>
+              <div className="text-sm text-gray-600">{t('staff.other_staff')}</div>
             </div>
             <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
               <User className="h-6 w-6 text-orange-600" />
@@ -277,7 +277,7 @@ export default function StaffPage() {
           <div className="flex items-center space-x-3">
             <AlertCircle className="h-5 w-5 text-red-500" />
             <div>
-              <h3 className="text-sm font-medium text-red-800">Error loading staff</h3>
+              <h3 className="text-sm font-medium text-red-800">{t('staff.error_loading')}</h3>
               <p className="text-sm text-red-600 mt-1">{error}</p>
             </div>
           </div>
@@ -297,7 +297,7 @@ export default function StaffPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
           <div className="flex items-center justify-center space-x-3">
             <Loader2 className="h-6 w-6 text-primary animate-spin" />
-            <span className="text-gray-600">Loading staff members...</span>
+            <span className="text-gray-600">{t('staff.loading')}</span>
           </div>
         </div>
       )}
@@ -308,7 +308,7 @@ export default function StaffPage() {
           {staffData.length === 0 ? (
             <div className="p-12 text-center">
               <Stethoscope className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No staff members found</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('staff.no_staff')}</h3>
               <p className="text-gray-600 mb-6">
                 {searchQuery ? 'No staff members match your search criteria.' : 'Get started by adding your first staff member.'}
               </p>
@@ -400,7 +400,7 @@ export default function StaffPage() {
                           <Award className="h-4 w-4 text-primary" />
                           <span className="text-sm text-gray-900 font-medium">{staff.qualification}</span>
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">Licensed Practitioner</div>
+                        <div className="text-xs text-gray-500 mt-1">{t('staff.licensed_practitioner')}</div>
                       </td>
                       <td className="px-6 py-6">
                         <div className="flex flex-col space-y-2">

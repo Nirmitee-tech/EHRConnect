@@ -415,7 +415,7 @@ export default function PatientsPage() {
           <div className="flex items-center space-x-2">
             <AlertCircle className="h-4 w-4 text-red-500" />
             <div>
-              <h3 className="text-sm font-medium text-red-800">Error loading patients</h3>
+              <h3 className="text-sm font-medium text-red-800">{t('patients_page.error_loading')}</h3>
               <p className="text-xs text-red-600 mt-0.5">{error}</p>
             </div>
           </div>
@@ -435,7 +435,7 @@ export default function PatientsPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-8">
           <div className="flex items-center justify-center space-x-2">
             <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
-            <span className="text-sm text-gray-600">Loading patients...</span>
+            <span className="text-sm text-gray-600">{t('patients_page.loading')}</span>
           </div>
         </div>
       )}
@@ -446,7 +446,7 @@ export default function PatientsPage() {
           {patients.length === 0 ? (
             <div className="p-8 text-center">
               <User className="h-10 w-10 text-gray-400 mx-auto mb-3" />
-              <h3 className="text-base font-semibold text-gray-900 mb-1">No patients found</h3>
+              <h3 className="text-base font-semibold text-gray-900 mb-1">{t('patients_page.no_patients')}</h3>
               <p className="text-sm text-gray-600 mb-4">
                 {searchQuery ? 'No patients match your search criteria.' : 'Get started by adding your first patient.'}
               </p>
@@ -506,7 +506,7 @@ export default function PatientsPage() {
                       {/* Age and Gender */}
                       {patient.birthDate && (
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-500">Age:</span>
+                          <span className="text-gray-500">{t('patients_page.age')}</span>
                           <span className="text-gray-900 font-medium">
                             {getAge(patient.birthDate)} years ({patient.gender})
                           </span>
@@ -516,7 +516,7 @@ export default function PatientsPage() {
                       {/* Phone */}
                       {patient.phone && (
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-500">Phone:</span>
+                          <span className="text-gray-500">{t('patients_page.phone')}</span>
                           <span className="text-gray-900 font-medium truncate ml-2">
                             {patient.phone}
                           </span>
@@ -526,7 +526,7 @@ export default function PatientsPage() {
                       {/* Email */}
                       {patient.email && (
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-500">Email:</span>
+                          <span className="text-gray-500">{t('patients_page.email')}</span>
                           <a
                             href={`mailto:${patient.email}`}
                             onClick={(e) => e.stopPropagation()}
@@ -550,7 +550,7 @@ export default function PatientsPage() {
                       {/* Last Visit */}
                       {patient.lastVisit && formatDate(patient.lastVisit) && (
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-500">Last Visit:</span>
+                          <span className="text-gray-500">{t('patients_page.last_visit')}</span>
                           <span className="text-gray-900 font-medium">
                             {formatDate(patient.lastVisit)}
                           </span>
@@ -734,7 +734,7 @@ export default function PatientsPage() {
                   variant="outline"
                   size="sm"
                 >
-                  Previous
+                  {t('patients_page.previous')}
                 </Button>
                 <Button
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
@@ -742,7 +742,7 @@ export default function PatientsPage() {
                   variant="outline"
                   size="sm"
                 >
-                  Next
+                  {t('patients_page.next')}
                 </Button>
               </div>
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
@@ -763,7 +763,7 @@ export default function PatientsPage() {
                       className="rounded-l-md"
                     >
                       <ChevronLeft className="h-4 w-4" />
-                      <span className="ml-1">Previous</span>
+                      <span className="ml-1">{t('patients_page.previous')}</span>
                     </Button>
 
                     {/* Page numbers */}
@@ -799,7 +799,7 @@ export default function PatientsPage() {
                       size="sm"
                       className="rounded-r-md"
                     >
-                      <span className="mr-1">Next</span>
+                      <span className="mr-1">{t('patients_page.next')}</span>
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </nav>
