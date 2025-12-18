@@ -22,6 +22,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { AuditService, AuditEventFilters } from '@/services/audit.service';
 import { AuditChange, AuditEvent, AuditSettingsMap } from '@/types/audit';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -82,6 +84,7 @@ type ContextResponse = {
 
 export default function AuditLogsPage() {
   const { data: session } = useSession();
+  const { t } = useTranslation('common');
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [totalEvents, setTotalEvents] = useState(0);
   const [loading, setLoading] = useState(false);

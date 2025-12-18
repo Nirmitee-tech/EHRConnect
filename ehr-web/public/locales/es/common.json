@@ -459,7 +459,7 @@
     },
     "roles": {
         "title": "Roles y Permisos",
-        "create_role": "Crear Rol",
+        "create_role": "Crear Rol Personalizado",
         "role_name": "Nombre del Rol",
         "role_description": "Descripción del Rol",
         "assign_permissions": "Asignar Permisos",
@@ -467,7 +467,12 @@
         "read": "Leer",
         "write": "Escribir",
         "delete": "Eliminar",
-        "manage": "Gestionar"
+        "manage": "Gestionar",
+        "manage_roles": "Gestionar roles del sistema y personalizados con permisos dinámicos",
+        "no_roles_found": "No se encontraron roles. Cargando roles del sistema...",
+        "loading_roles": "Cargando roles...",
+        "system_role": "Rol del Sistema",
+        "custom_role": "Rol Personalizado"
     },
     "integrations": {
         "title": "Integraciones",

@@ -567,7 +567,7 @@
     },
     "roles": {
         "title": "Roles & Permissions",
-        "create_role": "Create Role",
+        "create_role": "Create Custom Role",
         "role_name": "Role Name",
         "role_description": "Role Description",
         "assign_permissions": "Assign Permissions",
@@ -575,7 +575,12 @@
         "read": "Read",
         "write": "Write",
         "delete": "Delete",
-        "manage": "Manage"
+        "manage": "Manage",
+        "manage_roles": "Manage system and custom roles with dynamic permissions",
+        "no_roles_found": "No roles found. Loading system roles...",
+        "loading_roles": "Loading roles...",
+        "system_role": "System Role",
+        "custom_role": "Custom Role"
     },
     "integrations": {
         "title": "Integrations",

@@ -6,6 +6,8 @@ import { Shield, Plus, Edit, Trash2, AlertTriangle, ChevronDown, ChevronUp } fro
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface Role {
   id: string;
@@ -19,6 +21,7 @@ interface Role {
 
 export default function RolesPermissionsPage() {
   const { data: session } = useSession();
+  const { t } = useTranslation('common');
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -69,10 +72,10 @@ export default function RolesPermissionsPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
               <Shield className="h-8 w-8 text-purple-600" />
-              Roles & Permissions
+              {t('roles.title')}
             </h1>
             <p className="text-gray-600 mt-1">
-              Manage system and custom roles with dynamic permissions
+              {t('roles.manage_roles')}
             </p>
           </div>
           <Button
@@ -80,7 +83,7 @@ export default function RolesPermissionsPage() {
             className="bg-purple-600 hover:bg-purple-700"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Create Custom Role
+            {t('roles.create_role')}
           </Button>
         </div>
       </div>
@@ -94,7 +97,7 @@ export default function RolesPermissionsPage() {
         ) : roles.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl shadow-sm border">
             <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">No roles found. Loading system roles...</p>
+            <p className="text-gray-600">{t('roles.no_roles_found')}</p>
           </div>
         ) : (
           roles.map((role) => {
