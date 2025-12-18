@@ -154,7 +154,7 @@ export default function CreateRulePage() {
 
     try {
       setLoading(true);
-      await ruleService.createRule(session, formData);
+      await ruleService.createRule(session, formData as any);
       success('Rule created successfully');
       router.push('/rules');
     } catch (err: any) {

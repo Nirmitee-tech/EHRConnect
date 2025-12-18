@@ -87,7 +87,7 @@ export default function CreateVariablePage() {
     try {
       setLoading(true);
 
-      await ruleVariableService.createVariable(session, formData);
+      await ruleVariableService.createVariable(session, formData as any);
 
       success('Variable created successfully');
 

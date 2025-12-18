@@ -287,7 +287,7 @@ export default function StaffPage() {
             variant="outline"
             size="sm"
           >
-            Try Again
+            {t('common.try_again')}
           </Button>
         </div>
       )}
@@ -310,11 +310,11 @@ export default function StaffPage() {
               <Stethoscope className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('staff.no_staff')}</h3>
               <p className="text-gray-600 mb-6">
-                {searchQuery ? 'No staff members match your search criteria.' : 'Get started by adding your first staff member.'}
+                {searchQuery ? t('staff.no_match_search') : t('staff.get_started_add')}
               </p>
               <Button className='text-white' onClick={handleAddStaff}>
                 <Plus className="h-4 w-4 mr-2 " />
-                Add First Staff Member
+                {t('staff.add_first_staff')}
               </Button>
             </div>
           ) : (
@@ -323,22 +323,22 @@ export default function StaffPage() {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Name & Specialty
+                      {t('staff.name_specialty')}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Contact Information
+                      {t('staff.contact_info')}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Working Days
+                      {t('staff.working_days')}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Qualification
+                      {t('staff.qualification')}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Status
+                      {t('staff.status')}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Actions
+                      {t('common.actions')}
                     </th>
                   </tr>
                 </thead>
@@ -408,10 +408,10 @@ export default function StaffPage() {
                             ? 'bg-[#E8F5E8] text-[#047857]'
                             : 'bg-[#F3F4F6] text-[#4B5563]'
                             }`}>
-                            {staff.active ? 'Active' : 'Inactive'}
+                            {staff.active ? t('staff.active') : t('staff.inactive')}
                           </span>
                           <span className="inline-flex px-3 py-1 text-xs font-medium rounded-md bg-[#FFF4E0] text-[#D97706] uppercase">
-                            {staff.employmentType || 'full-time'}
+                            {staff.employmentType ? t(`staff.employment_${staff.employmentType.replace('-', '_')}`) : t('staff.employment_full_time')}
                           </span>
                         </div>
                       </td>

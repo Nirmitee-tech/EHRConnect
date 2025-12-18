@@ -20,6 +20,7 @@ import { LanguageSettings } from '@/components/settings/language-settings';
 import { Globe } from 'lucide-react';
 
 export default function AppearancePage() {
+  const { t } = useTranslation('common');
   const { themeSettings, updateTheme, resetTheme, isLoading, error } = useTheme();
   const { refreshFacilities, currentFacility } = useFacility();
   const [localSettings, setLocalSettings] = useState(themeSettings);
@@ -74,7 +75,7 @@ export default function AppearancePage() {
   };
 
   const handleReset = async () => {
-    if (confirm('Are you sure you want to reset to default theme?')) {
+    if (confirm(t('appearance.reset_confirm'))) {
       setIsSaving(true);
       try {
         await resetTheme();
@@ -94,7 +95,7 @@ export default function AppearancePage() {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading theme settings...</p>
+          <p className="mt-4 text-gray-600">{t('appearance.loading_theme')}</p>
         </div>
       </div>
     );
@@ -110,7 +111,7 @@ export default function AppearancePage() {
           className="flex items-center space-x-2"
         >
           <Eye className="h-4 w-4" />
-          <span>{showPreview ? 'Hide' : 'Show'} Preview</span>
+          <span>{showPreview ? t('appearance.hide_preview') : t('appearance.show_preview')}</span>
         </Button>
         <Button
           variant="outline"
@@ -120,7 +121,7 @@ export default function AppearancePage() {
           className="flex items-center space-x-2"
         >
           <RotateCcw className="h-4 w-4" />
-          <span>Reset</span>
+          <span>{t('appearance.reset')}</span>
         </Button>
         <Button
           size="sm"
@@ -129,7 +130,7 @@ export default function AppearancePage() {
           className="bg-primary text-white hover:opacity-90 flex items-center space-x-2"
         >
           <Save className="h-4 w-4" />
-          <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+          <span>{isSaving ? t('appearance.saving') : t('appearance.save_changes')}</span>
         </Button>
       </HeaderActions>
 
@@ -137,7 +138,7 @@ export default function AppearancePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 space-y-4">
         {saveSuccess && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">
-            <p className="text-xs font-medium text-green-800">Changes successfully synced to cloud</p>
+            <p className="text-xs font-medium text-green-800">{t('appearance.sync_success')}</p>
             <div className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse" />
           </div>
         )}
@@ -176,7 +177,7 @@ export default function AppearancePage() {
             <div className="space-y-3">
               <div className="flex items-center gap-2 px-1">
                 <Globe className="h-4 w-4 text-gray-400" />
-                <h2 className="text-[12px] font-bold text-gray-900 uppercase tracking-tight">Regional & Localization</h2>
+                <h2 className="text-[12px] font-bold text-gray-900 uppercase tracking-tight">{t('appearance.regional_localization')}</h2>
               </div>
               <LanguageSettings />
             </div>

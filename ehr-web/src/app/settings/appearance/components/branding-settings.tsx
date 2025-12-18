@@ -1,6 +1,7 @@
 import React from 'react';
 import { Palette, Upload } from 'lucide-react';
 import { ThemeSettings } from '@/contexts/theme-context';
+import { useTranslation } from '@/i18n/client';
 
 interface BrandingSettingsProps {
     settings: ThemeSettings;
@@ -8,19 +9,21 @@ interface BrandingSettingsProps {
 }
 
 export const BrandingSettings = ({ settings, onUpdate }: BrandingSettingsProps) => {
+    const { t } = useTranslation('common');
+
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
         const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
         if (!validTypes.includes(file.type)) {
-            alert('Please upload a valid image file (PNG, JPG, or SVG)');
+            alert(t('appearance.upload_error_type'));
             return;
         }
 
         const maxSize = 2 * 1024 * 1024;
         if (file.size > maxSize) {
-            alert('File size must be less than 2MB');
+            alert(t('appearance.upload_error_size'));
             return;
         }
 
@@ -35,13 +38,13 @@ export const BrandingSettings = ({ settings, onUpdate }: BrandingSettingsProps) 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center space-x-2 mb-3">
                 <Palette className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-bold text-gray-900">Logo & Branding</h2>
+                <h2 className="text-sm font-bold text-gray-900">{t('appearance.logo_branding')}</h2>
             </div>
             <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-[11px] font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">
-                            Organization Logo
+                            {t('appearance.org_logo')}
                         </label>
                         <div className="flex items-center space-x-3">
                             {settings.logoUrl && (
@@ -57,23 +60,23 @@ export const BrandingSettings = ({ settings, onUpdate }: BrandingSettingsProps) 
                                 <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
                                 <div className="px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:opacity-90 transition-colors flex items-center space-x-2">
                                     <Upload className="h-3.5 w-3.5" />
-                                    <span>Upload</span>
+                                    <span>{t('appearance.upload')}</span>
                                 </div>
                             </label>
                         </div>
                     </div>
                     <div>
                         <label className="block text-[11px] font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">
-                            Organization Name
+                            {t('appearance.org_name')}
                         </label>
                         <input
                             type="text"
                             value={settings.orgNameOverride || ''}
                             onChange={(e) => onUpdate({ orgNameOverride: e.target.value })}
                             className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-primary outline-none"
-                            placeholder="e.g. Acme Health"
+                            placeholder={t('appearance.org_placeholder')}
                         />
-                        <p className="text-[10px] text-gray-400 mt-1 italic">Overrides the default database name</p>
+                        <p className="text-[10px] text-gray-400 mt-1 italic">{t('appearance.org_helper')}</p>
                     </div>
                 </div>
             </div>

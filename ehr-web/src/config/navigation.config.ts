@@ -177,40 +177,39 @@ const PAGE_CONFIG: Record<string, PageInfo> = {
   dashboard: { title: 'Dashboard' },
   patients: {
     title: 'Patients',
-    actionButton: { label: 'Add Patient', href: '/patients/new' }
+    // actionButton: { label: 'Add Patient', href: '/patients/new' }
   },
   'team-management': {
     title: 'Team Management',
-    actionButton: { label: 'Invite Member', href: '/team-management' }
+    // actionButton: { label: 'Invite Member', href: '/team-management' }
   },
   staff: {
-    title: 'Staff List',
-    actionButton: { label: 'Add Doctor' }
+    title: 'Staff List'
   },
   'bed-management': {
     title: 'Bed Management',
-    actionButton: { label: 'Admit Patient', href: '/bed-management/admit' }
+    // actionButton: { label: 'Admit Patient', href: '/bed-management/admit' }
   },
   appointments: {
     title: 'Appointments',
-    actionButton: { label: 'New Appointment', href: '/appointments/new' }
+    // actionButton: { label: 'New Appointment', href: '/appointments/new' }
   },
   tasks: {
     title: 'Tasks',
-    actionButton: { label: 'Create Task', href: '/tasks' }
+    // actionButton: { label: 'Create Task', href: '/tasks' }
   },
   'patient-flow': { title: 'Patient Flow Board' },
   rules: {
     title: 'Rule Engine',
-    actionButton: { label: 'Create Rule', href: '/rules/new' }
+    // actionButton: { label: 'Create Rule', href: '/rules/new' }
   },
   inventory: {
     title: 'Inventory',
-    actionButton: { label: 'New Item', href: '/inventory' }
+    // actionButton: { label: 'New Item', href: '/inventory' }
   },
   locations: {
     title: 'Locations',
-    actionButton: { label: 'Add Location', href: '/settings/locations' }
+    // actionButton: { label: 'Add Location', href: '/settings/locations' }
   },
   reports: { title: 'Reports' },
   admin: { title: 'Administration' },

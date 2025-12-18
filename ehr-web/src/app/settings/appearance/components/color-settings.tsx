@@ -2,6 +2,7 @@ import React from 'react';
 import { Palette } from 'lucide-react';
 import { ThemeSettings } from '@/contexts/theme-context';
 import { ColorInput } from './color-input';
+import { useTranslation } from '@/i18n/client';
 
 interface ColorSettingsProps {
     settings: ThemeSettings;
@@ -9,66 +10,68 @@ interface ColorSettingsProps {
 }
 
 export const ColorSettings = ({ settings, onColorChange }: ColorSettingsProps) => {
+    const { t } = useTranslation('common');
+
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center space-x-2 mb-3">
                 <Palette className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-bold text-gray-900">Theme Colors</h2>
+                <h2 className="text-sm font-bold text-gray-900">{t('appearance.theme_colors')}</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
                 <ColorInput
-                    label="Primary"
+                    label={t('appearance.color_primary')}
                     field="primaryColor"
-                    description="Buttons & highlights"
+                    description={t('appearance.color_primary_desc')}
                     value={settings.primaryColor}
                     onChange={onColorChange}
                 />
                 <ColorInput
-                    label="Primary Text"
+                    label={t('appearance.color_primary_text')}
                     field="primaryTextColor"
-                    description="Text on primary bg"
+                    description={t('appearance.color_primary_text_desc')}
                     value={settings.primaryTextColor || ''}
                     onChange={onColorChange}
                 />
                 <ColorInput
-                    label="Sidebar Bg"
+                    label={t('appearance.color_sidebar_bg')}
                     field="sidebarBackgroundColor"
-                    description="Sidebar background"
+                    description={t('appearance.color_sidebar_bg_desc')}
                     value={settings.sidebarBackgroundColor}
                     onChange={onColorChange}
                 />
                 <ColorInput
-                    label="Sidebar Text"
+                    label={t('appearance.color_sidebar_text')}
                     field="sidebarTextColor"
-                    description="Inactive menu items"
+                    description={t('appearance.color_sidebar_text_desc')}
                     value={settings.sidebarTextColor}
                     onChange={onColorChange}
                 />
                 <ColorInput
-                    label="Active Menu"
+                    label={t('appearance.color_active_menu')}
                     field="sidebarActiveColor"
-                    description="Selected highlight"
+                    description={t('appearance.color_active_menu_desc')}
                     value={settings.sidebarActiveColor}
                     onChange={onColorChange}
                 />
                 <ColorInput
-                    label="Active Text"
+                    label={t('appearance.color_active_text')}
                     field="sidebarActiveTextColor"
-                    description="Text on active menu"
+                    description={t('appearance.color_active_text_desc')}
                     value={settings.sidebarActiveTextColor || ''}
                     onChange={onColorChange}
                 />
                 <ColorInput
-                    label="Secondary"
+                    label={t('appearance.color_secondary')}
                     field="secondaryColor"
-                    description="Secondary actions"
+                    description={t('appearance.color_secondary_desc')}
                     value={settings.secondaryColor}
                     onChange={onColorChange}
                 />
                 <ColorInput
-                    label="Accent"
+                    label={t('appearance.color_accent')}
                     field="accentColor"
-                    description="Status indicators"
+                    description={t('appearance.color_accent_desc')}
                     value={settings.accentColor}
                     onChange={onColorChange}
                 />

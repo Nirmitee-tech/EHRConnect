@@ -839,7 +839,7 @@ function InviteDrawer({ session, userContext, onClose, onSuccess }: InviteDrawer
                         {categories[categoryKey]}
                       </p>
                       <div className="space-y-1 ml-2">
-                        {roles.map((role) => (
+                        {roles.map((role: any) => (
                           <label
                             key={role.key}
                             className="flex items-start gap-2 cursor-pointer hover:bg-white p-2 rounded"

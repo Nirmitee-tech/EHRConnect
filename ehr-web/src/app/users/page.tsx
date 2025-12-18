@@ -322,6 +322,8 @@ interface UserDrawerProps {
 }
 
 function UserDrawer({ mode, session, userContext, onClose, onSuccess }: UserDrawerProps) {
+  const { t } = useTranslation('common');
+
   interface DrawerFormState {
     email: string;
     name: string;

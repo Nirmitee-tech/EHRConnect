@@ -6,6 +6,7 @@ import { LucideIcon, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTabs } from '@/contexts/tab-context';
 import { useTheme } from '@/contexts/theme-context';
+import { useTranslation } from '@/i18n/client';
 
 interface NavItemChild {
   name: string;
@@ -34,9 +35,24 @@ export function NavItem({
   badge,
   children
 }: NavItemProps) {
+  const { t } = useTranslation('common');
   const { addTab } = useTabs();
   const { themeSettings } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Convert name to translation key format
+  const getTranslatedName = (itemName: string) => {
+    const key = itemName
+      .toLowerCase()
+      .replace(/\s*&\s*/g, '_')  // Replace & with _
+      .replace(/\s+/g, '_')       // Replace spaces with _
+      .replace(/[()]/g, '')       // Remove parentheses
+      .replace(/_+/g, '_')        // Remove duplicate underscores
+      .replace(/^_|_$/g, '');     // Remove leading/trailing underscores
+    return t(`nav.${key}`) || itemName;
+  };
+
+  const translatedName = getTranslatedName(name);
 
   const handleClick = () => {
     if (children && children.length > 0) {
@@ -44,7 +60,7 @@ export function NavItem({
       setIsExpanded(!isExpanded);
     } else {
       addTab({
-        title: name,
+        title: translatedName,
         path: href,
         icon: <Icon className="h-4 w-4" />,
       });
@@ -53,7 +69,7 @@ export function NavItem({
 
   const handleChildClick = (child: NavItemChild) => {
     addTab({
-      title: child.name,
+      title: getTranslatedName(child.name),
       path: child.href,
       icon: <child.icon className="h-4 w-4" />,
     });
@@ -80,7 +96,7 @@ export function NavItem({
               style={{ color: isActive ? 'var(--theme-sidebar-active-contrast)' : themeSettings.sidebarTextColor }}
             />
             <span className="flex-1 transition-colors duration-200 text-left">
-              {name}
+              {translatedName}
             </span>
             {isExpanded ? (
               <ChevronDown className="h-4 w-4 transition-transform" />
@@ -102,7 +118,7 @@ export function NavItem({
                 style={{ color: themeSettings.sidebarTextColor }}
               >
                 <child.icon className="h-4 w-4 mr-2" style={{ color: themeSettings.sidebarTextColor }} />
-                <span className="transition-colors duration-200">{child.name}</span>
+                <span className="transition-colors duration-200">{getTranslatedName(child.name)}</span>
               </Link>
             ))}
           </div>
@@ -124,7 +140,7 @@ export function NavItem({
         backgroundColor: isActive ? themeSettings.sidebarActiveColor : 'transparent',
         color: isActive ? 'var(--theme-sidebar-active-contrast)' : themeSettings.sidebarTextColor
       }}
-      title={isCollapsed ? name : undefined}
+      title={isCollapsed ? translatedName : undefined}
     >
 
       <div className={cn(
@@ -139,7 +155,7 @@ export function NavItem({
         {!isCollapsed && (
           <>
             <span className="flex-1 transition-colors duration-200">
-              {name}
+              {translatedName}
             </span>
             {(count !== undefined && count > 0) && (
               <span className={cn(
@@ -164,7 +180,7 @@ export function NavItem({
       {/* Tooltip for collapsed state */}
       {isCollapsed && (
         <div className="absolute left-full ml-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-lg">
-          <span className="font-medium">{name}</span>
+          <span className="font-medium">{translatedName}</span>
           {count !== undefined && count > 0 && (
             <span className="ml-2 px-1.5 py-0.5 bg-gray-800 rounded text-xs">{count}</span>
           )}

@@ -206,6 +206,7 @@ export default function RolesPermissionsPage() {
 }
 
 function CreateRoleModal({ session, onClose, onSuccess }: any) {
+  const { t } = useTranslation('common');
   const [formData, setFormData] = useState({
     key: '',
     name: '',

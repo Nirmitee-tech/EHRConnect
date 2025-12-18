@@ -1,17 +1,20 @@
 import React from 'react';
 import { ThemeSettings } from '@/contexts/theme-context';
 import { cn, getContrastColor } from '@/lib/utils';
+import { useTranslation } from '@/i18n/client';
 
 interface LivePreviewProps {
     settings: ThemeSettings;
 }
 
 export const LivePreview = ({ settings }: LivePreviewProps) => {
+    const { t } = useTranslation('common');
+
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 overflow-hidden">
             <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-bold text-gray-900">Live Preview</h2>
-                <span className="text-[10px] text-gray-400 font-mono">Real-time Visualization</span>
+                <h2 className="text-sm font-bold text-gray-900">{t('appearance.live_preview')}</h2>
+                <span className="text-[10px] text-gray-400 font-mono">{t('appearance.realtime_viz')}</span>
             </div>
 
             <div className="rounded-lg border border-gray-100 overflow-hidden shadow-inner flex flex-col md:flex-row min-h-[400px]">
@@ -45,13 +48,17 @@ export const LivePreview = ({ settings }: LivePreviewProps) => {
                                 className="text-[8px] font-medium opacity-60 truncate uppercase tracking-tighter"
                                 style={{ color: settings.sidebarTextColor || (getContrastColor(settings.sidebarBackgroundColor) === 'white' ? '#FFFFFF' : '#000000') }}
                             >
-                                Location Name
+                                {t('settings.facility')}
                             </p>
                         </div>
                     </div>
 
                     <div className="space-y-1">
-                        {['Dashboard', 'Patients', 'Staff'].map((item, idx) => {
+                        {[
+                            { name: t('dashboard.title') || 'Dashboard', key: 'dashboard' },
+                            { name: t('patients') || 'Patients', key: 'patients' },
+                            { name: t('staff') || 'Staff', key: 'staff' }
+                        ].map((item, idx) => {
                             const isActive = idx === 0;
                             const activeBg = settings.sidebarActiveColor;
                             const activeText = settings.sidebarActiveTextColor || (getContrastColor(activeBg) === 'white' ? '#FFFFFF' : '#000000');
@@ -59,7 +66,7 @@ export const LivePreview = ({ settings }: LivePreviewProps) => {
 
                             return (
                                 <div
-                                    key={item}
+                                    key={item.key}
                                     className="px-2 py-1.5 rounded flex items-center space-x-2 shadow-sm transition-all"
                                     style={{
                                         backgroundColor: isActive ? activeBg : 'transparent',
@@ -67,7 +74,7 @@ export const LivePreview = ({ settings }: LivePreviewProps) => {
                                     }}
                                 >
                                     <div className="w-1 h-1 rounded-full shadow-glow" style={{ backgroundColor: settings.accentColor }} />
-                                    <span className="text-[10px] font-medium">{item}</span>
+                                    <span className="text-[10px] font-medium">{item.name}</span>
                                 </div>
                             );
                         })}
@@ -92,24 +99,24 @@ export const LivePreview = ({ settings }: LivePreviewProps) => {
                                     color: settings.primaryTextColor || (getContrastColor(settings.primaryColor) === 'white' ? '#FFFFFF' : '#000000')
                                 }}
                             >
-                                Primary
+                                {t('appearance.color_primary')}
                             </button>
                             <button
                                 className="px-4 py-1.5 text-[10px] font-bold text-white rounded shadow-md transform hover:scale-105 transition-transform"
                                 style={{ backgroundColor: settings.secondaryColor }}
                             >
-                                Secondary
+                                {t('appearance.color_secondary')}
                             </button>
                         </div>
                         <div className="flex items-center justify-center gap-2">
                             <div className="w-2 h-2 rounded-full animate-pulse shadow-glow" style={{ backgroundColor: settings.accentColor }} />
                             <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">
-                                Accent Active
+                                {t('appearance.color_accent')}
                             </span>
                         </div>
                     </div>
                     <p className="text-[10px] max-w-[150px] leading-relaxed text-gray-400">
-                        Experimental branding for {settings.orgNameOverride || 'the facility'}.
+                        Experimental branding for {settings.orgNameOverride || t('settings.facility').toLowerCase()}.
                     </p>
                 </div>
             </div>
