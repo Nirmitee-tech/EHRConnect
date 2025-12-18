@@ -64,6 +64,7 @@ interface PatientFormProps {
   onCancel: () => void;
 }
 
+// Gender options - will be translated dynamically in component
 const genderOptions = [
   { value: 'male', label: 'Male' },
   { value: 'female', label: 'Female' },
@@ -71,8 +72,10 @@ const genderOptions = [
   { value: 'unknown', label: 'Unknown' }
 ];
 
+// Pronoun options - will be translated dynamically in component
 const pronounOptions = ['He/Him', 'She/Her', 'They/Them', 'Prefer to self-describe'];
 
+// Marital status options - will be translated dynamically in component
 const maritalStatusOptions = [
   { value: 'S', label: 'Single' },
   { value: 'M', label: 'Married' },
@@ -88,6 +91,7 @@ const languageOptions = [
   { value: 'hi', label: 'Hindi' }
 ];
 
+// Options that will be translated dynamically in component
 const raceOptions = ['White', 'Black or African American', 'Asian', 'Native Hawaiian', 'Other'];
 const ethnicityOptions = ['Hispanic or Latino', 'Not Hispanic or Latino'];
 const bloodGroupOptions = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -307,14 +311,194 @@ export function PatientForm({
   ], [t]);
 
   const translatedSectionConfig = useMemo(() => [
+
+  // Translated language options
+  const translatedLanguageOptions = useMemo(() => [
+    { value: 'en', label: t('patient_form.language_english') },
+    { value: 'es', label: t('patient_form.language_spanish') },
+    { value: 'fr', label: t('patient_form.language_french') },
+    { value: 'hi', label: t('patient_form.language_hindi') }
+  ], [t]);
+
+  // Translated relationship options
+  const translatedRelationshipOptions = useMemo(() => [
+    t('patient_form.relationship_spouse'),
+    t('patient_form.relationship_parent'),
+    t('patient_form.relationship_child'),
+    t('patient_form.relationship_sibling'),
+    t('patient_form.relationship_friend'),
+    t('patient_form.relationship_other')
+  ], [t]);
     { id: 'provider', title: t('patient_form.provider_information'), icon: Stethoscope, required: true },
+
+  // Translated language options
+  const translatedLanguageOptions = useMemo(() => [
+    { value: 'en', label: t('patient_form.language_english') },
+    { value: 'es', label: t('patient_form.language_spanish') },
+    { value: 'fr', label: t('patient_form.language_french') },
+    { value: 'hi', label: t('patient_form.language_hindi') }
+  ], [t]);
+
+  // Translated relationship options
+  const translatedRelationshipOptions = useMemo(() => [
+    t('patient_form.relationship_spouse'),
+    t('patient_form.relationship_parent'),
+    t('patient_form.relationship_child'),
+    t('patient_form.relationship_sibling'),
+    t('patient_form.relationship_friend'),
+    t('patient_form.relationship_other')
+  ], [t]);
     { id: 'patient', title: t('patient_form.patient_details'), icon: User, required: true },
+
+  // Translated language options
+  const translatedLanguageOptions = useMemo(() => [
+    { value: 'en', label: t('patient_form.language_english') },
+    { value: 'es', label: t('patient_form.language_spanish') },
+    { value: 'fr', label: t('patient_form.language_french') },
+    { value: 'hi', label: t('patient_form.language_hindi') }
+  ], [t]);
+
+  // Translated relationship options
+  const translatedRelationshipOptions = useMemo(() => [
+    t('patient_form.relationship_spouse'),
+    t('patient_form.relationship_parent'),
+    t('patient_form.relationship_child'),
+    t('patient_form.relationship_sibling'),
+    t('patient_form.relationship_friend'),
+    t('patient_form.relationship_other')
+  ], [t]);
     { id: 'contact', title: t('patient_form.contact_information'), icon: Phone, required: true },
+
+  // Translated language options
+  const translatedLanguageOptions = useMemo(() => [
+    { value: 'en', label: t('patient_form.language_english') },
+    { value: 'es', label: t('patient_form.language_spanish') },
+    { value: 'fr', label: t('patient_form.language_french') },
+    { value: 'hi', label: t('patient_form.language_hindi') }
+  ], [t]);
+
+  // Translated relationship options
+  const translatedRelationshipOptions = useMemo(() => [
+    t('patient_form.relationship_spouse'),
+    t('patient_form.relationship_parent'),
+    t('patient_form.relationship_child'),
+    t('patient_form.relationship_sibling'),
+    t('patient_form.relationship_friend'),
+    t('patient_form.relationship_other')
+  ], [t]);
     { id: 'emergency', title: t('patient_form.emergency_contact_optional'), icon: AlertCircle, required: false },
+
+  // Translated language options
+  const translatedLanguageOptions = useMemo(() => [
+    { value: 'en', label: t('patient_form.language_english') },
+    { value: 'es', label: t('patient_form.language_spanish') },
+    { value: 'fr', label: t('patient_form.language_french') },
+    { value: 'hi', label: t('patient_form.language_hindi') }
+  ], [t]);
+
+  // Translated relationship options
+  const translatedRelationshipOptions = useMemo(() => [
+    t('patient_form.relationship_spouse'),
+    t('patient_form.relationship_parent'),
+    t('patient_form.relationship_child'),
+    t('patient_form.relationship_sibling'),
+    t('patient_form.relationship_friend'),
+    t('patient_form.relationship_other')
+  ], [t]);
     { id: 'insurance', title: t('patient_form.insurance_optional'), icon: Shield, required: false },
+
+  // Translated language options
+  const translatedLanguageOptions = useMemo(() => [
+    { value: 'en', label: t('patient_form.language_english') },
+    { value: 'es', label: t('patient_form.language_spanish') },
+    { value: 'fr', label: t('patient_form.language_french') },
+    { value: 'hi', label: t('patient_form.language_hindi') }
+  ], [t]);
+
+  // Translated relationship options
+  const translatedRelationshipOptions = useMemo(() => [
+    t('patient_form.relationship_spouse'),
+    t('patient_form.relationship_parent'),
+    t('patient_form.relationship_child'),
+    t('patient_form.relationship_sibling'),
+    t('patient_form.relationship_friend'),
+    t('patient_form.relationship_other')
+  ], [t]);
     { id: 'preferences', title: t('patient_form.preferences'), icon: Sparkles },
+
+  // Translated language options
+  const translatedLanguageOptions = useMemo(() => [
+    { value: 'en', label: t('patient_form.language_english') },
+    { value: 'es', label: t('patient_form.language_spanish') },
+    { value: 'fr', label: t('patient_form.language_french') },
+    { value: 'hi', label: t('patient_form.language_hindi') }
+  ], [t]);
+
+  // Translated relationship options
+  const translatedRelationshipOptions = useMemo(() => [
+    t('patient_form.relationship_spouse'),
+    t('patient_form.relationship_parent'),
+    t('patient_form.relationship_child'),
+    t('patient_form.relationship_sibling'),
+    t('patient_form.relationship_friend'),
+    t('patient_form.relationship_other')
+  ], [t]);
     { id: 'consent', title: t('patient_form.privacy_consent'), icon: Lock, required: true },
+
+  // Translated language options
+  const translatedLanguageOptions = useMemo(() => [
+    { value: 'en', label: t('patient_form.language_english') },
+    { value: 'es', label: t('patient_form.language_spanish') },
+    { value: 'fr', label: t('patient_form.language_french') },
+    { value: 'hi', label: t('patient_form.language_hindi') }
+  ], [t]);
+
+  // Translated relationship options
+  const translatedRelationshipOptions = useMemo(() => [
+    t('patient_form.relationship_spouse'),
+    t('patient_form.relationship_parent'),
+    t('patient_form.relationship_child'),
+    t('patient_form.relationship_sibling'),
+    t('patient_form.relationship_friend'),
+    t('patient_form.relationship_other')
+  ], [t]);
     { id: 'clinical', title: t('patient_form.clinical_context'), icon: Activity }
+
+  // Translated language options
+  const translatedLanguageOptions = useMemo(() => [
+    { value: 'en', label: t('patient_form.language_english') },
+    { value: 'es', label: t('patient_form.language_spanish') },
+    { value: 'fr', label: t('patient_form.language_french') },
+    { value: 'hi', label: t('patient_form.language_hindi') }
+  ], [t]);
+
+  // Translated relationship options
+  const translatedRelationshipOptions = useMemo(() => [
+    t('patient_form.relationship_spouse'),
+    t('patient_form.relationship_parent'),
+    t('patient_form.relationship_child'),
+    t('patient_form.relationship_sibling'),
+    t('patient_form.relationship_friend'),
+    t('patient_form.relationship_other')
+  ], [t]);
+  ], [t]);
+
+  // Translated language options
+  const translatedLanguageOptions = useMemo(() => [
+    { value: 'en', label: t('patient_form.language_english') },
+    { value: 'es', label: t('patient_form.language_spanish') },
+    { value: 'fr', label: t('patient_form.language_french') },
+    { value: 'hi', label: t('patient_form.language_hindi') }
+  ], [t]);
+
+  // Translated relationship options
+  const translatedRelationshipOptions = useMemo(() => [
+    t('patient_form.relationship_spouse'),
+    t('patient_form.relationship_parent'),
+    t('patient_form.relationship_child'),
+    t('patient_form.relationship_sibling'),
+    t('patient_form.relationship_friend'),
+    t('patient_form.relationship_other')
   ], [t]);
 
   const mapStaffToOption = (provider: StaffMember): SelectOption => ({
