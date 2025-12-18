@@ -738,9 +738,9 @@ export function PatientForm({
                   </div>
                   {!compactMode && (
                     <div>
-                      <Label className="text-sm font-medium">Referred By</Label>
+                      <Label className="text-sm font-medium">{t('patient_form.referred_by')}</Label>
                       <Input
-                        placeholder="Referral source"
+                        placeholder={t('patient_form.referral_source')}
                         value={formData.provider.referredBy}
                         onChange={e => updateProviderField('referredBy', e.target.value)}
                       />
@@ -762,13 +762,13 @@ export function PatientForm({
                 >
                   {!compactMode && (
                     <div>
-                      <Label className="text-sm font-medium">Prefix</Label>
+                      <Label className="text-sm font-medium">{t('patient_form.prefix')}</Label>
                       <Select
                         value={formData.demographics.prefix}
                         onValueChange={value => updateDemographicsField('prefix', value)}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Prefix" />
+                          <SelectValue placeholder={t('patient_form.prefix_placeholder')} />
                         </SelectTrigger>
                         <SelectContent>
                           {['Mr', 'Mrs', 'Ms', 'Dr'].map(prefix => (
@@ -790,7 +790,7 @@ export function PatientForm({
                   </div>
                   {!compactMode && (
                     <div>
-                      <Label className="text-sm font-medium">Middle Name</Label>
+                      <Label className="text-sm font-medium">{t('patient_form.middle_name')}</Label>
                       <Input
                         value={formData.demographics.middleName}
                         onChange={e => updateDemographicsField('middleName', e.target.value)}
@@ -813,7 +813,7 @@ export function PatientForm({
                 >
                   {!compactMode && (
                     <div>
-                      <Label className="text-sm font-medium">Preferred Name</Label>
+                      <Label className="text-sm font-medium">{t('patient_form.preferred_name')}</Label>
                       <Input
                         value={formData.demographics.preferredName}
                         onChange={e => updateDemographicsField('preferredName', e.target.value)}
@@ -831,7 +831,7 @@ export function PatientForm({
                   </div>
                   {!compactMode && (
                     <div>
-                      <Label className="text-sm font-medium">Age</Label>
+                      <Label className="text-sm font-medium">{t('patient_form.age')}</Label>
                       <Input value={calculatedAge || '--'} readOnly />
                     </div>
                   )}
@@ -861,16 +861,16 @@ export function PatientForm({
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div>
-                        <Label className="text-sm font-medium">Pronouns</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.pronouns')}</Label>
                         <Select
                           value={formData.demographics.pronouns}
                           onValueChange={value => updateDemographicsField('pronouns', value)}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select pronouns" />
+                            <SelectValue placeholder={t('patient_form.select_pronouns')} />
                           </SelectTrigger>
                           <SelectContent>
-                            {pronounOptions.map(option => (
+                            {translatedPronounOptions.map(option => (
                               <SelectItem key={option} value={option}>
                                 {option}
                               </SelectItem>
@@ -879,7 +879,7 @@ export function PatientForm({
                         </Select>
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Marital Status</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.marital_status')}</Label>
                         <Select
                           value={formData.demographics.maritalStatus}
                           onValueChange={value => updateDemographicsField('maritalStatus', value)}
@@ -897,7 +897,7 @@ export function PatientForm({
                         </Select>
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Occupation</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.occupation')}</Label>
                         <Input
                           value={formData.demographics.occupation}
                           onChange={e => updateDemographicsField('occupation', e.target.value)}
@@ -906,7 +906,7 @@ export function PatientForm({
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div>
-                        <Label className="text-sm font-medium">Employer</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.employer')}</Label>
                         <Input
                           value={formData.demographics.employer}
                           onChange={e => updateDemographicsField('employer', e.target.value)}
@@ -914,7 +914,7 @@ export function PatientForm({
                       </div>
                       <div>
                         <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium">Language</Label>
+                          <Label className="text-sm font-medium">{t('patient_form.language')}</Label>
                           <InlineAddButton label="Language" />
                         </div>
                         <Select
