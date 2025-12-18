@@ -32,10 +32,16 @@ const Logo = ({ isCollapsed, logoUrl, primaryColor, orgName, locationName }: {
     )}
     {!isCollapsed && (
       <div className="min-w-0">
-        <h2 className="text-sm font-bold text-white truncate leading-tight">
+        <h2
+          className="text-sm font-bold truncate leading-tight transition-colors"
+          style={{ color: 'var(--theme-sidebar-contrast)' }}
+        >
           {orgName}
         </h2>
-        <p className="text-[10px] font-medium tracking-wide truncate opacity-80 uppercase" style={{ color: 'var(--theme-sidebar-text)' }}>
+        <p
+          className="text-[10px] font-medium tracking-wide truncate opacity-70 uppercase transition-colors"
+          style={{ color: 'var(--theme-sidebar-contrast)' }}
+        >
           {locationName}
         </p>
       </div>
@@ -44,12 +50,18 @@ const Logo = ({ isCollapsed, logoUrl, primaryColor, orgName, locationName }: {
 );
 
 const Footer = () => (
-  <div className="p-3 mx-3 mb-2 bg-[#1E2A70]/30 rounded-lg border border-[#1E2A70]">
+  <div
+    className="p-3 mx-3 mb-2 rounded-lg border transition-all"
+    style={{
+      backgroundColor: 'rgba(255, 255, 255, 0.03)',
+      borderColor: 'rgba(255, 255, 255, 0.1)'
+    }}
+  >
     <div className="flex items-center justify-center gap-2 mb-1">
       <div className="w-1.5 h-1.5 bg-[#10B981] rounded-full animate-pulse" />
-      <p className="text-[9px] text-[#B0B7D0] font-semibold tracking-wide">SYSTEM ONLINE</p>
+      <p className="text-[9px] font-semibold tracking-wide" style={{ color: 'var(--theme-sidebar-contrast)', opacity: 0.7 }}>SYSTEM ONLINE</p>
     </div>
-    <p className="text-[9px] text-[#B0B7D0]/70 text-center">
+    <p className="text-[9px] text-center" style={{ color: 'var(--theme-sidebar-contrast)', opacity: 0.5 }}>
       FHIR R4 • Version 1.0.0
     </p>
   </div>
@@ -112,13 +124,17 @@ export function HealthcareSidebar() {
           />
           <button
             onClick={() => setSidebarCollapsed(!isCollapsed)}
-            className="p-1.5 rounded-lg border border-white/20 bg-white/10 hover:bg-white/20 transition-colors"
+            className="p-1.5 rounded-lg border transition-all"
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              borderColor: 'rgba(255, 255, 255, 0.1)'
+            }}
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isCollapsed ? (
-              <ChevronRight className="h-3.5 w-3.5 text-white/80" />
+              <ChevronRight className="h-3.5 w-3.5" style={{ color: 'var(--theme-sidebar-contrast)' }} />
             ) : (
-              <ChevronLeft className="h-3.5 w-3.5 text-white/80" />
+              <ChevronLeft className="h-3.5 w-3.5" style={{ color: 'var(--theme-sidebar-contrast)' }} />
             )}
           </button>
         </div>
@@ -129,13 +145,19 @@ export function HealthcareSidebar() {
           <div className="px-3 pt-3 pb-2">
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <Search className="h-4 w-4 text-[#B0B7D0]" />
+                <Search className="h-4 w-4" style={{ color: 'var(--theme-sidebar-contrast)', opacity: 0.5 }} />
               </div>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full rounded-lg border border-[#1E2A70] bg-[#1E2A70]/50 py-2 pl-10 pr-3 text-sm text-white placeholder-[#B0B7D0] focus:border-[#4A90E2] focus:outline-none focus:ring-1 focus:ring-[#4A90E2] transition-colors duration-200"
+                className="block w-full rounded-lg border py-2 pl-10 pr-3 text-sm placeholder-opacity-50 transition-all duration-200"
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  borderColor: 'var(--theme-sidebar-contrast)',
+                  color: 'var(--theme-sidebar-contrast)',
+                  // opacity check for placeholder
+                }}
                 placeholder="Search menu..."
               />
             </div>
@@ -155,7 +177,10 @@ export function HealthcareSidebar() {
           {filteredSections.map((section, index) => (
             <div key={index}>
               {section.title && !isCollapsed && (
-                <h3 className="px-2 mb-1.5 text-[9px] font-bold text-[#B0B7D0] uppercase tracking-wider">
+                <h3
+                  className="px-2 mb-1.5 text-[9px] font-bold uppercase tracking-wider opacity-50"
+                  style={{ color: 'var(--theme-sidebar-contrast)' }}
+                >
                   {section.title}
                 </h3>
               )}

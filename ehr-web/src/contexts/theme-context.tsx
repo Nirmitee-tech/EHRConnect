@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { getContrastColor } from '@/lib/utils';
 
 export interface ThemeSettings {
   primaryColor: string;
@@ -9,6 +10,8 @@ export interface ThemeSettings {
   sidebarBackgroundColor: string;
   sidebarTextColor: string;
   sidebarActiveColor: string;
+  sidebarActiveTextColor?: string | null;
+  primaryTextColor?: string | null;
   accentColor: string;
   fontFamily: string;
   logoUrl: string | null;
@@ -109,9 +112,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     root.style.setProperty('--theme-accent', theme.accentColor);
     root.style.setProperty('--theme-font-family', theme.fontFamily);
 
+    // Dynamic Contrast Intelligence
+    const primaryContrast = theme.primaryTextColor || (getContrastColor(theme.primaryColor) === 'white' ? '#FFFFFF' : '#000000');
+    const sidebarContrast = theme.sidebarTextColor || (getContrastColor(theme.sidebarBackgroundColor) === 'white' ? '#FFFFFF' : '#000000');
+    const sidebarActiveContrast = theme.sidebarActiveTextColor || (getContrastColor(theme.sidebarActiveColor) === 'white' ? '#FFFFFF' : '#000000');
+
+    root.style.setProperty('--theme-primary-contrast', primaryContrast);
+    root.style.setProperty('--theme-sidebar-contrast', sidebarContrast);
+    root.style.setProperty('--theme-sidebar-active-contrast', sidebarActiveContrast);
+
     // Also update the primary color used by UI components
     root.style.setProperty('--primary', theme.primaryColor);
+    root.style.setProperty('--primary-foreground', primaryContrast);
     root.style.setProperty('--sidebar-primary', theme.primaryColor);
+    root.style.setProperty('--sidebar-primary-foreground', sidebarActiveContrast);
+    root.style.setProperty('--sidebar-foreground', sidebarContrast);
   };
 
   // Update theme settings

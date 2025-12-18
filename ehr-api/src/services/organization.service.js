@@ -607,6 +607,8 @@ class OrganizationService {
       sidebarBackgroundColor: '#0F1E56',
       sidebarTextColor: '#B0B7D0',
       sidebarActiveColor: '#3342A5',
+      sidebarActiveTextColor: null,
+      primaryTextColor: null,
       accentColor: '#10B981',
       fontFamily: 'Inter, sans-serif',
       logoUrl: null,
@@ -631,6 +633,8 @@ class OrganizationService {
       'sidebarBackgroundColor',
       'sidebarTextColor',
       'sidebarActiveColor',
+      'sidebarActiveTextColor',
+      'primaryTextColor',
       'accentColor'
     ];
 

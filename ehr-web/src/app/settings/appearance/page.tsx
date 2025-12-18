@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useTheme, defaultTheme } from '@/contexts/theme-context';
+import { useTheme, defaultTheme, ThemeSettings } from '@/contexts/theme-context';
 import { useFacility } from '@/contexts/facility-context';
 import { Palette, Save, RotateCcw, Upload, Eye, Check } from 'lucide-react';
 import { HeaderActions } from '@/components/layout/header-actions';
 import { Button } from '@/components/ui/button';
 import { PRESET_THEMES, PresetTheme } from '@/config/themes.config';
-import { cn } from '@/lib/utils';
+import { cn, getContrastColor } from '@/lib/utils';
 
 export default function AppearancePage() {
   const { themeSettings, updateTheme, resetTheme, isLoading, error } = useTheme();
@@ -39,6 +39,8 @@ export default function AppearancePage() {
       sidebarBackgroundColor: theme.sidebarBackgroundColor,
       sidebarTextColor: theme.sidebarTextColor,
       sidebarActiveColor: theme.sidebarActiveColor,
+      sidebarActiveTextColor: theme.sidebarActiveTextColor || null,
+      primaryTextColor: theme.primaryTextColor || null,
       accentColor: theme.accentColor,
       fontFamily: theme.fontFamily
     });
@@ -115,7 +117,7 @@ export default function AppearancePage() {
     description
   }: {
     label: string;
-    field: keyof typeof localSettings;
+    field: keyof ThemeSettings;
     description: string;
   }) => (
     <div className="flex items-center justify-between gap-4 p-2 hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-gray-100">
@@ -126,23 +128,26 @@ export default function AppearancePage() {
       <div className="flex items-center gap-2">
         <div
           className="relative w-8 h-8 rounded-md border border-gray-200 overflow-hidden shadow-sm shrink-0 transition-transform active:scale-90"
-          style={{ backgroundColor: localSettings[field] as string }}
+          style={{ backgroundColor: (localSettings[field] as string) || 'transparent' }}
         >
           <input
             type="color"
-            value={localSettings[field] as string}
+            value={(localSettings[field] as string) || '#ffffff'}
             onInput={(e) => handleColorChange(field, (e.target as HTMLInputElement).value)}
             className="absolute -inset-2 w-[200%] h-[200%] cursor-pointer opacity-0"
           />
         </div>
         <input
           type="text"
-          value={localSettings[field] as string}
+          value={(localSettings[field] as string) || ''}
           onChange={(e) => handleColorChange(field, e.target.value)}
           className="w-20 px-2 py-1 text-[11px] font-mono border border-gray-200 rounded focus:ring-1 focus:ring-primary outline-none"
-          placeholder="#000000"
+          placeholder="Auto"
           maxLength={7}
         />
+        {!(localSettings[field]) && (
+          <span className="text-[9px] text-primary font-bold uppercase tracking-tighter">Smart</span>
+        )}
       </div>
     </div>
   );
@@ -222,38 +227,45 @@ export default function AppearancePage() {
                   <Palette className="h-4 w-4 text-primary" />
                   <h2 className="text-sm font-bold text-gray-900">Theme Library</h2>
                 </div>
-                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">18 Styles</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">{PRESET_THEMES.length} Premium Styles</span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
-                {PRESET_THEMES.map((theme) => (
-                  <button
-                    key={theme.id}
-                    onClick={() => applyPresetTheme(theme)}
-                    className={cn(
-                      "group relative aspect-square rounded-lg border-2 transition-all p-1 flex flex-col",
-                      localSettings.primaryColor === theme.primaryColor &&
-                        localSettings.sidebarBackgroundColor === theme.sidebarBackgroundColor
-                        ? "border-primary ring-1 ring-primary/20"
-                        : "border-transparent hover:border-gray-200 bg-gray-50"
-                    )}
-                  >
-                    <div className="flex-1 rounded-md overflow-hidden flex flex-col shadow-sm">
-                      <div className="h-1/3" style={{ backgroundColor: theme.primaryColor }} />
-                      <div className="h-2/3 flex">
-                        <div className="w-1/3" style={{ backgroundColor: theme.sidebarBackgroundColor }} />
-                        <div className="w-2/3 bg-white" />
-                      </div>
+              <div className="space-y-4 overflow-y-auto max-h-[350px] pr-1 custom-scrollbar">
+                {(['Modern', 'Classic', 'Dark', 'Special'] as const).map((category) => (
+                  <div key={category} className="space-y-2">
+                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">{category}</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                      {PRESET_THEMES.filter(t => t.category === category).map((theme) => (
+                        <button
+                          key={theme.id}
+                          onClick={() => applyPresetTheme(theme)}
+                          className={cn(
+                            "group relative aspect-square rounded-lg border-2 transition-all p-1 flex flex-col hover:shadow-md",
+                            localSettings.primaryColor === theme.primaryColor &&
+                              localSettings.sidebarBackgroundColor === theme.sidebarBackgroundColor
+                              ? "border-primary ring-1 ring-primary/20 bg-primary/5"
+                              : "border-transparent bg-gray-50/50 hover:bg-gray-50"
+                          )}
+                        >
+                          <div className="flex-1 rounded-md overflow-hidden flex flex-col shadow-sm">
+                            <div className="h-1/3" style={{ backgroundColor: theme.primaryColor }} />
+                            <div className="h-2/3 flex">
+                              <div className="w-1/3" style={{ backgroundColor: theme.sidebarBackgroundColor }} />
+                              <div className="w-2/3 bg-white" />
+                            </div>
+                          </div>
+                          <span className="mt-1 text-[9px] font-bold text-gray-700 truncate w-full text-center group-hover:text-primary transition-colors">
+                            {theme.name}
+                          </span>
+                          {localSettings.primaryColor === theme.primaryColor &&
+                            localSettings.sidebarBackgroundColor === theme.sidebarBackgroundColor && (
+                              <div className="absolute top-0.5 right-0.5 bg-primary text-white p-0.5 rounded-full shadow-lg">
+                                <Check className="h-2 w-2" />
+                              </div>
+                            )}
+                        </button>
+                      ))}
                     </div>
-                    <span className="mt-1 text-[9px] font-bold text-gray-700 truncate w-full text-center group-hover:text-primary">
-                      {theme.name}
-                    </span>
-                    {localSettings.primaryColor === theme.primaryColor &&
-                      localSettings.sidebarBackgroundColor === theme.sidebarBackgroundColor && (
-                        <div className="absolute top-0.5 right-0.5 bg-primary text-white p-0.5 rounded-full shadow-lg">
-                          <Check className="h-2 w-2" />
-                        </div>
-                      )}
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -313,11 +325,13 @@ export default function AppearancePage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
                 <ColorInput label="Primary" field="primaryColor" description="Buttons & highlights" />
-                <ColorInput label="Secondary" field="secondaryColor" description="Secondary actions" />
-                <ColorInput label="Accent" field="accentColor" description="Status indicators" />
+                <ColorInput label="Primary Text" field="primaryTextColor" description="Text on primary bg" />
                 <ColorInput label="Sidebar Bg" field="sidebarBackgroundColor" description="Sidebar background" />
                 <ColorInput label="Sidebar Text" field="sidebarTextColor" description="Inactive menu items" />
                 <ColorInput label="Active Menu" field="sidebarActiveColor" description="Selected highlight" />
+                <ColorInput label="Active Text" field="sidebarActiveTextColor" description="Text on active menu" />
+                <ColorInput label="Secondary" field="secondaryColor" description="Secondary actions" />
+                <ColorInput label="Accent" field="accentColor" description="Status indicators" />
               </div>
             </div>
 
@@ -367,61 +381,87 @@ export default function AppearancePage() {
                         {localSettings.logoUrl ? (
                           <img src={localSettings.logoUrl} alt="Logo" className="w-6 h-6 object-contain" />
                         ) : (
-                          <div className="w-6 h-6 rounded flex items-center justify-center" style={{ backgroundColor: localSettings.primaryColor }}>
-                            <div className="w-3 h-3 bg-white rounded-sm" />
+                          <div className="w-6 h-6 rounded flex items-center justify-center shadow-sm" style={{ backgroundColor: localSettings.primaryColor }}>
+                            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: localSettings.primaryTextColor || (getContrastColor(localSettings.primaryColor) === 'white' ? '#FFFFFF' : '#000000') }} />
                           </div>
                         )}
                         <div className="min-w-0">
-                          <h2 className="text-[11px] font-bold text-white truncate leading-tight">
+                          <h2
+                            className="text-[11px] font-bold truncate leading-tight"
+                            style={{ color: localSettings.sidebarTextColor || (getContrastColor(localSettings.sidebarBackgroundColor) === 'white' ? '#FFFFFF' : '#000000') }}
+                          >
                             {localSettings.orgNameOverride || 'EHR Connect'}
                           </h2>
-                          <p className="text-[8px] font-medium opacity-60 truncate uppercase tracking-tighter" style={{ color: localSettings.sidebarTextColor }}>
+                          <p className="text-[8px] font-medium opacity-60 truncate uppercase tracking-tighter" style={{ color: localSettings.sidebarTextColor || (getContrastColor(localSettings.sidebarBackgroundColor) === 'white' ? '#FFFFFF' : '#000000') }}>
                             Location Name
                           </p>
                         </div>
                       </div>
 
                       <div className="space-y-1">
-                        {['Dashboard', 'Patients', 'Staff'].map((item, idx) => (
-                          <div
-                            key={item}
-                            className="px-2 py-1.5 rounded flex items-center space-x-2"
-                            style={{
-                              backgroundColor: idx === 0 ? localSettings.sidebarActiveColor : 'transparent',
-                              color: idx === 0 ? '#FFFFFF' : localSettings.sidebarTextColor
-                            }}
-                          >
-                            <div className="w-1 h-1 rounded-full" style={{ backgroundColor: localSettings.accentColor }} />
-                            <span className="text-[10px] font-medium">{item}</span>
-                          </div>
-                        ))}
+                        {['Dashboard', 'Patients', 'Staff'].map((item, idx) => {
+                          const isActive = idx === 0;
+                          const activeBg = localSettings.sidebarActiveColor;
+                          const activeText = localSettings.sidebarActiveTextColor || (getContrastColor(activeBg) === 'white' ? '#FFFFFF' : '#000000');
+                          const inactiveText = localSettings.sidebarTextColor || (getContrastColor(localSettings.sidebarBackgroundColor) === 'white' ? '#FFFFFF' : '#000000');
+
+                          return (
+                            <div
+                              key={item}
+                              className="px-2 py-1.5 rounded flex items-center space-x-2 shadow-sm transition-all"
+                              style={{
+                                backgroundColor: isActive ? activeBg : 'transparent',
+                                color: isActive ? activeText : inactiveText
+                              }}
+                            >
+                              <div className="w-1 h-1 rounded-full shadow-glow" style={{ backgroundColor: localSettings.accentColor }} />
+                              <span className="text-[10px] font-medium">{item}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 
                     {/* Content Area Preview */}
-                    <div className="w-full md:w-2/3 bg-gray-50 p-6 flex flex-col items-center justify-center text-center space-y-4">
-                      <div className="space-y-2">
+                    <div
+                      className={cn(
+                        "w-full md:w-2/3 p-6 flex flex-col items-center justify-center text-center space-y-4 transition-colors duration-300",
+                        localSettings.sidebarBackgroundColor === '#000000' || localSettings.sidebarBackgroundColor === '#121212' || localSettings.sidebarBackgroundColor === '#0F172A' || localSettings.sidebarBackgroundColor === '#18181B'
+                          ? "bg-[#1e1e1e] text-white"
+                          : "bg-gray-50 text-gray-900"
+                      )}
+                    >
+                      <div className="space-y-3">
                         <div className="flex gap-2">
                           <button
-                            className="px-4 py-1.5 text-[10px] font-bold text-white rounded shadow-sm"
-                            style={{ backgroundColor: localSettings.primaryColor }}
+                            className="px-4 py-1.5 text-[10px] font-bold rounded shadow-md transform hover:scale-105 transition-transform"
+                            style={{
+                              backgroundColor: localSettings.primaryColor,
+                              color: localSettings.primaryTextColor || (getContrastColor(localSettings.primaryColor) === 'white' ? '#FFFFFF' : '#000000')
+                            }}
                           >
                             Primary
                           </button>
                           <button
-                            className="px-4 py-1.5 text-[10px] font-bold text-white rounded shadow-sm"
+                            className="px-4 py-1.5 text-[10px] font-bold text-white rounded shadow-md transform hover:scale-105 transition-transform"
                             style={{ backgroundColor: localSettings.secondaryColor }}
                           >
                             Secondary
                           </button>
                         </div>
                         <div className="flex items-center justify-center gap-2">
-                          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: localSettings.accentColor }} />
-                          <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Accent Active</span>
+                          <div className="w-2 h-2 rounded-full animate-pulse shadow-glow" style={{ backgroundColor: localSettings.accentColor }} />
+                          <span className={cn(
+                            "text-[9px] font-bold uppercase tracking-widest",
+                            localSettings.sidebarBackgroundColor === '#000000' || localSettings.sidebarBackgroundColor === '#121212' || localSettings.sidebarBackgroundColor === '#0F172A' ? "text-gray-400" : "text-gray-400"
+                          )}>Accent Active</span>
                         </div>
                       </div>
-                      <p className="text-[10px] text-gray-500 max-w-[150px]">
-                        Verify branding across both dark and light zones.
+                      <p className={cn(
+                        "text-[10px] max-w-[150px] leading-relaxed",
+                        localSettings.sidebarBackgroundColor === '#000000' || localSettings.sidebarBackgroundColor === '#121212' || localSettings.sidebarBackgroundColor === '#0F172A' ? "text-gray-400" : "text-gray-500"
+                      )}>
+                        Experimental branding for {localSettings.orgNameOverride || 'the facility'}.
                       </p>
                     </div>
                   </div>

@@ -73,7 +73,7 @@ export function HealthcareHeader() {
             <div id="header-actions-root" className="flex items-center gap-2" />
 
             {pageInfo.actionButton && (
-              <Button className="bg-primary hover:bg-primary/90 text-white rounded-lg px-4 py-2 flex items-center gap-2">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-4 py-2 flex items-center gap-2">
                 <Plus className="h-4 w-4" />
                 <span className="font-medium">{pageInfo.actionButton.label}</span>
               </Button>

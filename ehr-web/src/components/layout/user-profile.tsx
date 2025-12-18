@@ -50,7 +50,7 @@ export function UserProfile() {
     return (
       <button
         onClick={handleSignIn}
-        className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all"
+        className="flex items-center space-x-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-all"
       >
         <LogIn className="h-4 w-4" />
         <span className="text-sm font-medium">Sign In</span>
@@ -80,7 +80,7 @@ export function UserProfile() {
       >
         <div className="relative">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <User className="h-4 w-4 text-white" />
+            <User className="h-4 w-4 text-primary-foreground" />
           </div>
           <div className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white" />
         </div>
