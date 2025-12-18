@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Building2, TrendingUp, Users, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useFacility } from '@/contexts/facility-context';
 import { useResourceCounts } from '@/hooks/use-resource-counts';
 import { useTheme } from '@/contexts/theme-context';
 import { NAVIGATION_SECTIONS } from '@/config/navigation.config';
-import { NavItem } from './nav-item';
+import { NavItem, toNavTranslationKey } from './nav-item';
 import { cn } from '@/lib/utils';
 import { useUIPreferences } from '@/contexts/ui-preferences-context';
 import { useTranslation } from '@/i18n/client';
@@ -100,7 +100,7 @@ export function HealthcareSidebar() {
   const filteredSections = searchQuery
     ? NAVIGATION_SECTIONS.map(section => {
       const sectionItems = section.items.filter(item => {
-        const translatedName = t(`nav.${item.name.toLowerCase().replace(/ /g, '_')}`);
+        const translatedName = t(toNavTranslationKey(item.name), { defaultValue: item.name });
         return translatedName.toLowerCase().includes(searchQuery.toLowerCase()) ||
           item.name.toLowerCase().includes(searchQuery.toLowerCase());
       });
@@ -188,7 +188,9 @@ export function HealthcareSidebar() {
                   className="px-2 mb-1.5 text-[9px] font-bold uppercase tracking-wider opacity-50"
                   style={{ color: 'var(--theme-sidebar-contrast)' }}
                 >
-                  {t(`nav.${section.title.toLowerCase().replace(/ & /g, '_').replace(/ /g, '_')}_section`)}
+                  {t(`nav.${section.title.toLowerCase().replace(/\s*&\s*/g, '_').replace(/\s+/g, '_')}_section`, {
+                    defaultValue: section.title
+                  })}
                 </h3>
               )}
               <div className="space-y-0.5">
@@ -199,7 +201,7 @@ export function HealthcareSidebar() {
                     isActive={isActive(item.href)}
                     isCollapsed={isCollapsed}
                     count={getItemCount(item.href)}
-                    children={item.children}
+                    subItems={item.subItems}
                   />
                 ))}
               </div>

@@ -22,7 +22,21 @@ interface NavItemProps {
   isCollapsed: boolean;
   count?: number;
   badge?: string;
-  children?: NavItemChild[];
+  subItems?: NavItemChild[];
+}
+
+export function toNavTranslationKeySegment(label: string) {
+  return label
+    .toLowerCase()
+    .replace(/\s*&\s*/g, '_')
+    .replace(/\s+/g, '_')
+    .replace(/[()]/g, '')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
+}
+
+export function toNavTranslationKey(label: string) {
+  return `nav.${toNavTranslationKeySegment(label)}`;
 }
 
 export function NavItem({
@@ -33,29 +47,20 @@ export function NavItem({
   isCollapsed,
   count,
   badge,
-  children
+  subItems
 }: NavItemProps) {
   const { t } = useTranslation('common');
   const { addTab } = useTabs();
   const { themeSettings } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Convert name to translation key format
-  const getTranslatedName = (itemName: string) => {
-    const key = itemName
-      .toLowerCase()
-      .replace(/\s*&\s*/g, '_')  // Replace & with _
-      .replace(/\s+/g, '_')       // Replace spaces with _
-      .replace(/[()]/g, '')       // Remove parentheses
-      .replace(/_+/g, '_')        // Remove duplicate underscores
-      .replace(/^_|_$/g, '');     // Remove leading/trailing underscores
-    return t(`nav.${key}`) || itemName;
-  };
+  const getTranslatedName = (itemName: string) =>
+    t(toNavTranslationKey(itemName), { defaultValue: itemName });
 
   const translatedName = getTranslatedName(name);
 
   const handleClick = () => {
-    if (children && children.length > 0) {
+    if (subItems && subItems.length > 0) {
       // Toggle expand/collapse if has children
       setIsExpanded(!isExpanded);
     } else {
@@ -76,7 +81,7 @@ export function NavItem({
   };
 
   // If has children, render as expandable button
-  if (children && children.length > 0 && !isCollapsed) {
+  if (subItems && subItems.length > 0 && !isCollapsed) {
     return (
       <div>
         <button
@@ -109,7 +114,7 @@ export function NavItem({
         {/* Children */}
         {isExpanded && (
           <div className="ml-8 mt-1 space-y-0.5">
-            {children.map((child) => (
+            {subItems.map((child) => (
               <Link
                 key={child.href}
                 href={child.href}

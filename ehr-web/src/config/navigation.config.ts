@@ -26,7 +26,6 @@ import {
   BedDouble,
   ArrowRightLeft,
   ClipboardList,
-  Puzzle,
   Globe,
   CheckSquare,
   Zap,
@@ -50,7 +49,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
         name: 'Bed Management',
         href: '/bed-management',
         icon: Bed,
-        children: [
+        subItems: [
           { name: 'Dashboard', href: '/bed-management', icon: LayoutDashboard },
           { name: 'Admit Patient', href: '/bed-management/admit', icon: UserPlus },
           { name: 'Wards', href: '/bed-management/wards', icon: Building2 },
@@ -74,7 +73,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
         name: 'Superbills',
         href: '/billing/superbills',
         icon: Receipt,
-        children: [
+        subItems: [
           { name: 'All Superbills', href: '/billing/superbills', icon: FileText },
           { name: 'Create Superbill', href: '/billing/superbills/new', icon: Receipt }
         ]
@@ -83,7 +82,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
         name: 'Claims',
         href: '/billing/claims',
         icon: Send,
-        children: [
+        subItems: [
           { name: 'All Claims', href: '/billing/claims', icon: FileText },
           { name: 'Create Claim', href: '/billing/claims/new', icon: Send }
         ]
@@ -97,7 +96,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
         name: 'Prior Authorization',
         href: '/billing/prior-auth',
         icon: FileText,
-        children: [
+        subItems: [
           { name: 'All Authorizations', href: '/billing/prior-auth', icon: FileText },
           { name: 'Submit Authorization', href: '/billing/prior-auth/new', icon: Send }
         ]
@@ -116,7 +115,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
         name: 'Masters',
         href: '/billing/masters',
         icon: Database,
-        children: [
+        subItems: [
           { name: 'Providers', href: '/billing/masters/providers', icon: UserCheck },
           { name: 'Payers', href: '/billing/masters/payers', icon: Building2 },
           { name: 'Medical Codes', href: '/billing/masters/codes', icon: Code }
@@ -142,7 +141,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
         name: 'Rule Engine',
         href: '/rules',
         icon: Zap,
-        children: [
+        subItems: [
           { name: 'Rules', href: '/rules', icon: Zap },
           { name: 'Variables', href: '/rules/variables', icon: Variable }
         ]
@@ -282,4 +281,3 @@ export const getPageInfo = (pathname: string): PageInfo => {
 
   return PAGE_CONFIG[firstSegment] || { title: 'Dashboard' };
 };
-

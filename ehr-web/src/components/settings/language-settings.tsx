@@ -11,16 +11,13 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { api } from '@/lib/api-client';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Globe, Languages, CheckCircle2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import Cookies from 'js-cookie';
 
 export function LanguageSettings() {
     const { t, i18n } = useTranslation('common');
     const { data: session } = useSession();
-    const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [justChanged, setJustChanged] = useState(false);
 
@@ -34,7 +31,7 @@ export function LanguageSettings() {
             }
 
             // Update cookie
-            Cookies.set(cookieName, value, { expires: 365 });
+            Cookies.set(cookieName, value, { expires: 365, path: '/' });
 
             // Update i18n instance
             await i18n.changeLanguage(value);

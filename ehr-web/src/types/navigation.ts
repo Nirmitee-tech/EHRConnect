@@ -3,7 +3,7 @@ import { LucideIcon } from 'lucide-react';
 export interface PageInfo {
   title: string;
   actionButton?: ActionButton;
-  features?: Record<string, any>;
+  features?: Record<string, unknown>;
 }
 
 export interface ActionButton {
@@ -18,7 +18,7 @@ export interface NavItem {
   icon: LucideIcon;
   badge?: string;
   count?: number;
-  children?: NavItem[];
+  subItems?: NavItem[];
 }
 
 export interface NavSection {
