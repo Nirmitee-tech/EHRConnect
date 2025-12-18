@@ -548,9 +548,9 @@
         "total_staff": "Total Staff"
     },
     "users": {
-        "title": "Users",
+        "title": "User Management",
         "add_user": "Add User",
-        "user_management": "User Management",
+        "user_management": "Manage staff members, roles, and access permissions",
         "username": "Username",
         "email": "Email",
         "role": "Role",
@@ -558,7 +558,12 @@
         "last_login": "Last Login",
         "account_status": "Account Status",
         "deactivate": "Deactivate",
-        "activate": "Activate"
+        "activate": "Activate",
+        "create_account": "Create Account",
+        "send_invitation": "Send Invitation",
+        "search_placeholder": "Search by name or email...",
+        "no_users_found": "No users found",
+        "loading_users": "Loading users..."
     },
     "roles": {
         "title": "Roles & Permissions",

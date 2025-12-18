@@ -440,9 +440,9 @@
         "total_staff": "Personal Total"
     },
     "users": {
-        "title": "Usuarios",
+        "title": "Gestión de Usuarios",
         "add_user": "Agregar Usuario",
-        "user_management": "Gestión de Usuarios",
+        "user_management": "Gestionar miembros del personal, roles y permisos de acceso",
         "username": "Nombre de Usuario",
         "email": "Correo Electrónico",
         "role": "Rol",
@@ -450,7 +450,12 @@
         "last_login": "Último Acceso",
         "account_status": "Estado de Cuenta",
         "deactivate": "Desactivar",
-        "activate": "Activar"
+        "activate": "Activar",
+        "create_account": "Crear Cuenta",
+        "send_invitation": "Enviar Invitación",
+        "search_placeholder": "Buscar por nombre o correo electrónico...",
+        "no_users_found": "No se encontraron usuarios",
+        "loading_users": "Cargando usuarios..."
     },
     "roles": {
         "title": "Roles y Permisos",

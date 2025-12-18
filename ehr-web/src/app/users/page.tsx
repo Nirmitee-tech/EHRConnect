@@ -9,6 +9,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface User {
   id: string;
@@ -22,6 +24,7 @@ interface User {
 
 export default function UserManagementPage() {
   const { data: session } = useSession();
+  const { t } = useTranslation('common');
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -132,10 +135,10 @@ export default function UserManagementPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
               <Users className="h-8 w-8 text-blue-600" />
-              User Management
+              {t('users.title')}
             </h1>
             <p className="text-gray-600 mt-1">
-              Manage staff members, roles, and access permissions
+              {t('users.user_management')}
             </p>
           </div>
           <div className="flex gap-2">
@@ -144,14 +147,14 @@ export default function UserManagementPage() {
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               <UserPlus className="h-4 w-4 mr-2" />
-              Create Account
+              {t('users.create_account')}
             </Button>
             <Button
               onClick={() => openDrawer('invite')}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Mail className="h-4 w-4 mr-2" />
-              Send Invitation
+              {t('users.send_invitation')}
             </Button>
           </div>
         </div>
@@ -161,7 +164,7 @@ export default function UserManagementPage() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <Input
-              placeholder="Search by name or email..."
+              placeholder={t('users.search_placeholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -169,7 +172,7 @@ export default function UserManagementPage() {
           </div>
           <Button variant="outline">
             <Filter className="h-4 w-4 mr-2" />
-            Filters
+            {t('common.filter')}
           </Button>
         </div>
       </div>

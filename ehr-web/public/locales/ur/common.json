@@ -440,9 +440,9 @@
         "total_staff": "کل عملہ"
     },
     "users": {
-        "title": "صارفین",
+        "title": "صارف کا انتظام",
         "add_user": "صارف شامل کریں",
-        "user_management": "صارف کا انتظام",
+        "user_management": "عملے کے افراد، کردار اور رسائی کی اجازتوں کا انتظام کریں",
         "username": "صارف نام",
         "email": "ای میل",
         "role": "کردار",
@@ -450,7 +450,12 @@
         "last_login": "آخری لاگ ان",
         "account_status": "اکاؤنٹ کی حالت",
         "deactivate": "غیر فعال کریں",
-        "activate": "فعال کریں"
+        "activate": "فعال کریں",
+        "create_account": "اکاؤنٹ بنائیں",
+        "send_invitation": "دعوت نامہ بھیجیں",
+        "search_placeholder": "نام یا ای میل سے تلاش کریں...",
+        "no_users_found": "کوئی صارف نہیں ملا",
+        "loading_users": "صارفین لوڈ ہو رہے ہیں..."
     },
     "roles": {
         "title": "کردار اور اجازتیں",
