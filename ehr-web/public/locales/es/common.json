@@ -414,9 +414,12 @@
         "clear_filters": "Limpiar Filtros"
     },
     "staff": {
-        "title": "Personal",
-        "add_staff": "Agregar Personal",
+        "title": "Gestión de Personal",
+        "add_staff": "Agregar Miembro del Personal",
         "staff_members": "Miembros del Personal",
+        "managing_for": "Gestionando personal para",
+        "manage_staff": "Gestionar personal médico y profesionales",
+        "search_placeholder": "Buscar personal por nombre o especialidad...",
         "role": "Rol",
         "department": "Departamento",
         "email": "Correo Electrónico",
@@ -424,7 +427,17 @@
         "status": "Estado",
         "active": "Activo",
         "inactive": "Inactivo",
-        "edit_staff": "Editar Personal"
+        "edit_staff": "Editar Personal",
+        "doctors": "Doctores",
+        "general_staff": "Personal General",
+        "no_staff_found": "No se encontraron miembros del personal",
+        "loading_staff": "Cargando personal...",
+        "error_loading": "Error al cargar personal",
+        "specialty": "Especialidad",
+        "qualification": "Calificación",
+        "working_hours": "Horario de Trabajo",
+        "no_hours_set": "No hay horarios establecidos",
+        "total_staff": "Personal Total"
     },
     "users": {
         "title": "Usuarios",

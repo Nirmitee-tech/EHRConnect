@@ -414,9 +414,12 @@
         "clear_filters": "فلٹرز صاف کریں"
     },
     "staff": {
-        "title": "عملہ",
-        "add_staff": "عملہ شامل کریں",
+        "title": "عملے کا انتظام",
+        "add_staff": "عملے کا رکن شامل کریں",
         "staff_members": "عملے کے افراد",
+        "managing_for": "کے لیے عملے کا انتظام",
+        "manage_staff": "صحت کے عملے اور پریکٹیشنرز کا انتظام کریں",
+        "search_placeholder": "نام یا خصوصیت سے عملہ تلاش کریں...",
         "role": "کردار",
         "department": "محکمہ",
         "email": "ای میل",
@@ -424,7 +427,17 @@
         "status": "حالت",
         "active": "فعال",
         "inactive": "غیر فعال",
-        "edit_staff": "عملے میں ترمیم کریں"
+        "edit_staff": "عملے میں ترمیم کریں",
+        "doctors": "ڈاکٹر",
+        "general_staff": "عمومی عملہ",
+        "no_staff_found": "کوئی عملہ نہیں ملا",
+        "loading_staff": "عملہ لوڈ ہو رہا ہے...",
+        "error_loading": "عملہ لوڈ کرنے میں خرابی",
+        "specialty": "خصوصیت",
+        "qualification": "قابلیت",
+        "working_hours": "کام کے اوقات",
+        "no_hours_set": "کوئی اوقات مقرر نہیں",
+        "total_staff": "کل عملہ"
     },
     "users": {
         "title": "صارفین",

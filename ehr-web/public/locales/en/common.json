@@ -522,9 +522,12 @@
         "clear_filters": "Clear Filters"
     },
     "staff": {
-        "title": "Staff",
-        "add_staff": "Add Staff",
+        "title": "Staff Management",
+        "add_staff": "Add Staff Member",
         "staff_members": "Staff Members",
+        "managing_for": "Managing staff for",
+        "manage_staff": "Manage healthcare staff and practitioners",
+        "search_placeholder": "Search staff by name or specialty...",
         "role": "Role",
         "department": "Department",
         "email": "Email",
@@ -532,7 +535,17 @@
         "status": "Status",
         "active": "Active",
         "inactive": "Inactive",
-        "edit_staff": "Edit Staff"
+        "edit_staff": "Edit Staff",
+        "doctors": "Doctors",
+        "general_staff": "General Staff",
+        "no_staff_found": "No staff members found",
+        "loading_staff": "Loading staff...",
+        "error_loading": "Error loading staff",
+        "specialty": "Specialty",
+        "qualification": "Qualification",
+        "working_hours": "Working Hours",
+        "no_hours_set": "No hours set",
+        "total_staff": "Total Staff"
     },
     "users": {
         "title": "Users",

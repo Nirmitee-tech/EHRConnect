@@ -414,9 +414,12 @@
         "clear_filters": "फ़िल्टर साफ़ करें"
     },
     "staff": {
-        "title": "स्टाफ",
-        "add_staff": "स्टाफ जोड़ें",
+        "title": "स्टाफ प्रबंधन",
+        "add_staff": "स्टाफ सदस्य जोड़ें",
         "staff_members": "स्टाफ सदस्य",
+        "managing_for": "के लिए स्टाफ का प्रबंधन",
+        "manage_staff": "स्वास्थ्य कर्मचारियों और चिकित्सकों का प्रबंधन करें",
+        "search_placeholder": "नाम या विशेषता से स्टाफ खोजें...",
         "role": "भूमिका",
         "department": "विभाग",
         "email": "ईमेल",
@@ -424,7 +427,17 @@
         "status": "स्थिति",
         "active": "सक्रिय",
         "inactive": "निष्क्रिय",
-        "edit_staff": "स्टाफ संपादित करें"
+        "edit_staff": "स्टाफ संपादित करें",
+        "doctors": "डॉक्टर",
+        "general_staff": "सामान्य स्टाफ",
+        "no_staff_found": "कोई स्टाफ सदस्य नहीं मिला",
+        "loading_staff": "स्टाफ लोड हो रहे हैं...",
+        "error_loading": "स्टाफ लोड करने में त्रुटि",
+        "specialty": "विशेषता",
+        "qualification": "योग्यता",
+        "working_hours": "कार्य के घंटे",
+        "no_hours_set": "कोई घंटे सेट नहीं",
+        "total_staff": "कुल स्टाफ"
     },
     "users": {
         "title": "उपयोगकर्ता",

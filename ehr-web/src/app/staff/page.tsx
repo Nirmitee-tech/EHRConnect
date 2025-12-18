@@ -9,9 +9,12 @@ import { useFacility } from '@/contexts/facility-context';
 import { StaffMember, DEFAULT_OFFICE_HOURS } from '@/types/staff';
 import { StaffDetailDrawer } from '@/components/staff/staff-detail-drawer';
 import { StaffService } from '@/services/staff.service';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function StaffPage() {
   const { currentFacility } = useFacility();
+  const { t } = useTranslation('common');
   const [activeTab, setActiveTab] = useState<'doctor' | 'general'>('doctor');
   const [staffData, setStaffData] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -138,7 +141,7 @@ export default function StaffPage() {
 
   const getOfficeHoursDisplay = (staff: StaffMember) => {
     const workingDays = staff.officeHours?.filter(h => h.isWorking) || [];
-    if (workingDays.length === 0) return 'No hours set';
+    if (workingDays.length === 0) return t('staff.no_hours_set');
     const firstDay = workingDays[0];
     return `${firstDay.startTime} - ${firstDay.endTime}`;
   };
@@ -148,9 +151,9 @@ export default function StaffPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Staff Management</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('staff.title')}</h1>
           <p className="text-gray-600 mt-1">
-            {currentFacility?.name ? `Managing staff for ${currentFacility.name}` : 'Manage healthcare staff and practitioners'}
+            {currentFacility?.name ? `${t('staff.managing_for')} ${currentFacility.name}` : t('staff.manage_staff')}
           </p>
         </div>
         <Button
@@ -158,7 +161,7 @@ export default function StaffPage() {
           className="bg-primary hover:bg-primary/90 text-white shadow-sm transition-all duration-200"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add Staff Member
+          {t('staff.add_staff')}
         </Button>
       </div>
 
@@ -169,7 +172,7 @@ export default function StaffPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search staff by name or specialty..."
+                placeholder={t('staff.search_placeholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2 border-gray-200 focus:border-primary focus:ring-primary rounded-lg"
@@ -190,7 +193,7 @@ export default function StaffPage() {
                   : 'text-gray-600 hover:text-gray-900'
                   }`}
               >
-                Doctor Staff
+                {t('staff.doctors')}
               </button>
               <button
                 onClick={() => setActiveTab('general')}
@@ -199,13 +202,13 @@ export default function StaffPage() {
                   : 'text-gray-600 hover:text-gray-900'
                   }`}
               >
-                General Staff
+                {t('staff.general_staff')}
               </button>
             </div>
 
             <Button variant="outline" className="flex items-center space-x-2">
               <Filter className="h-4 w-4" />
-              <span>Filters</span>
+              <span>{t('common.filter')}</span>
             </Button>
           </div>
         </div>
@@ -217,7 +220,7 @@ export default function StaffPage() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-2xl font-bold text-gray-900">{totalCount}</div>
-              <div className="text-sm text-gray-600">Total Staff</div>
+              <div className="text-sm text-gray-600">{t('staff.total_staff')}</div>
             </div>
             <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
               <User className="h-6 w-6 text-primary" />
@@ -231,7 +234,7 @@ export default function StaffPage() {
               <div className="text-2xl font-bold text-gray-900">
                 {staffData.filter(s => s.active).length}
               </div>
-              <div className="text-sm text-gray-600">Active</div>
+              <div className="text-sm text-gray-600">{t('staff.active')}</div>
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
               <Stethoscope className="h-6 w-6 text-green-600" />
