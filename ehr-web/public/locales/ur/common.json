@@ -521,6 +521,13 @@
         "completed": "مکمل",
         "in_progress": "جاری",
         "todo": "کرنا ہے",
+        "overdue": "تاخیر",
+        "search_placeholder": "کام تلاش کریں...",
+        "no_tasks_found": "کوئی کام نہیں ملا",
+        "loading_tasks": "کام لوڈ ہو رہے ہیں...",
+        "error_label": "خرابی:"
+        "in_progress": "جاری",
+        "todo": "کرنا ہے",
         "overdue": "میعاد ختم",
         "manage_tasks": "اپنی تنظیم میں کاموں کا انتظام اور ٹریک کریں",
         "search_placeholder": "تفصیل یا شناخت کنندہ کے لحاظ سے کام تلاش کریں...",

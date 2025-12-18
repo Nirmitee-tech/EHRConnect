@@ -274,7 +274,7 @@ function CreateRoleModal({ session, onClose, onSuccess }: any) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 my-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Create Custom Role</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('roles.create_custom_role')}</h2>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
@@ -285,20 +285,20 @@ function CreateRoleModal({ session, onClose, onSuccess }: any) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <Label>Role Key *</Label>
+              <Label>{t('roles.role_key')} *</Label>
               <Input
                 required
-                placeholder="e.g., NURSE_LEAD"
+                placeholder={t('roles.role_key_placeholder')}
                 value={formData.key}
                 onChange={(e) => setFormData({ ...formData, key: e.target.value.toUpperCase().replace(/\s/g, '_') })}
               />
             </div>
 
             <div>
-              <Label>Display Name *</Label>
+              <Label>{t('roles.role_name')} *</Label>
               <Input
                 required
-                placeholder="e.g., Nurse Lead"
+                placeholder={t('roles.role_name_placeholder')}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
@@ -306,9 +306,9 @@ function CreateRoleModal({ session, onClose, onSuccess }: any) {
           </div>
 
           <div>
-            <Label>Description</Label>
+            <Label>{t('roles.role_description')}</Label>
             <Input
-              placeholder="Brief description of this role"
+              placeholder={t('roles.role_description_placeholder')}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
@@ -328,10 +328,10 @@ function CreateRoleModal({ session, onClose, onSuccess }: any) {
           </div>
 
           <div>
-            <Label>Permissions *</Label>
+            <Label>{t('roles.assign_permissions')} *</Label>
             <div className="flex gap-2 mb-2">
               <Input
-                placeholder="e.g., patients:read, encounters:*:*"
+                placeholder={t('roles.permissions_placeholder')}
                 value={formData.permissionInput}
                 onChange={(e) => setFormData({ ...formData, permissionInput: e.target.value })}
                 onKeyPress={(e) => {

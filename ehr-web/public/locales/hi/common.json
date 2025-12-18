@@ -521,6 +521,13 @@
         "completed": "पूर्ण",
         "in_progress": "प्रगति में",
         "todo": "करने के लिए",
+        "overdue": "देरी",
+        "search_placeholder": "कार्य खोजें...",
+        "no_tasks_found": "कोई कार्य नहीं मिला",
+        "loading_tasks": "कार्य लोड हो रहे हैं...",
+        "error_label": "त्रुटि:"
+        "in_progress": "प्रगति में",
+        "todo": "करने के लिए",
         "overdue": "अतिदेय",
         "manage_tasks": "अपने संगठन में कार्यों का प्रबंधन और ट्रैकिंग करें",
         "search_placeholder": "विवरण या पहचानकर्ता द्वारा कार्य खोजें...",

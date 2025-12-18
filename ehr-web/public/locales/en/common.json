@@ -591,7 +591,13 @@
         "no_roles_found": "No roles found. Loading system roles...",
         "loading_roles": "Loading roles...",
         "system_role": "System Role",
-        "custom_role": "Custom Role"
+        "custom_role": "Custom Role",
+        "create_custom_role": "Create Custom Role",
+        "role_key": "Role Key",
+        "role_key_placeholder": "e.g., NURSE_LEAD",
+        "role_name_placeholder": "e.g., Nurse Lead",
+        "role_description_placeholder": "Brief description of this role",
+        "permissions_placeholder": "e.g., patients:read, encounters:*:*"
     },
     "integrations": {
         "title": "Integrations",
@@ -627,6 +633,14 @@
         "medium": "Medium",
         "low": "Low",
         "completed": "Completed",
+        "in_progress": "In Progress",
+        "todo": "To Do",
+        "overdue": "Overdue",
+        "search_placeholder": "Search tasks...",
+        "no_tasks_found": "No tasks found",
+        "loading_tasks": "Loading tasks...",
+        "error_label": "Error:"
+    },
         "in_progress": "In Progress",
         "todo": "To Do",
         "overdue": "Overdue",
