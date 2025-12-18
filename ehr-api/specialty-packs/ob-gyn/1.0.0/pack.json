@@ -44,44 +44,55 @@
       {
         "id": "ultrasounds",
         "label": "Ultrasounds",
-        "icon": "ImageIcon",
+        "icon": "Eye",
         "category": "clinical",
-        "order": 5
+        "order": 5,
+        "componentName": "UltrasoundTrackingPanel"
       },
       {
         "id": "labor-delivery",
         "label": "Labor & Delivery",
         "icon": "Activity",
         "category": "clinical",
-        "order": 6
+        "order": 6,
+        "componentName": "LaborDeliverySummary"
       },
       {
         "id": "postpartum",
         "label": "Postpartum Care",
         "icon": "Baby",
         "category": "clinical",
-        "order": 7
+        "order": 7,
+        "componentName": "PostpartumCarePanel"
+      },
+      {
+        "id": "epds-screening",
+        "label": "EPDS Screening",
+        "icon": "Brain",
+        "category": "clinical",
+        "order": 8,
+        "componentName": "EPDSCalculator"
       },
       {
         "id": "medications",
         "label": "Medications",
         "icon": "Pill",
         "category": "clinical",
-        "order": 8
+        "order": 9
       },
       {
         "id": "lab",
         "label": "Lab Results",
         "icon": "TestTube",
         "category": "clinical",
-        "order": 9
+        "order": 10
       },
       {
         "id": "encounters",
         "label": "Visit Details",
         "icon": "Calendar",
         "category": "clinical",
-        "order": 10
+        "order": 11
       }
     ],
     "replaceSections": false,
@@ -105,7 +116,9 @@
     "enableHighRiskPregnancy": true,
     "enableFetalMonitoring": true,
     "enableGeneticScreening": true,
-    "enableTTTSMonitoring": false
+    "enableTTTSMonitoring": false,
+    "enableEPDSScreening": true,
+    "enablePostpartumCare": true
   },
 
   "devices": [

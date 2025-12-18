@@ -41,6 +41,27 @@ export const ObGynSpecialty: SpecialtyModule = {
         default: m.ObGynFacesheet,
       }))
     ),
+    // New components for enhanced clinical workflow
+    EPDSCalculator: lazy(() =>
+      import('./components/EPDSCalculator').then(m => ({
+        default: m.EPDSCalculator,
+      }))
+    ),
+    LaborDeliverySummary: lazy(() =>
+      import('./components/LaborDeliverySummary').then(m => ({
+        default: m.LaborDeliverySummary,
+      }))
+    ),
+    PostpartumCarePanel: lazy(() =>
+      import('./components/PostpartumCarePanel').then(m => ({
+        default: m.PostpartumCarePanel,
+      }))
+    ),
+    UltrasoundTrackingPanel: lazy(() =>
+      import('./components/UltrasoundTrackingPanel').then(m => ({
+        default: m.UltrasoundTrackingPanel,
+      }))
+    ),
   },
 
   /**
