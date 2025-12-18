@@ -455,7 +455,18 @@
         "send_invitation": "Enviar Invitación",
         "search_placeholder": "Buscar por nombre o correo electrónico...",
         "no_users_found": "No se encontraron usuarios",
-        "loading_users": "Cargando usuarios..."
+        "loading_users": "Cargando usuarios...",
+        "error_label": "Error:",
+        "email_placeholder": "usuario@ejemplo.com",
+        "full_name": "Nombre Completo",
+        "full_name_placeholder": "Dr. Juan Smith",
+        "password": "Contraseña",
+        "password_placeholder": "Mínimo 8 caracteres",
+        "confirm_password": "Confirmar Contraseña",
+        "confirm_password_placeholder": "Vuelva a ingresar la contraseña",
+        "locations": "Ubicaciones",
+        "loading_locations": "Cargando ubicaciones…",
+        "no_locations_found": "No se encontraron ubicaciones activas. Cree ubicaciones antes de asignar personal."
     },
     "roles": {
         "title": "Roles y Permisos",

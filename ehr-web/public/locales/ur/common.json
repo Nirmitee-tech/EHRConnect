@@ -455,7 +455,18 @@
         "send_invitation": "دعوت نامہ بھیجیں",
         "search_placeholder": "نام یا ای میل سے تلاش کریں...",
         "no_users_found": "کوئی صارف نہیں ملا",
-        "loading_users": "صارفین لوڈ ہو رہے ہیں..."
+        "loading_users": "صارفین لوڈ ہو رہے ہیں...",
+        "error_label": "خرابی:",
+        "email_placeholder": "صارف@مثال.com",
+        "full_name": "مکمل نام",
+        "full_name_placeholder": "ڈاکٹر جان سمتھ",
+        "password": "پاس ورڈ",
+        "password_placeholder": "کم از کم 8 حروف",
+        "confirm_password": "پاس ورڈ کی تصدیق کریں",
+        "confirm_password_placeholder": "پاس ورڈ دوبارہ درج کریں",
+        "locations": "مقامات",
+        "loading_locations": "مقامات لوڈ ہو رہے ہیں…",
+        "no_locations_found": "کوئی فعال مقام نہیں ملا۔ عملے کو تفویض کرنے سے پہلے مقامات بنائیں۔"
     },
     "roles": {
         "title": "کردار اور اجازتیں",

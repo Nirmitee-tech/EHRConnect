@@ -563,7 +563,18 @@
         "send_invitation": "Send Invitation",
         "search_placeholder": "Search by name or email...",
         "no_users_found": "No users found",
-        "loading_users": "Loading users..."
+        "loading_users": "Loading users...",
+        "error_label": "Error:",
+        "email_placeholder": "user@example.com",
+        "full_name": "Full Name",
+        "full_name_placeholder": "Dr. John Smith",
+        "password": "Password",
+        "password_placeholder": "Minimum 8 characters",
+        "confirm_password": "Confirm Password",
+        "confirm_password_placeholder": "Re-enter password",
+        "locations": "Locations",
+        "loading_locations": "Loading locations…",
+        "no_locations_found": "No active locations found. Create locations before assigning staff."
     },
     "roles": {
         "title": "Roles & Permissions",

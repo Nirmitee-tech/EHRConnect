@@ -455,7 +455,18 @@
         "send_invitation": "निमंत्रण भेजें",
         "search_placeholder": "नाम या ईमेल से खोजें...",
         "no_users_found": "कोई उपयोगकर्ता नहीं मिला",
-        "loading_users": "उपयोगकर्ता लोड हो रहे हैं..."
+        "loading_users": "उपयोगकर्ता लोड हो रहे हैं...",
+        "error_label": "त्रुटि:",
+        "email_placeholder": "उपयोगकर्ता@उदाहरण.com",
+        "full_name": "पूरा नाम",
+        "full_name_placeholder": "डॉ. जॉन स्मिथ",
+        "password": "पासवर्ड",
+        "password_placeholder": "न्यूनतम 8 अक्षर",
+        "confirm_password": "पासवर्ड की पुष्टि करें",
+        "confirm_password_placeholder": "पासवर्ड फिर से दर्ज करें",
+        "locations": "स्थान",
+        "loading_locations": "स्थान लोड हो रहे हैं…",
+        "no_locations_found": "कोई सक्रिय स्थान नहीं मिला। कर्मचारियों को असाइन करने से पहले स्थान बनाएं।"
     },
     "roles": {
         "title": "भूमिकाएं और अनुमतियां",
