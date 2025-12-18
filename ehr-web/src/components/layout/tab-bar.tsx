@@ -206,6 +206,8 @@ export const TabBar = memo(function TabBar() {
           })}
         </div>
 
+        <div className="flex items-center gap-2 pr-2" />
+
         {/* Header Toggle Switch - Only show on detail pages */}
         {isDetailPage && (
           <div className="flex items-center gap-2 ml-auto pr-2 border-l border-gray-300 pl-3">
@@ -235,6 +237,12 @@ export const TabBar = memo(function TabBar() {
           </div>
         )}
       </div>
+
+      {/* Page Actions Toolbar - Shown below tabs */}
+      <div
+        id="layout-actions-root"
+        className="empty:hidden bg-white border-b border-gray-200 px-4 py-1.5 flex items-center justify-end gap-2"
+      />
 
       {/* Context Menu */}
       {contextMenu && (

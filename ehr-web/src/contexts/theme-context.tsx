@@ -13,6 +13,7 @@ export interface ThemeSettings {
   fontFamily: string;
   logoUrl: string | null;
   faviconUrl: string | null;
+  orgNameOverride?: string | null;
 }
 
 interface ThemeContextType {
@@ -32,7 +33,8 @@ const defaultTheme: ThemeSettings = {
   accentColor: '#10B981',
   fontFamily: 'Inter, sans-serif',
   logoUrl: null,
-  faviconUrl: null
+  faviconUrl: null,
+  orgNameOverride: null
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);

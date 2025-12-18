@@ -2,11 +2,16 @@
 
 import React, { useState } from 'react';
 import { useTheme, defaultTheme } from '@/contexts/theme-context';
-import { ArrowLeft, Palette, Save, RotateCcw, Upload, Eye } from 'lucide-react';
-import Link from 'next/link';
+import { useFacility } from '@/contexts/facility-context';
+import { Palette, Save, RotateCcw, Upload, Eye, Check } from 'lucide-react';
+import { HeaderActions } from '@/components/layout/header-actions';
+import { Button } from '@/components/ui/button';
+import { PRESET_THEMES, PresetTheme } from '@/config/themes.config';
+import { cn } from '@/lib/utils';
 
 export default function AppearancePage() {
   const { themeSettings, updateTheme, resetTheme, isLoading, error } = useTheme();
+  const { refreshFacilities, currentFacility } = useFacility();
   const [localSettings, setLocalSettings] = useState(themeSettings);
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
@@ -14,11 +19,29 @@ export default function AppearancePage() {
 
   // Update local settings when theme changes
   React.useEffect(() => {
-    setLocalSettings(themeSettings);
-  }, [themeSettings]);
+    setLocalSettings({
+      ...themeSettings,
+      orgNameOverride: themeSettings.orgNameOverride || currentFacility?.name || ''
+    });
+  }, [themeSettings, currentFacility]);
 
   const handleColorChange = (field: keyof typeof localSettings, value: string) => {
-    setLocalSettings({ ...localSettings, [field]: value });
+    // Only accept 6-digit hex or valid strings
+    // Backend has strict validation for #RRGGBB
+    setLocalSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const applyPresetTheme = (theme: PresetTheme) => {
+    setLocalSettings({
+      ...localSettings,
+      primaryColor: theme.primaryColor,
+      secondaryColor: theme.secondaryColor,
+      sidebarBackgroundColor: theme.sidebarBackgroundColor,
+      sidebarTextColor: theme.sidebarTextColor,
+      sidebarActiveColor: theme.sidebarActiveColor,
+      accentColor: theme.accentColor,
+      fontFamily: theme.fontFamily
+    });
   };
 
   const handleSave = async () => {
@@ -26,6 +49,7 @@ export default function AppearancePage() {
     setSaveSuccess(false);
     try {
       await updateTheme(localSettings);
+      await refreshFacilities();
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
@@ -94,22 +118,30 @@ export default function AppearancePage() {
     field: keyof typeof localSettings;
     description: string;
   }) => (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
-      <p className="text-xs text-gray-500">{description}</p>
-      <div className="flex items-center space-x-3">
-        <input
-          type="color"
-          value={localSettings[field] as string}
-          onChange={(e) => handleColorChange(field, e.target.value)}
-          className="h-10 w-20 rounded border border-gray-300 cursor-pointer"
-        />
+    <div className="flex items-center justify-between gap-4 p-2 hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-gray-100">
+      <div className="flex-1 min-w-0">
+        <label className="block text-xs font-semibold text-gray-900 truncate">{label}</label>
+        <p className="text-[10px] text-gray-500 truncate">{description}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <div
+          className="relative w-8 h-8 rounded-md border border-gray-200 overflow-hidden shadow-sm shrink-0 transition-transform active:scale-90"
+          style={{ backgroundColor: localSettings[field] as string }}
+        >
+          <input
+            type="color"
+            value={localSettings[field] as string}
+            onInput={(e) => handleColorChange(field, (e.target as HTMLInputElement).value)}
+            className="absolute -inset-2 w-[200%] h-[200%] cursor-pointer opacity-0"
+          />
+        </div>
         <input
           type="text"
           value={localSettings[field] as string}
           onChange={(e) => handleColorChange(field, e.target.value)}
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-          placeholder="#4A90E2"
+          className="w-20 px-2 py-1 text-[11px] font-mono border border-gray-200 rounded focus:ring-1 focus:ring-primary outline-none"
+          placeholder="#000000"
+          maxLength={7}
         />
       </div>
     </div>
@@ -127,57 +159,44 @@ export default function AppearancePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/settings"
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5 text-gray-600" />
-              </Link>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">Appearance Settings</h1>
-                <p className="text-sm text-gray-500">Customize your organization's theme and branding</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setShowPreview(!showPreview)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
-              >
-                <Eye className="h-4 w-4" />
-                <span>{showPreview ? 'Hide' : 'Show'} Preview</span>
-              </button>
-              <button
-                onClick={handleReset}
-                disabled={isSaving}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2 disabled:opacity-50"
-              >
-                <RotateCcw className="h-4 w-4" />
-                <span>Reset to Default</span>
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:opacity-90 transition-colors flex items-center space-x-2 disabled:opacity-50"
-              >
-                <Save className="h-4 w-4" />
-                <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-transparent">
+      <HeaderActions target="tabbar">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowPreview(!showPreview)}
+          className="flex items-center space-x-2"
+        >
+          <Eye className="h-4 w-4" />
+          <span>{showPreview ? 'Hide' : 'Show'} Preview</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleReset}
+          disabled={isSaving}
+          className="flex items-center space-x-2"
+        >
+          <RotateCcw className="h-4 w-4" />
+          <span>Reset</span>
+        </Button>
+        <Button
+          size="sm"
+          onClick={handleSave}
+          disabled={isSaving}
+          className="bg-primary text-white hover:opacity-90 flex items-center space-x-2"
+        >
+          <Save className="h-4 w-4" />
+          <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+        </Button>
+      </HeaderActions>
 
       {/* Success Message */}
       {saveSuccess && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <p className="text-sm text-green-800">Theme settings saved successfully!</p>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">
+            <p className="text-xs font-medium text-green-800">Changes successfully synced to cloud</p>
+            <div className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse" />
           </div>
         </div>
       )}
@@ -191,113 +210,128 @@ export default function AppearancePage() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Settings Panel */}
-          <div className="space-y-6">
-            {/* Logo Upload */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <Palette className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold text-gray-900">Logo & Branding</h2>
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Settings Column */}
+          <div className="lg:col-span-12 xl:col-span-7 space-y-4">
+
+            {/* Theme Library */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <Palette className="h-4 w-4 text-primary" />
+                  <h2 className="text-sm font-bold text-gray-900">Theme Library</h2>
+                </div>
+                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">18 Styles</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
+                {PRESET_THEMES.map((theme) => (
+                  <button
+                    key={theme.id}
+                    onClick={() => applyPresetTheme(theme)}
+                    className={cn(
+                      "group relative aspect-square rounded-lg border-2 transition-all p-1 flex flex-col",
+                      localSettings.primaryColor === theme.primaryColor &&
+                        localSettings.sidebarBackgroundColor === theme.sidebarBackgroundColor
+                        ? "border-primary ring-1 ring-primary/20"
+                        : "border-transparent hover:border-gray-200 bg-gray-50"
+                    )}
+                  >
+                    <div className="flex-1 rounded-md overflow-hidden flex flex-col shadow-sm">
+                      <div className="h-1/3" style={{ backgroundColor: theme.primaryColor }} />
+                      <div className="h-2/3 flex">
+                        <div className="w-1/3" style={{ backgroundColor: theme.sidebarBackgroundColor }} />
+                        <div className="w-2/3 bg-white" />
+                      </div>
+                    </div>
+                    <span className="mt-1 text-[9px] font-bold text-gray-700 truncate w-full text-center group-hover:text-primary">
+                      {theme.name}
+                    </span>
+                    {localSettings.primaryColor === theme.primaryColor &&
+                      localSettings.sidebarBackgroundColor === theme.sidebarBackgroundColor && (
+                        <div className="absolute top-0.5 right-0.5 bg-primary text-white p-0.5 rounded-full shadow-lg">
+                          <Check className="h-2 w-2" />
+                        </div>
+                      )}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Logo & Branding */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div className="flex items-center space-x-2 mb-3">
+                <Palette className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-bold text-gray-900">Logo & Branding</h2>
               </div>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Organization Logo
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    {localSettings.logoUrl && (
-                      <div className="w-24 h-24 rounded-lg border-2 border-gray-200 flex items-center justify-center bg-gray-50 overflow-hidden">
-                        <img
-                          src={localSettings.logoUrl}
-                          alt="Logo"
-                          className="max-w-full max-h-full object-contain"
-                        />
-                      </div>
-                    )}
-                    <label className="cursor-pointer">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoUpload}
-                        className="hidden"
-                      />
-                      <div className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:opacity-90 transition-colors flex items-center space-x-2">
-                        <Upload className="h-4 w-4" />
-                        <span>Upload Logo</span>
-                      </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">
+                      Organization Logo
                     </label>
+                    <div className="flex items-center space-x-3">
+                      {localSettings.logoUrl && (
+                        <div className="w-14 h-14 rounded-lg border border-gray-200 flex items-center justify-center bg-gray-50 overflow-hidden shrink-0">
+                          <img
+                            src={localSettings.logoUrl}
+                            alt="Logo"
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        </div>
+                      )}
+                      <label className="cursor-pointer">
+                        <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                        <div className="px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:opacity-90 transition-colors flex items-center space-x-2">
+                          <Upload className="h-3.5 w-3.5" />
+                          <span>Upload</span>
+                        </div>
+                      </label>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Recommended: Square image, at least 200x200px, PNG or SVG format
-                  </p>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">
+                      Organization Name
+                    </label>
+                    <input
+                      type="text"
+                      value={localSettings.orgNameOverride || ''}
+                      onChange={(e) => setLocalSettings({ ...localSettings, orgNameOverride: e.target.value })}
+                      className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-primary outline-none"
+                      placeholder="e.g. Acme Health"
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1 italic">Overrides the default database name</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Primary Colors */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <Palette className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold text-gray-900">Primary Colors</h2>
+            {/* Branding Colors */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div className="flex items-center space-x-2 mb-3">
+                <Palette className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-bold text-gray-900">Theme Colors</h2>
               </div>
-              <div className="space-y-4">
-                <ColorInput
-                  label="Primary Color"
-                  field="primaryColor"
-                  description="Main brand color used for buttons and highlights"
-                />
-                <ColorInput
-                  label="Secondary Color"
-                  field="secondaryColor"
-                  description="Complementary color for secondary actions"
-                />
-                <ColorInput
-                  label="Accent Color"
-                  field="accentColor"
-                  description="Accent color for status indicators and badges"
-                />
-              </div>
-            </div>
-
-            {/* Sidebar Colors */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <Palette className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold text-gray-900">Sidebar Theme</h2>
-              </div>
-              <div className="space-y-4">
-                <ColorInput
-                  label="Sidebar Background"
-                  field="sidebarBackgroundColor"
-                  description="Background color for the navigation sidebar"
-                />
-                <ColorInput
-                  label="Sidebar Text Color"
-                  field="sidebarTextColor"
-                  description="Text color for sidebar menu items"
-                />
-                <ColorInput
-                  label="Active Item Color"
-                  field="sidebarActiveColor"
-                  description="Background color for active/selected menu items"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+                <ColorInput label="Primary" field="primaryColor" description="Buttons & highlights" />
+                <ColorInput label="Secondary" field="secondaryColor" description="Secondary actions" />
+                <ColorInput label="Accent" field="accentColor" description="Status indicators" />
+                <ColorInput label="Sidebar Bg" field="sidebarBackgroundColor" description="Sidebar background" />
+                <ColorInput label="Sidebar Text" field="sidebarTextColor" description="Inactive menu items" />
+                <ColorInput label="Active Menu" field="sidebarActiveColor" description="Selected highlight" />
               </div>
             </div>
 
             {/* Typography */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <Palette className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold text-gray-900">Typography</h2>
-              </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Font Family</label>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center space-x-2">
+                  <Palette className="h-4 w-4 text-primary" />
+                  <h2 className="text-sm font-bold text-gray-900">Typography</h2>
+                </div>
                 <select
                   value={localSettings.fontFamily}
                   onChange={(e) => setLocalSettings({ ...localSettings, fontFamily: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-48 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-primary outline-none"
                 >
                   <option value="Inter, sans-serif">Inter (Default)</option>
                   <option value="Roboto, sans-serif">Roboto</option>
@@ -310,105 +344,88 @@ export default function AppearancePage() {
             </div>
           </div>
 
-          {/* Preview Panel */}
+          {/* Preview Column (Vertical Split) */}
           {showPreview && (
-            <div className="lg:sticky lg:top-8 h-fit">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Live Preview</h2>
-
-                {/* Sidebar Preview */}
-                <div
-                  className="rounded-lg overflow-hidden border border-gray-200"
-                  style={{ fontFamily: localSettings.fontFamily }}
-                >
-                  <div
-                    className="p-4"
-                    style={{ backgroundColor: localSettings.sidebarBackgroundColor }}
-                  >
-                    {/* Logo Area */}
-                    <div className="flex items-center space-x-2 mb-6">
-                      {localSettings.logoUrl ? (
-                        <img
-                          src={localSettings.logoUrl}
-                          alt="Logo"
-                          className="w-8 h-8 object-contain"
-                        />
-                      ) : (
-                        <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center"
-                          style={{ backgroundColor: localSettings.primaryColor }}
-                        >
-                          <div className="w-4 h-4 bg-white rounded" />
-                        </div>
-                      )}
-                      <div>
-                        <h2
-                          className="text-base font-bold"
-                          style={{ color: '#ffffff' }}
-                        >
-                          EHR Connect
-                        </h2>
-                        <p
-                          className="text-[9px] font-medium tracking-wide"
-                          style={{ color: localSettings.sidebarTextColor }}
-                        >
-                          HEALTHCARE SYSTEM
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Menu Items */}
-                    <div className="space-y-1">
-                      {['Dashboard', 'Patients', 'Appointments', 'Reports'].map((item, idx) => (
-                        <div
-                          key={item}
-                          className="px-3 py-2 rounded-lg flex items-center space-x-2"
-                          style={{
-                            backgroundColor: idx === 0 ? localSettings.sidebarActiveColor : 'transparent',
-                            color: '#ffffff'
-                          }}
-                        >
-                          <div
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: localSettings.accentColor }}
-                          />
-                          <span className="text-sm">{item}</span>
-                        </div>
-                      ))}
-                    </div>
+            <div className="lg:col-span-12 xl:col-span-5">
+              <div className="xl:sticky xl:top-4 space-y-4">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 overflow-hidden">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-bold text-gray-900">Live Preview</h2>
+                    <span className="text-[10px] text-gray-400 font-mono">Real-time Visualization</span>
                   </div>
 
-                  {/* Content Area Preview */}
-                  <div className="p-6 bg-gray-50">
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3">
-                        <button
-                          className="px-4 py-2 text-sm font-medium text-white rounded-lg"
-                          style={{ backgroundColor: localSettings.primaryColor }}
-                        >
-                          Primary Button
-                        </button>
-                        <button
-                          className="px-4 py-2 text-sm font-medium text-white rounded-lg"
-                          style={{ backgroundColor: localSettings.secondaryColor }}
-                        >
-                          Secondary Button
-                        </button>
+                  <div className="rounded-lg border border-gray-100 overflow-hidden shadow-inner flex flex-col md:flex-row min-h-[400px]">
+                    {/* Sidebar Preview */}
+                    <div
+                      className="w-full md:w-1/3 p-4 flex flex-col"
+                      style={{
+                        backgroundColor: localSettings.sidebarBackgroundColor,
+                        fontFamily: localSettings.fontFamily
+                      }}
+                    >
+                      <div className="flex items-center space-x-2 mb-6">
+                        {localSettings.logoUrl ? (
+                          <img src={localSettings.logoUrl} alt="Logo" className="w-6 h-6 object-contain" />
+                        ) : (
+                          <div className="w-6 h-6 rounded flex items-center justify-center" style={{ backgroundColor: localSettings.primaryColor }}>
+                            <div className="w-3 h-3 bg-white rounded-sm" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <h2 className="text-[11px] font-bold text-white truncate leading-tight">
+                            {localSettings.orgNameOverride || 'EHR Connect'}
+                          </h2>
+                          <p className="text-[8px] font-medium opacity-60 truncate uppercase tracking-tighter" style={{ color: localSettings.sidebarTextColor }}>
+                            Location Name
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: localSettings.accentColor }}
-                        />
-                        <span className="text-sm text-gray-600">Accent Color</span>
+
+                      <div className="space-y-1">
+                        {['Dashboard', 'Patients', 'Staff'].map((item, idx) => (
+                          <div
+                            key={item}
+                            className="px-2 py-1.5 rounded flex items-center space-x-2"
+                            style={{
+                              backgroundColor: idx === 0 ? localSettings.sidebarActiveColor : 'transparent',
+                              color: idx === 0 ? '#FFFFFF' : localSettings.sidebarTextColor
+                            }}
+                          >
+                            <div className="w-1 h-1 rounded-full" style={{ backgroundColor: localSettings.accentColor }} />
+                            <span className="text-[10px] font-medium">{item}</span>
+                          </div>
+                        ))}
                       </div>
+                    </div>
+
+                    {/* Content Area Preview */}
+                    <div className="w-full md:w-2/3 bg-gray-50 p-6 flex flex-col items-center justify-center text-center space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <button
+                            className="px-4 py-1.5 text-[10px] font-bold text-white rounded shadow-sm"
+                            style={{ backgroundColor: localSettings.primaryColor }}
+                          >
+                            Primary
+                          </button>
+                          <button
+                            className="px-4 py-1.5 text-[10px] font-bold text-white rounded shadow-sm"
+                            style={{ backgroundColor: localSettings.secondaryColor }}
+                          >
+                            Secondary
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: localSettings.accentColor }} />
+                          <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Accent Active</span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-gray-500 max-w-[150px]">
+                        Verify branding across both dark and light zones.
+                      </p>
                     </div>
                   </div>
                 </div>
-
-                <p className="text-xs text-gray-500 mt-4">
-                  This preview shows how your theme will appear across the application.
-                </p>
               </div>
             </div>
           )}

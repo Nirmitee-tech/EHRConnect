@@ -41,10 +41,10 @@ class OrganizationService {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
-      
+
       let slug = baseSlug;
       let counter = 1;
-      
+
       while (true) {
         const existing = await client.query(
           'SELECT id FROM organizations WHERE slug = $1',
@@ -123,10 +123,10 @@ class OrganizationService {
 
       // Update Keycloak user with permissions
       // PostgreSQL JSONB returns already-parsed object, not string
-      const permissions = Array.isArray(ownerRole.permissions) 
-        ? ownerRole.permissions 
+      const permissions = Array.isArray(ownerRole.permissions)
+        ? ownerRole.permissions
         : JSON.parse(ownerRole.permissions);
-      
+
       await KeycloakService.updateUserAttributes(keycloakUser.id, {
         org_id: org.id,
         org_slug: org.slug,
@@ -352,7 +352,7 @@ class OrganizationService {
    */
   async getLocations(orgId, activeOnly = false) {
     const whereClause = activeOnly ? 'AND active = true' : '';
-    
+
     const result = await query(
       `SELECT * FROM locations 
        WHERE org_id = $1 ${whereClause}
@@ -610,7 +610,8 @@ class OrganizationService {
       accentColor: '#10B981',
       fontFamily: 'Inter, sans-serif',
       logoUrl: null,
-      faviconUrl: null
+      faviconUrl: null,
+      orgNameOverride: null
     };
 
     return result.rows[0].theme_settings || defaultTheme;
@@ -642,26 +643,36 @@ class OrganizationService {
 
     // Get current theme settings
     const currentTheme = await this.getThemeSettings(orgId);
-    
+
     // Merge with new settings
     const updatedTheme = {
       ...currentTheme,
       ...themeSettings
     };
 
-    const result = await query(
-      `UPDATE organizations 
-       SET theme_settings = $1, updated_at = CURRENT_TIMESTAMP 
-       WHERE id = $2 
-       RETURNING theme_settings`,
-      [JSON.stringify(updatedTheme), orgId]
-    );
+    return await transaction(async (client) => {
+      // If orgNameOverride is provided, sync it to the main organization name
+      if (themeSettings.orgNameOverride) {
+        await client.query(
+          'UPDATE organizations SET name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+          [themeSettings.orgNameOverride, orgId]
+        );
+      }
 
-    if (result.rows.length === 0) {
-      throw new Error('Organization not found');
-    }
+      const result = await client.query(
+        `UPDATE organizations 
+         SET theme_settings = $1, updated_at = CURRENT_TIMESTAMP 
+         WHERE id = $2 
+         RETURNING theme_settings`,
+        [JSON.stringify(updatedTheme), orgId]
+      );
 
-    return result.rows[0].theme_settings;
+      if (result.rows.length === 0) {
+        throw new Error('Organization not found');
+      }
+
+      return result.rows[0].theme_settings;
+    });
   }
 }
 

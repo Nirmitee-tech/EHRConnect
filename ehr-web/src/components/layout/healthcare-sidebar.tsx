@@ -11,10 +11,14 @@ import { NavItem } from './nav-item';
 import { cn } from '@/lib/utils';
 import { useUIPreferences } from '@/contexts/ui-preferences-context';
 
-const Logo = ({ isCollapsed, logoUrl, primaryColor }: {
+import { useLocation } from '@/contexts/location-context';
+
+const Logo = ({ isCollapsed, logoUrl, primaryColor, orgName, locationName }: {
   isCollapsed: boolean;
   logoUrl: string | null;
   primaryColor: string;
+  orgName: string;
+  locationName: string;
 }) => (
   <div className="flex items-center space-x-2">
     {logoUrl ? (
@@ -27,51 +31,15 @@ const Logo = ({ isCollapsed, logoUrl, primaryColor }: {
       </div>
     )}
     {!isCollapsed && (
-      <div>
-        <h2 className="text-base font-bold text-white">
-          EHR Connect
+      <div className="min-w-0">
+        <h2 className="text-sm font-bold text-white truncate leading-tight">
+          {orgName}
         </h2>
-        <p className="text-[9px] font-medium tracking-wide" style={{ color: 'var(--theme-sidebar-text)' }}>HEALTHCARE SYSTEM</p>
+        <p className="text-[10px] font-medium tracking-wide truncate opacity-80 uppercase" style={{ color: 'var(--theme-sidebar-text)' }}>
+          {locationName}
+        </p>
       </div>
     )}
-  </div>
-);
-
-const FacilityInfo = ({ facilityName, patientCount, staffCount }: {
-  facilityName: string;
-  patientCount: number;
-  staffCount: number;
-}) => (
-  <div className="mx-3 mb-3 p-3 rounded-lg bg-[#1E2A70]/30 border border-[#1E2A70]">
-    <div className="flex items-center space-x-2 mb-2">
-      <div className="w-7 h-7 bg-[#4A90E2] rounded-lg flex items-center justify-center">
-        <Building2 className="h-3.5 w-3.5 text-white" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <h3 className="text-xs font-semibold text-white truncate">{facilityName}</h3>
-        <p className="text-[9px] text-[#B0B7D0]">Active Facility</p>
-      </div>
-    </div>
-    <div className="grid grid-cols-2 gap-2">
-      <div className="bg-[#1E2A70]/50 rounded-lg p-2 border border-[#1E2A70]">
-        <div className="flex items-center gap-1 mb-0.5">
-          <Users className="h-3 w-3 text-[#4A90E2]" />
-          <span className="text-[9px] text-[#B0B7D0]">Patients</span>
-        </div>
-        <p className="text-base font-bold text-white">
-          {patientCount}
-        </p>
-      </div>
-      <div className="bg-[#1E2A70]/50 rounded-lg p-2 border border-[#1E2A70]">
-        <div className="flex items-center gap-1 mb-0.5">
-          <TrendingUp className="h-3 w-3 text-[#9B59B6]" />
-          <span className="text-[9px] text-[#B0B7D0]">Staff</span>
-        </div>
-        <p className="text-base font-bold text-white">
-          {staffCount}
-        </p>
-      </div>
-    </div>
   </div>
 );
 
@@ -90,6 +58,7 @@ const Footer = () => (
 export function HealthcareSidebar() {
   const pathname = usePathname() || '';
   const { currentFacility } = useFacility();
+  const { currentLocation } = useLocation();
   const { patients, staff } = useResourceCounts(currentFacility?.id);
   const { sidebarCollapsed, setSidebarCollapsed } = useUIPreferences();
   const { themeSettings } = useTheme();
@@ -97,6 +66,9 @@ export function HealthcareSidebar() {
 
   // Use the context state for collapsed
   const isCollapsed = sidebarCollapsed;
+
+  const orgName = themeSettings.orgNameOverride || currentFacility?.name || 'EHR Connect';
+  const locationName = currentLocation?.name || 'Healthcare System';
 
   const isActive = (href: string): boolean =>
     pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
@@ -131,7 +103,13 @@ export function HealthcareSidebar() {
     >
       <div className={cn('p-3 border-b', isCollapsed ? 'px-2' : 'px-3')} style={{ borderColor: 'rgba(30, 42, 112, 0.3)' }}>
         <div className="flex items-center justify-between">
-          <Logo isCollapsed={isCollapsed} logoUrl={themeSettings.logoUrl} primaryColor={themeSettings.primaryColor} />
+          <Logo
+            isCollapsed={isCollapsed}
+            logoUrl={themeSettings.logoUrl}
+            primaryColor={themeSettings.primaryColor}
+            orgName={orgName}
+            locationName={locationName}
+          />
           <button
             onClick={() => setSidebarCollapsed(!isCollapsed)}
             className="p-1.5 rounded-lg border border-white/20 bg-white/10 hover:bg-white/20 transition-colors"
