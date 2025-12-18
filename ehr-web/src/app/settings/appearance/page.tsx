@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { useTheme, defaultTheme, ThemeSettings } from '@/contexts/theme-context';
 import { useFacility } from '@/contexts/facility-context';
 import { Save, RotateCcw, Eye } from 'lucide-react';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 import { HeaderActions } from '@/components/layout/header-actions';
 import { Button } from '@/components/ui/button';
 import { PresetTheme } from '@/config/themes.config';

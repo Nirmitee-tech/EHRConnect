@@ -4,6 +4,8 @@ import React from 'react';
 import ActiveSessions from '@/components/security/active-sessions';
 import { ArrowLeft, Shield, Key, Lock, Eye } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function SecuritySettingsPage() {
   return (

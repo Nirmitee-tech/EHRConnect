@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, Building2, Clock, MapPin, Phone, Mail, Globe, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useFacility } from '@/contexts/facility-context';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 import { SettingsService } from '@/services/settings.service';
 import { AppointmentSettings } from '@/types/settings';
 
