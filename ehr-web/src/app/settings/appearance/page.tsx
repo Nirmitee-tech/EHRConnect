@@ -14,6 +14,8 @@ import { BrandingSettings } from './components/branding-settings';
 import { ColorSettings } from './components/color-settings';
 import { TypographySettings } from './components/typography-settings';
 import { LivePreview } from './components/live-preview';
+import { LanguageSettings } from '@/components/settings/language-settings';
+import { Globe } from 'lucide-react';
 
 export default function AppearancePage() {
   const { themeSettings, updateTheme, resetTheme, isLoading, error } = useTheme();
@@ -167,6 +169,15 @@ export default function AppearancePage() {
               currentFont={localSettings.fontFamily}
               onFontChange={(font) => handleUpdateSettings({ fontFamily: font })}
             />
+
+            {/* Regional & Localization */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-1">
+                <Globe className="h-4 w-4 text-gray-400" />
+                <h2 className="text-[12px] font-bold text-gray-900 uppercase tracking-tight">Regional & Localization</h2>
+              </div>
+              <LanguageSettings />
+            </div>
           </div>
 
           {/* Preview Column */}
