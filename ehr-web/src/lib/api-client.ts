@@ -25,10 +25,12 @@ export function getApiHeaders(session: Session | null | undefined): HeadersInit 
   // Add language preference from cookie
   if (typeof document !== 'undefined') {
     const cookieName = 'NEXT_LOCALE';
-    const match = document.cookie.match(new RegExp('(^| )' + cookieName + '=([^;]+)'));
-    if (match) {
-      headers['Accept-Language'] = match[2];
-    }
+    const cookieHeader = document.cookie || '';
+    const matches = [...cookieHeader.matchAll(new RegExp(`(?:^|;\\s*)${cookieName}=([^;]*)`, 'g'))];
+    const raw = matches.length > 0 ? matches[matches.length - 1][1] : undefined;
+    const decoded = raw ? decodeURIComponent(raw) : undefined;
+    const base = decoded ? decoded.split('-')[0] : undefined;
+    if (base) headers['Accept-Language'] = base;
   }
 
   if (!session) {
@@ -72,7 +74,7 @@ export function getApiHeaders(session: Session | null | undefined): HeadersInit 
  * Make authenticated API request
  * Automatically adds session headers
  */
-export async function apiRequest<T = any>(
+export async function apiRequest<T = unknown>(
   endpoint: string,
   options: ApiRequestOptions = {}
 ): Promise<T> {
@@ -138,41 +140,41 @@ export async function apiRequest<T = any>(
   // Parse response
   const contentType = response.headers.get('content-type')
   if (contentType?.includes('application/json')) {
-    return response.json()
+    return (await response.json()) as T
   }
 
-  return response.text() as any
+  return (await response.text()) as unknown as T
 }
 
 /**
  * Convenience methods for common HTTP methods
  */
 export const api = {
-  get: <T = any>(endpoint: string, options?: ApiRequestOptions) =>
+  get: <T = unknown>(endpoint: string, options?: ApiRequestOptions) =>
     apiRequest<T>(endpoint, { ...options, method: 'GET' }),
 
-  post: <T = any>(endpoint: string, data?: any, options?: ApiRequestOptions) =>
+  post: <T = unknown>(endpoint: string, data?: unknown, options?: ApiRequestOptions) =>
     apiRequest<T>(endpoint, {
       ...options,
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
     }),
 
-  put: <T = any>(endpoint: string, data?: any, options?: ApiRequestOptions) =>
+  put: <T = unknown>(endpoint: string, data?: unknown, options?: ApiRequestOptions) =>
     apiRequest<T>(endpoint, {
       ...options,
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
     }),
 
-  patch: <T = any>(endpoint: string, data?: any, options?: ApiRequestOptions) =>
+  patch: <T = unknown>(endpoint: string, data?: unknown, options?: ApiRequestOptions) =>
     apiRequest<T>(endpoint, {
       ...options,
       method: 'PATCH',
       body: data ? JSON.stringify(data) : undefined,
     }),
 
-  delete: <T = any>(endpoint: string, options?: ApiRequestOptions) =>
+  delete: <T = unknown>(endpoint: string, options?: ApiRequestOptions) =>
     apiRequest<T>(endpoint, { ...options, method: 'DELETE' }),
 }
 
@@ -249,7 +251,7 @@ export function generateCurlCommand(
   endpoint: string,
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   session: Session | null | undefined,
-  body?: any
+  body?: unknown
 ): string {
   const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`
   const headers = session ? getApiHeaders(session) : { 'Content-Type': 'application/json' }

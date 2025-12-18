@@ -32,7 +32,7 @@ export function PublicLanguageSelector() {
 
     const handleLanguageChange = (langCode: string) => {
         setCurrentLang(langCode);
-        Cookies.set(cookieName, langCode, { expires: 365 });
+        Cookies.set(cookieName, langCode, { expires: 365, path: '/' });
         setIsOpen(false);
 
         // Reload page to apply language change

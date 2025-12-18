@@ -8,6 +8,8 @@ import { FHIRPatient } from '@/types/fhir';
 import { Card } from '@/components/ui/card';
 import { Loader2, Edit } from 'lucide-react';
 import { TabPageWrapper } from '@/components/layout/tab-page-wrapper';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function EditPatientPage() {
   const router = useRouter();

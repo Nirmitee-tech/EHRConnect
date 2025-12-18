@@ -10,6 +10,8 @@ import {
   Building, MapPin, Users, Shield, Check, 
   ChevronRight, ChevronLeft, Sparkles, LogOut 
 } from 'lucide-react';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface OnboardingStep {
   id: string;

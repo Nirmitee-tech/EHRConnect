@@ -39,6 +39,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import * as bedManagementService from '@/services/bed-management';
 import type { Bed, CreateBedRequest, Ward, BedType, BedStatus } from '@/types/bed-management';
 import { useFacility } from '@/contexts/facility-context';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function BedsPage() {
   const router = useRouter();

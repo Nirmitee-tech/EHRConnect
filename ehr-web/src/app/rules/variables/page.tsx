@@ -31,6 +31,8 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/useToast';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 const COMPUTATION_TYPE_ICONS: Record<string, any> = {
   aggregate: Database,

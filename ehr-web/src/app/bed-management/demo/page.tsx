@@ -25,6 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function BedManagementDemoPage() {
   // Mock Ward Data

@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckCircle, Building } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface Invitation {
   id: string;

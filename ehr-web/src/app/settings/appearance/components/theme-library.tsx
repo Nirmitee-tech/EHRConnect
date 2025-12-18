@@ -3,6 +3,7 @@ import { Palette, Search, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { PRESET_THEMES, PresetTheme } from '@/config/themes.config';
 import { cn } from '@/lib/utils';
 import { ThemeSettings } from '@/contexts/theme-context';
+import { useTranslation } from '@/i18n/client';
 
 interface ThemeLibraryProps {
     currentSettings: ThemeSettings;
@@ -10,11 +11,19 @@ interface ThemeLibraryProps {
 }
 
 export const ThemeLibrary = ({ currentSettings, onApplyTheme }: ThemeLibraryProps) => {
+    const { t } = useTranslation('common');
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategory, setActiveCategory] = useState<'All' | 'Modern' | 'Classic' | 'Dark' | 'Special' | 'EMR'>('All');
 
     const categories = ['EMR', 'Modern', 'Classic', 'Dark', 'Special'] as const;
+
+    const getTranslatedCategory = (cat: string) => {
+        // Translation keys for categories could be added later, currently using as-is but providing structure
+        // dashboard.cardiology etc are examples, using common.all for 'All'
+        if (cat === 'All') return t('common.all') || 'All';
+        return cat;
+    };
 
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -24,8 +33,8 @@ export const ThemeLibrary = ({ currentSettings, onApplyTheme }: ThemeLibraryProp
             >
                 <div className="flex items-center space-x-2">
                     <Palette className="h-4 w-4 text-primary" />
-                    <h2 className="text-sm font-bold text-gray-900">Theme Library</h2>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold ml-2">{PRESET_THEMES.length} Premium Styles</span>
+                    <h2 className="text-sm font-bold text-gray-900">{t('appearance.theme_library')}</h2>
+                    <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold ml-2">{PRESET_THEMES.length} {t('appearance.premium_styles')}</span>
                 </div>
                 {isLibraryOpen ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
             </button>
@@ -37,7 +46,7 @@ export const ThemeLibrary = ({ currentSettings, onApplyTheme }: ThemeLibraryProp
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Search themes by name..."
+                                placeholder={t('appearance.search_themes')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full pl-9 pr-4 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:ring-1 focus:ring-primary outline-none transition-all"
@@ -55,7 +64,7 @@ export const ThemeLibrary = ({ currentSettings, onApplyTheme }: ThemeLibraryProp
                                             : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                                     )}
                                 >
-                                    {cat}
+                                    {getTranslatedCategory(cat)}
                                 </button>
                             ))}
                         </div>
@@ -121,12 +130,12 @@ export const ThemeLibrary = ({ currentSettings, onApplyTheme }: ThemeLibraryProp
                             t.name.toLowerCase().includes(searchQuery.toLowerCase())
                         ).length === 0 && (
                                 <div className="py-20 text-center">
-                                    <p className="text-xs text-gray-400 font-medium">No themes found matching "{searchQuery}"</p>
+                                    <p className="text-xs text-gray-400 font-medium">{t('appearance.no_themes_found')} "{searchQuery}"</p>
                                     <button
                                         onClick={() => setSearchQuery('')}
                                         className="mt-2 text-[10px] text-primary font-bold uppercase hover:underline"
                                     >
-                                        Clear Search
+                                        {t('appearance.clear_search')}
                                     </button>
                                 </div>
                             )}

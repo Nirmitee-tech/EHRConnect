@@ -32,6 +32,8 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { format } from 'date-fns'
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface DashboardData {
   upcomingAppointments: any[]

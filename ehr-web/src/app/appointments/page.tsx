@@ -26,6 +26,8 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { io, Socket } from 'socket.io-client';
 import { useSession } from 'next-auth/react';
 import { useLocation } from '@/contexts/location-context';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 // Medical appointment categories
 const medicalCategories: EventCategory[] = [

@@ -186,7 +186,7 @@ export function PatientFormsList({
                             compact ? 'text-xs' : 'text-sm'
                           }`}
                         >
-                          {response.form_title}
+                          {(response as any).form_title}
                         </span>
                         <Badge
                           variant={response.status === 'completed' ? 'default' : 'secondary'}
@@ -250,13 +250,14 @@ export function PatientFormsList({
         <Dialog open={showResponse} onOpenChange={setShowResponse}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{selectedResponse.form_title}</DialogTitle>
+              <DialogTitle>{(selectedResponse as any).form_title}</DialogTitle>
             </DialogHeader>
             <CompactFormRenderer
-              questionnaire={selectedResponse.form_questionnaire as FHIRQuestionnaire}
-              initialResponse={selectedResponse.response as FHIRQuestionnaireResponse}
+              questionnaire={(selectedResponse as any).form_questionnaire as FHIRQuestionnaire}
+              initialResponse={(selectedResponse as any).response as FHIRQuestionnaireResponse}
               readonly
               compact={false}
+              onSubmit={async () => {}}
             />
           </DialogContent>
         </Dialog>

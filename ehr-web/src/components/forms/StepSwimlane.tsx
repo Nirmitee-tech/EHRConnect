@@ -37,8 +37,7 @@ export function StepSwimlane({ draggedItem, onStepSelect }: StepSwimlaneProps) {
       },
       validationConfig: {
         validateOnNext: true,
-        validateOnBlur: false,
-        required: false,
+        requiredFields: [],
       },
     };
 

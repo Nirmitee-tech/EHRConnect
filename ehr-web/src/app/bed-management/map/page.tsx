@@ -16,6 +16,8 @@ import {
 import * as bedManagementService from '@/services/bed-management';
 import type { Ward, Bed as BedType } from '@/types/bed-management';
 import { useFacility } from '@/contexts/facility-context';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function BedStatusMapPage() {
   const { data: session } = useSession();

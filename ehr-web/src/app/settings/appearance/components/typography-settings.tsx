@@ -1,6 +1,7 @@
 import React from 'react';
 import { Palette } from 'lucide-react';
 import { ThemeSettings } from '@/contexts/theme-context';
+import { useTranslation } from '@/i18n/client';
 
 interface TypographySettingsProps {
     currentFont: string;
@@ -8,6 +9,7 @@ interface TypographySettingsProps {
 }
 
 export const TypographySettings = ({ currentFont, onFontChange }: TypographySettingsProps) => {
+    const { t } = useTranslation('common');
     const fonts = [
         { label: 'Inter (Default)', value: 'Inter, sans-serif' },
         { label: 'Roboto', value: 'Roboto, sans-serif' },
@@ -22,7 +24,7 @@ export const TypographySettings = ({ currentFont, onFontChange }: TypographySett
             <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center space-x-2">
                     <Palette className="h-4 w-4 text-primary" />
-                    <h2 className="text-sm font-bold text-gray-900">Typography</h2>
+                    <h2 className="text-sm font-bold text-gray-900">{t('appearance.typography')}</h2>
                 </div>
                 <select
                     value={currentFont}

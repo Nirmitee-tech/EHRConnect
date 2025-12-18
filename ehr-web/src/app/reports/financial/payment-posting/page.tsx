@@ -5,6 +5,8 @@ import { TableColumn } from '@/components/reports/TableView';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CreditCard, DollarSign, Calendar, AlertTriangle, Clock } from 'lucide-react';
 import { generatePaymentData } from '@/lib/report-data-generators';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 const reportData = generatePaymentData(30);
 

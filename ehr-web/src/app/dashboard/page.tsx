@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useTheme } from '@/contexts/theme-context'
+import { useTranslation } from '@/i18n/client'
+import '@/i18n/client'
 
 // Import dashboard views
 import ExecutiveDashboard from './views/executive-dashboard'
@@ -24,6 +26,7 @@ import QualityDashboard from './views/quality-dashboard'
 export default function DashboardPage() {
   const { data: session } = useSession()
   const { themeSettings } = useTheme()
+  const { t } = useTranslation('common')
   const [currentTime, setCurrentTime] = useState(new Date())
   const [dateRange, setDateRange] = useState('30d')
   const [location, setLocation] = useState('all')
@@ -36,7 +39,8 @@ export default function DashboardPage() {
   }, [])
 
   const userName = session?.user?.name?.split(' ')[0] || 'Wynter'
-  const greeting = new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 18 ? 'Good Afternoon' : 'Good Evening'
+  const currentHour = new Date().getHours()
+  const greeting = currentHour < 12 ? t('dashboard.good_morning') : currentHour < 18 ? t('dashboard.good_afternoon') : t('dashboard.good_evening')
 
   return (
     <div className="h-full flex flex-col bg-gray-50 -m-6">
@@ -66,11 +70,11 @@ export default function DashboardPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="7d">Last 7 Days</SelectItem>
-                      <SelectItem value="30d">Last 30 Days</SelectItem>
-                      <SelectItem value="90d">Last 90 Days</SelectItem>
-                      <SelectItem value="ytd">Year to Date</SelectItem>
-                      <SelectItem value="custom">Custom Range</SelectItem>
+                      <SelectItem value="7d">{t('dashboard.last_7_days')}</SelectItem>
+                      <SelectItem value="30d">{t('dashboard.last_30_days')}</SelectItem>
+                      <SelectItem value="90d">{t('dashboard.last_90_days')}</SelectItem>
+                      <SelectItem value="ytd">{t('dashboard.year_to_date')}</SelectItem>
+                      <SelectItem value="custom">{t('dashboard.custom_range')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -82,10 +86,10 @@ export default function DashboardPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Locations</SelectItem>
-                      <SelectItem value="main">Main Campus</SelectItem>
-                      <SelectItem value="north">North Clinic</SelectItem>
-                      <SelectItem value="south">South Clinic</SelectItem>
+                      <SelectItem value="all">{t('dashboard.all_locations')}</SelectItem>
+                      <SelectItem value="main">{t('dashboard.main_campus')}</SelectItem>
+                      <SelectItem value="north">{t('dashboard.north_clinic')}</SelectItem>
+                      <SelectItem value="south">{t('dashboard.south_clinic')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -97,20 +101,20 @@ export default function DashboardPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Departments</SelectItem>
-                      <SelectItem value="cardiology">Cardiology</SelectItem>
-                      <SelectItem value="orthopedics">Orthopedics</SelectItem>
-                      <SelectItem value="primary">Primary Care</SelectItem>
+                      <SelectItem value="all">{t('dashboard.all_departments')}</SelectItem>
+                      <SelectItem value="cardiology">{t('dashboard.cardiology')}</SelectItem>
+                      <SelectItem value="orthopedics">{t('dashboard.orthopedics')}</SelectItem>
+                      <SelectItem value="primary">{t('dashboard.primary_care')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               <div className="text-right border-l border-white/20 pl-6">
-                <div className="text-xs text-white/70 uppercase tracking-wider">System Status</div>
+                <div className="text-xs text-white/70 uppercase tracking-wider">{t('dashboard.system_status')}</div>
                 <div className="flex items-center gap-1.5 text-white text-xs font-medium mt-0.5">
                   <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                  All Systems Operational
+                  {t('dashboard.all_systems_operational')}
                 </div>
               </div>
             </div>
@@ -130,7 +134,7 @@ export default function DashboardPage() {
                 }}
               >
                 <LayoutDashboard className="h-4 w-4 mr-2" />
-                Executive
+                {t('dashboard.executive')}
               </TabsTrigger>
               <TabsTrigger
                 value="clinical"
@@ -141,7 +145,7 @@ export default function DashboardPage() {
                 }}
               >
                 <Activity className="h-4 w-4 mr-2" />
-                Clinical
+                {t('dashboard.clinical')}
               </TabsTrigger>
               <TabsTrigger
                 value="operations"
@@ -152,7 +156,7 @@ export default function DashboardPage() {
                 }}
               >
                 <Building2 className="h-4 w-4 mr-2" />
-                Operations
+                {t('dashboard.operations')}
               </TabsTrigger>
               <TabsTrigger
                 value="rcm"
@@ -163,7 +167,7 @@ export default function DashboardPage() {
                 }}
               >
                 <DollarSign className="h-4 w-4 mr-2" />
-                Revenue Cycle
+                {t('dashboard.revenue_cycle')}
               </TabsTrigger>
               <TabsTrigger
                 value="quality"
@@ -174,7 +178,7 @@ export default function DashboardPage() {
                 }}
               >
                 <TrendingUp className="h-4 w-4 mr-2" />
-                Quality
+                {t('dashboard.quality')}
               </TabsTrigger>
             </TabsList>
 

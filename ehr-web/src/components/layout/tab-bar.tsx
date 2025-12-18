@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useTabs } from '@/contexts/tab-context';
 import { useUIPreferences } from '@/contexts/ui-preferences-context';
 import { X, MoreHorizontal, XCircle, Eye, EyeOff } from 'lucide-react';
+import { useTranslation } from '@/i18n/client';
 
 // Routes where the toggle should be shown (same as header hide routes)
 const DETAIL_PAGE_ROUTES = [
@@ -28,7 +29,8 @@ const TabItem = memo(({
   onDragOver,
   onDragLeave,
   onDrop,
-  onDragEnd
+  onDragEnd,
+  closeLabel
 }: {
   tab: any;
   isActive: boolean;
@@ -42,6 +44,7 @@ const TabItem = memo(({
   onDragLeave: () => void;
   onDrop: (e: React.DragEvent, tabId: string) => void;
   onDragEnd: () => void;
+  closeLabel: string;
 }) => (
   <div
     draggable
@@ -78,7 +81,7 @@ const TabItem = memo(({
           flex-shrink-0 rounded p-0.5 transition-colors
           ${isActive ? 'hover:bg-gray-200' : 'opacity-0 group-hover:opacity-100 hover:bg-gray-400'}
         `}
-        aria-label="Close tab"
+        aria-label={closeLabel}
       >
         <X size={14} className="text-gray-600" />
       </button>
@@ -89,6 +92,7 @@ const TabItem = memo(({
 TabItem.displayName = 'TabItem';
 
 export const TabBar = memo(function TabBar() {
+  const { t } = useTranslation('common');
   const pathname = usePathname();
   const { tabs, activeTabId, setActiveTab, closeTab, closeAllTabs, closeOtherTabs } = useTabs();
   const { hideHeaderOnDetailPages, setHideHeaderOnDetailPages } = useUIPreferences();
@@ -201,6 +205,7 @@ export const TabBar = memo(function TabBar() {
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 onDragEnd={handleDragEnd}
+                closeLabel={t('tabs.close')}
               />
             );
           })}
@@ -220,17 +225,17 @@ export const TabBar = memo(function TabBar() {
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }
               `}
-              title={hideHeaderOnDetailPages ? 'Header hidden on detail pages' : 'Header visible on all pages'}
+              title={hideHeaderOnDetailPages ? t('tabs.header_hidden') : t('tabs.header_visible')}
             >
               {hideHeaderOnDetailPages ? (
                 <>
                   <EyeOff size={14} />
-                  <span>Header Hidden</span>
+                  <span>{t('tabs.header_hidden')}</span>
                 </>
               ) : (
                 <>
                   <Eye size={14} />
-                  <span>Header Visible</span>
+                  <span>{t('tabs.header_visible')}</span>
                 </>
               )}
             </button>
@@ -259,7 +264,7 @@ export const TabBar = memo(function TabBar() {
             className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
           >
             <X size={14} />
-            Close
+            {t('tabs.close')}
           </button>
           <button
             onClick={useCallback(() => {
@@ -269,7 +274,7 @@ export const TabBar = memo(function TabBar() {
             className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
           >
             <MoreHorizontal size={14} />
-            Close Others
+            {t('tabs.close_others')}
           </button>
           <button
             onClick={useCallback(() => {
@@ -279,7 +284,7 @@ export const TabBar = memo(function TabBar() {
             className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
           >
             <XCircle size={14} />
-            Close All
+            {t('tabs.close_all')}
           </button>
         </div>
       )}

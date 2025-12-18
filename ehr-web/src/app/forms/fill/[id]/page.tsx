@@ -21,6 +21,8 @@ import { formsService } from '@/services/forms.service';
 import type { FHIRQuestionnaire, QuestionnaireItem } from '@/types/forms';
 import { cn } from '@/lib/utils';
 import { SidebarToggle } from '@/components/forms/sidebar-toggle';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface FormProgress {
   completed: number;

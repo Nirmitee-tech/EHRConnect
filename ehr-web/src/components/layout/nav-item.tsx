@@ -6,6 +6,7 @@ import { LucideIcon, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTabs } from '@/contexts/tab-context';
 import { useTheme } from '@/contexts/theme-context';
+import { useTranslation } from '@/i18n/client';
 
 interface NavItemChild {
   name: string;
@@ -21,7 +22,21 @@ interface NavItemProps {
   isCollapsed: boolean;
   count?: number;
   badge?: string;
-  children?: NavItemChild[];
+  subItems?: NavItemChild[];
+}
+
+export function toNavTranslationKeySegment(label: string) {
+  return label
+    .toLowerCase()
+    .replace(/\s*&\s*/g, '_')
+    .replace(/\s+/g, '_')
+    .replace(/[()]/g, '')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
+}
+
+export function toNavTranslationKey(label: string) {
+  return `nav.${toNavTranslationKeySegment(label)}`;
 }
 
 export function NavItem({
@@ -32,19 +47,25 @@ export function NavItem({
   isCollapsed,
   count,
   badge,
-  children
+  subItems
 }: NavItemProps) {
+  const { t } = useTranslation('common');
   const { addTab } = useTabs();
   const { themeSettings } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const getTranslatedName = (itemName: string) =>
+    t(toNavTranslationKey(itemName), { defaultValue: itemName });
+
+  const translatedName = getTranslatedName(name);
+
   const handleClick = () => {
-    if (children && children.length > 0) {
+    if (subItems && subItems.length > 0) {
       // Toggle expand/collapse if has children
       setIsExpanded(!isExpanded);
     } else {
       addTab({
-        title: name,
+        title: translatedName,
         path: href,
         icon: <Icon className="h-4 w-4" />,
       });
@@ -53,14 +74,14 @@ export function NavItem({
 
   const handleChildClick = (child: NavItemChild) => {
     addTab({
-      title: child.name,
+      title: getTranslatedName(child.name),
       path: child.href,
       icon: <child.icon className="h-4 w-4" />,
     });
   };
 
   // If has children, render as expandable button
-  if (children && children.length > 0 && !isCollapsed) {
+  if (subItems && subItems.length > 0 && !isCollapsed) {
     return (
       <div>
         <button
@@ -80,7 +101,7 @@ export function NavItem({
               style={{ color: isActive ? 'var(--theme-sidebar-active-contrast)' : themeSettings.sidebarTextColor }}
             />
             <span className="flex-1 transition-colors duration-200 text-left">
-              {name}
+              {translatedName}
             </span>
             {isExpanded ? (
               <ChevronDown className="h-4 w-4 transition-transform" />
@@ -93,7 +114,7 @@ export function NavItem({
         {/* Children */}
         {isExpanded && (
           <div className="ml-8 mt-1 space-y-0.5">
-            {children.map((child) => (
+            {subItems.map((child) => (
               <Link
                 key={child.href}
                 href={child.href}
@@ -102,7 +123,7 @@ export function NavItem({
                 style={{ color: themeSettings.sidebarTextColor }}
               >
                 <child.icon className="h-4 w-4 mr-2" style={{ color: themeSettings.sidebarTextColor }} />
-                <span className="transition-colors duration-200">{child.name}</span>
+                <span className="transition-colors duration-200">{getTranslatedName(child.name)}</span>
               </Link>
             ))}
           </div>
@@ -124,7 +145,7 @@ export function NavItem({
         backgroundColor: isActive ? themeSettings.sidebarActiveColor : 'transparent',
         color: isActive ? 'var(--theme-sidebar-active-contrast)' : themeSettings.sidebarTextColor
       }}
-      title={isCollapsed ? name : undefined}
+      title={isCollapsed ? translatedName : undefined}
     >
 
       <div className={cn(
@@ -139,7 +160,7 @@ export function NavItem({
         {!isCollapsed && (
           <>
             <span className="flex-1 transition-colors duration-200">
-              {name}
+              {translatedName}
             </span>
             {(count !== undefined && count > 0) && (
               <span className={cn(
@@ -164,7 +185,7 @@ export function NavItem({
       {/* Tooltip for collapsed state */}
       {isCollapsed && (
         <div className="absolute left-full ml-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-lg">
-          <span className="font-medium">{name}</span>
+          <span className="font-medium">{translatedName}</span>
           {count !== undefined && count > 0 && (
             <span className="ml-2 px-1.5 py-0.5 bg-gray-800 rounded text-xs">{count}</span>
           )}

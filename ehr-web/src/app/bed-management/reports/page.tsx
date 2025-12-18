@@ -57,6 +57,8 @@ import type {
   HospitalizationSummary,
 } from '@/types/bed-management';
 import { useFacility } from '@/contexts/facility-context';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 // Mock data for charts
 const occupancyTrendData = [

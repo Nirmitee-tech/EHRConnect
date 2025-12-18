@@ -10,6 +10,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface TeamMember {
   id: string;
@@ -837,7 +839,7 @@ function InviteDrawer({ session, userContext, onClose, onSuccess }: InviteDrawer
                         {categories[categoryKey]}
                       </p>
                       <div className="space-y-1 ml-2">
-                        {roles.map((role) => (
+                        {roles.map((role: any) => (
                           <label
                             key={role.key}
                             className="flex items-start gap-2 cursor-pointer hover:bg-white p-2 rounded"

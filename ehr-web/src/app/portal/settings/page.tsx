@@ -8,6 +8,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 import type { PatientPreferences } from '@/services/patient-portal.service'
 import { DEFAULT_PATIENT_PREFERENCES } from '@/services/patient-portal.service'
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 type FhirIdentifier = {
   system?: string

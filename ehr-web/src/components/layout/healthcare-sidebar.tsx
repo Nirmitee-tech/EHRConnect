@@ -2,14 +2,15 @@
 
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Building2, TrendingUp, Users, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useFacility } from '@/contexts/facility-context';
 import { useResourceCounts } from '@/hooks/use-resource-counts';
 import { useTheme } from '@/contexts/theme-context';
 import { NAVIGATION_SECTIONS } from '@/config/navigation.config';
-import { NavItem } from './nav-item';
+import { NavItem, toNavTranslationKey } from './nav-item';
 import { cn } from '@/lib/utils';
 import { useUIPreferences } from '@/contexts/ui-preferences-context';
+import { useTranslation } from '@/i18n/client';
 
 import { useLocation } from '@/contexts/location-context';
 
@@ -49,25 +50,29 @@ const Logo = ({ isCollapsed, logoUrl, primaryColor, orgName, locationName }: {
   </div>
 );
 
-const Footer = () => (
-  <div
-    className="p-3 mx-3 mb-2 rounded-lg border transition-all"
-    style={{
-      backgroundColor: 'rgba(255, 255, 255, 0.03)',
-      borderColor: 'rgba(255, 255, 255, 0.1)'
-    }}
-  >
-    <div className="flex items-center justify-center gap-2 mb-1">
-      <div className="w-1.5 h-1.5 bg-[#10B981] rounded-full animate-pulse" />
-      <p className="text-[9px] font-semibold tracking-wide" style={{ color: 'var(--theme-sidebar-contrast)', opacity: 0.7 }}>SYSTEM ONLINE</p>
+const Footer = () => {
+  const { t } = useTranslation('common');
+  return (
+    <div
+      className="p-3 mx-3 mb-2 rounded-lg border transition-all"
+      style={{
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        borderColor: 'rgba(255, 255, 255, 0.1)'
+      }}
+    >
+      <div className="flex items-center justify-center gap-2 mb-1">
+        <div className="w-1.5 h-1.5 bg-[#10B981] rounded-full animate-pulse" />
+        <p className="text-[9px] font-semibold tracking-wide" style={{ color: 'var(--theme-sidebar-contrast)', opacity: 0.7 }}>{t('nav.system_online')}</p>
+      </div>
+      <p className="text-[9px] text-center" style={{ color: 'var(--theme-sidebar-contrast)', opacity: 0.5 }}>
+        FHIR R4 • Version 1.0.0
+      </p>
     </div>
-    <p className="text-[9px] text-center" style={{ color: 'var(--theme-sidebar-contrast)', opacity: 0.5 }}>
-      FHIR R4 • Version 1.0.0
-    </p>
-  </div>
-);
+  );
+};
 
 export function HealthcareSidebar() {
+  const { t } = useTranslation('common');
   const pathname = usePathname() || '';
   const { currentFacility } = useFacility();
   const { currentLocation } = useLocation();
@@ -80,7 +85,7 @@ export function HealthcareSidebar() {
   const isCollapsed = sidebarCollapsed;
 
   const orgName = themeSettings.orgNameOverride || currentFacility?.name || 'EHR Connect';
-  const locationName = currentLocation?.name || 'Healthcare System';
+  const locationName = currentLocation?.name || t('nav.default_location');
 
   const isActive = (href: string): boolean =>
     pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
@@ -93,12 +98,14 @@ export function HealthcareSidebar() {
 
   // Filter navigation sections based on search query
   const filteredSections = searchQuery
-    ? NAVIGATION_SECTIONS.map(section => ({
-      ...section,
-      items: section.items.filter(item =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    })).filter(section => section.items.length > 0)
+    ? NAVIGATION_SECTIONS.map(section => {
+      const sectionItems = section.items.filter(item => {
+        const translatedName = t(toNavTranslationKey(item.name), { defaultValue: item.name });
+        return translatedName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.name.toLowerCase().includes(searchQuery.toLowerCase());
+      });
+      return { ...section, items: sectionItems };
+    }).filter(section => section.items.length > 0)
     : NAVIGATION_SECTIONS;
 
   return (
@@ -129,7 +136,7 @@ export function HealthcareSidebar() {
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
               borderColor: 'rgba(255, 255, 255, 0.1)'
             }}
-            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={isCollapsed ? t('nav.expand_sidebar') : t('nav.collapse_sidebar')}
           >
             {isCollapsed ? (
               <ChevronRight className="h-3.5 w-3.5" style={{ color: 'var(--theme-sidebar-contrast)' }} />
@@ -158,7 +165,7 @@ export function HealthcareSidebar() {
                   color: 'var(--theme-sidebar-contrast)',
                   // opacity check for placeholder
                 }}
-                placeholder="Search menu..."
+                placeholder={t('nav.search_menu')}
               />
             </div>
           </div>
@@ -181,7 +188,9 @@ export function HealthcareSidebar() {
                   className="px-2 mb-1.5 text-[9px] font-bold uppercase tracking-wider opacity-50"
                   style={{ color: 'var(--theme-sidebar-contrast)' }}
                 >
-                  {section.title}
+                  {t(`nav.${section.title.toLowerCase().replace(/\s*&\s*/g, '_').replace(/\s+/g, '_')}_section`, {
+                    defaultValue: section.title
+                  })}
                 </h3>
               )}
               <div className="space-y-0.5">
@@ -192,7 +201,7 @@ export function HealthcareSidebar() {
                     isActive={isActive(item.href)}
                     isCollapsed={isCollapsed}
                     count={getItemCount(item.href)}
-                    children={item.children}
+                    subItems={item.subItems}
                   />
                 ))}
               </div>

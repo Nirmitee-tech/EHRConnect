@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import billingService from '@/services/billing.service';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function ReportsPage() {
   const [loading, setLoading] = useState(true);

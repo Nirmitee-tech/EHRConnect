@@ -40,6 +40,8 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function MessagesPage() {
   const { data: session } = useSession()

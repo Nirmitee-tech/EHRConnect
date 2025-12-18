@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import billingService from '@/services/billing.service';
 import { BillingHeader } from '@/components/billing/billing-header';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface EligibilityResult {
   status: string;

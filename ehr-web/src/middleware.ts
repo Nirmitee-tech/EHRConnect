@@ -128,20 +128,35 @@ export async function middleware(request: NextRequest) {
   }
 
   // Language detection
-  let lng;
-  if (request.cookies.has(cookieName)) {
-    lng = acceptLanguage.get(request.cookies.get(cookieName)?.value);
+  let lng: string | undefined;
+
+  // If multiple cookies with the same name exist (different paths), browsers send the
+  // more specific-path cookie first. Prefer the LAST occurrence, which is typically
+  // the root-path cookie (user-selected via UI).
+  const cookieHeader = request.headers.get('cookie') || '';
+  const cookieMatches = [...cookieHeader.matchAll(new RegExp(`(?:^|;\\s*)${cookieName}=([^;]*)`, 'g'))];
+  const lastCookieValueRaw = cookieMatches.length > 0 ? cookieMatches[cookieMatches.length - 1][1] : undefined;
+  const lastCookieValue = lastCookieValueRaw ? decodeURIComponent(lastCookieValueRaw) : undefined;
+
+  if (lastCookieValue) {
+    lng = acceptLanguage.get(lastCookieValue) || undefined;
+  } else if (request.cookies.has(cookieName)) {
+    lng = acceptLanguage.get(request.cookies.get(cookieName)?.value) || undefined;
   }
   if (!lng) {
-    lng = acceptLanguage.get(request.headers.get('Accept-Language'));
+    lng = acceptLanguage.get(request.headers.get('Accept-Language')) || undefined;
   }
   if (!lng) {
     lng = fallbackLng;
   }
 
-  // Set language cookie if missing or different
-  if (!request.cookies.has(cookieName)) {
-    response.cookies.set(cookieName, lng);
+  // Normalize the locale cookie to root path to avoid path-scoped duplicates.
+  response.cookies.set(cookieName, lng, { path: '/', maxAge: 60 * 60 * 24 * 365 });
+
+  // Best-effort cleanup of path-scoped duplicates that were set without an explicit path.
+  const defaultPath = pathname.substring(0, pathname.lastIndexOf('/')) || '/';
+  if (defaultPath !== '/') {
+    response.cookies.set(cookieName, '', { path: defaultPath, maxAge: 0 });
   }
 
   return response;

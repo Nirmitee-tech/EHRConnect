@@ -3,6 +3,8 @@
 import { Phone, Mail, MessageSquare, LifeBuoy, Calendar, AlertCircle } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function SupportPage() {
   return (

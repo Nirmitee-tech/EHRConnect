@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { useFacility } from '@/contexts/facility-context';
 import { PatientDrawer } from '@/components/patients/patient-drawer';
 import { useTabNavigation } from '@/hooks/use-tab-navigation';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface PatientData {
   id: string;
@@ -30,6 +32,7 @@ interface PatientData {
 export default function PatientsPage() {
   const { currentFacility } = useFacility();
   const { openPatientTab } = useTabNavigation();
+  const { t } = useTranslation('common');
   const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [patients, setPatients] = useState<PatientData[]>([]);
@@ -172,11 +175,11 @@ export default function PatientsPage() {
   // Export to CSV
   const exportToCSV = () => {
     if (patients.length === 0) {
-      alert('No patients to export');
+      alert(t('patients_page.no_patients_export'));
       return;
     }
 
-    const headers = ['Patient Name', 'MRN', 'Date of Birth', 'Age', 'Gender', 'Phone', 'Email', 'Address', 'Primary Care Provider', 'Last Visit', 'Status'];
+    const headers = [t('patients_page.patient_name'), 'MRN', t('patients_page.date_of_birth'), t('patients_page.age'), 'Gender', t('patients_page.phone'), t('patients_page.email'), 'Address', t('patients_page.primary_care_provider'), t('patients_page.last_visit'), 'Status'];
 
     const csvData = patients.map(patient => [
       patient.name,
@@ -189,7 +192,7 @@ export default function PatientsPage() {
       patient.address,
       patient.primaryCareProvider || '',
       formatDate(patient.lastVisit) || '',
-      patient.active ? 'Active' : 'Inactive'
+      patient.active ? t('patients_page.active') : t('patients_page.inactive')
     ]);
 
     const csvContent = [
@@ -238,9 +241,9 @@ export default function PatientsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Patients</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('patients_page.title')}</h1>
           <p className="text-sm text-gray-600 mt-0.5">
-            {currentFacility?.name ? `Managing patients for ${currentFacility.name}` : 'Manage patient records and information'}
+            {currentFacility?.name ? `${t('patients_page.managing_for')} ${currentFacility.name}` : t('patients_page.manage_records')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -252,10 +255,10 @@ export default function PatientsPage() {
             />
             <div className="flex flex-col">
               <Label htmlFor="skip-encounter" className="text-xs font-medium text-gray-700">
-                Skip encounter
+                {t('patients_page.skip_encounter')}
               </Label>
               <span className="text-[11px] text-gray-500">
-                Off = continue to encounter after creation
+                {t('patients_page.skip_encounter_desc')}
               </span>
             </div>
           </div>
@@ -266,14 +269,14 @@ export default function PatientsPage() {
             disabled={patients.length === 0}
           >
             <Download className="h-4 w-4" />
-            Export CSV
+            {t('patients_page.export_csv')}
           </Button>
           <Button
             onClick={() => setIsDrawerOpen(true)}
             className="bg-primary hover:bg-primary/90 text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Add Patient
+            {t('patients_page.add_patient')}
           </Button>
         </div>
       </div>
@@ -285,7 +288,7 @@ export default function PatientsPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search patients by name..."
+                placeholder={t('patients_page.search_placeholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 h-9"
@@ -307,7 +310,7 @@ export default function PatientsPage() {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Active
+                {t('patients_page.active')}
               </button>
               <button
                 onClick={() => setActiveTab('inactive')}
@@ -317,7 +320,7 @@ export default function PatientsPage() {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Inactive
+                {t('patients_page.inactive')}
               </button>
             </div>
 
@@ -343,7 +346,7 @@ export default function PatientsPage() {
 
             <Button variant="outline" size="sm" className="flex items-center gap-2">
               <Filter className="h-3.5 w-3.5" />
-              <span>Filters</span>
+              <span>{t('patients_page.filters')}</span>
             </Button>
           </div>
         </div>
@@ -355,7 +358,7 @@ export default function PatientsPage() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xl font-bold text-gray-900">{totalCount}</div>
-              <div className="text-xs text-gray-600">Total Patients</div>
+              <div className="text-xs text-gray-600">{t('patients_page.total_patients')}</div>
             </div>
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
               <Users className="h-5 w-5 text-blue-600" />
@@ -369,7 +372,7 @@ export default function PatientsPage() {
               <div className="text-xl font-bold text-gray-900">
                 {patients.filter(p => p.active).length}
               </div>
-              <div className="text-xs text-gray-600">Active</div>
+              <div className="text-xs text-gray-600">{t('patients_page.active')}</div>
             </div>
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
               <User className="h-5 w-5 text-green-600" />
@@ -383,7 +386,7 @@ export default function PatientsPage() {
               <div className="text-xl font-bold text-gray-900">
                 {patients.filter(p => !p.active).length}
               </div>
-              <div className="text-xs text-gray-600">Inactive</div>
+              <div className="text-xs text-gray-600">{t('patients_page.inactive')}</div>
             </div>
             <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
               <User className="h-5 w-5 text-gray-600" />
@@ -397,7 +400,7 @@ export default function PatientsPage() {
               <div className="text-xl font-bold text-gray-900">
                 {patients.filter(p => new Date(p.registered).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000).length}
               </div>
-              <div className="text-xs text-gray-600">New This Month</div>
+              <div className="text-xs text-gray-600">{t('patients_page.new_this_month')}</div>
             </div>
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
               <Calendar className="h-5 w-5 text-purple-600" />
@@ -412,7 +415,7 @@ export default function PatientsPage() {
           <div className="flex items-center space-x-2">
             <AlertCircle className="h-4 w-4 text-red-500" />
             <div>
-              <h3 className="text-sm font-medium text-red-800">Error loading patients</h3>
+              <h3 className="text-sm font-medium text-red-800">{t('patients_page.error_loading')}</h3>
               <p className="text-xs text-red-600 mt-0.5">{error}</p>
             </div>
           </div>
@@ -432,7 +435,7 @@ export default function PatientsPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-8">
           <div className="flex items-center justify-center space-x-2">
             <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
-            <span className="text-sm text-gray-600">Loading patients...</span>
+            <span className="text-sm text-gray-600">{t('patients_page.loading')}</span>
           </div>
         </div>
       )}
@@ -443,7 +446,7 @@ export default function PatientsPage() {
           {patients.length === 0 ? (
             <div className="p-8 text-center">
               <User className="h-10 w-10 text-gray-400 mx-auto mb-3" />
-              <h3 className="text-base font-semibold text-gray-900 mb-1">No patients found</h3>
+              <h3 className="text-base font-semibold text-gray-900 mb-1">{t('patients_page.no_patients')}</h3>
               <p className="text-sm text-gray-600 mb-4">
                 {searchQuery ? 'No patients match your search criteria.' : 'Get started by adding your first patient.'}
               </p>
@@ -503,7 +506,7 @@ export default function PatientsPage() {
                       {/* Age and Gender */}
                       {patient.birthDate && (
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-500">Age:</span>
+                          <span className="text-gray-500">{t('patients_page.age')}</span>
                           <span className="text-gray-900 font-medium">
                             {getAge(patient.birthDate)} years ({patient.gender})
                           </span>
@@ -513,7 +516,7 @@ export default function PatientsPage() {
                       {/* Phone */}
                       {patient.phone && (
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-500">Phone:</span>
+                          <span className="text-gray-500">{t('patients_page.phone')}</span>
                           <span className="text-gray-900 font-medium truncate ml-2">
                             {patient.phone}
                           </span>
@@ -523,7 +526,7 @@ export default function PatientsPage() {
                       {/* Email */}
                       {patient.email && (
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-500">Email:</span>
+                          <span className="text-gray-500">{t('patients_page.email')}</span>
                           <a
                             href={`mailto:${patient.email}`}
                             onClick={(e) => e.stopPropagation()}
@@ -547,7 +550,7 @@ export default function PatientsPage() {
                       {/* Last Visit */}
                       {patient.lastVisit && formatDate(patient.lastVisit) && (
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-500">Last Visit:</span>
+                          <span className="text-gray-500">{t('patients_page.last_visit')}</span>
                           <span className="text-gray-900 font-medium">
                             {formatDate(patient.lastVisit)}
                           </span>
@@ -731,7 +734,7 @@ export default function PatientsPage() {
                   variant="outline"
                   size="sm"
                 >
-                  Previous
+                  {t('patients_page.previous')}
                 </Button>
                 <Button
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
@@ -739,7 +742,7 @@ export default function PatientsPage() {
                   variant="outline"
                   size="sm"
                 >
-                  Next
+                  {t('patients_page.next')}
                 </Button>
               </div>
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
@@ -760,7 +763,7 @@ export default function PatientsPage() {
                       className="rounded-l-md"
                     >
                       <ChevronLeft className="h-4 w-4" />
-                      <span className="ml-1">Previous</span>
+                      <span className="ml-1">{t('patients_page.previous')}</span>
                     </Button>
 
                     {/* Page numbers */}
@@ -796,7 +799,7 @@ export default function PatientsPage() {
                       size="sm"
                       className="rounded-r-md"
                     >
-                      <span className="mr-1">Next</span>
+                      <span className="mr-1">{t('patients_page.next')}</span>
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </nav>

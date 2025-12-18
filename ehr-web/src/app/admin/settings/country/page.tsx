@@ -32,6 +32,8 @@ import {
 import { countryService } from '@/services/country.service';
 import { useCountryContext } from '@/contexts/country-context';
 import type { CountryPack, CountryModule } from '@/types/country';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function CountrySettingsPage() {
   const { data: session } = useSession();

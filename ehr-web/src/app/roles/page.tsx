@@ -6,6 +6,8 @@ import { Shield, Plus, Edit, Trash2, AlertTriangle, ChevronDown, ChevronUp } fro
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface Role {
   id: string;
@@ -19,6 +21,7 @@ interface Role {
 
 export default function RolesPermissionsPage() {
   const { data: session } = useSession();
+  const { t } = useTranslation('common');
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -69,10 +72,10 @@ export default function RolesPermissionsPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
               <Shield className="h-8 w-8 text-purple-600" />
-              Roles & Permissions
+              {t('roles.title')}
             </h1>
             <p className="text-gray-600 mt-1">
-              Manage system and custom roles with dynamic permissions
+              {t('roles.manage_roles')}
             </p>
           </div>
           <Button
@@ -80,7 +83,7 @@ export default function RolesPermissionsPage() {
             className="bg-purple-600 hover:bg-purple-700"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Create Custom Role
+            {t('roles.create_role')}
           </Button>
         </div>
       </div>
@@ -94,7 +97,7 @@ export default function RolesPermissionsPage() {
         ) : roles.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl shadow-sm border">
             <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">No roles found. Loading system roles...</p>
+            <p className="text-gray-600">{t('roles.no_roles_found')}</p>
           </div>
         ) : (
           roles.map((role) => {
@@ -203,6 +206,7 @@ export default function RolesPermissionsPage() {
 }
 
 function CreateRoleModal({ session, onClose, onSuccess }: any) {
+  const { t } = useTranslation('common');
   const [formData, setFormData] = useState({
     key: '',
     name: '',
@@ -271,7 +275,7 @@ function CreateRoleModal({ session, onClose, onSuccess }: any) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 my-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Create Custom Role</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('roles.create_custom_role')}</h2>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
@@ -282,20 +286,20 @@ function CreateRoleModal({ session, onClose, onSuccess }: any) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <Label>Role Key *</Label>
+              <Label>{t('roles.role_key')} *</Label>
               <Input
                 required
-                placeholder="e.g., NURSE_LEAD"
+                placeholder={t('roles.role_key_placeholder')}
                 value={formData.key}
                 onChange={(e) => setFormData({ ...formData, key: e.target.value.toUpperCase().replace(/\s/g, '_') })}
               />
             </div>
 
             <div>
-              <Label>Display Name *</Label>
+              <Label>{t('roles.role_name')} *</Label>
               <Input
                 required
-                placeholder="e.g., Nurse Lead"
+                placeholder={t('roles.role_name_placeholder')}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
@@ -303,9 +307,9 @@ function CreateRoleModal({ session, onClose, onSuccess }: any) {
           </div>
 
           <div>
-            <Label>Description</Label>
+            <Label>{t('roles.role_description')}</Label>
             <Input
-              placeholder="Brief description of this role"
+              placeholder={t('roles.role_description_placeholder')}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
@@ -325,10 +329,10 @@ function CreateRoleModal({ session, onClose, onSuccess }: any) {
           </div>
 
           <div>
-            <Label>Permissions *</Label>
+            <Label>{t('roles.assign_permissions')} *</Label>
             <div className="flex gap-2 mb-2">
               <Input
-                placeholder="e.g., patients:read, encounters:*:*"
+                placeholder={t('roles.permissions_placeholder')}
                 value={formData.permissionInput}
                 onChange={(e) => setFormData({ ...formData, permissionInput: e.target.value })}
                 onKeyPress={(e) => {

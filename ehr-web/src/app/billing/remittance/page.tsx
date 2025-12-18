@@ -6,6 +6,8 @@ import { Receipt, Download, Eye, CheckCircle, Clock, RefreshCw } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import billingService from '@/services/billing.service';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface Remittance {
   id: string;

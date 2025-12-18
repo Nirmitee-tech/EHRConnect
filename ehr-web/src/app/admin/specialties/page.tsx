@@ -5,9 +5,12 @@ import { useSession } from 'next-auth/react';
 import { Package, Check, X, RefreshCw, History, Database, Settings, ChevronDown, ChevronRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { specialtyService } from '@/services/specialty.service';
 import type { PackSetting, PackAudit } from '@/types/specialty';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function SpecialtiesAdminPage() {
   const { data: session } = useSession();
+  const { t } = useTranslation('common');
   const [packs, setPacks] = useState<PackSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPack, setSelectedPack] = useState<string | null>(null);

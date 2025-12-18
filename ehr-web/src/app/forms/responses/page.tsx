@@ -29,6 +29,8 @@ import { formsService } from '@/services/forms.service';
 import type { FormResponse } from '@/types/forms';
 import { SidebarToggle } from '@/components/forms/sidebar-toggle';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function GlobalResponsesPage() {
     const router = useRouter();

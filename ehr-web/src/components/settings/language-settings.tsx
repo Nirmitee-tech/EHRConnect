@@ -11,16 +11,13 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { api } from '@/lib/api-client';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Globe, Languages, CheckCircle2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import Cookies from 'js-cookie';
 
 export function LanguageSettings() {
     const { t, i18n } = useTranslation('common');
     const { data: session } = useSession();
-    const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [justChanged, setJustChanged] = useState(false);
 
@@ -30,11 +27,11 @@ export function LanguageSettings() {
         try {
             // Update backend if session exists
             if (session) {
-                await api.patch('/auth/me', { language: value }, { session });
+                await api.patch('/api/auth/me', { language: value }, { session });
             }
 
             // Update cookie
-            Cookies.set(cookieName, value, { expires: 365 });
+            Cookies.set(cookieName, value, { expires: 365, path: '/' });
 
             // Update i18n instance
             await i18n.changeLanguage(value);
@@ -42,8 +39,8 @@ export function LanguageSettings() {
             setJustChanged(true);
             setTimeout(() => setJustChanged(false), 2000);
 
-            // Refresh page to apply changes everywhere (especially for SSR/Metadata)
-            router.refresh();
+            // Force a full reload to ensure everything (layouts, server components, html tags) updates
+            window.location.reload();
         } catch (error) {
             console.error('Failed to update language:', error);
         } finally {
@@ -69,14 +66,14 @@ export function LanguageSettings() {
                         <Languages className="h-4 w-4" />
                     </div>
                     <div>
-                        <h3 className="text-[12px] font-bold text-gray-900 uppercase tracking-tight">System Language</h3>
-                        <p className="text-[10px] text-gray-500 font-medium uppercase tracking-tighter">Global localization & regional formatting</p>
+                        <h3 className="text-[12px] font-bold text-gray-900 uppercase tracking-tight">{t('appearance.system_language')}</h3>
+                        <p className="text-[10px] text-gray-500 font-medium uppercase tracking-tighter">{t('appearance.language_desc')}</p>
                     </div>
                 </div>
                 {justChanged && (
                     <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-50 text-green-600 rounded-full border border-green-100 animate-in fade-in slide-in-from-right-2">
                         <CheckCircle2 className="h-3 w-3" />
-                        <span className="text-[8px] font-bold uppercase">Applied</span>
+                        <span className="text-[8px] font-bold uppercase">{t('appearance.applied')}</span>
                     </div>
                 )}
             </div>
@@ -86,10 +83,10 @@ export function LanguageSettings() {
                     <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-2">
                             <Globe className="h-3.5 w-3.5 text-gray-400" />
-                            <span className="text-[11px] font-bold text-gray-700 uppercase tracking-tight">Active Locale</span>
+                            <span className="text-[11px] font-bold text-gray-700 uppercase tracking-tight">{t('appearance.active_locale')}</span>
                         </div>
                         <p className="text-[10px] text-gray-400 font-medium leading-relaxed uppercase tracking-tighter">
-                            Select your preferred language for clinical records, navigation, and automated communications.
+                            {t('appearance.locale_helper')}
                         </p>
                     </div>
 
@@ -131,13 +128,13 @@ export function LanguageSettings() {
                             ISO: {i18n.language?.toUpperCase()}
                         </div>
                         <div className="text-[9px] font-bold text-gray-300 uppercase tracking-widest italic">
-                            {i18n.language === 'ur' ? 'RTL Support Enabled' : 'LTR Support Active'}
+                            {i18n.language === 'ur' ? t('appearance.rtl_support') : t('appearance.ltr_support')}
                         </div>
                     </div>
                     {loading && (
                         <div className="flex items-center gap-2">
                             <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                            <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest">Updating...</span>
+                            <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest">{t('appearance.updating')}</span>
                         </div>
                     )}
                 </div>

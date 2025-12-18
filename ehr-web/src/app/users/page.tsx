@@ -9,6 +9,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface User {
   id: string;
@@ -22,6 +24,7 @@ interface User {
 
 export default function UserManagementPage() {
   const { data: session } = useSession();
+  const { t } = useTranslation('common');
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -132,10 +135,10 @@ export default function UserManagementPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
               <Users className="h-8 w-8 text-blue-600" />
-              User Management
+              {t('users.title')}
             </h1>
             <p className="text-gray-600 mt-1">
-              Manage staff members, roles, and access permissions
+              {t('users.user_management')}
             </p>
           </div>
           <div className="flex gap-2">
@@ -144,14 +147,14 @@ export default function UserManagementPage() {
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               <UserPlus className="h-4 w-4 mr-2" />
-              Create Account
+              {t('users.create_account')}
             </Button>
             <Button
               onClick={() => openDrawer('invite')}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Mail className="h-4 w-4 mr-2" />
-              Send Invitation
+              {t('users.send_invitation')}
             </Button>
           </div>
         </div>
@@ -161,7 +164,7 @@ export default function UserManagementPage() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <Input
-              placeholder="Search by name or email..."
+              placeholder={t('users.search_placeholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -169,7 +172,7 @@ export default function UserManagementPage() {
           </div>
           <Button variant="outline">
             <Filter className="h-4 w-4 mr-2" />
-            Filters
+            {t('common.filter')}
           </Button>
         </div>
       </div>
@@ -319,6 +322,8 @@ interface UserDrawerProps {
 }
 
 function UserDrawer({ mode, session, userContext, onClose, onSuccess }: UserDrawerProps) {
+  const { t } = useTranslation('common');
+
   interface DrawerFormState {
     email: string;
     name: string;
@@ -512,17 +517,17 @@ function UserDrawer({ mode, session, userContext, onClose, onSuccess }: UserDraw
         <div className="flex-1 overflow-y-auto p-6">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-              <strong>Error:</strong> {error}
+              <strong>{t('users.error_label')}</strong> {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <Label className="text-sm font-medium mb-1 block">Email Address *</Label>
+              <Label className="text-sm font-medium mb-1 block">{t('users.email')} *</Label>
               <Input
                 type="email"
                 required
-                placeholder="user@example.com"
+                placeholder={t('users.email_placeholder')}
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
@@ -531,35 +536,35 @@ function UserDrawer({ mode, session, userContext, onClose, onSuccess }: UserDraw
             {mode === 'create' && (
               <>
                 <div>
-                  <Label className="text-sm font-medium mb-1 block">Full Name *</Label>
+                  <Label className="text-sm font-medium mb-1 block">{t('users.full_name')} *</Label>
                   <Input
                     type="text"
                     required
-                    placeholder="Dr. John Smith"
+                    placeholder={t('users.full_name_placeholder')}
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium mb-1 block">Password *</Label>
+                  <Label className="text-sm font-medium mb-1 block">{t('users.password')} *</Label>
                   <Input
                     type="password"
                     required
                     minLength={8}
-                    placeholder="Minimum 8 characters"
+                    placeholder={t('users.password_placeholder')}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   />
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium mb-1 block">Confirm Password *</Label>
+                  <Label className="text-sm font-medium mb-1 block">{t('users.confirm_password')} *</Label>
                   <Input
                     type="password"
                     required
                     minLength={8}
-                    placeholder="Re-enter password"
+                    placeholder={t('users.confirm_password_placeholder')}
                     value={formData.confirm_password}
                     onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
                   />
@@ -604,15 +609,15 @@ function UserDrawer({ mode, session, userContext, onClose, onSuccess }: UserDraw
 
             {formData.scope === 'LOCATION' && (
               <div>
-                <Label className="text-sm font-medium mb-1 block">Locations *</Label>
+                <Label className="text-sm font-medium mb-1 block">{t('users.locations')} *</Label>
                 <div className="border rounded-md p-3 max-h-56 overflow-y-auto space-y-3 bg-gray-50">
                   {locationsLoading ? (
-                    <p className="text-sm text-gray-600">Loading locations…</p>
+                    <p className="text-sm text-gray-600">{t('users.loading_locations')}</p>
                   ) : locationsError ? (
                     <p className="text-sm text-red-600">{locationsError}</p>
                   ) : availableLocations.length === 0 ? (
                     <p className="text-sm text-gray-600">
-                      No active locations found. Create locations before assigning staff.
+                      {t('users.no_locations_found')}
                     </p>
                   ) : (
                     availableLocations.map(location => {

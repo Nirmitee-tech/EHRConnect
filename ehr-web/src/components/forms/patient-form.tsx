@@ -17,6 +17,8 @@ import {
   Trash2,
   User
 } from 'lucide-react';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 import { FHIRPatient, PatientSummary, FacilitySummary } from '@/types/fhir';
 import { CreatePatientRequest, UpdatePatientRequest } from '@/services/patient.service';
 import { useFacility } from '@/contexts/facility-context';
@@ -62,6 +64,7 @@ interface PatientFormProps {
   onCancel: () => void;
 }
 
+// Gender options - will be translated dynamically in component
 const genderOptions = [
   { value: 'male', label: 'Male' },
   { value: 'female', label: 'Female' },
@@ -69,8 +72,10 @@ const genderOptions = [
   { value: 'unknown', label: 'Unknown' }
 ];
 
+// Pronoun options - will be translated dynamically in component
 const pronounOptions = ['He/Him', 'She/Her', 'They/Them', 'Prefer to self-describe'];
 
+// Marital status options - will be translated dynamically in component
 const maritalStatusOptions = [
   { value: 'S', label: 'Single' },
   { value: 'M', label: 'Married' },
@@ -86,6 +91,7 @@ const languageOptions = [
   { value: 'hi', label: 'Hindi' }
 ];
 
+// Options that will be translated dynamically in component
 const raceOptions = ['White', 'Black or African American', 'Asian', 'Native Hawaiian', 'Other'];
 const ethnicityOptions = ['Hispanic or Latino', 'Not Hispanic or Latino'];
 const bloodGroupOptions = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -208,6 +214,7 @@ export function PatientForm({
   onSubmit,
   onCancel
 }: PatientFormProps) {
+  const { t } = useTranslation('common');
   const { currentFacility } = useFacility();
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>(undefined);
   const [isUpdatingExisting, setIsUpdatingExisting] = useState(false);
@@ -273,7 +280,67 @@ export function PatientForm({
     email: ''
   });
 
-  const mapStaffToOption = (provider: StaffMember): SelectOption => ({
+  // Translated options using useMemo
+  const translatedGenderOptions = useMemo(() => [
+    { value: 'male', label: t('patient_form.male') },
+    { value: 'female', label: t('patient_form.female') },
+    { value: 'other', label: t('patient_form.other') },
+    { value: 'unknown', label: t('patient_form.unknown') }
+  ], [t]);
+
+  const translatedPronounOptions = useMemo(() => [
+    t('patient_form.he_him'),
+    t('patient_form.she_her'),
+    t('patient_form.they_them'),
+    t('patient_form.prefer_self_describe')
+  ], [t]);
+
+  const translatedMaritalStatusOptions = useMemo(() => [
+    { value: 'S', label: t('patient_form.single') },
+    { value: 'M', label: t('patient_form.married') },
+    { value: 'D', label: t('patient_form.divorced') },
+    { value: 'W', label: t('patient_form.widowed') },
+    { value: 'U', label: t('patient_form.unknown') }
+  ], [t]);
+
+  const translatedLocationTypeOptions = useMemo(() => [
+    { value: 'clinic' as FacilityTypeOption, label: t('patient_form.clinic') },
+    { value: 'hospital' as FacilityTypeOption, label: t('patient_form.hospital') },
+    { value: 'lab' as FacilityTypeOption, label: t('patient_form.laboratory') },
+    { value: 'pharmacy' as FacilityTypeOption, label: t('patient_form.pharmacy') }
+  ], [t]);
+
+  const translatedSectionConfig = useMemo(() => [
+    { id: 'provider', title: t('patient_form.provider_information'), icon: Stethoscope, required: true },
+    { id: 'patient', title: t('patient_form.patient_details'), icon: User, required: true },
+    { id: 'contact', title: t('patient_form.contact_information'), icon: Phone, required: true },
+    { id: 'emergency', title: t('patient_form.emergency_contact_optional'), icon: AlertCircle, required: false },
+    { id: 'insurance', title: t('patient_form.insurance_optional'), icon: Shield, required: false },
+    { id: 'preferences', title: t('patient_form.preferences'), icon: Sparkles },
+    { id: 'consent', title: t('patient_form.privacy_consent'), icon: Lock, required: true },
+    { id: 'clinical', title: t('patient_form.clinical_context'), icon: Activity }
+  ], [t]);
+
+  // Translated language options
+  const translatedLanguageOptions = useMemo(() => [
+    { value: 'en', label: t('patient_form.language_english') },
+    { value: 'es', label: t('patient_form.language_spanish') },
+    { value: 'fr', label: t('patient_form.language_french') },
+    { value: 'hi', label: t('patient_form.language_hindi') }
+  ], [t]);
+
+  // Translated relationship options
+  const translatedRelationshipOptions = useMemo(() => [
+    t('patient_form.relationship_spouse'),
+    t('patient_form.relationship_parent'),
+    t('patient_form.relationship_child'),
+    t('patient_form.relationship_sibling'),
+    t('patient_form.relationship_friend'),
+    t('patient_form.relationship_other')
+  ], [t]);
+
+
+    const mapStaffToOption = (provider: StaffMember): SelectOption => ({
     value: provider.id,
     label: provider.name,
     subtitle: provider.specialty,
@@ -559,21 +626,21 @@ export function PatientForm({
   const consentDetails = useMemo(
     () =>
       [
-        { key: 'consentEmail', label: 'Consent to Email', value: formData.consent.consentEmail },
-        { key: 'consentCall', label: 'Consent to Call', value: formData.consent.consentCall },
+        { key: 'consentEmail', label: t('patient_form.consent_email'), value: formData.consent.consentEmail },
+        { key: 'consentCall', label: t('patient_form.consent_call'), value: formData.consent.consentCall },
         {
           key: 'consentMessage',
-          label: 'Consent to Message (SMS)',
+          label: t('patient_form.consent_message'),
           value: formData.consent.consentMessage,
-          hint: 'Phone verification required'
+          hint: t('patient_form.phone_verification_required')
         },
         {
           key: 'allowDataSharing',
-          label: 'Allow Data Sharing',
+          label: t('patient_form.allow_data_sharing'),
           value: formData.consent.allowDataSharing
         }
       ] as Array<{ key: keyof typeof formData.consent; label: string; value: boolean; hint?: string }>,
-    [formData.consent]
+    [formData.consent, t]
   );
 
   return (
@@ -618,11 +685,11 @@ export function PatientForm({
         {compactMode && (
           <div className="rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900 flex items-center gap-2">
             <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-            <span>Quick entry mode - only required fields shown</span>
+            <span>{t('patient_form.quick_entry_mode_description')}</span>
           </div>
         )}
 
-        {SectionConfig.map(section => {
+        {translatedSectionConfig.map(section => {
           if (compactMode && compactHiddenSections?.has(section.id)) {
             return null;
           }
@@ -641,18 +708,18 @@ export function PatientForm({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <div className="flex items-center justify-between">
-                      <RequiredLabel>Primary Provider</RequiredLabel>
+                      <RequiredLabel>{t('patient_form.primary_provider')}</RequiredLabel>
                       <InlineAddButton label="Provider" onClick={handleAddProvider} />
                     </div>
                     <SearchableSelect
                       options={providerOptions}
                       value={formData.provider.primaryProviderId}
                       onChange={(value) => updateProviderField('primaryProviderId', value)}
-                      placeholder={providersLoading ? 'Loading providers...' : 'Select provider'}
+                      placeholder={providersLoading ? t('patient_form.loading_providers') : t('patient_form.select_provider')}
                       disabled={providersLoading && providerOptions.length === 0}
                       showColorInButton
                       onAddNew={handleAddProvider}
-                      addNewLabel="Add Provider"
+                      addNewLabel={t('patient_form.add_provider')}
                     />
                     {providersLoading && providerOptions.length === 0 && (
                       <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
@@ -663,16 +730,16 @@ export function PatientForm({
                   </div>
                   <div>
                     <div className="flex items-center justify-between">
-                      <RequiredLabel>Provider Group Location</RequiredLabel>
+                      <RequiredLabel>{t('patient_form.provider_group_location')}</RequiredLabel>
                       <InlineAddButton label="Location" onClick={() => setLocationDialogOpen(true)} />
                     </div>
                     <SearchableSelect
                       options={locationOptions}
                       value={formData.provider.providerLocationId}
                       onChange={(value) => updateProviderField('providerLocationId', value)}
-                      placeholder={locationsLoading ? 'Loading locations...' : 'Select location'}
+                      placeholder={locationsLoading ? t('patient_form.loading_locations') : t('patient_form.select_location')}
                       onAddNew={() => setLocationDialogOpen(true)}
-                      addNewLabel="Add Location"
+                      addNewLabel={t('patient_form.add_location')}
                     />
                     {locationsLoading && (
                       <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
@@ -684,7 +751,7 @@ export function PatientForm({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <RequiredLabel>Registration Date</RequiredLabel>
+                    <RequiredLabel>{t('patient_form.registration_date')}</RequiredLabel>
                     <Input
                       type="date"
                       value={formData.provider.registrationDate}
@@ -694,9 +761,9 @@ export function PatientForm({
                   </div>
                   {!compactMode && (
                     <div>
-                      <Label className="text-sm font-medium">Referred By</Label>
+                      <Label className="text-sm font-medium">{t('patient_form.referred_by')}</Label>
                       <Input
-                        placeholder="Referral source"
+                        placeholder={t('patient_form.referral_source')}
                         value={formData.provider.referredBy}
                         onChange={e => updateProviderField('referredBy', e.target.value)}
                       />
@@ -718,13 +785,13 @@ export function PatientForm({
                 >
                   {!compactMode && (
                     <div>
-                      <Label className="text-sm font-medium">Prefix</Label>
+                      <Label className="text-sm font-medium">{t('patient_form.prefix')}</Label>
                       <Select
                         value={formData.demographics.prefix}
                         onValueChange={value => updateDemographicsField('prefix', value)}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Prefix" />
+                          <SelectValue placeholder={t('patient_form.prefix_placeholder')} />
                         </SelectTrigger>
                         <SelectContent>
                           {['Mr', 'Mrs', 'Ms', 'Dr'].map(prefix => (
@@ -737,7 +804,7 @@ export function PatientForm({
                     </div>
                   )}
                   <div>
-                    <RequiredLabel>First Name</RequiredLabel>
+                    <RequiredLabel>{t('patient_form.first_name')}</RequiredLabel>
                     <Input
                       value={formData.demographics.firstName}
                       onChange={e => updateDemographicsField('firstName', e.target.value)}
@@ -746,7 +813,7 @@ export function PatientForm({
                   </div>
                   {!compactMode && (
                     <div>
-                      <Label className="text-sm font-medium">Middle Name</Label>
+                      <Label className="text-sm font-medium">{t('patient_form.middle_name')}</Label>
                       <Input
                         value={formData.demographics.middleName}
                         onChange={e => updateDemographicsField('middleName', e.target.value)}
@@ -754,7 +821,7 @@ export function PatientForm({
                     </div>
                   )}
                   <div>
-                    <RequiredLabel>Last Name</RequiredLabel>
+                    <RequiredLabel>{t('patient_form.last_name')}</RequiredLabel>
                     <Input
                       value={formData.demographics.lastName}
                       onChange={e => updateDemographicsField('lastName', e.target.value)}
@@ -769,7 +836,7 @@ export function PatientForm({
                 >
                   {!compactMode && (
                     <div>
-                      <Label className="text-sm font-medium">Preferred Name</Label>
+                      <Label className="text-sm font-medium">{t('patient_form.preferred_name')}</Label>
                       <Input
                         value={formData.demographics.preferredName}
                         onChange={e => updateDemographicsField('preferredName', e.target.value)}
@@ -777,7 +844,7 @@ export function PatientForm({
                     </div>
                   )}
                   <div>
-                    <RequiredLabel>Date of Birth</RequiredLabel>
+                    <RequiredLabel>{t('patient_form.date_of_birth')}</RequiredLabel>
                     <Input
                       type="date"
                       value={formData.demographics.dateOfBirth}
@@ -787,12 +854,12 @@ export function PatientForm({
                   </div>
                   {!compactMode && (
                     <div>
-                      <Label className="text-sm font-medium">Age</Label>
+                      <Label className="text-sm font-medium">{t('patient_form.age')}</Label>
                       <Input value={calculatedAge || '--'} readOnly />
                     </div>
                   )}
                   <div>
-                    <RequiredLabel>Gender</RequiredLabel>
+                    <RequiredLabel>{t('patient_form.gender')}</RequiredLabel>
                     <Select
                       value={formData.demographics.gender}
                       onValueChange={value =>
@@ -800,10 +867,10 @@ export function PatientForm({
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Gender" />
+                        <SelectValue placeholder={t('patient_form.gender_placeholder')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {genderOptions.map(option => (
+                        {translatedGenderOptions.map(option => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
                           </SelectItem>
@@ -817,16 +884,16 @@ export function PatientForm({
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div>
-                        <Label className="text-sm font-medium">Pronouns</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.pronouns')}</Label>
                         <Select
                           value={formData.demographics.pronouns}
                           onValueChange={value => updateDemographicsField('pronouns', value)}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select pronouns" />
+                            <SelectValue placeholder={t('patient_form.select_pronouns')} />
                           </SelectTrigger>
                           <SelectContent>
-                            {pronounOptions.map(option => (
+                            {translatedPronounOptions.map(option => (
                               <SelectItem key={option} value={option}>
                                 {option}
                               </SelectItem>
@@ -835,16 +902,16 @@ export function PatientForm({
                         </Select>
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Marital Status</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.marital_status')}</Label>
                         <Select
                           value={formData.demographics.maritalStatus}
                           onValueChange={value => updateDemographicsField('maritalStatus', value)}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
+                            <SelectValue placeholder={t('patient_form.select_status')} />
                           </SelectTrigger>
                           <SelectContent>
-                            {maritalStatusOptions.map(option => (
+                            {translatedMaritalStatusOptions.map(option => (
                               <SelectItem key={option.value} value={option.value}>
                                 {option.label}
                               </SelectItem>
@@ -853,7 +920,7 @@ export function PatientForm({
                         </Select>
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Occupation</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.occupation')}</Label>
                         <Input
                           value={formData.demographics.occupation}
                           onChange={e => updateDemographicsField('occupation', e.target.value)}
@@ -862,7 +929,7 @@ export function PatientForm({
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div>
-                        <Label className="text-sm font-medium">Employer</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.employer')}</Label>
                         <Input
                           value={formData.demographics.employer}
                           onChange={e => updateDemographicsField('employer', e.target.value)}
@@ -870,7 +937,7 @@ export function PatientForm({
                       </div>
                       <div>
                         <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium">Language</Label>
+                          <Label className="text-sm font-medium">{t('patient_form.language')}</Label>
                           <InlineAddButton label="Language" />
                         </div>
                         <Select
@@ -1077,9 +1144,9 @@ export function PatientForm({
                 {formData.emergencyContacts.length === 0 && (
                   <div className="text-center py-8 px-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                     <AlertCircle className="h-10 w-10 text-gray-400 mx-auto mb-3" />
-                    <p className="text-sm font-medium text-gray-900 mb-1">No emergency contacts added</p>
+                    <p className="text-sm font-medium text-gray-900 mb-1">{t('patient_form.no_emergency_contacts')}</p>
                     <p className="text-xs text-gray-600 mb-4">
-                      Emergency contacts are optional but recommended in case of emergencies
+                      {t('patient_form.emergency_contacts_optional_description')}
                     </p>
                   </div>
                 )}
@@ -1164,7 +1231,7 @@ export function PatientForm({
                   className="flex items-center gap-2"
                 >
                   <Plus className="h-4 w-4" />
-                  Add Emergency Contact
+                  {t('patient_form.add_emergency_contact')}
                 </Button>
               </div>
             )}
@@ -1495,13 +1562,13 @@ export function PatientForm({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
-                    <Label className="text-sm font-medium">Patient Status</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.patient_status')}</Label>
                     <Select
                       value={formData.consent.patientStatus}
                       onValueChange={value => updateConsentField('patientStatus', value as any)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t('common.select')} />
                       </SelectTrigger>
                       <SelectContent>
                         {patientStatusOptions.map(option => (
@@ -1513,7 +1580,7 @@ export function PatientForm({
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Data Capture Date</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.data_capture_date')}</Label>
                     <Input
                       type="date"
                       value={formData.consent.dataCaptureDate}
@@ -1521,9 +1588,9 @@ export function PatientForm({
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Signature / Consent</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.signature_consent')}</Label>
                     <Input
-                      placeholder="Captured via signature pad"
+                      placeholder={t('patient_form.signature_captured')}
                       value={formData.consent.signature}
                       onChange={e => updateConsentField('signature', e.target.value)}
                     />
@@ -1669,7 +1736,7 @@ export function PatientForm({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {locationTypeOptions.map((option) => (
+                  {translatedLocationTypeOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -1740,7 +1807,7 @@ export function PatientForm({
               onClick={() => setLocationDialogOpen(false)}
               disabled={locationSaving}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
@@ -1749,7 +1816,7 @@ export function PatientForm({
               className="bg-[#3342a5] hover:bg-[#2a3686] text-white"
             >
               {locationSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Save Location
+              {t('patient_form.save_location')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1760,7 +1827,7 @@ export function PatientForm({
           {!currentFacility && (
             <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2 flex items-center gap-2">
               <AlertCircle className="h-4 w-4 flex-shrink-0" />
-              <span>Please select a facility to enable patient creation</span>
+              <span>{t('patient_form.select_facility_warning')}</span>
             </div>
           )}
           <div className="flex flex-col md:flex-row md:items-center gap-3">
@@ -1771,16 +1838,16 @@ export function PatientForm({
               disabled={loading}
               className="flex-1"
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleSubmit}
               disabled={loading || !currentFacility}
               className="flex-1 bg-[#3342a5] hover:bg-[#2a3686] text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              title={!currentFacility ? 'Please select a facility first' : ''}
+              title={!currentFacility ? t('patient_form.select_facility_first') : ''}
             >
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {isUpdatingExisting || isEditing ? 'Update Patient' : 'Create Patient'}
+              {isUpdatingExisting || isEditing ? t('patient_form.update_patient') : t('patient_form.create_patient')}
             </Button>
           </div>
         </div>

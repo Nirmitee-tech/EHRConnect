@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, CheckCircle, DollarSign, FileText, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import billingService from '@/services/billing.service';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface RemittanceDetail {
   id: string;

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Drawer, DrawerContent } from '@nirmitee.io/design-system';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@nirmitee.io/design-system';
 import { PatientForm } from '@/components/forms/patient-form';
 import { EncounterForm } from '@/components/forms/encounter-form';
 import { FHIRPatient } from '@/types/fhir';
@@ -180,6 +180,9 @@ export function PatientDrawer({
     setCreatedPatient(null);
   };
 
+  const drawerTitle =
+    currentStep === 'encounter-form' ? 'Create Encounter' : isEditing ? 'Edit Patient' : 'New Patient';
+
   return (
     <Drawer open={open} onOpenChange={(open) => {
       if (!open) {
@@ -188,6 +191,9 @@ export function PatientDrawer({
       onOpenChange(open);
     }}>
       <DrawerContent side="right" size="3xl" className="overflow-y-auto p-0">
+        <DrawerHeader className="sr-only">
+          <DrawerTitle>{drawerTitle}</DrawerTitle>
+        </DrawerHeader>
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2">
@@ -195,7 +201,7 @@ export function PatientDrawer({
                 <User className="h-4 w-4 text-white" />
               </div>
               <h2 className="text-sm font-bold text-gray-900">
-                {currentStep === 'encounter-form' ? 'Create Encounter' : (isEditing ? 'Edit Patient' : 'New Patient')}
+                {drawerTitle}
               </h2>
             </div>
             <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { FacilityForm } from '@/components/forms/facility-form';
 import { facilityService, CreateFacilityRequest, UpdateFacilityRequest } from '@/services/facility.service';
 import { useFacility } from '@/contexts/facility-context';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function NewFacilityPage() {
   const router = useRouter();

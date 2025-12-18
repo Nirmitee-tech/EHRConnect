@@ -5,6 +5,8 @@ import { Building2, Plus, Search, Edit, Trash2, Globe, Phone, Mail, X, CheckCirc
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import billingService from '@/services/billing.service';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface Payer {
   id: string;

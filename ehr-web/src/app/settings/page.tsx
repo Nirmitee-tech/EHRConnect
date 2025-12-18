@@ -21,6 +21,8 @@ import {
   FilePlus, FolderOpen, Anchor, Wind, Camera, Wallet, HelpCircle, Info
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface SettingItem {
   id: string;
@@ -146,6 +148,7 @@ const SETTINGS_DATA: SettingItem[] = [
 // Removed local BanknoteIcon helper as it's now imported as Banknote
 
 export default function SettingsPage() {
+  const { t } = useTranslation('common');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [showGuide, setShowGuide] = useState(false);

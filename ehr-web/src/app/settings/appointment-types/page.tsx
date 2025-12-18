@@ -8,6 +8,8 @@ import { AppointmentTypesService } from '@/services/appointment-types.service';
 import { SettingsService } from '@/services/settings.service';
 import { AppointmentSettings } from '@/types/settings';
 import { useFacility } from '@/contexts/facility-context';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function AppointmentTypesPage() {
   const { currentFacility } = useFacility();

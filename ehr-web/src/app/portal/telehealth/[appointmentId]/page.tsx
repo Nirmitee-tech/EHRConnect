@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Video, AlertTriangle } from 'lucide-react'
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 type JoinResponse = {
   meetingId: string

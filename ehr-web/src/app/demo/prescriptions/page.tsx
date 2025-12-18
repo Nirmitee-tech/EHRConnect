@@ -6,6 +6,8 @@ import { PrescriptionCompactCards } from '@/components/prescriptions/prescriptio
 import { PrescriptionQuickSelect } from '@/components/prescriptions/prescription-quick-select';
 import { PrescriptionDetailedForm } from '@/components/prescriptions/prescription-detailed-form';
 import { Prescription } from '@/types/encounter';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 /**
  * DEMO PAGE - All 4 Prescription UI Variations

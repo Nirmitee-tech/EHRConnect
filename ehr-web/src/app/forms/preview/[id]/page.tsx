@@ -8,6 +8,8 @@ import { formsService } from '@/services/forms.service';
 import { CompactFormRenderer } from '@/features/forms/components/form-renderer/compact-form-renderer';
 import type { FormTemplate, FHIRQuestionnaire } from '@/types/forms';
 import { SidebarToggle } from '@/components/forms/sidebar-toggle';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function FormPreviewPage() {
   const router = useRouter();

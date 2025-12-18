@@ -21,6 +21,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/useToast';
 import { ArrowLeft, Check, TestTube2, Save } from 'lucide-react';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 // Action type configurations
 const ACTION_TYPES = [
@@ -152,7 +154,7 @@ export default function CreateRulePage() {
 
     try {
       setLoading(true);
-      await ruleService.createRule(session, formData);
+      await ruleService.createRule(session, formData as any);
       success('Rule created successfully');
       router.push('/rules');
     } catch (err: any) {

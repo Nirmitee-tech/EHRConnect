@@ -30,6 +30,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function FloorPlanBedManagementPage() {
   const { data: session } = useSession();

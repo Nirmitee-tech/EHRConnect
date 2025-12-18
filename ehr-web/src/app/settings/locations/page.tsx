@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLocation } from '@/contexts/location-context';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface Location {
   id: string;
@@ -123,7 +125,7 @@ export default function LocationsManagementPage() {
 
     // Handle address as object or string
     const addressString = typeof location.address === 'object'
-      ? [location.address?.line1, location.address?.line2, location.address?.city, location.address?.state].filter(Boolean).join(' ')
+      ? [(location.address as any)?.line1, (location.address as any)?.line2, (location.address as any)?.city, (location.address as any)?.state].filter(Boolean).join(' ')
       : (location.address || '');
 
     return (
@@ -297,7 +299,7 @@ export default function LocationsManagementPage() {
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900 max-w-xs truncate">
                         {typeof location.address === 'object'
-                          ? [location.address?.line1, location.address?.city, location.address?.state].filter(Boolean).join(', ') || '—'
+                          ? [(location.address as any)?.line1, (location.address as any)?.city, (location.address as any)?.state].filter(Boolean).join(', ') || '—'
                           : location.address || '—'}
                       </div>
                     </td>

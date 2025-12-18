@@ -406,7 +406,7 @@ export function VisualFormBuilder() {
                 ) : selectedField ? (
                   <FieldProperties
                     field={selectedField}
-                    onUpdate={(updates) => handleUpdateField(selectedField.linkId, updates)}
+                    onUpdate={(updates: any) => handleUpdateField(selectedField.linkId, updates)}
                     onDuplicate={() => handleDuplicateField(selectedField.linkId)}
                     onDelete={() => handleDeleteField(selectedField.linkId)}
                   />
@@ -601,7 +601,7 @@ function PreviewPanel({ step, viewport, onViewportChange }: any) {
 
       {/* Preview Content */}
       <div className="flex-1 overflow-auto bg-gray-100 p-4">
-        <div className="mx-auto transition-all duration-300" style={{ maxWidth: viewportSizes[viewport].width }}>
+        <div className="mx-auto transition-all duration-300" style={{ maxWidth: viewportSizes[viewport as ViewportSize].width }}>
           <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
             {/* Step Header */}
             <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
@@ -645,7 +645,7 @@ function PreviewPanel({ step, viewport, onViewportChange }: any) {
 
           {/* Viewport Info */}
           <div className="mt-3 text-center text-xs text-gray-500">
-            {viewportSizes[viewport].width}px wide • {viewport} view
+            {viewportSizes[viewport as ViewportSize].width}px wide • {viewport} view
           </div>
         </div>
       </div>

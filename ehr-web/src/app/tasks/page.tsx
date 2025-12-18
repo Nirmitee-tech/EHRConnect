@@ -24,6 +24,8 @@ import { Badge } from '@/components/ui/badge';
 import { CreateTaskSidebar } from '@/components/tasks/create-task-sidebar';
 import { EditTaskSidebar } from '@/components/tasks/edit-task-sidebar';
 import * as taskService from '@/services/task.service';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface Task {
   id: string;
@@ -48,6 +50,7 @@ interface Task {
 
 export default function TasksPage() {
   const { data: session } = useSession();
+  const { t } = useTranslation('common');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -142,9 +145,9 @@ export default function TasksPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('tasks.title')}</h1>
           <p className="text-sm text-gray-600 mt-0.5">
-            Manage and track tasks across your organization
+            {t('tasks.manage_tasks')}
           </p>
         </div>
         <Button
@@ -152,7 +155,7 @@ export default function TasksPage() {
           className="bg-primary hover:opacity-90 text-white"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Create Task
+          {t('tasks.new_task')}
         </Button>
       </div>
 
@@ -163,7 +166,7 @@ export default function TasksPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search tasks by description or identifier..."
+                placeholder={t('tasks.search_placeholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 h-9"
@@ -217,7 +220,7 @@ export default function TasksPage() {
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start gap-2">
           <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
           <div>
-            <strong>Error:</strong> {error}
+            <strong>{t('tasks.error_label')}</strong> {error}
           </div>
         </div>
       )}
@@ -227,13 +230,13 @@ export default function TasksPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-8">
           <div className="flex items-center justify-center space-x-2">
             <Loader2 className="h-5 w-5 text-primary animate-spin" />
-            <span className="text-sm text-gray-600">Loading tasks...</span>
+            <span className="text-sm text-gray-600">{t('tasks.loading_tasks')}</span>
           </div>
         </div>
       ) : filteredTasks.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
           <CheckSquare className="h-10 w-10 text-gray-400 mx-auto mb-3" />
-          <h3 className="text-base font-semibold text-gray-900 mb-1">No tasks found</h3>
+          <h3 className="text-base font-semibold text-gray-900 mb-1">{t('tasks.no_tasks_found')}</h3>
           <p className="text-sm text-gray-600 mb-4">
             {searchQuery ? 'No tasks match your search criteria.' : 'Get started by creating your first task'}
           </p>
