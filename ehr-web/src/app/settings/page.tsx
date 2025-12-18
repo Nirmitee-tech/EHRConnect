@@ -40,7 +40,7 @@ const SETTINGS_DATA: SettingItem[] = [
   { id: 'org', title: 'Global Enterprise', description: 'Multi-entity structure & legal hierarchy', icon: Landmark, href: '#', category: 'General Admin' },
   { id: 'facility', title: 'Facility Registry', description: 'Hospital IDs, licenses & certifications', icon: Building2, href: '/settings/facility', category: 'General Admin' },
   { id: 'locations', title: 'Space Management', description: 'Campus, building, room & bed mapping', icon: MapPin, href: '/settings/locations', category: 'General Admin' },
-  { id: 'branding', title: 'Identity Engine', description: 'White-labeling & global aesthetic control', icon: Palette, href: '/settings/appearance', category: 'General Admin' },
+  { id: 'branding', title: 'Branding', description: 'White-labeling & global aesthetic control', icon: Palette, href: '/settings/appearance', category: 'General Admin' },
   { id: 'timezone', title: 'Regional Master', description: 'Global calendars, currencies & timezones', icon: Globe, href: '/settings/localization', category: 'General Admin' },
   { id: 'hours', title: 'Capacity Logic', description: 'Unit-level operational availability master', icon: Clock, href: '/settings/office-hours', category: 'General Admin' },
   { id: 'tax-reg', title: 'Tax Jurisdictions', description: 'Multi-regional tax protocols and rules', icon: Landmark, href: '#', category: 'General Admin', isComingSoon: true },
