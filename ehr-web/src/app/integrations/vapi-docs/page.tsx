@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Copy, Check, Phone, Calendar, Users, Clock, FileText, Globe, RefreshCw } from 'lucide-react';
 import { useOrganization } from '@/hooks/useOrganization';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface CodeBlockProps {
   code: string;

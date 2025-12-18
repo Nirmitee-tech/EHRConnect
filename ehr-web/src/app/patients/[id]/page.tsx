@@ -3,6 +3,8 @@
 import { useParams, useSearchParams } from 'next/navigation';
 import { PatientDetailProvider } from '@/features/patient-detail/components/patient-detail-provider';
 import { PatientDetailShell } from '@/features/patient-detail/components/patient-detail-shell';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function PatientDetailPage() {
   const params = useParams<{ id?: string }>();

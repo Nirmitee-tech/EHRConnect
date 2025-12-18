@@ -40,6 +40,8 @@ import { formsService } from '@/services/forms.service';
 import type { FormTemplate } from '@/types/forms';
 import { SidebarToggle } from '@/components/forms/sidebar-toggle';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 type ViewMode = 'table' | 'grid';
 type SortField = 'title' | 'updated_at' | 'usage_count' | 'status';

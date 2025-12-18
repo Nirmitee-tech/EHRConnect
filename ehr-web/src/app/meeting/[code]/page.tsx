@@ -7,6 +7,8 @@ import { getMeetingByCode, joinMeetingByCode, type VirtualMeeting } from '@/lib/
 import { MeetingRoom } from '@/components/virtual-meetings/meeting-room';
 import { ConsentDialog } from '@/components/virtual-meetings/consent-dialog';
 import { useSession } from 'next-auth/react';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 type ViewState = 'loading' | 'lobby' | 'consent' | 'meeting' | 'error' | 'ended';
 

@@ -17,6 +17,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useToast } from '@/hooks/use-toast'
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface ProviderOption {
   id: string

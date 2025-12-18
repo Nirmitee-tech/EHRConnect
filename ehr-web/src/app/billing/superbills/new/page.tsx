@@ -7,6 +7,8 @@ import { useEffect, useState } from 'react';
 import billingService from '@/services/billing.service';
 import { fhirService } from '@/lib/medplum';
 import { Search, User } from 'lucide-react';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function CreateSuperbillPage() {
   const router = useRouter();

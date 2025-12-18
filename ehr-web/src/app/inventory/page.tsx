@@ -40,6 +40,8 @@ import {
   InventorySupplier,
   StockMovement,
 } from '@/types/inventory'
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 

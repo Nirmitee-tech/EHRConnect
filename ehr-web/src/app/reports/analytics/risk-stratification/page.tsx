@@ -5,6 +5,8 @@ import { TableColumn } from '@/components/reports/TableView';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Layers, Users, AlertCircle, AlertTriangle, CheckCircle } from 'lucide-react';
 import { generatePatientSummaryData } from '@/lib/report-data-generators';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 const reportData = generatePatientSummaryData(30);
 

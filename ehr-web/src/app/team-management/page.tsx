@@ -10,6 +10,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface TeamMember {
   id: string;

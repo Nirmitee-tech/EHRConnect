@@ -5,6 +5,8 @@ import { PatientFlowService, PatientFlowData, PatientFlowStatus } from '@/servic
 import { FlowColumn } from '@/components/patient-flow/flow-column';
 import { RefreshCw, Filter, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 const FLOW_STATUSES: { status: PatientFlowStatus; title: string }[] = [
   { status: 'checked-in', title: 'Checked In' },

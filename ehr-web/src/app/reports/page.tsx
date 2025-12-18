@@ -2,6 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function ReportsPage() {
   const router = useRouter();

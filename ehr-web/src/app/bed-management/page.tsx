@@ -35,6 +35,8 @@ import FloorPlanDashboard from './views/floor-plan-dashboard';
 import AdmissionsDashboard from './views/admissions-dashboard';
 import ReportsDashboard from './views/reports-dashboard';
 import ConfigurationDashboard from './views/configuration-dashboard';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function BedManagementPage() {
   const router = useRouter();

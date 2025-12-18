@@ -25,6 +25,8 @@ import { Encounter, EncounterStatus } from '@/types/encounter';
 import { EncounterService } from '@/services/encounter.service';
 import { useTabs } from '@/contexts/tab-context';
 import { format } from 'date-fns';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 const ITEMS_PER_PAGE = 15;
 

@@ -5,6 +5,8 @@ import { TableColumn } from '@/components/reports/TableView';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShieldAlert, CheckCircle, AlertTriangle, Users } from 'lucide-react';
 import { generateAuditLogData } from '@/lib/report-data-generators';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 const reportData = generateAuditLogData(30);
 

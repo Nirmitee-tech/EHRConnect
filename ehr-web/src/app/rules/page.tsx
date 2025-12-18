@@ -47,6 +47,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/useToast';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 const RULE_TYPE_ICONS: Record<string, any> = {
   task_assignment: CheckSquare,

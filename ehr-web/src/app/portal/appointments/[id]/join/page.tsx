@@ -17,6 +17,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 type TelehealthAppointment = {
   id: string

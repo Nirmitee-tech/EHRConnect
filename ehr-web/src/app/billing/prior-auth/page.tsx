@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import billingService from '@/services/billing.service';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface PriorAuth {
   id: string;

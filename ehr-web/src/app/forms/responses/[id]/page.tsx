@@ -9,6 +9,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { formsService } from '@/services/forms.service';
 import type { FormResponse } from '@/types/forms';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function ResponseViewerPage() {
   const router = useRouter();

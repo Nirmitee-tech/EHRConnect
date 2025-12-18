@@ -17,6 +17,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { PatientFormAssignment } from '@/services/patient-portal.service'
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface FormsResponse {
   current: PatientFormAssignment[]

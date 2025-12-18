@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function SpecialtyTestPage() {
   const { data: session, status } = useSession();

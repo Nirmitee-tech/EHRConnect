@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, RefreshCw, Check } from 'lucide-react';
 import { TemplateService } from '@/services/template.service';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function TemplateAdminPage() {
   const router = useRouter();

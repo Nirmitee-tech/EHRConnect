@@ -5,6 +5,8 @@ import { TableColumn } from '@/components/reports/TableView';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, TrendingDown, Clock, Shield } from 'lucide-react';
 import { generateReadmissionData } from '@/lib/report-data-generators';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 const reportData = generateReadmissionData(30);
 

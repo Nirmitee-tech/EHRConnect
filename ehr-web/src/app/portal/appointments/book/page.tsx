@@ -26,6 +26,8 @@ import {
   Shield,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 // ============================================================================
 // TYPE DEFINITIONS

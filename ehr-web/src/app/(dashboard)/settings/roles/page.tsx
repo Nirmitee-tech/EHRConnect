@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Role, RoleScopeLevel } from '@/types/permissions'
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 

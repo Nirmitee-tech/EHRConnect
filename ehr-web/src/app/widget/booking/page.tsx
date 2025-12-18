@@ -87,6 +87,8 @@ import { Suspense, useState, useEffect, useRef } from 'react';
 import { Calendar, Clock, MapPin, User, Phone, Mail, ArrowRight, CheckCircle2, ChevronRight, AlertCircle, Loader2, Info, Download, Shield } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 // ============================================================================
 // TYPE DEFINITIONS

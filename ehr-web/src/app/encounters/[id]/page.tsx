@@ -32,6 +32,8 @@ import { InstructionsSection } from '@/components/encounters/instructions-sectio
 import { ClinicalInstructionsSection } from '@/components/encounters/clinical-instructions-section';
 import { PatientInstructionsSection } from '@/components/encounters/patient-instructions-section';
 import { PackageSection } from '@/components/encounters/package-section';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function EncounterPage() {
   const params = useParams<{ id?: string }>();

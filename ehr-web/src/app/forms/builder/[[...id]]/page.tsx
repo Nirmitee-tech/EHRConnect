@@ -75,6 +75,8 @@ import { WizardProgress } from '@/components/forms/WizardProgress';
 import { StepNavigationControls } from '@/components/forms/StepNavigationControls';
 import { PreviewPanel } from '@/components/forms/preview/PreviewPanel';
 import { VisualFormBuilder } from '@/components/forms/VisualFormBuilder';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 // Component Categories
 const COMPONENT_CATEGORIES = {

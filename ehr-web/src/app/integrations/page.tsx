@@ -23,6 +23,8 @@ import { IntegrationConfigDrawer } from '@/components/integrations/integration-c
 import { IntegrationLogo } from '@/components/integrations/integration-logo';
 import * as IntegrationsAPI from '@/lib/api/integrations';
 import { useOrganization } from '@/hooks/useOrganization';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 type TabCategory = 'all' | 'clinical' | 'financial' | 'operations' | 'technology';
 

@@ -29,6 +29,8 @@ import * as bedManagementService from '@/services/bed-management';
 import type { Ward, CreateWardRequest } from '@/types/bed-management';
 import { useFacility } from '@/contexts/facility-context';
 import { CreateLocationSidebar } from '@/components/location/create-location-sidebar';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 

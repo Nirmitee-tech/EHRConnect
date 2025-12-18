@@ -20,6 +20,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import billingService from '@/services/billing.service';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface Provider {
   id: string;

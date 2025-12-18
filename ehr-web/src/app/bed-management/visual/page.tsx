@@ -19,6 +19,8 @@ import type { Ward, Bed, Room, Hospitalization } from '@/types/bed-management';
 import { useFacility } from '@/contexts/facility-context';
 import { RoomBedVisualization } from '@/components/bed-management/room-bed-visualization';
 import { OperationsPanel, Operation } from '@/components/bed-management/operations-panel';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function VisualBedManagementPage() {
   const { data: session } = useSession();

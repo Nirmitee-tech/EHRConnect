@@ -4,6 +4,8 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { PatientForm } from '@/components/forms/patient-form';
 import { patientService, CreatePatientRequest, UpdatePatientRequest } from '@/services/patient.service';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function NewPatientPage() {
   const router = useRouter();

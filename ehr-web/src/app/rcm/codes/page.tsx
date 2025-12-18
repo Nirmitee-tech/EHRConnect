@@ -17,6 +17,8 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 type CodeCategory = 'icd' | 'cpt' | 'other';
 

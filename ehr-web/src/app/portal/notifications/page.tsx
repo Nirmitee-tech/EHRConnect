@@ -17,6 +17,8 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
 import type { PatientNotification } from '@/services/patient-portal.service'
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 type NotificationItem = PatientNotification & { read?: boolean }
 

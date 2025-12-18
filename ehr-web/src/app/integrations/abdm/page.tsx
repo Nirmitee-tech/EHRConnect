@@ -35,6 +35,8 @@ import {
 } from 'lucide-react';
 import * as ABDM from '@/lib/api/abdm';
 import { generateCurlCommand, getFormattedHeaders } from '@/lib/api-client';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 type Step = 'configure' | 'send-otp' | 'verify-otp' | 'set-address' | 'complete' | 'view-profile' | 'manage-addresses' | 'mobile-update' | 'email-verification' | 'login-with-address' | 'verify-aadhaar-otp' | 'verify-abha-otp' | 'verify-abha-aadhaar-otp' | 'verify-password' | 'verify-mobile-otp' | 'download-card' | 'get-profile' | 'search-abha';
 

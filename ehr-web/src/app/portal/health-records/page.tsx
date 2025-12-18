@@ -24,6 +24,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function HealthRecordsPage() {
   const [healthData, setHealthData] = useState<any>(null)

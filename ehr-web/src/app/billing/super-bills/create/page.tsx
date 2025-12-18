@@ -3,6 +3,8 @@
 import { SuperBillForm } from '@/components/billing/SuperBillForm';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SuperBillFormData } from '@/types/super-bill';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 // Mock data - In real app, fetch from API based on patientId
 const MOCK_PATIENT_DATA = {

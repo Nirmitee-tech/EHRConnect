@@ -19,6 +19,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/useToast';
 import { ArrowLeft, Save, Play } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function CreateVariablePage() {
   const { data: session } = useSession();

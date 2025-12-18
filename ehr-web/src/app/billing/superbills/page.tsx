@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileText, Plus, Search, Calendar, DollarSign, User, Building2 } from 'lucide-react';
 import billingService from '@/services/billing.service';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface Superbill {
   id: string;

@@ -6,6 +6,8 @@ import { ClaimFormData, ClaimProvider, ClaimInsurance, EligibilityCheck } from '
 import { useEffect, useState } from 'react';
 import billingService from '@/services/billing.service';
 import { fhirService } from '@/lib/medplum';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function CreateClaimPage() {
   const router = useRouter();

@@ -23,6 +23,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/useToast';
 import { formatDistanceToNow } from 'date-fns';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function RuleDetailsPage() {
   const { data: session } = useSession();

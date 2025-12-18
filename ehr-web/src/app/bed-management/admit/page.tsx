@@ -40,6 +40,8 @@ import * as bedManagementService from '@/services/bed-management';
 import type { Ward, Bed as BedType, AdmitPatientRequest } from '@/types/bed-management';
 import { useFacility } from '@/contexts/facility-context';
 import { medplum } from '@/lib/medplum';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 interface Patient {
   id: string;
