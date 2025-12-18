@@ -300,7 +300,7 @@ export function PostpartumCarePanel({
         </div>
       )}
 
-      {latestEPDS?.mentalHealth?.epdsRisk === 'high' || latestEPDS?.mentalHealth?.epdsRisk === 'critical' && (
+      {(latestEPDS?.mentalHealth?.epdsRisk === 'high' || latestEPDS?.mentalHealth?.epdsRisk === 'critical') && (
         <div className="mx-3 mt-3 bg-red-50 border border-red-200 rounded p-2 flex items-start gap-2">
           <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
           <div className="text-xs text-red-800">

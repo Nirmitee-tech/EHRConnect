@@ -395,7 +395,7 @@ export function EPDSCalculator({ patientId, episodeId, onSave, onClose }: EPDSCa
             0-9 = Low risk (unlikely depression) |{' '}
             10-12 = Moderate risk (possible depression) |{' '}
             13+ = High risk (likely depression) |{' '}
-            Q10 &gt; 0 = Critical (immediate evaluation)
+            Q10 {'>'} 0 = Critical (immediate evaluation)
           </div>
         </div>
       </div>
