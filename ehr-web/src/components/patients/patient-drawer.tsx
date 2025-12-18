@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import { User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@nirmitee.io/design-system';
+import { Drawer, DrawerContent, DrawerTitle } from '@nirmitee.io/design-system';
 import { PatientForm } from '@/components/forms/patient-form';
 import { EncounterForm } from '@/components/forms/encounter-form';
 import { FHIRPatient } from '@/types/fhir';
 import { CreatePatientRequest, UpdatePatientRequest } from '@/services/patient.service';
 import { patientService } from '@/services/patient.service';
+import { useTranslation } from '@/i18n/client';
 
 interface PatientDrawerProps {
   open: boolean;
@@ -40,6 +41,7 @@ export function PatientDrawer({
   skipEncounter = false
 }: PatientDrawerProps) {
   const router = useRouter();
+  const { t } = useTranslation('common');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('patient-form');
   const [createdPatient, setCreatedPatient] = useState<CreatedPatientData | null>(null);
@@ -181,7 +183,11 @@ export function PatientDrawer({
   };
 
   const drawerTitle =
-    currentStep === 'encounter-form' ? 'Create Encounter' : isEditing ? 'Edit Patient' : 'New Patient';
+    currentStep === 'encounter-form'
+      ? t('encounters.new_encounter')
+      : isEditing
+        ? t('patient_form.edit_patient')
+        : t('patient_form.new_patient');
 
   return (
     <Drawer open={open} onOpenChange={(open) => {
@@ -191,9 +197,7 @@ export function PatientDrawer({
       onOpenChange(open);
     }}>
       <DrawerContent side="right" size="3xl" className="overflow-y-auto p-0">
-        <DrawerHeader className="sr-only">
-          <DrawerTitle>{drawerTitle}</DrawerTitle>
-        </DrawerHeader>
+        <DrawerTitle className="sr-only">{drawerTitle}</DrawerTitle>
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2">
@@ -218,7 +222,7 @@ export function PatientDrawer({
                 }}
               />
               <label htmlFor="compact-mode-toggle" className="text-xs font-medium text-gray-700">
-                Compact Mode
+                {t('patient_form.compact_mode')}
               </label>
             </div>
           </div>

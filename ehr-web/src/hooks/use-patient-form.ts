@@ -470,52 +470,52 @@ export function usePatientForm(patient?: FHIRPatient, facilityId?: string) {
     const nextErrors: FieldErrors = {};
 
     if (!facilityId) {
-      nextErrors.facility = 'Please select a facility before registering patients.';
+      nextErrors.facility = 'patient_form.validation.select_facility';
     }
 
     if (!formData.provider.primaryProviderId) {
-      nextErrors['provider.primaryProviderId'] = 'Primary provider is required';
+      nextErrors['provider.primaryProviderId'] = 'patient_form.validation.primary_provider_required';
     }
     if (!formData.provider.providerLocationId) {
-      nextErrors['provider.providerLocationId'] = 'Provider location is required';
+      nextErrors['provider.providerLocationId'] = 'patient_form.validation.provider_location_required';
     }
     if (!formData.provider.registrationDate) {
-      nextErrors['provider.registrationDate'] = 'Registration date is required';
+      nextErrors['provider.registrationDate'] = 'patient_form.validation.registration_date_required';
     }
 
     if (!formData.demographics.firstName) {
-      nextErrors['demographics.firstName'] = 'First name is required';
+      nextErrors['demographics.firstName'] = 'patient_form.validation.first_name_required';
     }
     if (!formData.demographics.lastName) {
-      nextErrors['demographics.lastName'] = 'Last name is required';
+      nextErrors['demographics.lastName'] = 'patient_form.validation.last_name_required';
     }
     if (!formData.demographics.dateOfBirth) {
-      nextErrors['demographics.dateOfBirth'] = 'Date of birth is required';
+      nextErrors['demographics.dateOfBirth'] = 'patient_form.validation.dob_required';
     }
     if (!formData.demographics.gender) {
-      nextErrors['demographics.gender'] = 'Gender is required';
+      nextErrors['demographics.gender'] = 'patient_form.validation.gender_required';
     }
 
     if (!formData.contact.mobileNumber) {
-      nextErrors['contact.mobileNumber'] = 'Mobile number is required';
+      nextErrors['contact.mobileNumber'] = 'patient_form.validation.mobile_number_required';
     }
     if (!formData.contact.email) {
-      nextErrors['contact.email'] = 'Email is required';
+      nextErrors['contact.email'] = 'patient_form.validation.email_required';
     }
     if (!formData.contact.address.line1) {
-      nextErrors['contact.address.line1'] = 'Address line 1 is required';
+      nextErrors['contact.address.line1'] = 'patient_form.validation.address_line1_required';
     }
     if (!formData.contact.address.city) {
-      nextErrors['contact.address.city'] = 'City is required';
+      nextErrors['contact.address.city'] = 'patient_form.validation.city_required';
     }
     if (!formData.contact.address.state) {
-      nextErrors['contact.address.state'] = 'State is required';
+      nextErrors['contact.address.state'] = 'patient_form.validation.state_required';
     }
     if (!formData.contact.address.postalCode) {
-      nextErrors['contact.address.postalCode'] = 'Postal code is required';
+      nextErrors['contact.address.postalCode'] = 'patient_form.validation.postal_code_required';
     }
     if (!formData.contact.address.country) {
-      nextErrors['contact.address.country'] = 'Country is required';
+      nextErrors['contact.address.country'] = 'patient_form.validation.country_required';
     }
 
     // Emergency contacts are optional, but if any field is filled, validate the contact
@@ -526,16 +526,16 @@ export function usePatientForm(patient?: FHIRPatient, facilityId?: string) {
       // Only validate if user has started filling out this contact
       if (hasAnyField) {
         if (!contact.relationship) {
-          nextErrors[`emergencyContacts.${index}.relationship`] = 'Relationship is required';
+          nextErrors[`emergencyContacts.${index}.relationship`] = 'patient_form.validation.relationship_required';
         }
         if (!contact.firstName) {
-          nextErrors[`emergencyContacts.${index}.firstName`] = 'First name is required';
+          nextErrors[`emergencyContacts.${index}.firstName`] = 'patient_form.validation.first_name_required';
         }
         if (!contact.lastName) {
-          nextErrors[`emergencyContacts.${index}.lastName`] = 'Last name is required';
+          nextErrors[`emergencyContacts.${index}.lastName`] = 'patient_form.validation.last_name_required';
         }
         if (!contact.mobileNumber) {
-          nextErrors[`emergencyContacts.${index}.mobileNumber`] = 'Mobile number is required';
+          nextErrors[`emergencyContacts.${index}.mobileNumber`] = 'patient_form.validation.mobile_number_required';
         }
       }
     });
@@ -549,13 +549,13 @@ export function usePatientForm(patient?: FHIRPatient, facilityId?: string) {
 
     if (hasAnyInsuranceField) {
       if (!formData.insurance.insuranceType) {
-        nextErrors['insurance.insuranceType'] = 'Insurance type is required';
+        nextErrors['insurance.insuranceType'] = 'patient_form.validation.insurance_type_required';
       }
       if (!formData.insurance.insuranceName) {
-        nextErrors['insurance.insuranceName'] = 'Insurance name is required';
+        nextErrors['insurance.insuranceName'] = 'patient_form.validation.insurance_name_required';
       }
       if (!formData.insurance.memberId) {
-        nextErrors['insurance.memberId'] = 'Member ID is required';
+        nextErrors['insurance.memberId'] = 'patient_form.validation.member_id_required';
       }
       // Start and end dates are optional even if insurance is provided
     }

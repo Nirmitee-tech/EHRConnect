@@ -63,48 +63,50 @@ type FhirAppointment = {
 const CHECK_IN_EXTENSION_URL = 'urn:oid:ehrconnect:appointment-checkin'
 const REMINDER_EXTENSION_URL = 'urn:oid:ehrconnect:appointment-reminder'
 
-const symptomOptions = ['Cough', 'Fever', 'Pain', 'Follow-up question', 'Medication refill']
+const symptomOptions = [
+  { value: 'Cough', labelKey: 'portal_appointments.check_in.symptom_cough' },
+  { value: 'Fever', labelKey: 'portal_appointments.check_in.symptom_fever' },
+  { value: 'Pain', labelKey: 'portal_appointments.check_in.symptom_pain' },
+  { value: 'Follow-up question', labelKey: 'portal_appointments.check_in.symptom_follow_up_question' },
+  { value: 'Medication refill', labelKey: 'portal_appointments.check_in.symptom_medication_refill' },
+] as const
+
 const arrivalOptions = [
-  { value: 'in-person', label: 'In person (waiting room)' },
-  { value: 'car', label: 'I will wait in my car' },
-  { value: 'virtual', label: 'Telehealth / virtual visit' },
-]
+  { value: 'in-person', labelKey: 'portal_appointments.check_in.arrival_in_person' },
+  { value: 'car', labelKey: 'portal_appointments.check_in.arrival_car' },
+  { value: 'virtual', labelKey: 'portal_appointments.check_in.arrival_virtual' },
+] as const
 
 function getStatusBadge(status?: string) {
   const normalized = status?.toLowerCase() ?? ''
-  const variants: Record<string, { label: string; className: string }> = {
-    booked: { label: 'Booked', className: 'bg-blue-100 text-blue-800 border-blue-200' },
-    pending: { label: 'Pending', className: 'bg-yellow-100 text-yellow-900 border-yellow-200' },
-    arrived: { label: 'Arrived', className: 'bg-green-100 text-green-800 border-green-200' },
+  const variants: Record<string, { labelKey: string; className: string }> = {
+    booked: { labelKey: 'portal_appointments.status_booked', className: 'bg-blue-100 text-blue-800 border-blue-200' },
+    pending: { labelKey: 'portal_appointments.status_pending', className: 'bg-yellow-100 text-yellow-900 border-yellow-200' },
+    arrived: { labelKey: 'portal_appointments.status_arrived', className: 'bg-green-100 text-green-800 border-green-200' },
     'checked-in': {
-      label: 'Checked In',
+      labelKey: 'portal_appointments.status_checked_in',
       className: 'bg-green-100 text-green-800 border-green-200',
     },
-    fulfilled: { label: 'Completed', className: 'bg-gray-100 text-gray-800 border-gray-200' },
-    cancelled: { label: 'Cancelled', className: 'bg-red-100 text-red-800 border-red-200' },
-    noshow: { label: 'No Show', className: 'bg-red-100 text-red-800 border-red-200' },
+    fulfilled: { labelKey: 'portal_appointments.status_completed', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+    cancelled: { labelKey: 'portal_appointments.status_cancelled', className: 'bg-red-100 text-red-800 border-red-200' },
+    noshow: { labelKey: 'portal_appointments.status_no_show', className: 'bg-red-100 text-red-800 border-red-200' },
   }
 
-  return (
-    variants[normalized] ?? {
-      label: status ?? 'Unknown',
-      className: 'bg-gray-100 text-gray-800 border-gray-200',
-    }
-  )
+  return variants[normalized] ?? { labelKey: 'portal_appointments.status_unknown', className: 'bg-gray-100 text-gray-800 border-gray-200' }
 }
 
 function getVisitType(appointment: FhirAppointment) {
   const appointmentType = appointment.serviceType?.[0]?.text?.toLowerCase() ?? ''
 
   if (appointmentType.includes('video') || appointmentType.includes('virtual')) {
-    return { icon: Video, label: 'Video visit', pillClass: 'bg-purple-100 text-purple-700' }
+    return { icon: Video, kind: 'video' as const, labelKey: 'portal_appointments.visit_type_video', pillClass: 'bg-purple-100 text-purple-700' }
   }
 
   if (appointmentType.includes('phone')) {
-    return { icon: Phone, label: 'Phone visit', pillClass: 'bg-blue-100 text-blue-700' }
+    return { icon: Phone, kind: 'phone' as const, labelKey: 'portal_appointments.visit_type_phone', pillClass: 'bg-blue-100 text-blue-700' }
   }
 
-  return { icon: MapPin, label: 'In-person visit', pillClass: 'bg-gray-100 text-gray-700' }
+  return { icon: MapPin, kind: 'in_person' as const, labelKey: 'portal_appointments.visit_type_in_person', pillClass: 'bg-gray-100 text-gray-700' }
 }
 
 export default function AppointmentDetailsPage({
@@ -115,6 +117,7 @@ export default function AppointmentDetailsPage({
   const router = useRouter()
   const { data: session, status } = useSession()
   const { toast } = useToast()
+  const { t } = useTranslation('common')
 
   const [appointment, setAppointment] = useState<FhirAppointment | null>(null)
   const [loading, setLoading] = useState(true)
@@ -157,7 +160,7 @@ export default function AppointmentDetailsPage({
         }
 
         if (!normalizedId) {
-          setError('Appointment ID is required.')
+          setError(t('portal_appointments.error_appointment_id_required'))
           setLoading(false)
           setAppointmentId(null)
           return
@@ -167,7 +170,7 @@ export default function AppointmentDetailsPage({
       } catch (err) {
         if (!cancelled) {
           console.error('Failed to resolve appointment params:', err)
-          setError('Unable to determine appointment ID.')
+          setError(t('portal_appointments.error_unable_to_determine_appointment_id'))
           setLoading(false)
           setAppointmentId(null)
         }
@@ -211,7 +214,7 @@ export default function AppointmentDetailsPage({
         }
 
         if (response.status === 404) {
-          setError('Appointment not found.')
+          setError(t('portal_appointments.error_appointment_not_found'))
           setAppointment(null)
           return
         }
@@ -220,7 +223,7 @@ export default function AppointmentDetailsPage({
           const data = await response.json().catch(() => null)
           setError(
             data?.message ||
-              'There was a problem loading this appointment. Please try again later.'
+              t('portal_appointments.error_loading_appointment')
           )
           setAppointment(null)
           return
@@ -231,7 +234,7 @@ export default function AppointmentDetailsPage({
       } catch (err: unknown) {
         if (!cancelled) {
           const message =
-            err instanceof Error ? err.message : 'Unable to load appointment details.'
+            err instanceof Error ? err.message : t('portal_appointments.error_unable_to_load_appointment_details')
           setError(message)
           setAppointment(null)
         }
@@ -251,10 +254,11 @@ export default function AppointmentDetailsPage({
 
   const statusBadge = useMemo(() => {
     if (!appointment) {
-      return { label: 'Loading', className: 'bg-gray-100 text-gray-700 border-gray-200' }
+      return { label: t('common.loading'), className: 'bg-gray-100 text-gray-700 border-gray-200' }
     }
-    return getStatusBadge(appointment.status)
-  }, [appointment])
+    const badge = getStatusBadge(appointment.status)
+    return { ...badge, label: t(badge.labelKey) }
+  }, [appointment, t])
 
   const visitType = useMemo(() => {
     if (!appointment) {
@@ -262,6 +266,22 @@ export default function AppointmentDetailsPage({
     }
     return getVisitType(appointment)
   }, [appointment])
+
+  const arrivalLabelByValue = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const option of arrivalOptions) {
+      map[option.value] = t(option.labelKey)
+    }
+    return map
+  }, [t])
+
+  const symptomLabelByValue = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const option of symptomOptions) {
+      map[option.value] = t(option.labelKey)
+    }
+    return map
+  }, [t])
 
   const checkInData = useMemo(() => {
     const raw = appointment?.extension?.find((ext: any) => ext.url === CHECK_IN_EXTENSION_URL)
@@ -311,7 +331,7 @@ export default function AppointmentDetailsPage({
 
   const startDate = appointment?.start ? new Date(appointment.start) : null
   const endDate = appointment?.end ? new Date(appointment.end) : null
-  const isTelehealthVisit = visitType.label === 'Video visit'
+  const isTelehealthVisit = visitType.kind === 'video'
   const canJoinTelehealth = startDate
     ? (() => {
         const now = new Date()
@@ -379,17 +399,20 @@ export default function AppointmentDetailsPage({
 
       if (!response.ok) {
         const data = await response.json().catch(() => null)
-        throw new Error(data?.message || 'Unable to complete digital check-in')
+        throw new Error(data?.message || t('portal_appointments.check_in.error_unable_to_complete'))
       }
 
-      toast({ title: 'Check-in completed', description: 'Thanks! Your care team has been notified.' })
+      toast({
+        title: t('portal_appointments.check_in.toast_completed_title'),
+        description: t('portal_appointments.check_in.toast_completed_description'),
+      })
       setCheckInModal({ open: false })
       setRefreshKey((key) => key + 1)
     } catch (err) {
       console.error('Check-in failed:', err)
       toast({
-        title: 'Check-in failed',
-        description: err instanceof Error ? err.message : 'Unable to submit check-in.',
+        title: t('portal_appointments.check_in.toast_failed_title'),
+        description: err instanceof Error ? err.message : t('portal_appointments.check_in.error_unable_to_submit'),
         variant: 'destructive',
       })
     } finally {
@@ -433,17 +456,21 @@ export default function AppointmentDetailsPage({
 
       if (!response.ok) {
         const data = await response.json().catch(() => null)
-        throw new Error(data?.message || 'Unable to schedule reminder')
+        throw new Error(data?.message || t('portal_appointments.error_unable_to_schedule_reminder'))
       }
 
-      toast({ title: 'Reminder scheduled', description: 'We will nudge you before the visit.' })
+      toast({
+        title: t('portal_appointments.reminder.toast_scheduled_title'),
+        description: t('portal_appointments.reminder.toast_scheduled_description'),
+      })
       setReminderModal({ open: false })
       setRefreshKey((key) => key + 1)
     } catch (err) {
       console.error('Reminder failed:', err)
       toast({
-        title: 'Reminder failed',
-        description: err instanceof Error ? err.message : 'Unable to schedule reminder.',
+        title: t('portal_appointments.reminder.toast_failed_title'),
+        description:
+          err instanceof Error ? err.message : t('portal_appointments.error_unable_to_schedule_reminder'),
         variant: 'destructive',
       })
     } finally {
@@ -466,7 +493,7 @@ export default function AppointmentDetailsPage({
         <Button variant="ghost" asChild className="-ml-2">
           <Link href="/portal/appointments">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to appointments
+            {t('portal_appointments.back_to_appointments')}
           </Link>
         </Button>
         <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
@@ -489,12 +516,12 @@ export default function AppointmentDetailsPage({
             <Card className="flex-1">
               <CardHeader>
                 <CardTitle className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-500">Appointment with</span>
+                  <span className="text-sm font-medium text-gray-500">{t('portal_appointments.appointment_with')}</span>
                   <span className="text-2xl font-bold text-gray-900">
-                    {practitioner?.actor?.display ?? 'Healthcare Provider'}
+                    {practitioner?.actor?.display ?? t('portal_appointments.healthcare_provider')}
                   </span>
                   <span className="text-sm font-medium">
-                    {appointment.serviceType?.[0]?.text ?? 'General consultation'}
+                    {appointment.serviceType?.[0]?.text ?? t('appointment_form.general_consultation')}
                   </span>
                 </CardTitle>
               </CardHeader>
@@ -505,9 +532,9 @@ export default function AppointmentDetailsPage({
                       <CalendarIcon className="w-4 h-4 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Date</p>
+                      <p className="text-sm text-gray-500">{t('common.date')}</p>
                       <p className="text-base font-semibold text-gray-900">
-                        {startDate ? format(startDate, 'EEEE, MMMM d, yyyy') : 'TBD'}
+                        {startDate ? format(startDate, 'EEEE, MMMM d, yyyy') : t('portal_appointments.tbd')}
                       </p>
                     </div>
                   </div>
@@ -516,15 +543,15 @@ export default function AppointmentDetailsPage({
                       <Clock className="w-4 h-4 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Time</p>
+                      <p className="text-sm text-gray-500">{t('common.time')}</p>
                       <p className="text-base font-semibold text-gray-900">
                         {startDate && endDate
                           ? `${format(startDate, 'h:mm a')} – ${format(endDate, 'h:mm a')}`
-                          : 'TBD'}
+                          : t('portal_appointments.tbd')}
                       </p>
                       {appointment.minutesDuration && (
                         <p className="text-sm text-gray-500">
-                          {appointment.minutesDuration} minutes
+                          {appointment.minutesDuration} {t('appointment_form.duration_minutes')}
                         </p>
                       )}
                     </div>
@@ -534,8 +561,8 @@ export default function AppointmentDetailsPage({
                       <visitType.icon className="w-4 h-4 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Visit type</p>
-                      <p className="text-base font-semibold text-gray-900">{visitType.label}</p>
+                      <p className="text-sm text-gray-500">{t('portal_appointments.visit_type')}</p>
+                      <p className="text-base font-semibold text-gray-900">{t(visitType.labelKey)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -543,9 +570,9 @@ export default function AppointmentDetailsPage({
                       <MapPin className="w-4 h-4 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Location</p>
+                      <p className="text-sm text-gray-500">{t('portal_appointments.location')}</p>
                       <p className="text-base font-semibold text-gray-900">
-                        {location?.actor?.display ?? 'To be announced'}
+                        {location?.actor?.display ?? t('portal_appointments.to_be_announced')}
                       </p>
                     </div>
                   </div>
@@ -610,7 +637,7 @@ export default function AppointmentDetailsPage({
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <ClipboardCheck className="w-4 h-4 text-emerald-600" />
-                    Digital check-in
+                    {t('portal_appointments.check_in.card_title')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm text-gray-700">
@@ -618,19 +645,30 @@ export default function AppointmentDetailsPage({
                     <>
                       <div className="flex items-center gap-2 text-emerald-600 text-sm font-semibold">
                         <ShieldCheck className="w-4 h-4" />
-                        Completed {checkInData?.checkedInAt ? format(new Date(checkInData.checkedInAt), 'MMM d, h:mma') : ''}
+                        {checkInData?.checkedInAt
+                          ? t('portal_appointments.check_in.completed_with_date', {
+                              date: format(new Date(checkInData.checkedInAt), 'MMM d, h:mma'),
+                            })
+                          : t('portal_appointments.check_in.completed')}
                       </div>
                       <div className="rounded-lg border border-gray-200 p-3 space-y-2">
                         {checkInData?.arrivalMethod && (
                           <p>
-                            Arrival method:{' '}
-                            <span className="font-semibold capitalize">{checkInData.arrivalMethod.replace('-', ' ')}</span>
+                            {t('portal_appointments.check_in.arrival_method_label')}{' '}
+                            <span className="font-semibold">
+                              {arrivalLabelByValue[checkInData.arrivalMethod] ??
+                                checkInData.arrivalMethod.replace('-', ' ')}
+                            </span>
                           </p>
                         )}
                         {checkInData?.symptoms?.length ? (
                           <p>
-                            Symptoms:{' '}
-                            <span className="font-semibold">{checkInData.symptoms.join(', ')}</span>
+                            {t('portal_appointments.check_in.symptoms_label')}{' '}
+                            <span className="font-semibold">
+                              {checkInData.symptoms
+                                .map((symptom: string) => symptomLabelByValue[symptom] ?? symptom)
+                                .join(', ')}
+                            </span>
                           </p>
                         ) : null}
                         {checkInData?.questions && (
@@ -641,8 +679,7 @@ export default function AppointmentDetailsPage({
                   ) : (
                     <>
                       <p>
-                        Complete digital check-in to confirm your contact, insurance, and arrival plan
-                        ahead of time.
+                        {t('portal_appointments.check_in.instructions')}
                       </p>
                       <Button
                         className="w-full"
@@ -650,11 +687,11 @@ export default function AppointmentDetailsPage({
                         onClick={openCheckInDialog}
                         title={
                           canCompleteCheckIn
-                            ? 'Complete digital check-in'
-                            : 'Available within 48 hours of your visit'
+                            ? t('portal_appointments.check_in.title')
+                            : t('portal_appointments.check_in.available_within_48_hours')
                         }
                       >
-                        Complete check-in
+                        {t('portal_appointments.check_in.complete_button')}
                       </Button>
                     </>
                   )}
@@ -665,7 +702,7 @@ export default function AppointmentDetailsPage({
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <BellRing className="w-4 h-4 text-blue-600" />
-                    Appointment reminders
+                    {t('portal_appointments.reminder.card_title')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm text-gray-700">
@@ -673,20 +710,27 @@ export default function AppointmentDetailsPage({
                     <>
                       <p className="flex items-center gap-2 text-blue-700">
                         <AlertCircle className="w-4 h-4" />
-                        Reminder via {reminderData.channel?.toUpperCase()} scheduled for{' '}
-                        {reminderData.sendAt
-                          ? format(new Date(reminderData.sendAt), 'MMM d, h:mma')
-                          : 'your visit'}
+                        {t('portal_appointments.reminder.via_scheduled_for', {
+                          channel:
+                            reminderData.channel === 'email'
+                              ? t('portal_appointments.reminder.channel_email')
+                              : t('portal_appointments.reminder.channel_sms'),
+                          when: reminderData.sendAt
+                            ? format(new Date(reminderData.sendAt), 'MMM d, h:mma')
+                            : t('portal_appointments.reminder.your_visit'),
+                        })}
                       </p>
                       {reminderData.message && (
                         <p className="text-gray-600 italic">“{reminderData.message}”</p>
                       )}
                     </>
                   ) : (
-                    <p>No reminders scheduled yet.</p>
+                    <p>{t('portal_appointments.reminder.none_scheduled')}</p>
                   )}
                   <Button variant="outline" className="w-full" onClick={openReminderDialog}>
-                    {reminderData ? 'Reschedule reminder' : 'Schedule reminder'}
+                    {reminderData
+                      ? t('portal_appointments.reminder.reschedule')
+                      : t('portal_appointments.reminder.schedule')}
                   </Button>
                 </CardContent>
               </Card>
@@ -769,25 +813,25 @@ export default function AppointmentDetailsPage({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Complete digital check-in</DialogTitle>
+            <DialogTitle>{t('portal_appointments.check_in.title')}</DialogTitle>
             <DialogDescription>
-              Confirm your details so the care team knows you&apos;re ready.
+              {t('portal_appointments.check_in.description')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid gap-2">
-              <Label htmlFor="checkin-phone">Mobile number</Label>
+              <Label htmlFor="checkin-phone">{t('portal_appointments.check_in.mobile_number')}</Label>
               <Input
                 id="checkin-phone"
                 value={checkInForm.contactPhone}
                 onChange={(event) =>
                   setCheckInForm((prev) => ({ ...prev, contactPhone: event.target.value }))
                 }
-                placeholder="(555) 000-0000"
+                placeholder={t('portal_appointments.check_in.mobile_number_placeholder')}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="checkin-email">Email</Label>
+              <Label htmlFor="checkin-email">{t('portal_appointments.check_in.email')}</Label>
               <Input
                 id="checkin-email"
                 type="email"
@@ -795,11 +839,11 @@ export default function AppointmentDetailsPage({
                 onChange={(event) =>
                   setCheckInForm((prev) => ({ ...prev, contactEmail: event.target.value }))
                 }
-                placeholder="you@email.com"
+                placeholder={t('portal_appointments.check_in.email_placeholder')}
               />
             </div>
             <div className="grid gap-2">
-              <Label>Arrival method</Label>
+              <Label>{t('portal_appointments.check_in.arrival_method')}</Label>
               <Select
                 value={checkInForm.arrivalMethod}
                 onValueChange={(value) =>
@@ -807,64 +851,64 @@ export default function AppointmentDetailsPage({
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose arrival method" />
+                  <SelectValue placeholder={t('portal_appointments.check_in.arrival_method_placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {arrivalOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                      {t(option.labelKey)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Symptoms or goals</Label>
+              <Label>{t('portal_appointments.check_in.symptoms_or_goals')}</Label>
               <div className="grid gap-2">
                 {symptomOptions.map((symptom) => (
                   <label
-                    key={symptom}
+                    key={symptom.value}
                     className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm"
                   >
                     <Checkbox
-                      checked={checkInForm.symptoms.includes(symptom)}
-                      onCheckedChange={() => toggleSymptom(symptom)}
+                      checked={checkInForm.symptoms.includes(symptom.value)}
+                      onCheckedChange={() => toggleSymptom(symptom.value)}
                     />
-                    {symptom}
+                    {t(symptom.labelKey)}
                   </label>
                 ))}
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Add another"
+                    placeholder={t('portal_appointments.check_in.add_another')}
                     value={customSymptom}
                     onChange={(event) => setCustomSymptom(event.target.value)}
                   />
                   <Button variant="outline" onClick={addCustomSymptom}>
-                    Add
+                    {t('portal_appointments.check_in.add')}
                   </Button>
                 </div>
               </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="checkin-pharmacy">Preferred pharmacy</Label>
+              <Label htmlFor="checkin-pharmacy">{t('portal_appointments.check_in.preferred_pharmacy')}</Label>
               <Input
                 id="checkin-pharmacy"
                 value={checkInForm.pharmacyPreference}
                 onChange={(event) =>
                   setCheckInForm((prev) => ({ ...prev, pharmacyPreference: event.target.value }))
                 }
-                placeholder="Pharmacy name or phone"
+                placeholder={t('portal_appointments.check_in.preferred_pharmacy_placeholder')}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="checkin-questions">Questions for your care team</Label>
+              <Label htmlFor="checkin-questions">{t('portal_appointments.check_in.questions')}</Label>
               <Textarea
                 id="checkin-questions"
                 value={checkInForm.questions}
                 onChange={(event) =>
                   setCheckInForm((prev) => ({ ...prev, questions: event.target.value }))
                 }
-                placeholder="Anything you want us to know before the visit?"
+                placeholder={t('portal_appointments.check_in.questions_placeholder')}
               />
             </div>
             <div className="space-y-2">
@@ -878,7 +922,7 @@ export default function AppointmentDetailsPage({
                     }))
                   }
                 />
-                My insurance and contact info are up to date
+                {t('portal_appointments.check_in.insurance_confirmed')}
               </label>
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <Checkbox
@@ -890,7 +934,7 @@ export default function AppointmentDetailsPage({
                     }))
                   }
                 />
-                My medication list is current
+                {t('portal_appointments.check_in.medications_updated')}
               </label>
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <Checkbox
@@ -902,16 +946,16 @@ export default function AppointmentDetailsPage({
                     }))
                   }
                 />
-                I accept the visit policies and consent to treatment
+                {t('portal_appointments.check_in.consents_accepted')}
               </label>
             </div>
           </div>
           <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
             <Button variant="outline" onClick={() => setCheckInModal({ open: false })}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleCheckInSubmit} disabled={submittingCheckIn}>
-              {submittingCheckIn ? 'Submitting...' : 'Complete check-in'}
+              {submittingCheckIn ? t('portal_appointments.check_in.submitting') : t('portal_appointments.check_in.complete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -921,14 +965,14 @@ export default function AppointmentDetailsPage({
       <Dialog open={reminderModal.open} onOpenChange={(open) => setReminderModal({ open })}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Schedule a reminder</DialogTitle>
+            <DialogTitle>{t('portal_appointments.reminder.title')}</DialogTitle>
             <DialogDescription>
-              We&apos;ll remind you ahead of the visit using your preferred channel.
+              {t('portal_appointments.reminder.description')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid gap-2">
-              <Label>Channel</Label>
+              <Label>{t('portal_appointments.reminder.channel')}</Label>
               <Select
                 value={reminderForm.channel}
                 onValueChange={(value) =>
@@ -936,16 +980,16 @@ export default function AppointmentDetailsPage({
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose channel" />
+                  <SelectValue placeholder={t('portal_appointments.reminder.channel_placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sms">Text message</SelectItem>
-                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="sms">{t('portal_appointments.reminder.channel_sms')}</SelectItem>
+                  <SelectItem value="email">{t('portal_appointments.reminder.channel_email')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="reminder-time">Send at</Label>
+              <Label htmlFor="reminder-time">{t('portal_appointments.reminder.send_at')}</Label>
               <Input
                 id="reminder-time"
                 type="datetime-local"
@@ -956,23 +1000,23 @@ export default function AppointmentDetailsPage({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="reminder-message">Message (optional)</Label>
+              <Label htmlFor="reminder-message">{t('portal_appointments.reminder.message_optional')}</Label>
               <Textarea
                 id="reminder-message"
                 value={reminderForm.message}
                 onChange={(event) =>
                   setReminderForm((prev) => ({ ...prev, message: event.target.value }))
                 }
-                placeholder="We already provide a default reminder, but you can personalize it."
+                placeholder={t('portal_appointments.reminder.message_placeholder')}
               />
             </div>
           </div>
           <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
             <Button variant="outline" onClick={() => setReminderModal({ open: false })}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleReminderSubmit} disabled={submittingReminder}>
-              {submittingReminder ? 'Scheduling...' : 'Schedule reminder'}
+              {submittingReminder ? t('portal_appointments.reminder.scheduling') : t('portal_appointments.reminder.schedule')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { useTranslation } from '@/i18n/client';
 
 interface EnhancedDateTimePickerProps {
   selectedDate: string;
@@ -27,9 +28,11 @@ export function EnhancedDateTimePicker({
   minDate,
   disabled = false
 }: EnhancedDateTimePickerProps) {
+  const { t, i18n } = useTranslation('common');
   const [currentMonth, setCurrentMonth] = useState<Date>(() => {
     return selectedDate ? new Date(selectedDate) : new Date();
   });
+  const locale = i18n.language || 'en';
 
   // Track which accordion sections are open
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -45,12 +48,10 @@ export function EnhancedDateTimePicker({
     }));
   };
 
-  // Format time to 12-hour format with AM/PM
-  const formatTime12Hour = (time24: string): string => {
+  const formatTime = (time24: string): string => {
     const [hours, minutes] = time24.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const hours12 = hours % 12 || 12;
-    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+    const date = new Date(Date.UTC(1970, 0, 1, hours, minutes));
+    return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format(date);
   };
 
   // Group time slots by time of day
@@ -71,11 +72,20 @@ export function EnhancedDateTimePicker({
     });
 
     return [
-      { label: 'Morning slots', slots: morning },
-      { label: 'Afternoon slots', slots: afternoon },
-      { label: 'Evening Slots', slots: evening }
+      { label: t('appointment_form.morning_slots'), slots: morning },
+      { label: t('appointment_form.afternoon_slots'), slots: afternoon },
+      { label: t('appointment_form.evening_slots'), slots: evening }
     ].filter(group => group.slots.length > 0);
-  }, [availableTimeSlots]);
+  }, [availableTimeSlots, t]);
+
+  const weekdayHeaders = useMemo(() => {
+    const baseMonday = new Date(Date.UTC(2024, 0, 1)); // Monday
+    return Array.from({ length: 7 }, (_, idx) =>
+      new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }).format(
+        new Date(baseMonday.getTime() + idx * 86400000)
+      )
+    );
+  }, [locale]);
 
   // Generate calendar days for current month
   const calendarDays = useMemo(() => {
@@ -168,14 +178,14 @@ export function EnhancedDateTimePicker({
       {/* Selected Date/Time Display */}
       <div className="flex items-center gap-2 text-sm text-gray-600">
         <span className="font-medium">
-          {selectedDate ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-          }) : 'Select Date'}
+          {selectedDate
+            ? new Intl.DateTimeFormat(locale, { year: 'numeric', month: '2-digit', day: '2-digit' }).format(
+                new Date(selectedDate + 'T00:00:00')
+              )
+            : t('appointment_form.select_date')}
         </span>
         {selectedTime && (
-          <span className="text-primary font-medium">({formatTime12Hour(selectedTime)})</span>
+          <span className="text-primary font-medium">({formatTime(selectedTime)})</span>
         )}
       </div>
 
@@ -194,7 +204,7 @@ export function EnhancedDateTimePicker({
               <ChevronLeft className="h-5 w-5 text-gray-600" />
             </button>
             <h3 className="text-base font-semibold text-gray-900">
-              {currentMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+              {new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric' }).format(currentMonth)}
             </h3>
             <button
               type="button"
@@ -208,7 +218,7 @@ export function EnhancedDateTimePicker({
 
           {/* Week Days Header */}
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+            {weekdayHeaders.map((day) => (
               <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
                 {day}
               </div>
@@ -260,12 +270,14 @@ export function EnhancedDateTimePicker({
                       onClick={() => toggleSection(sectionKey)}
                       className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                     >
-                      <h4 className="text-sm font-semibold text-gray-700">{group.label}</h4>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">{group.slots.length} slots</span>
-                        {isOpen ? (
-                          <ChevronUp className="h-4 w-4 text-gray-600" />
-                        ) : (
+	                      <h4 className="text-sm font-semibold text-gray-700">{group.label}</h4>
+	                      <div className="flex items-center gap-2">
+	                        <span className="text-xs text-gray-500">
+	                          {t('appointment_form.slots_count', { count: group.slots.length })}
+	                        </span>
+	                        {isOpen ? (
+	                          <ChevronUp className="h-4 w-4 text-gray-600" />
+	                        ) : (
                           <ChevronDown className="h-4 w-4 text-gray-600" />
                         )}
                       </div>
@@ -292,10 +304,10 @@ export function EnhancedDateTimePicker({
                                   disabled:opacity-50 disabled:cursor-not-allowed
                                 `}
                               >
-                                {formatTime12Hour(slot)}
-                              </button>
-                            );
-                          })}
+	                                {formatTime(slot)}
+	                              </button>
+	                            );
+	                          })}
                         </div>
                       </div>
                     )}
@@ -303,15 +315,15 @@ export function EnhancedDateTimePicker({
                 );
               })}
             </div>
-          ) : selectedDate && timeSlotGroups.length === 0 && !disabled ? (
-            <div className="p-4 text-center text-sm text-red-600 bg-red-50">
-              No available time slots for this date
-            </div>
-          ) : (
-            <div className="p-4 text-center text-sm text-gray-500">
-              Select a date to view available time slots
-            </div>
-          )}
+	          ) : selectedDate && timeSlotGroups.length === 0 && !disabled ? (
+	            <div className="p-4 text-center text-sm text-red-600 bg-red-50">
+	              {t('appointment_form.no_available_time_slots')}
+	            </div>
+	          ) : (
+	            <div className="p-4 text-center text-sm text-gray-500">
+	              {t('appointment_form.select_date_to_view_time_slots')}
+	            </div>
+	          )}
         </div>
       </div>
     </div>

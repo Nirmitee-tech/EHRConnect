@@ -43,14 +43,44 @@ const AUTH_ONLY_PATHS = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Language detection (applies to all routes, including public + root).
+  const cookieHeader = request.headers.get('cookie') || '';
+  const cookieMatches = [...cookieHeader.matchAll(new RegExp(`(?:^|;\\s*)${cookieName}=([^;]*)`, 'g'))];
+  const lastCookieValueRaw = cookieMatches.length > 0 ? cookieMatches[cookieMatches.length - 1][1] : undefined;
+  const lastCookieValueDecoded = lastCookieValueRaw ? decodeURIComponent(lastCookieValueRaw) : undefined;
+  const lastCookieBase = lastCookieValueDecoded?.split('-')[0] || undefined;
+
+  let lng: string = fallbackLng;
+  if (lastCookieBase && languages.includes(lastCookieBase)) {
+    lng = lastCookieBase;
+  } else {
+    const fromAcceptLanguage = acceptLanguage.get(request.headers.get('Accept-Language')) ?? undefined;
+    const acceptBase = fromAcceptLanguage?.split('-')[0] || undefined;
+    if (acceptBase && languages.includes(acceptBase)) {
+      lng = acceptBase;
+    }
+  }
+
+  const applyLocaleCookie = (response: NextResponse) => {
+    // Normalize the locale cookie to root path to avoid path-scoped duplicates.
+    response.cookies.set(cookieName, lng, { path: '/', maxAge: 60 * 60 * 24 * 365 });
+
+    // Best-effort cleanup of path-scoped duplicates that were set without an explicit path.
+    const defaultPath = pathname.substring(0, pathname.lastIndexOf('/')) || '/';
+    if (defaultPath !== '/') {
+      response.cookies.set(cookieName, '', { path: defaultPath, maxAge: 0 });
+    }
+    return response;
+  };
+
   // Allow root path (landing page) for everyone
   if (pathname === ROOT_PATH) {
-    return NextResponse.next();
+    return applyLocaleCookie(NextResponse.next());
   }
 
   // Allow public paths
   if (PUBLIC_PATHS.some(path => pathname.startsWith(path))) {
-    return NextResponse.next();
+    return applyLocaleCookie(NextResponse.next());
   }
 
   // Get the session token
@@ -67,18 +97,18 @@ export async function middleware(request: NextRequest) {
       // For page routes, redirect to root with callbackUrl so user can sign in
       const loginUrl = new URL('/', request.url);
       loginUrl.searchParams.set('callbackUrl', pathname);
-      return NextResponse.redirect(loginUrl);
+      return applyLocaleCookie(NextResponse.redirect(loginUrl));
     } else {
       // For API routes, just return 401 Unauthorized
       // Don't redirect API calls to pages
-      return NextResponse.redirect(new URL('/', request.url));
+      return applyLocaleCookie(NextResponse.redirect(new URL('/', request.url)));
 
     }
   }
 
   // Handle auth-only paths (onboarding, etc.)
   if (AUTH_ONLY_PATHS.some(path => pathname.startsWith(path))) {
-    return NextResponse.next();
+    return applyLocaleCookie(NextResponse.next());
   }
 
   // Get org context from token
@@ -89,11 +119,11 @@ export async function middleware(request: NextRequest) {
   // If user has no org assigned and not already on onboarding, redirect to onboarding
   // BUT: Skip this check for patients - they don't have org_id, they have patientId
   if (!tokenOrgId && !pathname.startsWith('/onboarding') && userType !== 'patient') {
-    return NextResponse.redirect(new URL('/onboarding', request.url));
+    return applyLocaleCookie(NextResponse.redirect(new URL('/onboarding', request.url)));
   }
 
   // Create response with org context headers for API/database isolation
-  const response = NextResponse.next();
+  const response = applyLocaleCookie(NextResponse.next());
 
   // Set user ID header (from id or sub field)
   const tokenUserId = (token.id || token.sub) as string | undefined;
@@ -125,38 +155,6 @@ export async function middleware(request: NextRequest) {
   const tokenPermissions = token.permissions as string[] | undefined;
   if (tokenPermissions) {
     response.headers.set('x-user-permissions', JSON.stringify(tokenPermissions));
-  }
-
-  // Language detection
-  let lng: string | undefined;
-
-  // If multiple cookies with the same name exist (different paths), browsers send the
-  // more specific-path cookie first. Prefer the LAST occurrence, which is typically
-  // the root-path cookie (user-selected via UI).
-  const cookieHeader = request.headers.get('cookie') || '';
-  const cookieMatches = [...cookieHeader.matchAll(new RegExp(`(?:^|;\\s*)${cookieName}=([^;]*)`, 'g'))];
-  const lastCookieValueRaw = cookieMatches.length > 0 ? cookieMatches[cookieMatches.length - 1][1] : undefined;
-  const lastCookieValue = lastCookieValueRaw ? decodeURIComponent(lastCookieValueRaw) : undefined;
-
-  if (lastCookieValue) {
-    lng = acceptLanguage.get(lastCookieValue) || undefined;
-  } else if (request.cookies.has(cookieName)) {
-    lng = acceptLanguage.get(request.cookies.get(cookieName)?.value) || undefined;
-  }
-  if (!lng) {
-    lng = acceptLanguage.get(request.headers.get('Accept-Language')) || undefined;
-  }
-  if (!lng) {
-    lng = fallbackLng;
-  }
-
-  // Normalize the locale cookie to root path to avoid path-scoped duplicates.
-  response.cookies.set(cookieName, lng, { path: '/', maxAge: 60 * 60 * 24 * 365 });
-
-  // Best-effort cleanup of path-scoped duplicates that were set without an explicit path.
-  const defaultPath = pathname.substring(0, pathname.lastIndexOf('/')) || '/';
-  if (defaultPath !== '/') {
-    response.cookies.set(cookieName, '', { path: defaultPath, maxAge: 0 });
   }
 
   return response;

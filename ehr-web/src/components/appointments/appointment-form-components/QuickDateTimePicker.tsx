@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar, Clock } from 'lucide-react';
+import { useTranslation } from '@/i18n/client';
 
 interface QuickDateTimePickerProps {
   selectedDate: string;
@@ -22,12 +23,13 @@ export function QuickDateTimePicker({
   minDate,
   disabled = false
 }: QuickDateTimePickerProps) {
-  // Format time to 12-hour format with AM/PM
-  const formatTime12Hour = (time24: string): string => {
+  const { t, i18n } = useTranslation('common');
+  const locale = i18n.language || 'en';
+
+  const formatTime = (time24: string): string => {
     const [hours, minutes] = time24.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const hours12 = hours % 12 || 12;
-    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+    const date = new Date(Date.UTC(1970, 0, 1, hours, minutes));
+    return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format(date);
   };
 
   return (
@@ -66,10 +68,10 @@ export function QuickDateTimePicker({
             disabled={!selectedDate || disabled || availableTimeSlots.length === 0}
             className="block w-full pl-10 pr-3 py-2.5 rounded-md border border-gray-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:bg-gray-100 disabled:text-gray-500 appearance-none"
           >
-            <option value="">Select Time</option>
+            <option value="">{t('appointment_form.select_time')}</option>
             {availableTimeSlots.map((slot) => (
               <option key={slot} value={slot}>
-                {formatTime12Hour(slot)}
+                {formatTime(slot)}
               </option>
             ))}
           </select>
@@ -81,7 +83,7 @@ export function QuickDateTimePicker({
         </div>
         {selectedDate && availableTimeSlots.length === 0 && !disabled && (
           <p className="mt-1.5 text-xs text-red-600">
-            No available time slots for this date
+            {t('appointment_form.no_available_time_slots')}
           </p>
         )}
       </div>
@@ -90,14 +92,14 @@ export function QuickDateTimePicker({
       {selectedDate && selectedTime && (
         <div className="rounded-lg bg-primary/10 border border-primary/20 p-3">
           <p className="text-sm text-primary">
-            <span className="font-medium">Selected:</span>{' '}
-            {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
+            <span className="font-medium">{t('appointment_form.selected')}:</span>{' '}
+            {new Intl.DateTimeFormat(locale, {
               weekday: 'long',
               year: 'numeric',
               month: 'long',
               day: 'numeric'
-            })}{' '}
-            at {formatTime12Hour(selectedTime)}
+            }).format(new Date(selectedDate + 'T00:00:00'))}{' '}
+            {t('appointment_form.at')} {formatTime(selectedTime)}
           </p>
         </div>
       )}

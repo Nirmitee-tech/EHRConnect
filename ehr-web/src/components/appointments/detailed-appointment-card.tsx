@@ -4,6 +4,7 @@ import React from 'react';
 import { Appointment } from '@/types/appointment';
 import { Clock, User, MapPin, Stethoscope, Calendar, FileText, Play, CheckCircle, XCircle, Video, Phone, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/i18n/client';
 
 interface DetailedAppointmentCardProps {
   appointment: Appointment;
@@ -21,16 +22,16 @@ export function DetailedAppointmentCard({
   className = ''
 }: DetailedAppointmentCardProps) {
   const router = useRouter();
+  const { t, i18n } = useTranslation('common');
   const startTime = new Date(appointment.startTime);
   const endTime = new Date(appointment.endTime);
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
+  const locale = i18n.language || 'en';
+  const timeFormatter = React.useMemo(
+    () => new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' }),
+    [locale]
+  );
+  const formatTime = (date: Date) => timeFormatter.format(date);
 
   const formatDuration = (minutes: number) => {
     if (minutes < 60) {
@@ -85,15 +86,21 @@ export function DetailedAppointmentCard({
   };
 
   const getStatusLabel = (status: string) => {
+    const statusKeyByStatus: Record<string, string> = {
+      scheduled: 'appointment_form.scheduled',
+      confirmed: 'appointment_form.confirmed',
+      cancelled: 'appointment_form.cancelled',
+      completed: 'appointment_form.completed',
+      'no-show': 'appointment_form.no_show',
+      rescheduled: 'appointment_form.rescheduled',
+      'in-progress': 'appointment_form.in_progress',
+      waitlist: 'appointment_form.waitlist',
+    };
+
+    const key = statusKeyByStatus[status];
+    if (key) return t(key);
+
     switch (status) {
-      case 'in-progress':
-        return 'In Progress';
-      case 'completed':
-        return 'Completed';
-      case 'cancelled':
-        return 'Cancelled';
-      case 'scheduled':
-        return 'Scheduled';
       default:
         return status;
     }
@@ -109,6 +116,21 @@ export function DetailedAppointmentCard({
         return <Users className="h-3 w-3 text-blue-600" />;
       default:
         return null;
+    }
+  };
+
+  const getModeLabel = (mode?: string) => {
+    switch (mode) {
+      case 'in-person':
+        return t('appointment_form.mode_in_person');
+      case 'video-call':
+        return t('appointment_form.mode_video_call');
+      case 'voice-call':
+        return t('appointment_form.mode_voice_call');
+      case 'other':
+        return t('appointment_form.mode_other');
+      default:
+        return mode ? mode.replace('-', ' ') : '';
     }
   };
 
@@ -148,13 +170,13 @@ export function DetailedAppointmentCard({
               {appointment.mode === 'video-call' && (
                 <div className="flex items-center gap-1 px-2 py-0.5 bg-theme-accent text-white rounded-full text-[10px] font-bold">
                   <Video className="h-3 w-3" />
-                  <span>VIDEO CALL</span>
+                  <span className="uppercase">{t('appointment_form.mode_video_call')}</span>
                 </div>
               )}
               {appointment.mode === 'voice-call' && (
                 <div className="flex items-center gap-1 px-2 py-0.5 bg-theme-secondary text-white rounded-full text-[10px] font-bold">
                   <Phone className="h-3 w-3" />
-                  <span>VOICE CALL</span>
+                  <span className="uppercase">{t('appointment_form.mode_voice_call')}</span>
                 </div>
               )}
             </div>
@@ -185,7 +207,7 @@ export function DetailedAppointmentCard({
               <span className="font-semibold">{formatTime(endTime)}</span>
             </div>
             <div className="flex items-center gap-1.5 text-gray-600 pl-5">
-              <span className="text-[11px]">Duration: {formatDuration(appointment.duration)}</span>
+              <span className="text-[11px]">{t('appointment_form.duration')}: {formatDuration(appointment.duration)}</span>
             </div>
           </div>
 
@@ -215,7 +237,7 @@ export function DetailedAppointmentCard({
           {appointment.mode && (
             <div className="flex items-center gap-1.5 text-xs text-gray-700">
               {getModeIcon(appointment.mode)}
-              <span className="truncate capitalize font-medium">{appointment.mode.replace('-', ' ')}</span>
+              <span className="truncate font-medium">{getModeLabel(appointment.mode)}</span>
             </div>
           )}
 
@@ -236,18 +258,18 @@ export function DetailedAppointmentCard({
                   <button
                     onClick={(e) => handleQuickAction(e, 'start')}
                     className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-primary text-primary-foreground rounded hover:opacity-90 transition-colors text-[10px] font-medium"
-                    title="Start Encounter"
+                    title={t('appointments.start_encounter')}
                   >
                     <Play className="h-3 w-3" />
-                    <span>Start</span>
+                    <span>{t('appointments.start')}</span>
                   </button>
                   <button
                     onClick={(e) => handleQuickAction(e, 'details')}
                     className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-[10px] font-medium"
-                    title="View Details"
+                    title={t('appointments.view_details')}
                   >
                     <FileText className="h-3 w-3" />
-                    <span>Details</span>
+                    <span>{t('appointments.details')}</span>
                   </button>
                 </>
               )}
@@ -256,18 +278,18 @@ export function DetailedAppointmentCard({
                   <button
                     onClick={(e) => handleQuickAction(e, 'complete')}
                     className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-theme-accent text-white rounded hover:opacity-90 transition-colors text-[10px] font-medium"
-                    title="Complete"
+                    title={t('appointments.complete')}
                   >
                     <CheckCircle className="h-3 w-3" />
-                    <span>Complete</span>
+                    <span>{t('appointments.complete')}</span>
                   </button>
                   <button
                     onClick={(e) => handleQuickAction(e, 'details')}
                     className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-[10px] font-medium"
-                    title="View Details"
+                    title={t('appointments.view_details')}
                   >
                     <FileText className="h-3 w-3" />
-                    <span>Details</span>
+                    <span>{t('appointments.details')}</span>
                   </button>
                 </>
               )}
@@ -275,10 +297,10 @@ export function DetailedAppointmentCard({
                 <button
                   onClick={(e) => handleQuickAction(e, 'details')}
                   className="w-full flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-[10px] font-medium"
-                  title="View Details"
+                  title={t('appointments.view_details')}
                 >
                   <FileText className="h-3 w-3" />
-                  <span>View Details</span>
+                  <span>{t('appointments.view_details')}</span>
                 </button>
               )}
             </div>

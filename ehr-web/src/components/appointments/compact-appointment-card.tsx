@@ -5,6 +5,7 @@ import { Appointment } from '@/types/appointment';
 import { Clock, Play, CheckCircle, XCircle, FileText, MoreVertical, User, MapPin, Phone, ActivitySquare, Video, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCalendarSettings } from '@/hooks/useCalendarSettings';
+import { useTranslation } from '@/i18n/client';
 
 interface CompactAppointmentCardProps {
   appointment: Appointment;
@@ -26,6 +27,7 @@ export function CompactAppointmentCard({
   onStartEncounter
 }: CompactAppointmentCardProps) {
   const router = useRouter();
+  const { t, i18n } = useTranslation('common');
   const [showActions, setShowActions] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -36,12 +38,43 @@ export function CompactAppointmentCard({
   const startTime = React.useMemo(() => new Date(appointment.startTime), [appointment.startTime]);
   const endTime = React.useMemo(() => new Date(appointment.endTime), [appointment.endTime]);
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
+  const locale = i18n.language || 'en';
+  const timeFormatter = React.useMemo(
+    () => new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' }),
+    [locale]
+  );
+  const formatTime = (date: Date) => timeFormatter.format(date);
+
+  const getStatusLabel = (status: string) => {
+    const statusKeyByStatus: Record<string, string> = {
+      scheduled: 'appointment_form.scheduled',
+      confirmed: 'appointment_form.confirmed',
+      cancelled: 'appointment_form.cancelled',
+      completed: 'appointment_form.completed',
+      'no-show': 'appointment_form.no_show',
+      rescheduled: 'appointment_form.rescheduled',
+      'in-progress': 'appointment_form.in_progress',
+      waitlist: 'appointment_form.waitlist',
+    };
+
+    const key = statusKeyByStatus[status];
+    if (key) return t(key);
+    return status;
+  };
+
+  const getModeLabel = (mode?: string) => {
+    switch (mode) {
+      case 'in-person':
+        return t('appointment_form.mode_in_person');
+      case 'video-call':
+        return t('appointment_form.mode_video_call');
+      case 'voice-call':
+        return t('appointment_form.mode_voice_call');
+      case 'other':
+        return t('appointment_form.mode_other');
+      default:
+        return mode ? mode.replace('-', ' ') : '';
+    }
   };
 
   // Handle hover with delay
@@ -199,7 +232,11 @@ export function CompactAppointmentCard({
             <div className="flex items-center gap-1">
               <div className={`w-1.5 h-1.5 rounded-full ${getStatusBadgeColor(appointment.status)}`} />
               <span className="text-[9px] text-gray-500 uppercase font-semibold tracking-wide">
-                {appointment.status === 'in-progress' ? 'Live' : appointment.status === 'scheduled' ? 'Scheduled' : ''}
+                {appointment.status === 'in-progress'
+                  ? t('appointments.live')
+                  : appointment.status === 'scheduled'
+                    ? t('appointment_form.scheduled')
+                    : ''}
               </span>
             </div>
             <div className="flex items-center gap-1">
@@ -207,19 +244,19 @@ export function CompactAppointmentCard({
               {appointment.mode === 'video-call' && (
                 <div className="flex items-center gap-0.5 px-1 py-0.5 bg-theme-accent text-white rounded text-[8px] font-bold">
                   <Video className="h-2.5 w-2.5" />
-                  <span>VIDEO</span>
+                  <span className="uppercase">{t('appointments.video_short')}</span>
                 </div>
               )}
               {appointment.mode === 'voice-call' && (
                 <div className="flex items-center gap-0.5 px-1 py-0.5 bg-theme-secondary text-white rounded text-[8px] font-bold">
                   <Phone className="h-2.5 w-2.5" />
-                  <span>CALL</span>
+                  <span className="uppercase">{t('appointments.call_short')}</span>
                 </div>
               )}
               {appointment.encounterId && (
                 <div className="flex items-center gap-0.5 px-1 py-0.5 bg-theme-accent text-white rounded text-[8px] font-bold animate-pulse">
                   <ActivitySquare className="h-2 w-2" />
-                  <span>ENCOUNTER</span>
+                  <span className="uppercase">{t('appointments.encounter_short')}</span>
                 </div>
               )}
             </div>
@@ -266,18 +303,18 @@ export function CompactAppointmentCard({
               <div className="flex items-center gap-0.5 justify-end">
                 {appointment.status === 'scheduled' && (
                   <>
-                    <div className="text-[8px] text-gray-400 px-1">Start</div>
-                    <div className="text-[8px] text-gray-400 px-1">Cancel</div>
+                    <div className="text-[8px] text-gray-400 px-1">{t('appointments.start')}</div>
+                    <div className="text-[8px] text-gray-400 px-1">{t('appointments.cancel')}</div>
                   </>
                 )}
                 {appointment.status === 'in-progress' && (
                   <>
-                    <div className="text-[8px] text-gray-400 px-1">Complete</div>
-                    <div className="text-[8px] text-gray-400 px-1">Details</div>
+                    <div className="text-[8px] text-gray-400 px-1">{t('appointments.complete')}</div>
+                    <div className="text-[8px] text-gray-400 px-1">{t('appointments.details')}</div>
                   </>
                 )}
                 {(appointment.status === 'completed' || appointment.status === 'cancelled') && (
-                  <div className="text-[8px] text-gray-400 px-1">Details</div>
+                  <div className="text-[8px] text-gray-400 px-1">{t('appointments.details')}</div>
                 )}
               </div>
             )}
@@ -289,18 +326,18 @@ export function CompactAppointmentCard({
                     <button
                       onClick={(e) => handleAction(e, 'start')}
                       className="flex-1 flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-primary text-primary-foreground rounded text-[8px] font-medium hover:opacity-90 transition-colors"
-                      title="Start Encounter"
+                      title={t('appointments.start_encounter')}
                     >
                       <Play className="h-2 w-2" fill="currentColor" />
-                      Start
+                      {t('appointments.start')}
                     </button>
                     <button
                       onClick={(e) => handleAction(e, 'cancel')}
                       className="flex-1 flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-gray-400 text-white rounded text-[8px] font-medium hover:bg-gray-500 transition-colors"
-                      title="Cancel Appointment"
+                      title={t('appointments.cancel_appointment')}
                     >
                       <XCircle className="h-2 w-2" />
-                      Cancel
+                      {t('appointments.cancel')}
                     </button>
                   </>
                 )}
@@ -309,18 +346,18 @@ export function CompactAppointmentCard({
                     <button
                       onClick={(e) => handleAction(e, 'complete')}
                       className="flex-1 flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-theme-accent text-white rounded text-[8px] font-medium hover:opacity-90 transition-colors"
-                      title="Complete Appointment"
+                      title={t('appointments.complete_appointment')}
                     >
                       <CheckCircle className="h-2 w-2" />
-                      Complete
+                      {t('appointments.complete')}
                     </button>
                     <button
                       onClick={(e) => handleAction(e, 'details')}
                       className="flex-1 flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-gray-400 text-white rounded text-[8px] font-medium hover:bg-gray-500 transition-colors"
-                      title="View Details"
+                      title={t('appointments.view_details')}
                     >
                       <FileText className="h-2 w-2" />
-                      Details
+                      {t('appointments.details')}
                     </button>
                   </>
                 )}
@@ -328,10 +365,10 @@ export function CompactAppointmentCard({
                   <button
                     onClick={(e) => handleAction(e, 'details')}
                     className="w-full flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-gray-400 text-white rounded text-[8px] font-medium hover:bg-gray-500 transition-colors"
-                    title="View Details"
+                    title={t('appointments.view_details')}
                   >
                     <FileText className="h-2 w-2" />
-                    Details
+                    {t('appointments.details')}
                   </button>
                 )}
               </div>
@@ -365,7 +402,7 @@ export function CompactAppointmentCard({
               <h3 className="font-bold text-sm text-gray-900">{appointment.patientName}</h3>
             </div>
             {appointment.patientAge && (
-              <div className="text-xs text-gray-600 ml-6">Age: {appointment.patientAge}</div>
+              <div className="text-xs text-gray-600 ml-6">{t('patient_form.age')}: {appointment.patientAge}</div>
             )}
             {appointment.patientPhone && (
               <div className="flex items-center gap-1 text-xs text-gray-600 ml-6">
@@ -382,7 +419,7 @@ export function CompactAppointmentCard({
               <span className="font-medium text-gray-700">
                 {formatTime(startTime)} - {formatTime(endTime)}
               </span>
-              <span className="text-gray-500">({appointment.duration} min)</span>
+              <span className="text-gray-500">({appointment.duration} {t('appointments.minutes_short')})</span>
             </div>
 
             {appointment.appointmentType && (
@@ -402,26 +439,26 @@ export function CompactAppointmentCard({
             {appointment.practitionerName && (
               <div className="flex items-center gap-2 text-xs">
                 <User className="h-3.5 w-3.5 text-gray-500 flex-shrink-0" />
-                <span className="text-gray-700">Dr. {appointment.practitionerName}</span>
+                <span className="text-gray-700">{t('common.doctor_prefix')} {appointment.practitionerName}</span>
               </div>
             )}
 
             {appointment.mode && (
               <div className="flex items-center gap-2 text-xs">
                 {getModeIcon(appointment.mode)}
-                <span className="text-gray-700 capitalize">{appointment.mode.replace('-', ' ')}</span>
+                <span className="text-gray-700">{getModeLabel(appointment.mode)}</span>
               </div>
             )}
 
             <div className="flex items-center gap-2 text-xs">
               <div className={`w-2 h-2 rounded-full ${getStatusBadgeColor(appointment.status)}`} />
-              <span className="text-gray-700 font-medium capitalize">{appointment.status.replace('-', ' ')}</span>
+              <span className="text-gray-700 font-medium">{getStatusLabel(appointment.status)}</span>
             </div>
           </div>
 
           {/* Quick Actions */}
           <div className="border-t border-gray-200 pt-2">
-            <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Quick Actions</div>
+            <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('appointments.quick_actions')}</div>
             <div className="flex flex-wrap gap-1.5">
               {/* Active Encounter Button - Highlighted */}
               {appointment.encounterId && (
@@ -430,7 +467,7 @@ export function CompactAppointmentCard({
                   className="flex items-center gap-1 px-2 py-1 bg-theme-accent text-white rounded text-xs font-bold hover:opacity-90 transition-colors ring-2 ring-theme-accent/50 ring-offset-1 animate-pulse"
                 >
                   <ActivitySquare className="h-3 w-3" />
-                  Open Encounter
+                  {t('appointments.open_encounter')}
                 </button>
               )}
 
@@ -441,14 +478,14 @@ export function CompactAppointmentCard({
                     className="flex items-center gap-1 px-2 py-1 bg-primary text-primary-foreground rounded text-xs font-medium hover:opacity-90 transition-colors"
                   >
                     <Play className="h-3 w-3" fill="currentColor" />
-                    Start
+                    {t('appointments.start')}
                   </button>
                   <button
                     onClick={(e) => handleAction(e, 'cancel')}
                     className="flex items-center gap-1 px-2 py-1 bg-gray-400 text-white rounded text-xs font-medium hover:bg-gray-500 transition-colors"
                   >
                     <XCircle className="h-3 w-3" />
-                    Cancel
+                    {t('appointments.cancel')}
                   </button>
                 </>
               )}
@@ -458,7 +495,7 @@ export function CompactAppointmentCard({
                   className="flex items-center gap-1 px-2 py-1 bg-theme-accent text-white rounded text-xs font-medium hover:opacity-90 transition-colors"
                 >
                   <CheckCircle className="h-3 w-3" />
-                  Complete
+                  {t('appointments.complete')}
                 </button>
               )}
               <button
@@ -466,7 +503,7 @@ export function CompactAppointmentCard({
                 className="flex items-center gap-1 px-2 py-1 bg-gray-600 text-white rounded text-xs font-medium hover:bg-gray-700 transition-colors"
               >
                 <FileText className="h-3 w-3" />
-                Details
+                {t('appointments.details')}
               </button>
               {appointment.patientId && (
                 <button
@@ -474,7 +511,7 @@ export function CompactAppointmentCard({
                   className="flex items-center gap-1 px-2 py-1 bg-theme-secondary text-white rounded text-xs font-medium hover:opacity-90 transition-colors"
                 >
                   <User className="h-3 w-3" />
-                  Patient
+                  {t('appointment_form.patient')}
                 </button>
               )}
             </div>

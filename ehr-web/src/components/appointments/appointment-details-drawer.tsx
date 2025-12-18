@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { InstantMeetingButton } from '@/components/virtual-meetings/instant-meeting-button';
 import { LiveCallIndicator } from '@/components/appointments/live-call-indicator';
 import { useToast } from '@/hooks/useToast';
+import { useTranslation } from '@/i18n/client';
 
 interface AppointmentDetailsDrawerProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ export function AppointmentDetailsDrawer({
 }: AppointmentDetailsDrawerProps) {
   const router = useRouter();
   const toast = useToast();
+  const { t, i18n } = useTranslation('common');
   const [isCompleting, setIsCompleting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [encounterId, setEncounterId] = useState<string | null>(null);
@@ -48,55 +50,55 @@ export function AppointmentDetailsDrawer({
 
   // Contact Actions
   const handleCall = () => {
-    toast.info('Initiating call to +91 9767377819...');
+    toast.info(t('appointments.toast_initiating_call', { phone: '+91 9767377819' }));
     // In production: window.location.href = 'tel:+919767377819';
   };
 
   const handleMessage = () => {
-    toast.success('Opening WhatsApp...');
+    toast.success(t('appointments.toast_opening_whatsapp'));
     // In production: window.open('https://wa.me/919767377819', '_blank');
   };
 
   const handleEmail = () => {
-    toast.info('Opening email client...');
+    toast.info(t('appointments.toast_opening_email_client'));
     // In production: window.location.href = 'mailto:patient@email.com';
   };
 
   const handleMap = () => {
-    toast.info('Opening maps to patient location...');
+    toast.info(t('appointments.toast_opening_maps'));
     // In production: window.open('https://maps.google.com/?q=patient+address', '_blank');
   };
 
   const handleSMS = () => {
-    toast.success('SMS reminder sent successfully!');
+    toast.success(t('appointments.toast_sms_reminder_sent'));
     // In production: API call to send SMS
   };
 
   // Reminder Actions
   const handleSetReminder = () => {
-    toast.success('Reminder set for 1 hour before appointment');
+    toast.success(t('appointments.toast_reminder_set'));
     // In production: API call to set reminder
   };
 
   const handleScheduleFollowUp = () => {
-    toast.info('Opening follow-up scheduling...');
+    toast.info(t('appointments.toast_opening_followup_scheduling'));
     // Navigate to appointments page with pre-fill
     router.push('/appointments?action=create&patientId=' + appointment.patientId);
   };
 
   // Patient Actions
   const handleSendPrescription = () => {
-    toast.info('Opening prescription form...');
+    toast.info(t('appointments.toast_opening_prescription_form'));
     router.push(`/prescriptions/create?patientId=${appointment.patientId}&appointmentId=${appointment.id}`);
   };
 
   const handleSendLabResults = () => {
-    toast.info('Opening lab results...');
+    toast.info(t('appointments.toast_opening_lab_results'));
     router.push(`/lab-results?patientId=${appointment.patientId}`);
   };
 
   const handleSendDocuments = () => {
-    toast.info('Opening document manager...');
+    toast.info(t('appointments.toast_opening_document_manager'));
     router.push(`/patients/${appointment.patientId}/documents`);
   };
 
@@ -104,9 +106,9 @@ export function AppointmentDetailsDrawer({
     if (meetingCode) {
       const link = `${window.location.origin}/meeting/${meetingCode}`;
       navigator.clipboard.writeText(link);
-      toast.success('Video link copied to clipboard!');
+      toast.success(t('appointments.toast_video_link_copied'));
     } else {
-      toast.warning('No active video call. Please start a video call first.');
+      toast.warning(t('appointments.toast_no_active_video_call'));
     }
   };
 
@@ -126,13 +128,17 @@ export function AppointmentDetailsDrawer({
     onClose();
   };
 
-  const formatTime = (date: Date | string) => {
-    return new Date(date).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
+  const locale = i18n.language || 'en';
+  const timeFormatter = React.useMemo(
+    () => new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' }),
+    [locale]
+  );
+  const shortDateFormatter = React.useMemo(
+    () => new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }),
+    [locale]
+  );
+
+  const formatTime = (date: Date | string) => timeFormatter.format(new Date(date));
 
   const formatDate = (date: Date | string) => {
     const d = new Date(date);
@@ -142,10 +148,26 @@ export function AppointmentDetailsDrawer({
     appointmentDate.setHours(0, 0, 0, 0);
 
     if (appointmentDate.getTime() === today.getTime()) {
-      return 'today';
-    } else {
-      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return t('appointments.today');
     }
+    return shortDateFormatter.format(d);
+  };
+
+  const getStatusLabel = (status: string) => {
+    const statusKeyByStatus: Record<string, string> = {
+      scheduled: 'appointment_form.scheduled',
+      confirmed: 'appointment_form.confirmed',
+      cancelled: 'appointment_form.cancelled',
+      completed: 'appointment_form.completed',
+      'no-show': 'appointment_form.no_show',
+      rescheduled: 'appointment_form.rescheduled',
+      'in-progress': 'appointment_form.in_progress',
+      waitlist: 'appointment_form.waitlist',
+    };
+
+    const key = statusKeyByStatus[status];
+    if (key) return t(key);
+    return status;
   };
 
   const handleCompleteAppointment = async () => {
@@ -169,7 +191,7 @@ export function AppointmentDetailsDrawer({
       }
     } catch (error) {
       console.error('Error checking/creating encounter:', error);
-      alert('Failed to process appointment completion. Please try again.');
+      alert(t('appointments.alert_completion_failed'));
     } finally {
       setIsCompleting(false);
     }
@@ -188,14 +210,14 @@ export function AppointmentDetailsDrawer({
     try {
       setIsCompleting(true);
       await EncounterService.complete(encounterId);
-      alert('Appointment completed successfully!');
+      alert(t('appointments.alert_completed_successfully'));
       setShowConfirmDialog(false);
       onClose();
       // Trigger parent refresh to update appointment list
       onAppointmentUpdated?.();
     } catch (error) {
       console.error('Error completing encounter:', error);
-      alert('Failed to complete appointment. Please try again.');
+      alert(t('appointments.alert_complete_failed'));
     } finally {
       setIsCompleting(false);
     }
@@ -212,7 +234,7 @@ export function AppointmentDetailsDrawer({
       await handleCompleteAppointment();
 
       // Show notification
-      alert('Video call ended. Appointment has been marked as completed.');
+      alert(t('appointments.alert_video_call_ended_autocomplete'));
 
       // Refresh the appointment list
       onAppointmentUpdated?.();
@@ -241,15 +263,15 @@ export function AppointmentDetailsDrawer({
   const getAppointmentTypeBadge = () => {
     const type = appointment.appointmentType?.toLowerCase() || 'general';
     if (type.includes('video') || type.includes('virtual') || type.includes('telehealth')) {
-      return { label: 'Video Visit', color: 'bg-purple-100 text-purple-700' };
+      return { label: t('appointments.badge_video_visit'), color: 'bg-purple-100 text-purple-700' };
     }
     if (type.includes('urgent') || type.includes('emergency')) {
-      return { label: 'Urgent', color: 'bg-red-100 text-red-700' };
+      return { label: t('appointments.badge_urgent'), color: 'bg-red-100 text-red-700' };
     }
     if (type.includes('follow') || type.includes('followup')) {
-      return { label: 'Follow-up', color: 'bg-blue-100 text-blue-700' };
+      return { label: t('appointments.badge_follow_up'), color: 'bg-blue-100 text-blue-700' };
     }
-    return { label: 'In-Person', color: 'bg-gray-100 text-gray-700' };
+    return { label: t('appointments.badge_in_person'), color: 'bg-gray-100 text-gray-700' };
   };
 
   const appointmentBadge = getAppointmentTypeBadge();
@@ -286,7 +308,7 @@ export function AppointmentDetailsDrawer({
           <button
             onClick={onClose}
             className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
-            title="Close"
+            title={t('common.close')}
           >
             <X className="h-4 w-4 text-gray-600" />
           </button>
@@ -294,7 +316,7 @@ export function AppointmentDetailsDrawer({
 
         {/* Quick Status - Segmented Control */}
         <div className="border-b border-gray-200 px-3 py-2 bg-white">
-          <div className="text-[10px] font-medium text-gray-500 mb-1.5">Quick Status</div>
+          <div className="text-[10px] font-medium text-gray-500 mb-1.5">{t('appointments.quick_status')}</div>
           <div className="flex gap-1.5">
             <button
               onClick={() => {
@@ -302,10 +324,10 @@ export function AppointmentDetailsDrawer({
                 onClose();
               }}
               className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md hover:bg-emerald-100 transition-all"
-              title="Mark patient as checked in"
+              title={t('appointments.tooltip_mark_checked_in')}
             >
               <UserCheck className="h-3 w-3" />
-              Check-In
+              {t('appointments.check_in')}
             </button>
             <button
               onClick={() => {
@@ -313,10 +335,10 @@ export function AppointmentDetailsDrawer({
                 onClose();
               }}
               className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-md hover:bg-amber-100 transition-all"
-              title="Mark appointment as no-show"
+              title={t('appointments.tooltip_mark_no_show')}
             >
               <UserX className="h-3 w-3" />
-              No-Show
+              {t('appointment_form.no_show')}
             </button>
             <button
               onClick={() => {
@@ -324,10 +346,10 @@ export function AppointmentDetailsDrawer({
                 onClose();
               }}
               className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200 rounded-md hover:bg-rose-100 transition-all"
-              title="Cancel this appointment"
+              title={t('appointments.cancel_this_appointment')}
             >
               <XCircle className="h-3 w-3" />
-              Cancel
+              {t('appointments.cancel')}
             </button>
           </div>
         </div>
@@ -348,50 +370,50 @@ export function AppointmentDetailsDrawer({
           {/* Contact Card */}
           <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs font-semibold text-gray-700">Contact</div>
+              <div className="text-xs font-semibold text-gray-700">{t('appointments.contact')}</div>
               <div className="text-[11px] text-gray-500">+91 9767377819</div>
             </div>
             <div className="grid grid-cols-4 gap-1.5 mb-2">
               <button
                 onClick={handleCall}
                 className="flex flex-col items-center justify-center gap-1 px-2 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-all"
-                title="Call patient"
+                title={t('appointments.tooltip_call_patient')}
               >
                 <Phone className="h-3.5 w-3.5" />
-                <span className="text-[9px] font-medium">Call</span>
+                <span className="text-[9px] font-medium">{t('appointments.call')}</span>
               </button>
               <button
                 onClick={handleMessage}
                 className="flex flex-col items-center justify-center gap-1 px-2 py-2 bg-theme-accent text-white rounded-md hover:opacity-90 transition-all"
-                title="Send WhatsApp message"
+                title={t('appointments.tooltip_send_whatsapp')}
               >
                 <MessageCircle className="h-3.5 w-3.5" />
-                <span className="text-[9px] font-medium">Message</span>
+                <span className="text-[9px] font-medium">{t('appointments.message')}</span>
               </button>
               <button
                 onClick={handleEmail}
                 className="flex flex-col items-center justify-center gap-1 px-2 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-all"
-                title="Send email"
+                title={t('appointments.tooltip_send_email')}
               >
                 <Mail className="h-3.5 w-3.5" />
-                <span className="text-[9px] font-medium">Email</span>
+                <span className="text-[9px] font-medium">{t('appointments.email')}</span>
               </button>
               <button
                 onClick={handleMap}
                 className="flex flex-col items-center justify-center gap-1 px-2 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-all"
-                title="View location"
+                title={t('appointments.tooltip_view_location')}
               >
                 <MapPin className="h-3.5 w-3.5" />
-                <span className="text-[9px] font-medium">Map</span>
+                <span className="text-[9px] font-medium">{t('appointments.map')}</span>
               </button>
             </div>
             <button
               onClick={handleSMS}
               className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-theme-secondary/10 text-theme-secondary border border-theme-secondary/20 rounded-md hover:bg-theme-secondary/20 transition-all text-[11px] font-medium"
-              title="Send SMS"
+              title={t('appointments.send_sms_reminder')}
             >
               <Send className="h-3 w-3" />
-              Send SMS Reminder
+              {t('appointments.send_sms_reminder')}
             </button>
           </div>
 
@@ -403,7 +425,7 @@ export function AppointmentDetailsDrawer({
                   {appointment.practitionerName}
                 </div>
                 <div className="text-[11px] text-gray-600">
-                  {appointment.appointmentType || 'General Consultation'}
+                  {appointment.appointmentType || t('appointment_form.general_consultation')}
                 </div>
               </div>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${appointment.status === 'scheduled' ? 'bg-slate-100 text-slate-700' :
@@ -411,7 +433,7 @@ export function AppointmentDetailsDrawer({
                     appointment.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
                       'bg-gray-100 text-gray-600'
                 }`}>
-                {appointment.status}
+                {getStatusLabel(appointment.status)}
               </span>
             </div>
             <div className="flex items-center gap-2 text-[11px] text-gray-600">
@@ -421,7 +443,7 @@ export function AppointmentDetailsDrawer({
                 <span>{formatDate(appointment.startTime)}</span>
               </div>
               <span>•</span>
-              <span>{appointment.duration} mins</span>
+              <span>{appointment.duration} {t('appointment_form.duration_minutes')}</span>
             </div>
           </div>
 
@@ -429,7 +451,7 @@ export function AppointmentDetailsDrawer({
           <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <div className="text-[10px] text-gray-500 mb-0.5">Payment Due</div>
+                <div className="text-[10px] text-gray-500 mb-0.5">{t('appointments.payment_due')}</div>
                 <div className="text-xl font-bold text-gray-900">₹ 0.00</div>
               </div>
               <CreditCard className="h-5 w-5 text-gray-300" />
@@ -442,18 +464,18 @@ export function AppointmentDetailsDrawer({
                     onClose();
                   }}
                   className="flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-[11px] font-medium"
-                  title="Create superbill"
+                  title={t('appointments.create_superbill')}
                 >
                   <Receipt className="h-3 w-3" />
-                  Superbill
+                  {t('appointments.superbill')}
                 </button>
               )}
               <button
                 className="flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all text-[11px] font-medium"
-                title="Collect payment"
+                title={t('appointments.collect_payment')}
               >
                 <CreditCard className="h-3 w-3" />
-                Collect
+                {t('appointments.collect')}
               </button>
             </div>
           </div>
@@ -461,82 +483,82 @@ export function AppointmentDetailsDrawer({
           {/* Reminders Card */}
           <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs font-semibold text-gray-700">Reminders</div>
+              <div className="text-xs font-semibold text-gray-700">{t('appointments.reminders')}</div>
               <Bell className="h-3.5 w-3.5 text-gray-400" />
             </div>
             <div className="space-y-1.5">
               <button
                 onClick={handleSetReminder}
                 className="w-full flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-md hover:bg-amber-100 transition-all text-[11px] font-medium"
-                title="Set appointment reminder"
+                title={t('appointments.tooltip_set_appointment_reminder')}
               >
                 <BellPlus className="h-3 w-3" />
-                <span>Set Reminder (1hr before)</span>
+                <span>{t('appointments.set_reminder_one_hour')}</span>
               </button>
               <button
                 onClick={handleScheduleFollowUp}
                 className="w-full flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-md hover:bg-purple-100 transition-all text-[11px] font-medium"
-                title="Schedule follow-up"
+                title={t('appointments.tooltip_schedule_follow_up')}
               >
                 <Calendar className="h-3 w-3" />
-                <span>Schedule Follow-up</span>
+                <span>{t('appointments.schedule_follow_up')}</span>
               </button>
             </div>
           </div>
 
           {/* Actions Card */}
           <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3">
-            <div className="text-xs font-semibold text-gray-700 mb-2">Patient Actions</div>
+            <div className="text-xs font-semibold text-gray-700 mb-2">{t('appointments.patient_actions')}</div>
             <div className="grid grid-cols-2 gap-1.5">
               <button
                 onClick={handleSendPrescription}
                 className="flex items-center justify-center gap-1 px-2 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-md hover:bg-primary/20 transition-all text-[11px] font-medium"
-                title="Send prescription"
+                title={t('appointments.tooltip_send_prescription')}
               >
                 <Pill className="h-3 w-3" />
-                Prescription
+                {t('appointments.prescription')}
               </button>
               <button
                 onClick={handleSendLabResults}
                 className="flex items-center justify-center gap-1 px-2 py-1.5 bg-theme-accent/10 text-theme-accent border border-theme-accent/20 rounded-md hover:bg-theme-accent/20 transition-all text-[11px] font-medium"
-                title="Send lab results"
+                title={t('appointments.tooltip_send_lab_results')}
               >
                 <FileDown className="h-3 w-3" />
-                Lab Results
+                {t('appointments.lab_results')}
               </button>
               <button
                 onClick={handleSendDocuments}
                 className="flex items-center justify-center gap-1 px-2 py-1.5 bg-theme-secondary/10 text-theme-secondary border border-theme-secondary/20 rounded-md hover:bg-theme-secondary/20 transition-all text-[11px] font-medium"
-                title="Send documents"
+                title={t('appointments.tooltip_send_documents')}
               >
                 <FileText className="h-3 w-3" />
-                Documents
+                {t('appointments.documents')}
               </button>
               <button
                 onClick={handleShareVideoLink}
                 className="flex items-center justify-center gap-1 px-2 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md hover:bg-indigo-100 transition-all text-[11px] font-medium"
-                title="Share video link"
+                title={t('appointments.tooltip_share_video_link')}
               >
                 <Video className="h-3 w-3" />
-                Video Link
+                {t('appointments.video_link')}
               </button>
             </div>
           </div>
 
           {/* Notes Card */}
           <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3">
-            <div className="text-xs font-semibold text-gray-700 mb-2">Notes</div>
+            <div className="text-xs font-semibold text-gray-700 mb-2">{t('appointment_form.notes')}</div>
             <textarea
               className="w-full px-2.5 py-2 text-[11px] border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               rows={3}
-              placeholder="Add notes about this appointment..."
+              placeholder={t('appointments.notes_placeholder')}
               defaultValue={appointment.notes}
             />
           </div>
 
           {/* Appointment Management Card */}
           <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3">
-            <div className="text-xs font-semibold text-gray-700 mb-2">Management</div>
+            <div className="text-xs font-semibold text-gray-700 mb-2">{t('appointments.management')}</div>
             <div className="grid grid-cols-2 gap-1.5">
               <button
                 onClick={() => {
@@ -544,10 +566,10 @@ export function AppointmentDetailsDrawer({
                   onClose();
                 }}
                 className="flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 transition-all text-gray-700 text-[11px] font-medium"
-                title="Edit appointment details"
+                title={t('appointments.tooltip_edit_appointment')}
               >
                 <Edit3 className="h-3 w-3" />
-                Edit
+                {t('common.edit')}
               </button>
               <button
                 onClick={() => {
@@ -555,37 +577,37 @@ export function AppointmentDetailsDrawer({
                   onClose();
                 }}
                 className="flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 transition-all text-gray-700 text-[11px] font-medium"
-                title="Copy appointment"
+                title={t('appointments.tooltip_duplicate_appointment')}
               >
                 <Copy className="h-3 w-3" />
-                Duplicate
+                {t('common.duplicate')}
               </button>
             </div>
           </div>
 
           {/* Quick Links Card */}
           <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3">
-            <div className="text-xs font-semibold text-gray-700 mb-2">Quick Links</div>
+            <div className="text-xs font-semibold text-gray-700 mb-2">{t('appointments.quick_links')}</div>
             <div className="space-y-1">
               <button
                 onClick={handleViewPatientRecord}
                 className="w-full text-left px-2.5 py-1.5 text-[11px] text-blue-600 hover:bg-blue-50 rounded-md transition-all flex items-center justify-between group"
               >
-                <span>View Patient Record</span>
+                <span>{t('appointments.view_patient_record')}</span>
                 <span className="text-blue-400 group-hover:translate-x-1 transition-transform text-xs">→</span>
               </button>
               <button
                 onClick={handleViewMedicalHistory}
                 className="w-full text-left px-2.5 py-1.5 text-[11px] text-blue-600 hover:bg-blue-50 rounded-md transition-all flex items-center justify-between group"
               >
-                <span>View Medical History</span>
+                <span>{t('appointments.view_medical_history')}</span>
                 <span className="text-blue-400 group-hover:translate-x-1 transition-transform text-xs">→</span>
               </button>
               <button
                 onClick={handleViewPrescriptions}
                 className="w-full text-left px-2.5 py-1.5 text-[11px] text-blue-600 hover:bg-blue-50 rounded-md transition-all flex items-center justify-between group"
               >
-                <span>Prescriptions</span>
+                <span>{t('appointments.prescriptions')}</span>
                 <span className="text-blue-400 group-hover:translate-x-1 transition-transform text-xs">→</span>
               </button>
             </div>
@@ -602,10 +624,10 @@ export function AppointmentDetailsDrawer({
                   onClose();
                 }}
                 className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-all font-medium text-xs shadow-sm"
-                title="Begin documenting this patient visit"
+                title={t('appointments.tooltip_begin_documenting_visit')}
               >
                 <FileText className="h-3.5 w-3.5" />
-                Start Encounter
+                {t('appointments.start_encounter')}
               </button>
             )}
 
@@ -624,10 +646,10 @@ export function AppointmentDetailsDrawer({
               <button
                 onClick={handleJoinLiveCall}
                 className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all font-medium text-xs shadow-sm"
-                title="Join HIPAA-compliant video consultation"
+                title={t('appointments.tooltip_join_video_call')}
               >
                 <Video className="h-3.5 w-3.5" />
-                Join Video Call
+                {t('appointments.join_video_call')}
               </button>
             )}
 
@@ -635,10 +657,10 @@ export function AppointmentDetailsDrawer({
               onClick={handleCompleteAppointment}
               disabled={isCompleting}
               className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-theme-accent text-white rounded-md hover:opacity-90 transition-all font-medium text-xs shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Mark this appointment as completed"
+              title={t('appointments.tooltip_mark_completed')}
             >
               <CheckCircle className="h-3.5 w-3.5" />
-              {isCompleting ? 'Processing...' : 'Complete Appointment'}
+              {isCompleting ? t('appointments.processing') : t('appointments.complete_appointment')}
             </button>
           </div>
         )}
@@ -658,10 +680,10 @@ export function AppointmentDetailsDrawer({
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  Complete Appointment
+                  {t('appointments.complete_appointment')}
                 </h3>
                 <p className="text-sm text-gray-600">
-                  An encounter has been created for this appointment. Would you like to document this visit now or complete the appointment directly?
+                  {t('appointments.confirm_complete_description')}
                 </p>
               </div>
             </div>
@@ -672,14 +694,14 @@ export function AppointmentDetailsDrawer({
                 disabled={isCompleting}
                 className="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-colors font-medium disabled:opacity-50"
               >
-                Document Visit
+                {t('appointments.document_visit')}
               </button>
               <button
                 onClick={handleCompleteDirectly}
                 disabled={isCompleting}
                 className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
               >
-                {isCompleting ? 'Completing...' : 'Complete Now'}
+                {isCompleting ? t('appointments.completing') : t('appointments.complete_now')}
               </button>
             </div>
 
@@ -688,7 +710,7 @@ export function AppointmentDetailsDrawer({
               disabled={isCompleting}
               className="w-full mt-3 px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </>

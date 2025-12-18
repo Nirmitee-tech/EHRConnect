@@ -1,5 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from '@/i18n/client';
 
 type TabType = 'appointment' | 'task' | 'unavailable';
 
@@ -10,6 +11,8 @@ interface DrawerHeaderProps {
 }
 
 export function DrawerHeader({ activeTab, onTabChange, onClose }: DrawerHeaderProps) {
+  const { t } = useTranslation('common');
+
   return (
     <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
       <div className="flex gap-6">
@@ -21,7 +24,7 @@ export function DrawerHeader({ activeTab, onTabChange, onClose }: DrawerHeaderPr
               : 'text-gray-600'
             }`}
         >
-          Appointment
+          {t('appointment_form.appointment_tab')}
         </button>
         <button
           type="button"
@@ -31,7 +34,7 @@ export function DrawerHeader({ activeTab, onTabChange, onClose }: DrawerHeaderPr
               : 'text-gray-600'
             }`}
         >
-          Task
+          {t('appointment_form.task_tab')}
         </button>
         <button
           type="button"
@@ -41,7 +44,7 @@ export function DrawerHeader({ activeTab, onTabChange, onClose }: DrawerHeaderPr
               : 'text-gray-600'
             }`}
         >
-          Doctor/Staff Unavailable
+          {t('appointment_form.doctor_staff_unavailable_tab')}
         </button>
       </div>
       <button

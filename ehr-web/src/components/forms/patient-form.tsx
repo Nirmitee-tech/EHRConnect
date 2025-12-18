@@ -64,75 +64,13 @@ interface PatientFormProps {
   onCancel: () => void;
 }
 
-// Gender options - will be translated dynamically in component
-const genderOptions = [
-  { value: 'male', label: 'Male' },
-  { value: 'female', label: 'Female' },
-  { value: 'other', label: 'Other' },
-  { value: 'unknown', label: 'Unknown' }
-];
-
-// Pronoun options - will be translated dynamically in component
-const pronounOptions = ['He/Him', 'She/Her', 'They/Them', 'Prefer to self-describe'];
-
-// Marital status options - will be translated dynamically in component
-const maritalStatusOptions = [
-  { value: 'S', label: 'Single' },
-  { value: 'M', label: 'Married' },
-  { value: 'D', label: 'Divorced' },
-  { value: 'W', label: 'Widowed' },
-  { value: 'U', label: 'Unknown' }
-];
-
-const languageOptions = [
-  { value: 'en', label: 'English' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'fr', label: 'French' },
-  { value: 'hi', label: 'Hindi' }
-];
-
-// Options that will be translated dynamically in component
-const raceOptions = ['White', 'Black or African American', 'Asian', 'Native Hawaiian', 'Other'];
-const ethnicityOptions = ['Hispanic or Latino', 'Not Hispanic or Latino'];
-const bloodGroupOptions = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const relationshipOptions = ['Spouse', 'Parent', 'Child', 'Sibling', 'Friend', 'Other'];
 const contactMethodOptions = ['email', 'sms', 'phone'];
 const smokingStatusOptions = ['Never', 'Former', 'Current'];
 const alcoholUseOptions = ['None', 'Occasional', 'Daily'];
 const doctorGenderOptions = ['No preference', 'Male', 'Female'];
-const patientStatusOptions = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' }
-];
-
-const SectionConfig = [
-  { id: 'provider', title: 'Provider Information', icon: Stethoscope, required: true },
-  { id: 'patient', title: 'Patient Details', icon: User, required: true },
-  { id: 'contact', title: 'Contact Information', icon: Phone, required: true },
-  { id: 'emergency', title: 'Emergency Contact (Optional)', icon: AlertCircle, required: false },
-  { id: 'insurance', title: 'Insurance (Optional)', icon: Shield, required: false },
-  { id: 'preferences', title: 'Preferences', icon: Sparkles },
-  { id: 'consent', title: 'Privacy & Consent', icon: Lock, required: true },
-  { id: 'clinical', title: 'Clinical Context', icon: Activity }
-];
 
 type FacilityTypeOption = 'clinic' | 'hospital' | 'lab' | 'pharmacy';
-
-const locationTypeOptions: { value: FacilityTypeOption; label: string }[] = [
-  { value: 'clinic', label: 'Clinic' },
-  { value: 'hospital', label: 'Hospital' },
-  { value: 'lab', label: 'Laboratory' },
-  { value: 'pharmacy', label: 'Pharmacy' }
-];
-
-const providerSpecialtyOptions = [
-  'Family Medicine',
-  'Internal Medicine',
-  'Cardiology',
-  'Pediatrics',
-  'Orthopedics',
-  'Dermatology'
-];
 
 const InlineAddButton = ({ label, onClick }: { label: string; onClick?: () => void }) => (
   <button
@@ -140,7 +78,7 @@ const InlineAddButton = ({ label, onClick }: { label: string; onClick?: () => vo
     onClick={onClick}
     className="text-xs font-medium text-[#3342a5] hover:text-[#2a3686]"
   >
-    + Add {label}
+    + {label}
   </button>
 );
 
@@ -160,6 +98,8 @@ interface AccordionSectionProps {
   icon: typeof User;
   isOpen: boolean;
   required?: boolean;
+  requiredBadgeLabel: string;
+  expandHint: string;
   onToggle: (id: string) => void;
   children: React.ReactNode;
 }
@@ -170,6 +110,8 @@ const AccordionSection = ({
   icon: Icon,
   isOpen,
   required,
+  requiredBadgeLabel,
+  expandHint,
   onToggle,
   children
 }: AccordionSectionProps) => (
@@ -190,11 +132,11 @@ const AccordionSection = ({
             <p className="text-sm font-semibold text-gray-900">{title}</p>
             {required && (
               <span className="text-[9px] font-bold uppercase tracking-wide text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
-                Required
+                {requiredBadgeLabel}
               </span>
             )}
           </div>
-          {!isOpen && <p className="text-[11px] text-gray-500">Click to expand</p>}
+          {!isOpen && <p className="text-[11px] text-gray-500">{expandHint}</p>}
         </div>
       </div>
       <ChevronDown
@@ -256,6 +198,12 @@ export function PatientForm({
     validate,
     prepareSubmitData
   } = usePatientForm(patient, currentFacility?.id);
+
+  const translateError = (message?: string) => {
+    if (!message) return undefined;
+    if (message.startsWith('patient_form.validation.')) return t(message);
+    return message;
+  };
 
   const photoPreview = formData.demographics.photo;
   const compactHiddenSections = compactMode ? new Set(['preferences', 'clinical']) : null;
@@ -329,6 +277,14 @@ export function PatientForm({
     { value: 'hi', label: t('patient_form.language_hindi') }
   ], [t]);
 
+  const translatedPatientStatusOptions = useMemo(
+    () => [
+      { value: 'active', label: t('patient_form.active') },
+      { value: 'inactive', label: t('patient_form.inactive') },
+    ],
+    [t]
+  );
+
   // Translated relationship options
   const translatedRelationshipOptions = useMemo(() => [
     t('patient_form.relationship_spouse'),
@@ -338,6 +294,54 @@ export function PatientForm({
     t('patient_form.relationship_friend'),
     t('patient_form.relationship_other')
   ], [t]);
+
+  const contactMethodLabelByValue: Record<string, string> = useMemo(
+    () => ({
+      email: t('patient_form.contact_method_email'),
+      sms: t('patient_form.contact_method_sms'),
+      phone: t('patient_form.contact_method_phone')
+    }),
+    [t]
+  );
+
+  const doctorGenderLabelByValue: Record<string, string> = useMemo(
+    () => ({
+      'No preference': t('patient_form.no_preference'),
+      Male: t('patient_form.male'),
+      Female: t('patient_form.female')
+    }),
+    [t]
+  );
+
+  const smokingStatusLabelByValue: Record<string, string> = useMemo(
+    () => ({
+      Never: t('patient_form.never'),
+      Former: t('patient_form.former'),
+      Current: t('patient_form.current')
+    }),
+    [t]
+  );
+
+  const alcoholUseLabelByValue: Record<string, string> = useMemo(
+    () => ({
+      None: t('patient_form.none'),
+      Occasional: t('patient_form.occasional'),
+      Daily: t('patient_form.daily')
+    }),
+    [t]
+  );
+
+  const relationshipLabelByValue: Record<string, string> = useMemo(
+    () => ({
+      Spouse: t('patient_form.relationship_spouse'),
+      Parent: t('patient_form.relationship_parent'),
+      Child: t('patient_form.relationship_child'),
+      Sibling: t('patient_form.relationship_sibling'),
+      Friend: t('patient_form.relationship_friend'),
+      Other: t('patient_form.relationship_other')
+    }),
+    [t]
+  );
 
 
     const mapStaffToOption = (provider: StaffMember): SelectOption => ({
@@ -350,7 +354,7 @@ export function PatientForm({
 
   const mapFacilityToOption = (facility: FacilitySummary | { id?: string; name?: string }): SelectOption => ({
     value: facility.id || '',
-    label: facility.name || 'Unnamed Location'
+    label: facility.name || t('patient_form.unnamed_location')
   });
 
   useEffect(() => {
@@ -572,7 +576,7 @@ export function PatientForm({
     // Check facility first
     if (!currentFacility) {
       console.error('No facility selected');
-      setErrors({ facility: 'Please select a facility before creating a patient.' });
+      setErrors({ facility: t('patient_form.select_facility_before_creating') });
       // Scroll to top to show error
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -617,7 +621,7 @@ export function PatientForm({
       }
     } catch (error) {
       console.error('Error submitting patient form:', error);
-      setErrors({ submit: 'Failed to save patient. Please try again.' });
+      setErrors({ submit: t('patient_form.failed_to_save_patient') });
     } finally {
       setLoading(false);
     }
@@ -656,22 +660,22 @@ export function PatientForm({
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="text-sm font-semibold text-red-900 mb-2">
-                  Cannot Create Patient - Please Fix Errors
-                </h3>
+	                <h3 className="text-sm font-semibold text-red-900 mb-2">
+	                  {t('patient_form.cannot_create_patient')}
+	                </h3>
                 {errors.facility && (
-                  <div className="text-sm text-red-800 mb-2 font-medium">{errors.facility}</div>
+                  <div className="text-sm text-red-800 mb-2 font-medium">{translateError(errors.facility)}</div>
                 )}
                 {errors.submit && (
-                  <div className="text-sm text-red-800 mb-2 font-medium">{errors.submit}</div>
+                  <div className="text-sm text-red-800 mb-2 font-medium">{translateError(errors.submit)}</div>
                 )}
-                {!errors.facility && !errors.submit && (
-                  <div className="text-sm text-red-800">
-                    <p className="mb-2">Please complete the following required fields:</p>
-                    <ul className="list-disc list-inside space-y-1 text-xs bg-white bg-opacity-50 rounded p-2">
-                      {Object.entries(errors).map(([key, value]) => (
-                        <li key={key} className="text-red-700">
-                          <span className="font-medium">{value}</span>
+	                {!errors.facility && !errors.submit && (
+	                  <div className="text-sm text-red-800">
+	                    <p className="mb-2">{t('patient_form.complete_required_fields')}</p>
+	                    <ul className="list-disc list-inside space-y-1 text-xs bg-white bg-opacity-50 rounded p-2">
+	                      {Object.entries(errors).map(([key, value]) => (
+	                        <li key={key} className="text-red-700">
+	                          <span className="font-medium">{translateError(value)}</span>
                         </li>
                       ))}
                     </ul>
@@ -701,6 +705,8 @@ export function PatientForm({
             icon={section.icon}
             isOpen={!!expandedSections[section.id]}
             required={section.required}
+            requiredBadgeLabel={t('common.required')}
+            expandHint={t('patient_form.click_to_expand')}
             onToggle={toggleSection}
           >
             {section.id === 'provider' && (
@@ -709,7 +715,7 @@ export function PatientForm({
                   <div>
                     <div className="flex items-center justify-between">
                       <RequiredLabel>{t('patient_form.primary_provider')}</RequiredLabel>
-                      <InlineAddButton label="Provider" onClick={handleAddProvider} />
+                      <InlineAddButton label={t('patient_form.add_provider')} onClick={handleAddProvider} />
                     </div>
                     <SearchableSelect
                       options={providerOptions}
@@ -723,15 +729,15 @@ export function PatientForm({
                     />
                     {providersLoading && providerOptions.length === 0 && (
                       <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                        <Loader2 className="h-3 w-3 animate-spin" /> Loading staff list...
+                        <Loader2 className="h-3 w-3 animate-spin" /> {t('patient_form.loading_staff_list')}
                       </p>
                     )}
-                    <FieldError message={errors['provider.primaryProviderId']} />
+                    <FieldError message={translateError(errors['provider.primaryProviderId'])} />
                   </div>
                   <div>
                     <div className="flex items-center justify-between">
                       <RequiredLabel>{t('patient_form.provider_group_location')}</RequiredLabel>
-                      <InlineAddButton label="Location" onClick={() => setLocationDialogOpen(true)} />
+                      <InlineAddButton label={t('patient_form.add_location')} onClick={() => setLocationDialogOpen(true)} />
                     </div>
                     <SearchableSelect
                       options={locationOptions}
@@ -743,10 +749,10 @@ export function PatientForm({
                     />
                     {locationsLoading && (
                       <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                        <Loader2 className="h-3 w-3 animate-spin" /> Fetching locations...
+                        <Loader2 className="h-3 w-3 animate-spin" /> {t('patient_form.fetching_locations')}
                       </p>
                     )}
-                    <FieldError message={errors['provider.providerLocationId']} />
+                    <FieldError message={translateError(errors['provider.providerLocationId'])} />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -757,7 +763,7 @@ export function PatientForm({
                       value={formData.provider.registrationDate}
                       onChange={e => updateProviderField('registrationDate', e.target.value)}
                     />
-                    <FieldError message={errors['provider.registrationDate']} />
+                    <FieldError message={translateError(errors['provider.registrationDate'])} />
                   </div>
                   {!compactMode && (
                     <div>
@@ -809,7 +815,7 @@ export function PatientForm({
                       value={formData.demographics.firstName}
                       onChange={e => updateDemographicsField('firstName', e.target.value)}
                     />
-                    <FieldError message={errors['demographics.firstName']} />
+                    <FieldError message={translateError(errors['demographics.firstName'])} />
                   </div>
                   {!compactMode && (
                     <div>
@@ -826,7 +832,7 @@ export function PatientForm({
                       value={formData.demographics.lastName}
                       onChange={e => updateDemographicsField('lastName', e.target.value)}
                     />
-                    <FieldError message={errors['demographics.lastName']} />
+                    <FieldError message={translateError(errors['demographics.lastName'])} />
                   </div>
                 </div>
                 <div
@@ -850,7 +856,7 @@ export function PatientForm({
                       value={formData.demographics.dateOfBirth}
                       onChange={e => updateDemographicsField('dateOfBirth', e.target.value)}
                     />
-                    <FieldError message={errors['demographics.dateOfBirth']} />
+                    <FieldError message={translateError(errors['demographics.dateOfBirth'])} />
                   </div>
                   {!compactMode && (
                     <div>
@@ -877,7 +883,7 @@ export function PatientForm({
                         ))}
                       </SelectContent>
                     </Select>
-                    <FieldError message={errors['demographics.gender']} />
+                    <FieldError message={translateError(errors['demographics.gender'])} />
                   </div>
                 </div>
                 {!compactMode && (
@@ -938,17 +944,17 @@ export function PatientForm({
                       <div>
                         <div className="flex items-center justify-between">
                           <Label className="text-sm font-medium">{t('patient_form.language')}</Label>
-                          <InlineAddButton label="Language" />
+                          <InlineAddButton label={t('patient_form.add_language')} />
                         </div>
                         <Select
                           value={formData.demographics.language}
                           onValueChange={value => updateDemographicsField('language', value)}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Preferred language" />
+                            <SelectValue placeholder={t('patient_form.language_placeholder')} />
                           </SelectTrigger>
                           <SelectContent>
-                            {languageOptions.map(option => (
+                            {translatedLanguageOptions.map(option => (
                               <SelectItem key={option.value} value={option.value}>
                                 {option.label}
                               </SelectItem>
@@ -957,25 +963,25 @@ export function PatientForm({
                         </Select>
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Time Zone</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.time_zone')}</Label>
                         <Input
                           value={formData.demographics.timeZone}
                           onChange={e => updateDemographicsField('timeZone', e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Preferred Communication</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.preferred_communication')}</Label>
                         <Select
                           value={formData.demographics.preferredCommunication}
                           onValueChange={value => updateDemographicsField('preferredCommunication', value)}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select preference" />
+                            <SelectValue placeholder={t('patient_form.select_preference')} />
                           </SelectTrigger>
                           <SelectContent>
                             {contactMethodOptions.map(option => (
                               <SelectItem key={option} value={option}>
-                                {option.toUpperCase()}
+                                {contactMethodLabelByValue[option] || option.toUpperCase()}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -984,7 +990,7 @@ export function PatientForm({
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div>
-                        <Label className="text-sm font-medium">Disability Status</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.disability_status')}</Label>
                         <Input
                           value={formData.demographics.disabilityStatus}
                           onChange={e => updateDemographicsField('disabilityStatus', e.target.value)}
@@ -994,21 +1000,21 @@ export function PatientForm({
                     {!compactMode && (
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                         <div>
-                          <Label className="text-sm font-medium">Hospital ID</Label>
+                          <Label className="text-sm font-medium">{t('patient_form.hospital_id')}</Label>
                           <Input
                             value={formData.demographics.hospitalId}
                             onChange={e => updateDemographicsField('hospitalId', e.target.value)}
                           />
                         </div>
                         <div>
-                          <Label className="text-sm font-medium">Health ID</Label>
+                          <Label className="text-sm font-medium">{t('patient_form.health_id')}</Label>
                           <Input
                             value={formData.demographics.healthId}
                             onChange={e => updateDemographicsField('healthId', e.target.value)}
                           />
                         </div>
                         <div>
-                          <Label className="text-sm font-medium">MRN</Label>
+                          <Label className="text-sm font-medium">{t('patient_form.mrn')}</Label>
                           <Input
                             value={formData.demographics.mrn}
                             onChange={e => updateDemographicsField('mrn', e.target.value)}
@@ -1025,33 +1031,33 @@ export function PatientForm({
               <div className="space-y-3">
                 <div className={`grid grid-cols-1 gap-3 ${compactMode ? 'md:grid-cols-2' : 'md:grid-cols-4'}`}>
                   <div>
-                    <RequiredLabel>Mobile Number</RequiredLabel>
+                    <RequiredLabel>{t('patient_form.mobile_phone')}</RequiredLabel>
                     <Input
                       value={formData.contact.mobileNumber}
                       onChange={e => updateContactField('mobileNumber', e.target.value)}
                     />
-                    <FieldError message={errors['contact.mobileNumber']} />
+                    <FieldError message={translateError(errors['contact.mobileNumber'])} />
                   </div>
                   <div>
-                    <RequiredLabel>Email</RequiredLabel>
+                    <RequiredLabel>{t('patient_form.email')}</RequiredLabel>
                     <Input
                       type="email"
                       value={formData.contact.email}
                       onChange={e => updateContactField('email', e.target.value)}
                     />
-                    <FieldError message={errors['contact.email']} />
+                    <FieldError message={translateError(errors['contact.email'])} />
                   </div>
                   {!compactMode && (
                     <>
                       <div>
-                        <Label className="text-sm font-medium">Home Number</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.home_phone')}</Label>
                         <Input
                           value={formData.contact.homeNumber}
                           onChange={e => updateContactField('homeNumber', e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Fax</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.fax')}</Label>
                         <Input
                           value={formData.contact.faxNumber}
                           onChange={e => updateContactField('faxNumber', e.target.value)}
@@ -1063,15 +1069,15 @@ export function PatientForm({
                 {!compactMode && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <RequiredLabel>Address Line 1</RequiredLabel>
+                      <RequiredLabel>{t('patient_form.address_line_1')}</RequiredLabel>
                       <Input
                         value={formData.contact.address.line1}
                         onChange={e => updateContactAddress('line1', e.target.value)}
                       />
-                      <FieldError message={errors['contact.address.line1']} />
+                      <FieldError message={translateError(errors['contact.address.line1'])} />
                     </div>
                     <div>
-                      <Label className="text-sm font-medium">Address Line 2</Label>
+                      <Label className="text-sm font-medium">{t('patient_form.address_line_2')}</Label>
                       <Input
                         value={formData.contact.address.line2}
                         onChange={e => updateContactAddress('line2', e.target.value)}
@@ -1081,56 +1087,56 @@ export function PatientForm({
                 )}
                 {compactMode && (
                   <div>
-                    <RequiredLabel>Address</RequiredLabel>
+                    <RequiredLabel>{t('patient_form.address')}</RequiredLabel>
                     <Input
-                      placeholder="Street address"
+                      placeholder={t('patient_form.address_placeholder')}
                       value={formData.contact.address.line1}
                       onChange={e => updateContactAddress('line1', e.target.value)}
                     />
-                    <FieldError message={errors['contact.address.line1']} />
+                    <FieldError message={translateError(errors['contact.address.line1'])} />
                   </div>
                 )}
                 <div className={`grid grid-cols-1 gap-3 ${compactMode ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
                   <div>
-                    <RequiredLabel>City</RequiredLabel>
+                    <RequiredLabel>{t('patient_form.city')}</RequiredLabel>
                     <Input
                       value={formData.contact.address.city}
                       onChange={e => updateContactAddress('city', e.target.value)}
                     />
-                    <FieldError message={errors['contact.address.city']} />
+                    <FieldError message={translateError(errors['contact.address.city'])} />
                   </div>
                   <div>
-                    <RequiredLabel>State</RequiredLabel>
+                    <RequiredLabel>{t('patient_form.state')}</RequiredLabel>
                     <Input
                       value={formData.contact.address.state}
                       onChange={e => updateContactAddress('state', e.target.value)}
                     />
-                    <FieldError message={errors['contact.address.state']} />
+                    <FieldError message={translateError(errors['contact.address.state'])} />
                   </div>
                   {!compactMode && (
                     <div>
-                      <RequiredLabel>Country</RequiredLabel>
+                      <RequiredLabel>{t('patient_form.country')}</RequiredLabel>
                       <Input
                         value={formData.contact.address.country}
                         onChange={e => updateContactAddress('country', e.target.value)}
                       />
-                      <FieldError message={errors['contact.address.country']} />
+                      <FieldError message={translateError(errors['contact.address.country'])} />
                     </div>
                   )}
                   <div>
-                    <RequiredLabel>Zip Code</RequiredLabel>
+                    <RequiredLabel>{t('patient_form.zip')}</RequiredLabel>
                     <Input
                       value={formData.contact.address.postalCode}
                       onChange={e => updateContactAddress('postalCode', e.target.value)}
                     />
-                    <FieldError message={errors['contact.address.postalCode']} />
+                    <FieldError message={translateError(errors['contact.address.postalCode'])} />
                   </div>
                 </div>
                 {!compactMode && (
                   <div>
-                    <Label className="text-sm font-medium">Preferred Contact Time</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.preferred_contact_time')}</Label>
                     <Input
-                      placeholder="Morning / Afternoon / Evening"
+                      placeholder={t('patient_form.preferred_contact_time_placeholder')}
                       value={formData.contact.preferredContactTime}
                       onChange={e => updateContactField('preferredContactTime', e.target.value)}
                     />
@@ -1153,68 +1159,68 @@ export function PatientForm({
                 {formData.emergencyContacts.map((contact, index) => (
                   <div key={`contact-${index}`} className="rounded-xl border border-gray-200 p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                        <Phone className="h-4 w-4 text-[#3342a5]" />
-                        Contact #{index + 1}
-                      </div>
+                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                      <Phone className="h-4 w-4 text-[#3342a5]" />
+                      {t('patient_form.contact_number', { number: index + 1 })}
+                    </div>
                       <button
                         type="button"
                         onClick={() => removeEmergencyContact(index)}
                         className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1"
                       >
                         <Trash2 className="h-3 w-3" />
-                        Remove
+                        {t('common.remove')}
                       </button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div>
-                        <Label className="text-sm font-medium">Relationship</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.emergency_contact_relation')}</Label>
                         <Select
                           value={contact.relationship}
                           onValueChange={value => updateEmergencyContact(index, 'relationship', value)}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select" />
+                            <SelectValue placeholder={t('patient_form.select_placeholder')} />
                           </SelectTrigger>
                           <SelectContent>
                             {relationshipOptions.map(option => (
                               <SelectItem key={option} value={option}>
-                                {option}
+                                {relationshipLabelByValue[option] || option}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                        <FieldError message={errors[`emergencyContacts.${index}.relationship`]} />
+                        <FieldError message={translateError(errors[`emergencyContacts.${index}.relationship`])} />
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">First Name</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.first_name')}</Label>
                         <Input
                           value={contact.firstName}
                           onChange={e => updateEmergencyContact(index, 'firstName', e.target.value)}
                         />
-                        <FieldError message={errors[`emergencyContacts.${index}.firstName`]} />
+                        <FieldError message={translateError(errors[`emergencyContacts.${index}.firstName`])} />
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Last Name</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.last_name')}</Label>
                         <Input
                           value={contact.lastName}
                           onChange={e => updateEmergencyContact(index, 'lastName', e.target.value)}
                         />
-                        <FieldError message={errors[`emergencyContacts.${index}.lastName`]} />
+                        <FieldError message={translateError(errors[`emergencyContacts.${index}.lastName`])} />
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Mobile Number</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.mobile_phone')}</Label>
                         <Input
                           value={contact.mobileNumber}
                           onChange={e => updateEmergencyContact(index, 'mobileNumber', e.target.value)}
                         />
-                        <FieldError message={errors[`emergencyContacts.${index}.mobileNumber`]} />
+                        <FieldError message={translateError(errors[`emergencyContacts.${index}.mobileNumber`])} />
                       </div>
                     </div>
                     {!compactMode && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                          <Label className="text-sm font-medium">Email</Label>
+                          <Label className="text-sm font-medium">{t('patient_form.email')}</Label>
                           <Input
                             value={contact.email}
                             onChange={e => updateEmergencyContact(index, 'email', e.target.value)}
@@ -1240,32 +1246,32 @@ export function PatientForm({
               <div className="space-y-3">
                 <div className="text-xs text-gray-600 bg-blue-50 border border-blue-200 rounded px-3 py-2 flex items-center gap-2">
                   <Shield className="h-3.5 w-3.5 text-blue-600 flex-shrink-0" />
-                  <span>Insurance information is optional. You can add it now or update later.</span>
+                  <span>{t('patient_form.insurance_optional_description')}</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Insurance Type</Label>
-                      <InlineAddButton label="Insurance Type" />
+                      <Label className="text-sm font-medium">{t('patient_form.insurance_type')}</Label>
+                      <InlineAddButton label={t('patient_form.add_insurance_type')} />
                     </div>
                     <Input
-                      placeholder="Private / Medicare / Other"
+                      placeholder={t('patient_form.insurance_type_placeholder')}
                       value={formData.insurance.insuranceType}
                       onChange={e => updateInsuranceField('insuranceType', e.target.value)}
                     />
-                    <FieldError message={errors['insurance.insuranceType']} />
+                    <FieldError message={translateError(errors['insurance.insuranceType'])} />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Insurance Name</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.insurance_name')}</Label>
                     <Input
                       value={formData.insurance.insuranceName}
                       onChange={e => updateInsuranceField('insuranceName', e.target.value)}
                     />
-                    <FieldError message={errors['insurance.insuranceName']} />
+                    <FieldError message={translateError(errors['insurance.insuranceName'])} />
                   </div>
                   {!compactMode && (
                     <div>
-                      <Label className="text-sm font-medium">Plan Type</Label>
+                      <Label className="text-sm font-medium">{t('patient_form.plan_type')}</Label>
                       <Input
                         value={formData.insurance.planType}
                         onChange={e => updateInsuranceField('planType', e.target.value)}
@@ -1276,7 +1282,7 @@ export function PatientForm({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {!compactMode && (
                     <div>
-                      <Label className="text-sm font-medium">Plan Name</Label>
+                      <Label className="text-sm font-medium">{t('patient_form.plan_name')}</Label>
                       <Input
                         value={formData.insurance.planName}
                         onChange={e => updateInsuranceField('planName', e.target.value)}
@@ -1284,16 +1290,16 @@ export function PatientForm({
                     </div>
                   )}
                   <div>
-                    <Label className="text-sm font-medium">Member ID</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.member_id')}</Label>
                     <Input
                       value={formData.insurance.memberId}
                       onChange={e => updateInsuranceField('memberId', e.target.value)}
                     />
-                    <FieldError message={errors['insurance.memberId']} />
+                    <FieldError message={translateError(errors['insurance.memberId'])} />
                   </div>
                   {!compactMode && (
                     <div>
-                      <Label className="text-sm font-medium">Group ID</Label>
+                      <Label className="text-sm font-medium">{t('patient_form.group_id')}</Label>
                       <Input
                         value={formData.insurance.groupId}
                         onChange={e => updateInsuranceField('groupId', e.target.value)}
@@ -1304,7 +1310,7 @@ export function PatientForm({
                 {!compactMode && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
-                      <Label className="text-sm font-medium">Group Name</Label>
+                      <Label className="text-sm font-medium">{t('patient_form.group_name')}</Label>
                       <Input
                         value={formData.insurance.groupName}
                         onChange={e => updateInsuranceField('groupName', e.target.value)}
@@ -1314,52 +1320,52 @@ export function PatientForm({
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-sm font-medium">Effective Start Date</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.effective_start_date')}</Label>
                     <Input
                       type="date"
                       value={formData.insurance.effectiveStart}
                       onChange={e => updateInsuranceField('effectiveStart', e.target.value)}
                     />
-                    <FieldError message={errors['insurance.effectiveStart']} />
+                    <FieldError message={translateError(errors['insurance.effectiveStart'])} />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Effective End Date</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.effective_end_date')}</Label>
                     <Input
                       type="date"
                       value={formData.insurance.effectiveEnd}
                       onChange={e => updateInsuranceField('effectiveEnd', e.target.value)}
                     />
-                    <FieldError message={errors['insurance.effectiveEnd']} />
+                    <FieldError message={translateError(errors['insurance.effectiveEnd'])} />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
-                    <Label className="text-sm font-medium">Relationship to Insured</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.relationship_to_insured')}</Label>
                     <Select
                       value={formData.insurance.relationshipToInsured}
                       onValueChange={value => updateInsuranceField('relationshipToInsured', value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t('patient_form.select_placeholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {['self', 'spouse', 'child', 'other'].map(option => (
                           <SelectItem key={option} value={option}>
-                            {option.toUpperCase()}
+                            {t(`patient_form.relationship_to_insured_${option}`)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Insured First Name</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.insured_first_name')}</Label>
                     <Input
                       value={formData.insurance.insuredFirstName}
                       onChange={e => updateInsuranceField('insuredFirstName', e.target.value)}
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Insured Last Name</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.insured_last_name')}</Label>
                     <Input
                       value={formData.insurance.insuredLastName}
                       onChange={e => updateInsuranceField('insuredLastName', e.target.value)}
@@ -1370,14 +1376,14 @@ export function PatientForm({
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div>
-                        <Label className="text-sm font-medium">Insured Phone</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.insured_phone')}</Label>
                         <Input
                           value={formData.insurance.insuredPhone}
                           onChange={e => updateInsuranceField('insuredPhone', e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Insured Email</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.insured_email')}</Label>
                         <Input
                           value={formData.insurance.insuredEmail}
                           onChange={e => updateInsuranceField('insuredEmail', e.target.value)}
@@ -1386,14 +1392,14 @@ export function PatientForm({
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <Label className="text-sm font-medium">Insured Address Line 1</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.insured_address_line_1')}</Label>
                         <Input
                           value={formData.insurance.insuredAddress.line1}
                           onChange={e => updateInsuranceAddress('line1', e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Insured Address Line 2</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.insured_address_line_2')}</Label>
                         <Input
                           value={formData.insurance.insuredAddress.line2}
                           onChange={e => updateInsuranceAddress('line2', e.target.value)}
@@ -1402,28 +1408,28 @@ export function PatientForm({
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div>
-                        <Label className="text-sm font-medium">City</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.city')}</Label>
                         <Input
                           value={formData.insurance.insuredAddress.city}
                           onChange={e => updateInsuranceAddress('city', e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">State</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.state')}</Label>
                         <Input
                           value={formData.insurance.insuredAddress.state}
                           onChange={e => updateInsuranceAddress('state', e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Country</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.country')}</Label>
                         <Input
                           value={formData.insurance.insuredAddress.country}
                           onChange={e => updateInsuranceAddress('country', e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label className="text-sm font-medium">Zip Code</Label>
+                        <Label className="text-sm font-medium">{t('patient_form.zip')}</Label>
                         <Input
                           value={formData.insurance.insuredAddress.postalCode}
                           onChange={e => updateInsuranceAddress('postalCode', e.target.value)}
@@ -1431,14 +1437,14 @@ export function PatientForm({
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium">Upload Insurance Card</Label>
+                      <Label className="text-sm font-medium">{t('patient_form.upload_insurance_card')}</Label>
                       <div className="flex items-center gap-3">
                         <label
                           htmlFor="insurance-card-upload"
                           className="flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 cursor-pointer hover:bg-gray-50"
                         >
                           <FileUp className="h-4 w-4" />
-                          Upload Card
+                          {t('patient_form.upload_card')}
                         </label>
                         <input
                           id="insurance-card-upload"
@@ -1450,7 +1456,7 @@ export function PatientForm({
                         {formData.insurance.cardImage && (
                           <span className="text-xs text-green-600 flex items-center gap-1">
                             <Check className="h-3 w-3" />
-                            Uploaded
+                            {t('patient_form.uploaded')}
                           </span>
                         )}
                       </div>
@@ -1465,27 +1471,27 @@ export function PatientForm({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Preferred Pharmacy</Label>
-                      <InlineAddButton label="Pharmacy" />
+                      <Label className="text-sm font-medium">{t('patient_form.pharmacy')}</Label>
+                      <InlineAddButton label={t('patient_form.add_pharmacy')} />
                     </div>
                     <Input
-                      placeholder="Search pharmacies"
+                      placeholder={t('patient_form.pharmacy_placeholder')}
                       value={formData.preferences.pharmacy}
                       onChange={e => updatePreferencesField('pharmacy', e.target.value)}
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Preferred Lab</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.lab')}</Label>
                     <Input
-                      placeholder="Search labs"
+                      placeholder={t('patient_form.lab_placeholder')}
                       value={formData.preferences.lab}
                       onChange={e => updatePreferencesField('lab', e.target.value)}
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Preferred Radiology</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.radiology')}</Label>
                     <Input
-                      placeholder="Search radiology centers"
+                      placeholder={t('patient_form.radiology_placeholder')}
                       value={formData.preferences.radiology}
                       onChange={e => updatePreferencesField('radiology', e.target.value)}
                     />
@@ -1493,43 +1499,43 @@ export function PatientForm({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
-                    <Label className="text-sm font-medium">Preferred Doctor Gender</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.doctor_gender')}</Label>
                     <Select
                       value={formData.preferences.preferredDoctorGender}
                       onValueChange={value => updatePreferencesField('preferredDoctorGender', value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t('patient_form.doctor_gender_placeholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {doctorGenderOptions.map(option => (
                           <SelectItem key={option} value={option}>
-                            {option}
+                            {doctorGenderLabelByValue[option] || option}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Preferred Hospital</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.preferred_hospital')}</Label>
                     <Input
                       value={formData.preferences.preferredHospital}
                       onChange={e => updatePreferencesField('preferredHospital', e.target.value)}
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Preferred Contact Method</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.preferred_contact')}</Label>
                     <Select
                       value={formData.preferences.preferredContactMethod}
                       onValueChange={value => updatePreferencesField('preferredContactMethod', value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t('patient_form.preferred_contact_placeholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {contactMethodOptions.map(option => (
                           <SelectItem key={option} value={option}>
-                            {option.toUpperCase()}
+                            {contactMethodLabelByValue[option] || option.toUpperCase()}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1571,7 +1577,7 @@ export function PatientForm({
                         <SelectValue placeholder={t('common.select')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {patientStatusOptions.map(option => (
+                        {translatedPatientStatusOptions.map(option => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
                           </SelectItem>
@@ -1603,18 +1609,18 @@ export function PatientForm({
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-sm font-medium">Allergies</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.allergies')}</Label>
                     <Textarea
-                      placeholder="Separate allergies with commas"
+                      placeholder={t('patient_form.allergies_placeholder')}
                       value={formData.clinical.allergies}
                       onChange={e => updateClinicalField('allergies', e.target.value)}
                       rows={3}
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Chronic Conditions</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.chronic_conditions')}</Label>
                     <Textarea
-                      placeholder="e.g., Diabetes, Asthma"
+                      placeholder={t('patient_form.chronic_conditions_placeholder')}
                       value={formData.clinical.chronicConditions}
                       onChange={e => updateClinicalField('chronicConditions', e.target.value)}
                       rows={3}
@@ -1623,36 +1629,36 @@ export function PatientForm({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
-                    <Label className="text-sm font-medium">Smoking Status</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.smoking_status')}</Label>
                     <Select
                       value={formData.clinical.smokingStatus}
                       onValueChange={value => updateClinicalField('smokingStatus', value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t('patient_form.select_placeholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {smokingStatusOptions.map(option => (
                           <SelectItem key={option} value={option}>
-                            {option}
+                            {smokingStatusLabelByValue[option] || option}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Alcohol Use</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.alcohol_use')}</Label>
                     <Select
                       value={formData.clinical.alcoholUse}
                       onValueChange={value => updateClinicalField('alcoholUse', value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t('patient_form.select_placeholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {alcoholUseOptions.map(option => (
                           <SelectItem key={option} value={option}>
-                            {option}
+                            {alcoholUseLabelByValue[option] || option}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1661,7 +1667,7 @@ export function PatientForm({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
-                    <Label className="text-sm font-medium">Height (cm)</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.height_cm')}</Label>
                     <Input
                       type="number"
                       value={formData.clinical.heightCm}
@@ -1669,7 +1675,7 @@ export function PatientForm({
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Weight (kg)</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.weight_kg')}</Label>
                     <Input
                       type="number"
                       value={formData.clinical.weightKg}
@@ -1677,7 +1683,7 @@ export function PatientForm({
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">BMI</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.bmi')}</Label>
                     <Input value={calculatedBMI || '--'} readOnly />
                   </div>
                 </div>
@@ -1710,22 +1716,20 @@ export function PatientForm({
       >
         <DialogContent className="sm:max-w-[520px]">
           <DialogHeader>
-            <DialogTitle>Add Location</DialogTitle>
-            <DialogDescription>
-              Capture clinic or ward details without leaving the intake flow.
-            </DialogDescription>
+            <DialogTitle>{t('patient_form.add_location')}</DialogTitle>
+            <DialogDescription>{t('patient_form.add_location_description')}</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <Label className="text-sm font-medium">Location Name</Label>
+              <Label className="text-sm font-medium">{t('patient_form.location_name')}</Label>
               <Input
                 value={locationForm.name}
                 onChange={(e) => setLocationForm((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="Downtown Clinic"
+                placeholder={t('patient_form.location_name_placeholder')}
               />
             </div>
             <div>
-              <Label className="text-sm font-medium">Type</Label>
+              <Label className="text-sm font-medium">{t('common.type')}</Label>
               <Select
                 value={locationForm.type}
                 onValueChange={(value: FacilityTypeOption) =>
@@ -1745,53 +1749,53 @@ export function PatientForm({
               </Select>
             </div>
             <div>
-              <Label className="text-sm font-medium">Phone</Label>
+              <Label className="text-sm font-medium">{t('patient_form.location_phone')}</Label>
               <Input
                 value={locationForm.phone}
                 onChange={(e) => setLocationForm((prev) => ({ ...prev, phone: e.target.value }))}
-                placeholder="+1 555-987-6543"
+                placeholder={t('patient_form.location_phone_placeholder')}
               />
             </div>
             <div>
-              <Label className="text-sm font-medium">Email</Label>
+              <Label className="text-sm font-medium">{t('patient_form.location_email')}</Label>
               <Input
                 value={locationForm.email}
                 onChange={(e) => setLocationForm((prev) => ({ ...prev, email: e.target.value }))}
-                placeholder="frontdesk@clinic.com"
+                placeholder={t('patient_form.location_email_placeholder')}
               />
             </div>
             <div className="md:col-span-2">
-              <Label className="text-sm font-medium">Address Line 1</Label>
+              <Label className="text-sm font-medium">{t('patient_form.location_address')}</Label>
               <Input
                 value={locationForm.line1}
                 onChange={(e) => setLocationForm((prev) => ({ ...prev, line1: e.target.value }))}
-                placeholder="123 Health St."
+                placeholder={t('patient_form.location_address_placeholder')}
               />
             </div>
             <div className="md:col-span-2">
-              <Label className="text-sm font-medium">Address Line 2</Label>
+              <Label className="text-sm font-medium">{t('patient_form.location_address2')}</Label>
               <Input
                 value={locationForm.line2}
                 onChange={(e) => setLocationForm((prev) => ({ ...prev, line2: e.target.value }))}
-                placeholder="Suite 200"
+                placeholder={t('patient_form.address_line2_placeholder')}
               />
             </div>
             <div>
-              <Label className="text-sm font-medium">City</Label>
+              <Label className="text-sm font-medium">{t('patient_form.city')}</Label>
               <Input
                 value={locationForm.city}
                 onChange={(e) => setLocationForm((prev) => ({ ...prev, city: e.target.value }))}
               />
             </div>
             <div>
-              <Label className="text-sm font-medium">State</Label>
+              <Label className="text-sm font-medium">{t('patient_form.state')}</Label>
               <Input
                 value={locationForm.state}
                 onChange={(e) => setLocationForm((prev) => ({ ...prev, state: e.target.value }))}
               />
             </div>
             <div>
-              <Label className="text-sm font-medium">Postal Code</Label>
+              <Label className="text-sm font-medium">{t('patient_form.zip')}</Label>
               <Input
                 value={locationForm.postalCode}
                 onChange={(e) =>

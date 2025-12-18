@@ -38,16 +38,24 @@ export const dynamic = 'force-dynamic'
 
 const CHECK_IN_EXTENSION_URL = 'urn:oid:ehrconnect:appointment-checkin'
 const REMINDER_EXTENSION_URL = 'urn:oid:ehrconnect:appointment-reminder'
-const symptomOptions = ['Cough', 'Fever', 'Pain', 'Follow-up question', 'Medication refill']
+const symptomOptions = [
+  { value: 'Cough', labelKey: 'portal_appointments.check_in.symptom_cough' },
+  { value: 'Fever', labelKey: 'portal_appointments.check_in.symptom_fever' },
+  { value: 'Pain', labelKey: 'portal_appointments.check_in.symptom_pain' },
+  { value: 'Follow-up question', labelKey: 'portal_appointments.check_in.symptom_follow_up_question' },
+  { value: 'Medication refill', labelKey: 'portal_appointments.check_in.symptom_medication_refill' },
+] as const
+
 const arrivalOptions = [
-  { value: 'in-person', label: 'In person (waiting room)' },
-  { value: 'car', label: 'I will wait in my car' },
-  { value: 'virtual', label: 'Telehealth / virtual visit' },
-]
+  { value: 'in-person', labelKey: 'portal_appointments.check_in.arrival_in_person' },
+  { value: 'car', labelKey: 'portal_appointments.check_in.arrival_car' },
+  { value: 'virtual', labelKey: 'portal_appointments.check_in.arrival_virtual' },
+] as const
 
 export default function PatientAppointmentsPage() {
   const { data: session } = useSession()
   const { toast } = useToast()
+  const { t } = useTranslation('common')
   const [appointments, setAppointments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'past'>('upcoming')
@@ -174,7 +182,7 @@ export default function PatientAppointmentsPage() {
 
       if (!response.ok) {
         const data = await response.json().catch(() => null)
-        throw new Error(data?.message || 'Unable to complete check-in')
+        throw new Error(data?.message || t('portal_appointments.check_in.error_unable_to_complete'))
       }
 
       const data = await response.json()
@@ -183,13 +191,13 @@ export default function PatientAppointmentsPage() {
       )
       setCheckInModal({ open: false, appointment: null })
       toast({
-        title: 'Check-in confirmed',
-        description: 'We let the care team know you are ready.',
+        title: t('portal_appointments.check_in.toast_confirmed_title'),
+        description: t('portal_appointments.check_in.toast_confirmed_description'),
       })
     } catch (error: any) {
       toast({
-        title: 'Check-in failed',
-        description: error.message || 'Unable to submit check-in right now.',
+        title: t('portal_appointments.check_in.toast_failed_title'),
+        description: error.message || t('portal_appointments.check_in.error_unable_to_submit'),
         variant: 'destructive',
       })
     } finally {
@@ -214,8 +222,8 @@ export default function PatientAppointmentsPage() {
     if (!reminderModal.appointment) return
     if (!reminderForm.sendAt) {
       toast({
-        title: 'Reminder time required',
-        description: 'Choose when we should send the reminder.',
+        title: t('portal_appointments.reminder.toast_time_required_title'),
+        description: t('portal_appointments.reminder.toast_time_required_description'),
         variant: 'destructive',
       })
       return
@@ -237,18 +245,18 @@ export default function PatientAppointmentsPage() {
 
       if (!response.ok) {
         const data = await response.json().catch(() => null)
-        throw new Error(data?.message || 'Unable to schedule reminder')
+        throw new Error(data?.message || t('portal_appointments.error_unable_to_schedule_reminder'))
       }
 
       setReminderModal({ open: false, appointment: null })
       toast({
-        title: 'Reminder scheduled',
-        description: 'We will notify you ahead of the visit.',
+        title: t('portal_appointments.reminder.toast_scheduled_title'),
+        description: t('portal_appointments.reminder.toast_scheduled_description'),
       })
     } catch (error: any) {
       toast({
-        title: 'Reminder failed',
-        description: error.message || 'Unable to schedule reminder right now.',
+        title: t('portal_appointments.reminder.toast_failed_title'),
+        description: error.message || t('portal_appointments.error_unable_to_schedule_reminder'),
         variant: 'destructive',
       })
     } finally {
@@ -514,25 +522,25 @@ export default function PatientAppointmentsPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Complete digital check-in</DialogTitle>
+            <DialogTitle>{t('portal_appointments.check_in.title')}</DialogTitle>
             <DialogDescription>
-              Confirm your details so the care team knows you&apos;re ready.
+              {t('portal_appointments.check_in.description')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid gap-2">
-              <Label htmlFor="checkin-phone">Mobile number</Label>
+              <Label htmlFor="checkin-phone">{t('portal_appointments.check_in.mobile_number')}</Label>
               <Input
                 id="checkin-phone"
                 value={checkInForm.contactPhone}
                 onChange={(event) =>
                   setCheckInForm((prev) => ({ ...prev, contactPhone: event.target.value }))
                 }
-                placeholder="(555) 000-0000"
+                placeholder={t('portal_appointments.check_in.mobile_number_placeholder')}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="checkin-email">Email</Label>
+              <Label htmlFor="checkin-email">{t('portal_appointments.check_in.email')}</Label>
               <Input
                 id="checkin-email"
                 type="email"
@@ -540,11 +548,11 @@ export default function PatientAppointmentsPage() {
                 onChange={(event) =>
                   setCheckInForm((prev) => ({ ...prev, contactEmail: event.target.value }))
                 }
-                placeholder="you@email.com"
+                placeholder={t('portal_appointments.check_in.email_placeholder')}
               />
             </div>
             <div className="grid gap-2">
-              <Label>Arrival method</Label>
+              <Label>{t('portal_appointments.check_in.arrival_method')}</Label>
               <Select
                 value={checkInForm.arrivalMethod}
                 onValueChange={(value) =>
@@ -552,64 +560,64 @@ export default function PatientAppointmentsPage() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose arrival method" />
+                  <SelectValue placeholder={t('portal_appointments.check_in.arrival_method_placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {arrivalOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                      {t(option.labelKey)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Symptoms or goals</Label>
+              <Label>{t('portal_appointments.check_in.symptoms_or_goals')}</Label>
               <div className="grid gap-2">
                 {symptomOptions.map((symptom) => (
                   <label
-                    key={symptom}
+                    key={symptom.value}
                     className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm"
                   >
                     <Checkbox
-                      checked={checkInForm.symptoms.includes(symptom)}
-                      onCheckedChange={() => toggleSymptom(symptom)}
+                      checked={checkInForm.symptoms.includes(symptom.value)}
+                      onCheckedChange={() => toggleSymptom(symptom.value)}
                     />
-                    {symptom}
+                    {t(symptom.labelKey)}
                   </label>
                 ))}
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Add another"
+                    placeholder={t('portal_appointments.check_in.add_another')}
                     value={customSymptom}
                     onChange={(event) => setCustomSymptom(event.target.value)}
                   />
                   <Button variant="outline" onClick={addCustomSymptom}>
-                    Add
+                    {t('portal_appointments.check_in.add')}
                   </Button>
                 </div>
               </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="checkin-pharmacy">Preferred pharmacy</Label>
+              <Label htmlFor="checkin-pharmacy">{t('portal_appointments.check_in.preferred_pharmacy')}</Label>
               <Input
                 id="checkin-pharmacy"
                 value={checkInForm.pharmacyPreference}
                 onChange={(event) =>
                   setCheckInForm((prev) => ({ ...prev, pharmacyPreference: event.target.value }))
                 }
-                placeholder="Pharmacy name or phone"
+                placeholder={t('portal_appointments.check_in.preferred_pharmacy_placeholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="checkin-questions">Questions for your care team</Label>
+              <Label htmlFor="checkin-questions">{t('portal_appointments.check_in.questions')}</Label>
               <Textarea
                 id="checkin-questions"
                 value={checkInForm.questions}
                 onChange={(event) =>
                   setCheckInForm((prev) => ({ ...prev, questions: event.target.value }))
                 }
-                placeholder="Anything you want us to know before the visit?"
+                placeholder={t('portal_appointments.check_in.questions_placeholder')}
               />
             </div>
             <div className="space-y-2">
@@ -623,7 +631,7 @@ export default function PatientAppointmentsPage() {
                     }))
                   }
                 />
-                My insurance and contact info are up to date
+                {t('portal_appointments.check_in.insurance_confirmed')}
               </label>
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <Checkbox
@@ -635,7 +643,7 @@ export default function PatientAppointmentsPage() {
                     }))
                   }
                 />
-                My medication list is current
+                {t('portal_appointments.check_in.medications_updated')}
               </label>
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <Checkbox
@@ -647,7 +655,7 @@ export default function PatientAppointmentsPage() {
                     }))
                   }
                 />
-                I accept the visit policies and consent to treatment
+                {t('portal_appointments.check_in.consents_accepted')}
               </label>
             </div>
           </div>
@@ -657,14 +665,14 @@ export default function PatientAppointmentsPage() {
               onClick={() => setCheckInModal({ open: false, appointment: null })}
               className="w-full sm:w-auto"
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleCheckInSubmit}
               className="w-full sm:w-auto"
               disabled={submittingCheckIn}
             >
-              {submittingCheckIn ? 'Submitting...' : 'Complete check-in'}
+              {submittingCheckIn ? t('portal_appointments.check_in.submitting') : t('portal_appointments.check_in.complete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -679,14 +687,14 @@ export default function PatientAppointmentsPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Schedule a reminder</DialogTitle>
+            <DialogTitle>{t('portal_appointments.reminder.title')}</DialogTitle>
             <DialogDescription>
-              We&apos;ll remind you ahead of the visit using your preferred channel.
+              {t('portal_appointments.reminder.description')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid gap-2">
-              <Label>Channel</Label>
+              <Label>{t('portal_appointments.reminder.channel')}</Label>
               <Select
                 value={reminderForm.channel}
                 onValueChange={(value) =>
@@ -694,16 +702,16 @@ export default function PatientAppointmentsPage() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose channel" />
+                  <SelectValue placeholder={t('portal_appointments.reminder.channel_placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sms">Text message</SelectItem>
-                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="sms">{t('portal_appointments.reminder.channel_sms')}</SelectItem>
+                  <SelectItem value="email">{t('portal_appointments.reminder.channel_email')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="reminder-time">Send at</Label>
+              <Label htmlFor="reminder-time">{t('portal_appointments.reminder.send_at')}</Label>
               <Input
                 id="reminder-time"
                 type="datetime-local"
@@ -714,14 +722,14 @@ export default function PatientAppointmentsPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="reminder-message">Message (optional)</Label>
+              <Label htmlFor="reminder-message">{t('portal_appointments.reminder.message_optional')}</Label>
               <Textarea
                 id="reminder-message"
                 value={reminderForm.message}
                 onChange={(event) =>
                   setReminderForm((prev) => ({ ...prev, message: event.target.value }))
                 }
-                placeholder="We already provide a default reminder, but you can personalize it."
+                placeholder={t('portal_appointments.reminder.message_placeholder')}
               />
             </div>
           </div>
@@ -731,14 +739,14 @@ export default function PatientAppointmentsPage() {
               onClick={() => setReminderModal({ open: false, appointment: null })}
               className="w-full sm:w-auto"
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleReminderSubmit}
               className="w-full sm:w-auto"
               disabled={submittingReminder}
             >
-              {submittingReminder ? 'Scheduling...' : 'Schedule reminder'}
+              {submittingReminder ? t('portal_appointments.reminder.scheduling') : t('portal_appointments.reminder.schedule')}
             </Button>
           </DialogFooter>
         </DialogContent>
