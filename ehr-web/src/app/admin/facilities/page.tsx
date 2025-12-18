@@ -9,10 +9,13 @@ import { useFacility } from '@/contexts/facility-context';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 
 export default function FacilitiesPage() {
   const router = useRouter();
   const { refreshFacilities } = useFacility();
+  const { t } = useTranslation('common');
   
   const [facilities, setFacilities] = useState<FacilitySummary[]>([]);
   const [loading, setLoading] = useState(true);

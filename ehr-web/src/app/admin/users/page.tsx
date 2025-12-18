@@ -19,6 +19,8 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react'
+import { useTranslation } from '@/i18n/client'
+import '@/i18n/client'
 
 // Mock user data - in a real app, this would come from your API
 const mockUsers = [
@@ -82,6 +84,7 @@ interface User {
 
 export default function UsersPage() {
   const { data: session } = useSession()
+  const { t } = useTranslation('common')
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
