@@ -1723,13 +1723,13 @@ export function PatientForm({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
-                    <Label className="text-sm font-medium">Patient Status</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.patient_status')}</Label>
                     <Select
                       value={formData.consent.patientStatus}
                       onValueChange={value => updateConsentField('patientStatus', value as any)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t('common.select')} />
                       </SelectTrigger>
                       <SelectContent>
                         {patientStatusOptions.map(option => (
@@ -1741,7 +1741,7 @@ export function PatientForm({
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Data Capture Date</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.data_capture_date')}</Label>
                     <Input
                       type="date"
                       value={formData.consent.dataCaptureDate}
@@ -1749,9 +1749,9 @@ export function PatientForm({
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Signature / Consent</Label>
+                    <Label className="text-sm font-medium">{t('patient_form.signature_consent')}</Label>
                     <Input
-                      placeholder="Captured via signature pad"
+                      placeholder={t('patient_form.signature_captured')}
                       value={formData.consent.signature}
                       onChange={e => updateConsentField('signature', e.target.value)}
                     />
