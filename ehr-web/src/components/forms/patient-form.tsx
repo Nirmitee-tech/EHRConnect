@@ -329,14 +329,6 @@ export function PatientForm({
     { value: 'hi', label: t('patient_form.language_hindi') }
   ], [t]);
 
-  // Translated language options
-  const translatedLanguageOptions = useMemo(() => [
-    { value: 'en', label: t('patient_form.language_english') },
-    { value: 'es', label: t('patient_form.language_spanish') },
-    { value: 'fr', label: t('patient_form.language_french') },
-    { value: 'hi', label: t('patient_form.language_hindi') }
-  ], [t]);
-
   // Translated relationship options
   const translatedRelationshipOptions = useMemo(() => [
     t('patient_form.relationship_spouse'),
