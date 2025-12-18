@@ -15,6 +15,8 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react'
+import { useTranslation } from '@/i18n/client'
+import '@/i18n/client'
 
 interface DashboardStats {
   totalUsers: number
@@ -26,6 +28,7 @@ interface DashboardStats {
 
 export default function AdminDashboard() {
   const { data: session } = useSession()
+  const { t } = useTranslation('common')
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     totalPatients: 0,
@@ -64,7 +67,7 @@ export default function AdminDashboard() {
 
   const dashboardCards = [
     {
-      title: 'Total Users',
+      title: t('admin.total_users'),
       value: stats.totalUsers.toLocaleString(),
       icon: Users,
       color: 'text-blue-600',
@@ -73,7 +76,7 @@ export default function AdminDashboard() {
       href: '/admin/users'
     },
     {
-      title: 'Total Patients',
+      title: t('admin.total_patients'),
       value: stats.totalPatients.toLocaleString(),
       icon: Hospital,
       color: 'text-green-600',
@@ -82,7 +85,7 @@ export default function AdminDashboard() {
       href: '/admin/patients'
     },
     {
-      title: 'Today\'s Appointments',
+      title: t('admin.today_appointments'),
       value: stats.todayAppointments.toLocaleString(),
       icon: Calendar,
       color: 'text-purple-600',
@@ -91,7 +94,7 @@ export default function AdminDashboard() {
       href: '/admin/appointments'
     },
     {
-      title: 'Pending Records',
+      title: t('admin.pending_records'),
       value: stats.pendingRecords.toLocaleString(),
       icon: FileText,
       color: 'text-orange-600',
@@ -140,8 +143,8 @@ export default function AdminDashboard() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="text-gray-600 dark:text-gray-400">Welcome back, {session?.user?.name || session?.user?.email}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('admin.title')}</h1>
+          <p className="text-gray-600 dark:text-gray-400">{t('admin.welcome_back')}, {session?.user?.name || session?.user?.email}</p>
         </div>
         
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -162,9 +165,9 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('admin.title')}</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Welcome back, {session?.user?.name || session?.user?.email}
+          {t('admin.welcome_back')}, {session?.user?.name || session?.user?.email}
         </p>
       </div>
 
@@ -194,7 +197,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="mt-4">
                   <Button variant="ghost" size="sm" className="w-full">
-                    View Details
+                    {t('admin.view_details')}
                   </Button>
                 </div>
               </CardContent>
@@ -210,37 +213,37 @@ export default function AdminDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Activity className="h-5 w-5" />
-              <span>System Health</span>
+              <span>{t('admin.system_health')}</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">FHIR Server</span>
+                <span className="text-sm font-medium">{t('admin.fhir_server')}</span>
                 <div className="flex items-center space-x-2">
                   <div className="h-2 w-2 bg-green-400 rounded-full"></div>
-                  <span className="text-sm text-green-600">Online</span>
+                  <span className="text-sm text-green-600">{t('admin.online')}</span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Authentication</span>
+                <span className="text-sm font-medium">{t('admin.authentication')}</span>
                 <div className="flex items-center space-x-2">
                   <div className="h-2 w-2 bg-green-400 rounded-full"></div>
-                  <span className="text-sm text-green-600">Connected</span>
+                  <span className="text-sm text-green-600">{t('admin.connected')}</span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Database</span>
+                <span className="text-sm font-medium">{t('admin.database')}</span>
                 <div className="flex items-center space-x-2">
                   <div className="h-2 w-2 bg-green-400 rounded-full"></div>
-                  <span className="text-sm text-green-600">Healthy</span>
+                  <span className="text-sm text-green-600">{t('admin.healthy')}</span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Cache Server</span>
+                <span className="text-sm font-medium">{t('admin.cache_server')}</span>
                 <div className="flex items-center space-x-2">
                   <div className="h-2 w-2 bg-green-400 rounded-full"></div>
-                  <span className="text-sm text-green-600">Connected</span>
+                  <span className="text-sm text-green-600">{t('admin.connected')}</span>
                 </div>
               </div>
             </div>
@@ -252,7 +255,7 @@ export default function AdminDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Clock className="h-5 w-5" />
-              <span>Recent Activities</span>
+              <span>{t('admin.recent_activities')}</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -278,7 +281,7 @@ export default function AdminDashboard() {
             </div>
             <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <Button variant="ghost" size="sm" className="w-full">
-                View All Activities
+                {t('admin.view_all_activities')}
               </Button>
             </div>
           </CardContent>
@@ -289,32 +292,32 @@ export default function AdminDashboard() {
       {hasPermission(userPermissions, 'users:create') && (
         <Card>
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle>{t('admin.quick_actions')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {hasPermission(userPermissions, 'users:create') && (
                 <Button className="h-12">
                   <Users className="h-4 w-4 mr-2" />
-                  Add User
+                  {t('admin.add_user')}
                 </Button>
               )}
               {hasPermission(userPermissions, 'patients:create') && (
                 <Button variant="outline" className="h-12">
                   <Hospital className="h-4 w-4 mr-2" />
-                  Add Patient
+                  {t('admin.add_patient')}
                 </Button>
               )}
               {hasPermission(userPermissions, 'appointments:create') && (
                 <Button variant="outline" className="h-12">
                   <Calendar className="h-4 w-4 mr-2" />
-                  Schedule Appointment
+                  {t('admin.schedule_appointment')}
                 </Button>
               )}
               {hasPermission(userPermissions, 'system:settings') && (
                 <Button variant="outline" className="h-12">
                   <Activity className="h-4 w-4 mr-2" />
-                  System Settings
+                  {t('admin.system_settings')}
                 </Button>
               )}
             </div>
