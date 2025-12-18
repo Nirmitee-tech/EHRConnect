@@ -17,6 +17,8 @@ import {
   Trash2,
   User
 } from 'lucide-react';
+import { useTranslation } from '@/i18n/client';
+import '@/i18n/client';
 import { FHIRPatient, PatientSummary, FacilitySummary } from '@/types/fhir';
 import { CreatePatientRequest, UpdatePatientRequest } from '@/services/patient.service';
 import { useFacility } from '@/contexts/facility-context';
@@ -208,6 +210,7 @@ export function PatientForm({
   onSubmit,
   onCancel
 }: PatientFormProps) {
+  const { t } = useTranslation('common');
   const { currentFacility } = useFacility();
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>(undefined);
   const [isUpdatingExisting, setIsUpdatingExisting] = useState(false);
@@ -272,6 +275,47 @@ export function PatientForm({
     phone: '',
     email: ''
   });
+
+  // Translated options using useMemo
+  const translatedGenderOptions = useMemo(() => [
+    { value: 'male', label: t('patient_form.male') },
+    { value: 'female', label: t('patient_form.female') },
+    { value: 'other', label: t('patient_form.other') },
+    { value: 'unknown', label: t('patient_form.unknown') }
+  ], [t]);
+
+  const translatedPronounOptions = useMemo(() => [
+    t('patient_form.he_him'),
+    t('patient_form.she_her'),
+    t('patient_form.they_them'),
+    t('patient_form.prefer_self_describe')
+  ], [t]);
+
+  const translatedMaritalStatusOptions = useMemo(() => [
+    { value: 'S', label: t('patient_form.single') },
+    { value: 'M', label: t('patient_form.married') },
+    { value: 'D', label: t('patient_form.divorced') },
+    { value: 'W', label: t('patient_form.widowed') },
+    { value: 'U', label: t('patient_form.unknown') }
+  ], [t]);
+
+  const translatedLocationTypeOptions = useMemo(() => [
+    { value: 'clinic' as FacilityTypeOption, label: t('patient_form.clinic') },
+    { value: 'hospital' as FacilityTypeOption, label: t('patient_form.hospital') },
+    { value: 'lab' as FacilityTypeOption, label: t('patient_form.laboratory') },
+    { value: 'pharmacy' as FacilityTypeOption, label: t('patient_form.pharmacy') }
+  ], [t]);
+
+  const translatedSectionConfig = useMemo(() => [
+    { id: 'provider', title: t('patient_form.provider_information'), icon: Stethoscope, required: true },
+    { id: 'patient', title: t('patient_form.patient_details'), icon: User, required: true },
+    { id: 'contact', title: t('patient_form.contact_information'), icon: Phone, required: true },
+    { id: 'emergency', title: t('patient_form.emergency_contact_optional'), icon: AlertCircle, required: false },
+    { id: 'insurance', title: t('patient_form.insurance_optional'), icon: Shield, required: false },
+    { id: 'preferences', title: t('patient_form.preferences'), icon: Sparkles },
+    { id: 'consent', title: t('patient_form.privacy_consent'), icon: Lock, required: true },
+    { id: 'clinical', title: t('patient_form.clinical_context'), icon: Activity }
+  ], [t]);
 
   const mapStaffToOption = (provider: StaffMember): SelectOption => ({
     value: provider.id,
@@ -622,7 +666,7 @@ export function PatientForm({
           </div>
         )}
 
-        {SectionConfig.map(section => {
+        {translatedSectionConfig.map(section => {
           if (compactMode && compactHiddenSections?.has(section.id)) {
             return null;
           }
@@ -641,18 +685,18 @@ export function PatientForm({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <div className="flex items-center justify-between">
-                      <RequiredLabel>Primary Provider</RequiredLabel>
+                      <RequiredLabel>{t('patient_form.primary_provider')}</RequiredLabel>
                       <InlineAddButton label="Provider" onClick={handleAddProvider} />
                     </div>
                     <SearchableSelect
                       options={providerOptions}
                       value={formData.provider.primaryProviderId}
                       onChange={(value) => updateProviderField('primaryProviderId', value)}
-                      placeholder={providersLoading ? 'Loading providers...' : 'Select provider'}
+                      placeholder={providersLoading ? t('patient_form.loading_providers') : t('patient_form.select_provider')}
                       disabled={providersLoading && providerOptions.length === 0}
                       showColorInButton
                       onAddNew={handleAddProvider}
-                      addNewLabel="Add Provider"
+                      addNewLabel={t('patient_form.add_provider')}
                     />
                     {providersLoading && providerOptions.length === 0 && (
                       <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
@@ -663,16 +707,16 @@ export function PatientForm({
                   </div>
                   <div>
                     <div className="flex items-center justify-between">
-                      <RequiredLabel>Provider Group Location</RequiredLabel>
+                      <RequiredLabel>{t('patient_form.provider_group_location')}</RequiredLabel>
                       <InlineAddButton label="Location" onClick={() => setLocationDialogOpen(true)} />
                     </div>
                     <SearchableSelect
                       options={locationOptions}
                       value={formData.provider.providerLocationId}
                       onChange={(value) => updateProviderField('providerLocationId', value)}
-                      placeholder={locationsLoading ? 'Loading locations...' : 'Select location'}
+                      placeholder={locationsLoading ? t('patient_form.loading_locations') : t('patient_form.select_location')}
                       onAddNew={() => setLocationDialogOpen(true)}
-                      addNewLabel="Add Location"
+                      addNewLabel={t('patient_form.add_location')}
                     />
                     {locationsLoading && (
                       <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
@@ -684,7 +728,7 @@ export function PatientForm({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <RequiredLabel>Registration Date</RequiredLabel>
+                    <RequiredLabel>{t('patient_form.registration_date')}</RequiredLabel>
                     <Input
                       type="date"
                       value={formData.provider.registrationDate}
@@ -737,7 +781,7 @@ export function PatientForm({
                     </div>
                   )}
                   <div>
-                    <RequiredLabel>First Name</RequiredLabel>
+                    <RequiredLabel>{t('patient_form.first_name')}</RequiredLabel>
                     <Input
                       value={formData.demographics.firstName}
                       onChange={e => updateDemographicsField('firstName', e.target.value)}
@@ -754,7 +798,7 @@ export function PatientForm({
                     </div>
                   )}
                   <div>
-                    <RequiredLabel>Last Name</RequiredLabel>
+                    <RequiredLabel>{t('patient_form.last_name')}</RequiredLabel>
                     <Input
                       value={formData.demographics.lastName}
                       onChange={e => updateDemographicsField('lastName', e.target.value)}
@@ -777,7 +821,7 @@ export function PatientForm({
                     </div>
                   )}
                   <div>
-                    <RequiredLabel>Date of Birth</RequiredLabel>
+                    <RequiredLabel>{t('patient_form.date_of_birth')}</RequiredLabel>
                     <Input
                       type="date"
                       value={formData.demographics.dateOfBirth}
@@ -792,7 +836,7 @@ export function PatientForm({
                     </div>
                   )}
                   <div>
-                    <RequiredLabel>Gender</RequiredLabel>
+                    <RequiredLabel>{t('patient_form.gender')}</RequiredLabel>
                     <Select
                       value={formData.demographics.gender}
                       onValueChange={value =>
@@ -800,10 +844,10 @@ export function PatientForm({
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Gender" />
+                        <SelectValue placeholder={t('patient_form.gender_placeholder')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {genderOptions.map(option => (
+                        {translatedGenderOptions.map(option => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
                           </SelectItem>
@@ -841,10 +885,10 @@ export function PatientForm({
                           onValueChange={value => updateDemographicsField('maritalStatus', value)}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
+                            <SelectValue placeholder={t('patient_form.select_status')} />
                           </SelectTrigger>
                           <SelectContent>
-                            {maritalStatusOptions.map(option => (
+                            {translatedMaritalStatusOptions.map(option => (
                               <SelectItem key={option.value} value={option.value}>
                                 {option.label}
                               </SelectItem>
@@ -1669,7 +1713,7 @@ export function PatientForm({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {locationTypeOptions.map((option) => (
+                  {translatedLocationTypeOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
