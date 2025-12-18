@@ -98,7 +98,7 @@ export function ProtectedFeatureWithFallback() {
     >
       <div className="p-4">
         <h2 className="text-xl font-bold">Export Reports</h2>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded">
+        <button className="bg-primary text-primary-foreground px-4 py-2 rounded">
           Export to PDF
         </button>
       </div>
@@ -246,7 +246,7 @@ export function PatientActionsExample() {
   return (
     <div className="p-4 space-x-2">
       <PermissionGate permission="patients:read">
-        <button className="bg-blue-600 text-white px-4 py-2 rounded">
+        <button className="bg-primary text-primary-foreground px-4 py-2 rounded">
           View
         </button>
       </PermissionGate>
@@ -302,7 +302,7 @@ export function ConnectionStatusExample() {
 
       <button
         onClick={refreshPermissions}
-        className="bg-blue-600 text-white px-4 py-2 rounded"
+        className="bg-primary text-primary-foreground px-4 py-2 rounded"
       >
         Refresh Permissions
       </button>

@@ -119,53 +119,53 @@ export function MonthView({
               onClick={() => onDateClick?.(date)}
               className={cn(
                 'relative border-b border-r border-gray-300 p-2 flex flex-col cursor-pointer',
-                'transition-colors hover:bg-blue-50/30',
+                'transition-colors hover:bg-primary/5',
                 isCurrentMonth ? 'bg-white' : 'bg-gray-50',
                 'last:border-r-0',
                 idx >= monthDates.length - 7 && 'border-b-0' // Remove bottom border on last row
               )}
             >
-                {/* Date number and overflow indicator */}
-                <div className="mb-1.5 flex items-start justify-between flex-shrink-0">
-                  <div
+              {/* Date number and overflow indicator */}
+              <div className="mb-1.5 flex items-start justify-between flex-shrink-0">
+                <div
+                  className={cn(
+                    'flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium',
+                    'transition-colors',
+                    isToday && 'bg-primary text-primary-foreground',
+                    !isToday && isCurrentMonth && 'text-gray-900',
+                    !isToday && !isCurrentMonth && 'text-gray-400'
+                  )}
+                >
+                  {date.getDate()}
+                </div>
+
+                {/* Overflow count badge in corner (like Google Calendar) */}
+                {!isExpanded && hiddenCount > 0 && (
+                  <button
+                    onClick={(e) => toggleDateExpansion(dateString, e)}
                     className={cn(
-                      'flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium',
-                      'transition-colors',
-                      isToday && 'bg-blue-600 text-white',
-                      !isToday && isCurrentMonth && 'text-gray-900',
-                      !isToday && !isCurrentMonth && 'text-gray-400'
+                      'text-[11px] font-medium text-primary hover:text-primary/90',
+                      'hover:underline transition-colors'
                     )}
                   >
-                    {date.getDate()}
-                  </div>
-
-                  {/* Overflow count badge in corner (like Google Calendar) */}
-                  {!isExpanded && hiddenCount > 0 && (
-                    <button
-                      onClick={(e) => toggleDateExpansion(dateString, e)}
-                      className={cn(
-                        'text-[11px] font-medium text-blue-600 hover:text-blue-700',
-                        'hover:underline transition-colors'
-                      )}
-                    >
-                      +{hiddenCount}
-                    </button>
-                  )}
-                </div>
-
-                {/* Appointments - scrollable if too many */}
-                <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
-                  {visibleAppointments.map((apt) => (
-                    <CompactEventCard
-                      key={apt.id}
-                      appointment={apt}
-                      onClick={() => onAppointmentClick?.(apt)}
-                    />
-                  ))}
-                </div>
+                    +{hiddenCount}
+                  </button>
+                )}
               </div>
-            );
-          })}
+
+              {/* Appointments - scrollable if too many */}
+              <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
+                {visibleAppointments.map((apt) => (
+                  <CompactEventCard
+                    key={apt.id}
+                    appointment={apt}
+                    onClick={() => onAppointmentClick?.(apt)}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

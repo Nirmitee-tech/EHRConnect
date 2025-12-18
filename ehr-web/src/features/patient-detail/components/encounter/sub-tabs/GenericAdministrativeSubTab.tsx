@@ -191,7 +191,7 @@ export function GenericAdministrativeSubTab({
 
         <button
           onClick={onSave}
-          className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded text-sm font-medium hover:opacity-90"
         >
           {isEditing ? 'Update' : 'Save'}
         </button>

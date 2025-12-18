@@ -756,7 +756,7 @@ END:VCALENDAR`;
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
           <p className="text-base text-gray-700 font-semibold">Loading booking widget...</p>
           <p className="text-sm text-gray-500 mt-1">Please wait a moment</p>
         </div>
@@ -791,7 +791,7 @@ END:VCALENDAR`;
           {/* Success Card */}
           <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
             {/* Success Icon */}
-            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle2 className="w-10 h-10 text-white" />
             </div>
 
@@ -806,7 +806,7 @@ END:VCALENDAR`;
             {/* Appointment Details */}
             <div className="bg-gray-50 rounded-xl p-6 mb-6 border border-gray-200">
               <div className="flex items-center gap-4 mb-5 pb-5 border-b border-gray-200">
-                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
                   <User className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -817,14 +817,14 @@ END:VCALENDAR`;
 
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <User className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <User className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">Provider</p>
                     <p className="text-sm font-bold text-gray-900 mt-0.5">{bookingDetails.providerName}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <Calendar className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <Calendar className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">Date & Time</p>
                     <p className="text-sm font-bold text-gray-900 mt-0.5">
@@ -836,7 +836,7 @@ END:VCALENDAR`;
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">Location</p>
                     <p className="text-sm font-bold text-gray-900 mt-0.5">{bookingDetails.location}</p>
@@ -849,7 +849,7 @@ END:VCALENDAR`;
             <div className="space-y-3">
               <button
                 onClick={generateCalendarFile}
-                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2"
               >
                 <Download className="w-5 h-5" />
                 Add to Calendar
@@ -871,7 +871,7 @@ END:VCALENDAR`;
 
             {/* HIPAA Notice */}
             <div className="mt-6 flex items-start gap-2 text-xs text-gray-600">
-              <Shield className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Shield className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
               <p>
                 Your health information is protected under HIPAA. We will only use your data for healthcare purposes.
               </p>
@@ -892,10 +892,10 @@ END:VCALENDAR`;
               <img
                 src={orgInfo.logo_url}
                 alt={orgInfo.name}
-                className="w-12 h-12 rounded-xl object-cover shadow-lg ring-2 ring-blue-100"
+                className="w-12 h-12 rounded-xl object-cover shadow-lg ring-2 ring-primary/20"
               />
             ) : (
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-lg">
                   {orgInfo?.name.substring(0, 2).toUpperCase()}
                 </span>
@@ -905,7 +905,7 @@ END:VCALENDAR`;
               <h1 className="text-2xl font-bold text-gray-900">{orgInfo?.name}</h1>
               <p className="text-sm text-gray-600 flex items-center gap-2">
                 <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
                 Secure Online Booking
               </p>
@@ -915,9 +915,8 @@ END:VCALENDAR`;
             {[1, 2, 3].map((s) => (
               <div
                 key={s}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  s === step ? 'bg-blue-600 w-16 shadow-md' : s < step ? 'bg-green-500 w-10' : 'bg-gray-200 w-10'
-                }`}
+                className={`h-2 rounded-full transition-all duration-300 ${s === step ? 'bg-primary w-16 shadow-md' : s < step ? 'bg-green-500 w-10' : 'bg-gray-200 w-10'
+                  }`}
               />
             ))}
           </div>
@@ -962,7 +961,7 @@ END:VCALENDAR`;
                     type="text"
                     value={patientInfo.name}
                     onChange={(e) => setPatientInfo({ ...patientInfo, name: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm hover:border-gray-400"
                     placeholder="John Smith"
                     required
                   />
@@ -982,7 +981,7 @@ END:VCALENDAR`;
                     type="email"
                     value={patientInfo.email}
                     onChange={(e) => setPatientInfo({ ...patientInfo, email: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm hover:border-gray-400"
                     placeholder="john.smith@email.com"
                     required
                   />
@@ -1002,7 +1001,7 @@ END:VCALENDAR`;
                     type="tel"
                     value={patientInfo.phone}
                     onChange={(e) => setPatientInfo({ ...patientInfo, phone: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm hover:border-gray-400"
                     placeholder="+1 (555) 000-0000"
                     required
                   />
@@ -1022,7 +1021,7 @@ END:VCALENDAR`;
                     type="date"
                     value={patientInfo.dob}
                     onChange={(e) => setPatientInfo({ ...patientInfo, dob: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm hover:border-gray-400"
                     required
                   />
                 </div>
@@ -1042,7 +1041,7 @@ END:VCALENDAR`;
                   <select
                     value={preferences.appointmentType}
                     onChange={(e) => handleAppointmentTypeChange(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm hover:border-gray-400"
                     required
                   >
                     <option value="">Select type</option>
@@ -1075,7 +1074,7 @@ END:VCALENDAR`;
                     <select
                       value={preferences.mode}
                       onChange={(e) => setPreferences({ ...preferences, mode: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm hover:border-gray-400"
                     >
                       <option value="At Clinic">At Clinic</option>
                       <option value="Telemedicine">Telemedicine</option>
@@ -1091,7 +1090,7 @@ END:VCALENDAR`;
                   <select
                     value={preferences.location}
                     onChange={(e) => setPreferences({ ...preferences, location: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm hover:border-gray-400"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm hover:border-gray-400"
                     required
                   >
                     <option value="">Select location</option>
@@ -1143,14 +1142,14 @@ END:VCALENDAR`;
                   <div className="flex items-center justify-between mb-4">
                     <button
                       onClick={handlePrevMonth}
-                      className="p-2 hover:bg-blue-50 rounded-lg transition-all"
+                      className="p-2 hover:bg-primary/5 rounded-lg transition-all"
                     >
                       <ChevronRight className="w-4 h-4 rotate-180 text-gray-700" />
                     </button>
                     <p className="font-bold text-base text-gray-900">{monthNames[currentMonth]} {currentYear}</p>
                     <button
                       onClick={handleNextMonth}
-                      className="p-2 hover:bg-blue-50 rounded-lg transition-all"
+                      className="p-2 hover:bg-primary/5 rounded-lg transition-all"
                     >
                       <ChevronRight className="w-4 h-4 text-gray-700" />
                     </button>
@@ -1194,13 +1193,12 @@ END:VCALENDAR`;
                             key={day}
                             disabled={isPast}
                             onClick={() => handleDateSelect(day)}
-                            className={`py-2 rounded-lg text-sm font-semibold transition-all ${
-                              isSelected
-                                ? 'bg-blue-600 text-white shadow-md'
+                            className={`py-2 rounded-lg text-sm font-semibold transition-all ${isSelected
+                                ? 'bg-primary text-primary-foreground shadow-md'
                                 : hasSlots
-                                ? 'text-gray-900 hover:bg-blue-50 hover:text-blue-600'
-                                : 'text-gray-300 cursor-not-allowed'
-                            }`}
+                                  ? 'text-gray-900 hover:bg-primary/5 hover:text-primary'
+                                  : 'text-gray-300 cursor-not-allowed'
+                              }`}
                           >
                             {day}
                           </button>
@@ -1214,11 +1212,11 @@ END:VCALENDAR`;
 
                 {/* Location Info */}
                 {preferences.location && (
-                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
                     <div className="flex items-start gap-3">
-                      <MapPin className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-xs font-semibold text-blue-900 uppercase tracking-wide">APPOINTMENT LOCATION</p>
+                        <p className="text-xs font-semibold text-primary uppercase tracking-wide">APPOINTMENT LOCATION</p>
                         <p className="text-sm font-bold text-gray-900 mt-1">
                           {locations.find(l => l.id === preferences.location)?.name}
                         </p>
@@ -1242,7 +1240,7 @@ END:VCALENDAR`;
 
                 {loadingSlots ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+                    <Loader2 className="w-10 h-10 animate-spin text-primary" />
                   </div>
                 ) : providers.filter(p => (p.slotsAvailable || 0) > 0).length === 0 ? (
                   <div className="text-center py-12">
@@ -1255,20 +1253,18 @@ END:VCALENDAR`;
                     {providers.filter(p => (p.slotsAvailable || 0) > 0).map((provider) => (
                       <div key={provider.id}>
                         <div
-                          className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                            selectedProvider === provider.id
-                              ? 'border-blue-600 bg-blue-50 shadow-lg'
+                          className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedProvider === provider.id
+                              ? 'border-primary bg-primary/5 shadow-lg'
                               : (provider.slotsAvailable || 0) > 0
-                              ? 'border-gray-200 hover:border-blue-500 hover:bg-blue-50/30 hover:shadow-md'
-                              : 'border-gray-200 bg-gray-50/50 cursor-not-allowed opacity-50'
-                          }`}
+                                ? 'border-gray-200 hover:border-primary/50 hover:bg-primary/5 hover:shadow-md'
+                                : 'border-gray-200 bg-gray-50/50 cursor-not-allowed opacity-50'
+                            }`}
                           onClick={() => (provider.slotsAvailable || 0) > 0 && setSelectedProvider(provider.id)}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
-                                (provider.slotsAvailable || 0) > 0 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-500'
-                              }`}>
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${(provider.slotsAvailable || 0) > 0 ? 'bg-primary text-primary-foreground' : 'bg-gray-300 text-gray-500'
+                                }`}>
                                 {provider.initials}
                               </div>
                               <div>
@@ -1278,7 +1274,7 @@ END:VCALENDAR`;
                             </div>
                             <div className="text-right">
                               {(provider.slotsAvailable || 0) > 0 ? (
-                                <span className="text-xs font-semibold text-blue-600">
+                                <span className="text-xs font-semibold text-primary">
                                   {provider.slotsAvailable} slots
                                 </span>
                               ) : (
@@ -1299,11 +1295,10 @@ END:VCALENDAR`;
                                       e.stopPropagation();
                                       setSelectedSlot(slot.start);
                                     }}
-                                    className={`px-3 py-2.5 rounded-lg text-xs font-semibold transition-all border ${
-                                      selectedSlot === slot.start
-                                        ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                                        : 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-500'
-                                    }`}
+                                    className={`px-3 py-2.5 rounded-lg text-xs font-semibold transition-all border ${selectedSlot === slot.start
+                                        ? 'bg-primary text-primary-foreground border-primary shadow-md'
+                                        : 'bg-white text-primary border-primary/20 hover:bg-primary/5 hover:border-primary/50'
+                                      }`}
                                   >
                                     {formatTimeSlot(slot.start)}
                                   </button>
@@ -1328,9 +1323,9 @@ END:VCALENDAR`;
               <h2 className="text-xl font-bold text-gray-900 mb-6">Confirm Your Appointment</h2>
 
               {/* Summary Card */}
-              <div className="mb-6 p-5 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center gap-4 mb-4 pb-4 border-b border-blue-200">
-                  <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
+              <div className="mb-6 p-5 bg-primary/5 rounded-lg border border-primary/20">
+                <div className="flex items-center gap-4 mb-4 pb-4 border-b border-primary/20">
+                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
                     <span className="text-base font-bold text-white">
                       {patientInfo.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                     </span>
@@ -1343,19 +1338,19 @@ END:VCALENDAR`;
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex items-center gap-2 text-gray-700">
-                    <User className="w-4 h-4 text-blue-600" />
+                    <User className="w-4 h-4 text-primary" />
                     <span className="font-medium text-sm">{providers.find(p => p.id === selectedProvider)?.name}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-700">
-                    <Calendar className="w-4 h-4 text-blue-600" />
+                    <Calendar className="w-4 h-4 text-primary" />
                     <span className="font-medium text-sm">{new Date(currentYear, currentMonth, selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-700">
-                    <Clock className="w-4 h-4 text-blue-600" />
+                    <Clock className="w-4 h-4 text-primary" />
                     <span className="font-medium text-sm">{selectedSlot && formatTimeSlot(selectedSlot)} ({preferences.duration} min)</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-700">
-                    <MapPin className="w-4 h-4 text-blue-600" />
+                    <MapPin className="w-4 h-4 text-primary" />
                     <span className="truncate font-medium text-sm">{locations.find(l => l.id === preferences.location)?.name}</span>
                   </div>
                 </div>
@@ -1370,7 +1365,7 @@ END:VCALENDAR`;
                 <textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all text-sm resize-none hover:border-gray-400"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm resize-none hover:border-gray-400"
                   rows={4}
                   placeholder="Please describe the reason for your visit..."
                   required={orgInfo?.booking_settings?.require_reason}
@@ -1398,7 +1393,7 @@ END:VCALENDAR`;
             <button
               onClick={handleNext}
               disabled={loading}
-              className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold text-base hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-3 bg-primary text-primary-foreground rounded-lg font-semibold text-base hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
@@ -1416,7 +1411,7 @@ END:VCALENDAR`;
             <button
               onClick={handleConfirm}
               disabled={submitting}
-              className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold text-base hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-3 bg-primary text-primary-foreground rounded-lg font-semibold text-base hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <>
@@ -1442,7 +1437,7 @@ export default function BookingWidget() {
     <Suspense
       fallback={
         <div className="flex min-h-[480px] items-center justify-center gap-2 p-8">
-          <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
           <span className="text-sm text-gray-500">Loading booking widget...</span>
         </div>
       }

@@ -148,7 +148,7 @@ export function InsuranceCard({ insuranceCards = [], onUpdate }: InsuranceCardPr
           <p className="text-xs text-gray-500 mb-2">No insurance information</p>
           <button
             onClick={() => setIsEditing(true)}
-            className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded text-xs font-medium hover:opacity-90 transition-colors"
           >
             <Plus className="h-3 w-3" />
             Add Insurance

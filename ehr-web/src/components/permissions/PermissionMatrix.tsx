@@ -313,7 +313,7 @@ export function PermissionMatrix({
               onClick={() => setFilterMode('all')}
               className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                 filterMode === 'all'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-primary text-primary-foreground'
                   : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
               }`}
             >
@@ -384,7 +384,7 @@ export function PermissionMatrix({
             Collapse All
           </button>
           {selectedPermissions.has('*:*' as Permission) && (
-            <div className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium text-sm">
+            <div className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm">
               🌟 Full Access Granted
             </div>
           )}

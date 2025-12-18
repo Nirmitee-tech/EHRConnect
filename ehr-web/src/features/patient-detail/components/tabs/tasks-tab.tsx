@@ -168,7 +168,7 @@ export function TasksTab({ patientId }: TasksTabProps) {
         <Button
           onClick={() => setIsCreateSidebarOpen(true)}
           size="sm"
-          className="bg-blue-600 hover:bg-blue-700 text-white h-7 px-2 text-xs"
+          className="bg-primary hover:opacity-90 text-primary-foreground h-7 px-2 text-xs"
         >
           <Plus className="h-3.5 w-3.5 mr-1" />
           New Task
@@ -183,7 +183,7 @@ export function TasksTab({ patientId }: TasksTabProps) {
           <Button
             onClick={() => setIsCreateSidebarOpen(true)}
             size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-primary hover:opacity-90 text-primary-foreground"
           >
             <Plus className="h-3.5 w-3.5 mr-1" />
             Create First Task

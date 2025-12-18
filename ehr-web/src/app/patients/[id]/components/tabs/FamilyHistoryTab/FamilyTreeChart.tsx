@@ -185,10 +185,10 @@ export function FamilyTreeChart({
       return 'bg-gray-100 border-gray-400';
     }
     if (isMale) {
-      return 'bg-blue-50 border-blue-300';
+      return 'bg-primary/5 border-primary/20';
     }
     if (isFemale) {
-      return 'bg-pink-50 border-pink-300';
+      return 'bg-theme-secondary/5 border-theme-secondary/20';
     }
     return 'bg-gray-50 border-gray-300';
   };
@@ -197,8 +197,8 @@ export function FamilyTreeChart({
     const isMale = member.gender?.toLowerCase() === 'male';
     const isFemale = member.gender?.toLowerCase() === 'female';
 
-    if (isMale) return 'text-blue-900';
-    if (isFemale) return 'text-pink-900';
+    if (isMale) return 'text-primary';
+    if (isFemale) return 'text-theme-secondary';
     return 'text-gray-900';
   };
 
@@ -233,21 +233,20 @@ export function FamilyTreeChart({
                   <div className="relative group">
                     <div className={`
                       relative w-40 rounded-xl border-4 shadow-lg
-                      ${patientGender === 'male' ? 'bg-blue-100 border-blue-500' :
-                        patientGender === 'female' ? 'bg-pink-100 border-pink-500' :
-                        'bg-purple-100 border-purple-500'}
+                      ${patientGender === 'male' ? 'bg-primary/10 border-primary' :
+                        patientGender === 'female' ? 'bg-theme-secondary/10 border-theme-secondary' :
+                          'bg-theme-accent/10 border-theme-accent'}
                     `}>
                       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                        <span className="px-3 py-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold rounded-full shadow-md">
+                        <span className="px-3 py-1 bg-gradient-to-r from-primary to-theme-secondary text-white text-xs font-bold rounded-full shadow-md">
                           PATIENT
                         </span>
                       </div>
                       <div className="p-4 pt-6">
-                        <div className={`text-sm font-bold text-center mb-0.5 min-h-[2.5rem] flex items-center justify-center ${
-                          patientGender === 'male' ? 'text-blue-900' :
-                          patientGender === 'female' ? 'text-pink-900' :
-                          'text-purple-900'
-                        }`}>
+                        <div className={`text-sm font-bold text-center mb-0.5 min-h-[2.5rem] flex items-center justify-center ${patientGender === 'male' ? 'text-primary' :
+                            patientGender === 'female' ? 'text-theme-secondary' :
+                              'text-theme-accent'
+                          }`}>
                           {patientName}
                         </div>
                         <div className="text-xs text-center text-gray-600 mb-3 font-medium">
@@ -258,8 +257,8 @@ export function FamilyTreeChart({
                             <User className="h-3.5 w-3.5" />
                             <span className="font-medium">
                               {patientGender === 'male' ? '♂ Male' :
-                               patientGender === 'female' ? '♀ Female' :
-                               patientGender || 'Unknown'}
+                                patientGender === 'female' ? '♀ Female' :
+                                  patientGender || 'Unknown'}
                             </span>
                           </div>
                         </div>
@@ -355,15 +354,15 @@ export function FamilyTreeChart({
         <div className="mt-12 flex justify-center">
           <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm inline-flex gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded bg-purple-100 border-4 border-purple-500" />
+              <div className="w-6 h-6 rounded bg-primary/20 border-4 border-primary" />
               <span className="text-xs text-gray-700 font-semibold">Index Patient</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded bg-blue-50 border-2 border-blue-300" />
+              <div className="w-6 h-6 rounded bg-primary/5 border-2 border-primary/30" />
               <span className="text-xs text-gray-700">Male</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded bg-pink-50 border-2 border-pink-300" />
+              <div className="w-6 h-6 rounded bg-theme-secondary/5 border-2 border-theme-secondary/30" />
               <span className="text-xs text-gray-700">Female</span>
             </div>
             <div className="flex items-center gap-2">

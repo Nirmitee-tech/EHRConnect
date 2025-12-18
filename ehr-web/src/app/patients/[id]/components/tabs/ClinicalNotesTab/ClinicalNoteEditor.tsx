@@ -256,11 +256,10 @@ export function ClinicalNoteEditor({
                 </label>
                 <button
                   onClick={() => setFormData({ ...formData, isFavorite: !formData.isFavorite })}
-                  className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    formData.isFavorite
+                  className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors ${formData.isFavorite
                       ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-400'
                       : 'bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   {formData.isFavorite ? (
                     <div className="flex items-center justify-center gap-2">
@@ -411,7 +410,7 @@ Tip: Use templates for structured note formats"
             <button
               onClick={handleSave}
               disabled={saving || !formData.narrative.trim()}
-              className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
             >
               {saving ? (
                 <>

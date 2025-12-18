@@ -102,7 +102,7 @@ export default function RolesManagementPage() {
           </div>
           <button
             onClick={() => router.push('/settings/roles/new')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition-colors"
           >
             + Create Custom Role
           </button>
@@ -113,31 +113,28 @@ export default function RolesManagementPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                filter === 'all'
-                  ? 'bg-blue-600 text-white'
+              className={`px-4 py-2 rounded-lg transition-colors ${filter === 'all'
+                  ? 'bg-primary text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
               All Roles ({roles.length})
             </button>
             <button
               onClick={() => setFilter('system')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                filter === 'system'
-                  ? 'bg-blue-600 text-white'
+              className={`px-4 py-2 rounded-lg transition-colors ${filter === 'system'
+                  ? 'bg-primary text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
               System ({systemRoles.length})
             </button>
             <button
               onClick={() => setFilter('custom')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                filter === 'custom'
-                  ? 'bg-blue-600 text-white'
+              className={`px-4 py-2 rounded-lg transition-colors ${filter === 'custom'
+                  ? 'bg-primary text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
               Custom ({customRoles.length})
             </button>
@@ -148,18 +145,17 @@ export default function RolesManagementPage() {
             placeholder="Search roles..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
           />
 
           {/* View Switcher */}
           <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setViewMode('card')}
-              className={`px-3 py-2 rounded-md transition-colors ${
-                viewMode === 'card'
+              className={`px-3 py-2 rounded-md transition-colors ${viewMode === 'card'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
               title="Card View"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,11 +164,10 @@ export default function RolesManagementPage() {
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`px-3 py-2 rounded-md transition-colors ${
-                viewMode === 'list'
+              className={`px-3 py-2 rounded-md transition-colors ${viewMode === 'list'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
               title="List View"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,7 +182,7 @@ export default function RolesManagementPage() {
       {(filter === 'all' || filter === 'system') && systemRoles.length > 0 && (
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="h-1 w-1 rounded-full bg-blue-600"></span>
+            <span className="h-1 w-1 rounded-full bg-primary/70"></span>
             System Roles
             <span className="text-sm font-normal text-gray-500">
               (Default roles available to all organizations)
@@ -236,7 +231,7 @@ export default function RolesManagementPage() {
               <p className="text-gray-600 mb-4">No custom roles yet</p>
               <button
                 onClick={() => router.push('/settings/roles/new')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition-colors"
               >
                 Create Your First Custom Role
               </button>
@@ -301,7 +296,7 @@ function RoleCard({
   }
 
   return (
-    <div className={`bg-white border rounded-lg transition-all ${expanded ? 'border-blue-500 shadow-lg' : 'border-gray-200 hover:shadow-lg'}`}>
+    <div className={`bg-white border rounded-lg transition-all ${expanded ? 'border-primary shadow-lg' : 'border-gray-200 hover:shadow-lg'}`}>
       <div className="p-6">
         <div className="flex justify-between items-start mb-3">
           <div className="flex-1">
@@ -316,7 +311,7 @@ function RoleCard({
             </span>
           )}
           {isCustom && role.parent_role_id && (
-            <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-600 rounded">
+            <span className="px-2 py-1 text-xs font-medium bg-primary/10 text-primary rounded">
               Modified
             </span>
           )}
@@ -336,7 +331,7 @@ function RoleCard({
         <div className="flex gap-2">
           <button
             onClick={onViewDetails}
-            className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+            className="flex-1 px-3 py-2 text-sm bg-primary text-white rounded hover:opacity-90 transition-colors flex items-center justify-center gap-2"
           >
             {expanded ? 'Hide Details' : 'View Details'}
             <svg className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -399,7 +394,7 @@ function RoleListItem({
   }
 
   return (
-    <div className={`bg-white border rounded-lg transition-all ${expanded ? 'border-blue-500 shadow-lg' : 'border-gray-200 hover:shadow-md'}`}>
+    <div className={`bg-white border rounded-lg transition-all ${expanded ? 'border-primary shadow-lg' : 'border-gray-200 hover:shadow-md'}`}>
       <div className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4 flex-1">
@@ -435,7 +430,7 @@ function RoleListItem({
           <div className="flex gap-2 ml-4">
             <button
               onClick={onViewDetails}
-              className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
+              className="px-3 py-2 text-sm bg-primary text-white rounded hover:opacity-90 transition-colors flex items-center gap-1"
             >
               {expanded ? 'Hide' : 'View'}
               <svg className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">

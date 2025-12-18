@@ -224,37 +224,63 @@ const ADMIN_PAGES: Record<string, string> = {
   specialties: 'Specialty Pack Management'
 };
 
+interface RouteConfig extends PageInfo {
+  pattern?: RegExp;
+}
+
+const DYNAMIC_ROUTES: RouteConfig[] = [
+  {
+    pattern: /^\/patients\/new$/,
+    title: 'Add New Patient'
+  },
+  {
+    pattern: /^\/patients\/[^/]+\/edit$/,
+    title: 'Edit Patient'
+  },
+  {
+    pattern: /^\/patients\/[^/]+$/,
+    title: 'Patient Details',
+    actionButton: { label: 'Edit Patient' }
+  },
+  {
+    pattern: /^\/settings\/locations$/,
+    title: 'Locations',
+    actionButton: { label: 'Add Location', href: '/settings/locations' }
+  },
+  {
+    pattern: /^\/settings\/appearance$/,
+    title: 'Appearance Settings',
+    features: { save: true, preview: true, reset: true }
+  },
+  {
+    pattern: /^\/admin\/([^/]+)$/,
+    title: 'Administration' // Handled dynamically below
+  },
+  {
+    pattern: /^\/rcm\/codes$/,
+    title: 'Code Set Management',
+    actionButton: { label: 'New Code' }
+  }
+];
+
 export const getPageInfo = (pathname: string): PageInfo => {
-  const segments = pathname.replace(/^\//, '').split('/');
-  const [firstSegment, secondSegment, thirdSegment] = segments;
+  const cleanPath = pathname.split('?')[0];
 
-  if (firstSegment === 'patients') {
-    if (secondSegment === 'new') {
-      return { title: 'Add New Patient' };
-    }
-    if (secondSegment && thirdSegment === 'edit') {
-      return { title: 'Edit Patient' };
-    }
-    if (secondSegment && !thirdSegment) {
-      return { title: 'Patient Details', actionButton: { label: 'Edit Patient' } };
+  // Try dynamic routes first
+  for (const route of DYNAMIC_ROUTES) {
+    if (route.pattern && route.pattern.test(cleanPath)) {
+      if (cleanPath.startsWith('/admin/')) {
+        const adminPage = cleanPath.split('/')[2];
+        return { title: ADMIN_PAGES[adminPage] || 'Administration' };
+      }
+      return route;
     }
   }
 
-  if (firstSegment === 'settings' && secondSegment === 'locations') {
-    return PAGE_CONFIG['locations'];
-  }
-
-  if (firstSegment === 'admin' && secondSegment) {
-    return { title: ADMIN_PAGES[secondSegment] || 'Administration' };
-  }
-
-  if (firstSegment === 'rcm') {
-    if (secondSegment === 'codes') {
-      return { title: 'Code Set Management', actionButton: { label: 'New Code' } };
-    }
-
-    return PAGE_CONFIG[firstSegment];
-  }
+  // Fallback to static config
+  const segments = cleanPath.replace(/^\//, '').split('/');
+  const firstSegment = segments[0];
 
   return PAGE_CONFIG[firstSegment] || { title: 'Dashboard' };
 };
+

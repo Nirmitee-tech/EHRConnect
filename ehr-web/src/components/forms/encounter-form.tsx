@@ -46,13 +46,13 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
     const loadResources = async () => {
       try {
         setLoadingResources(true);
-        
+
         // Load Practitioners
         const practitionerResponse = await fhirService.search('Practitioner', {
           _count: 50,
           active: true
         });
-        
+
         const practitionerList = practitionerResponse.entry?.map((entry) => {
           const practitioner = entry.resource as any;
           const name = practitioner.name?.[0];
@@ -62,7 +62,7 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
             name: fullName || 'Unknown Practitioner'
           };
         }) || [];
-        
+
         setPractitioners(practitionerList);
 
         // Load Locations - use Organization as proxy since Location might not be defined
@@ -71,7 +71,7 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
           active: true,
           type: 'dept'
         });
-        
+
         const locationList = locationResponse.entry?.map((entry) => {
           const location = entry.resource as any;
           return {
@@ -79,7 +79,7 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
             name: location.name || 'Unknown Location'
           };
         }) || [];
-        
+
         setLocations(locationList);
       } catch (error) {
         console.error('Error loading resources:', error);
@@ -93,7 +93,7 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
 
   const handleAddPractitioner = async () => {
     if (!newPractitioner.firstName || !newPractitioner.lastName) return;
-    
+
     setSaving(true);
     try {
       const practitionerResource = {
@@ -106,14 +106,14 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
           prefix: [newPractitioner.prefix]
         }]
       };
-      
+
       const created = await fhirService.create(practitionerResource) as any;
       const fullName = `${newPractitioner.prefix} ${newPractitioner.firstName} ${newPractitioner.lastName}`.trim();
-      
+
       // Add to list
       setPractitioners([...practitioners, { id: created.id, name: fullName }]);
       setFormData({ ...formData, practitioner: created.id });
-      
+
       // Reset and close
       setNewPractitioner({ firstName: '', lastName: '', prefix: 'Dr' });
       setShowPractitionerForm(false);
@@ -127,7 +127,7 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
 
   const handleAddLocation = async () => {
     if (!newLocation.name) return;
-    
+
     setSaving(true);
     try {
       const locationResource = {
@@ -141,13 +141,13 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
           }]
         }]
       };
-      
+
       const created = await fhirService.create(locationResource) as any;
-      
+
       // Add to list
       setLocations([...locations, { id: created.id, name: newLocation.name }]);
       setFormData({ ...formData, location: created.id });
-      
+
       // Reset and close
       setNewLocation({ name: '' });
       setShowLocationForm(false);
@@ -162,7 +162,7 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       await onStartVisit(formData);
     } catch (error) {
@@ -219,8 +219,8 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
             <Label htmlFor="practitioner" className="text-sm font-medium text-gray-700">
               Practitioner
             </Label>
-            <Select 
-              value={formData.practitioner} 
+            <Select
+              value={formData.practitioner}
               onValueChange={(value) => setFormData({ ...formData, practitioner: value })}
               disabled={loadingResources}
             >
@@ -251,8 +251,8 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
             <Label htmlFor="location" className="text-sm font-medium text-gray-700">
               Location
             </Label>
-            <Select 
-              value={formData.location} 
+            <Select
+              value={formData.location}
               onValueChange={(value) => setFormData({ ...formData, location: value })}
               disabled={loadingResources}
             >
@@ -284,8 +284,8 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
           <Label htmlFor="encounterClass" className="text-sm font-medium text-gray-700">
             Encounter class
           </Label>
-          <Select 
-            value={formData.encounterClass} 
+          <Select
+            value={formData.encounterClass}
             onValueChange={(value) => setFormData({ ...formData, encounterClass: value })}
           >
             <SelectTrigger className="h-9 text-sm rounded-lg border border-gray-200 focus:border-primary">
@@ -306,19 +306,19 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
       {/* Sticky Footer Buttons */}
       <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 mt-4">
         <div className="flex items-center gap-3">
-          <Button 
-            type="button" 
-            variant="outline" 
+          <Button
+            type="button"
+            variant="outline"
             onClick={onBack}
             disabled={loading}
             className="flex-1 h-10 rounded-lg hover:bg-gray-50 text-sm font-medium"
           >
             Back
           </Button>
-          <Button 
+          <Button
             onClick={handleSubmit}
             disabled={loading || !formData.practitioner || !formData.location || !formData.encounterClass || loadingResources}
-            className="flex-1 h-10 rounded-lg bg-gray-900 hover:bg-gray-800 text-white transition-all duration-200 text-sm font-medium"
+            className="flex-1 h-10 rounded-lg bg-primary hover:opacity-90 text-primary-foreground transition-all duration-200 text-sm font-medium"
           >
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             {loading ? 'Starting...' : 'Start visit'}
@@ -378,7 +378,7 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
               <Button
                 type="button"
                 onClick={handleAddPractitioner}
-                className="flex-1 bg-gray-900"
+                className="flex-1 bg-primary text-primary-foreground hover:opacity-90"
                 disabled={saving || !newPractitioner.firstName || !newPractitioner.lastName}
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add'}
@@ -417,7 +417,7 @@ export function EncounterForm({ patient, onBack, onStartVisit }: EncounterFormPr
               <Button
                 type="button"
                 onClick={handleAddLocation}
-                className="flex-1 bg-gray-900"
+                className="flex-1 bg-primary text-primary-foreground hover:opacity-90"
                 disabled={saving || !newLocation.name}
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add'}

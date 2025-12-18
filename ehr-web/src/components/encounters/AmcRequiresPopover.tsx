@@ -144,7 +144,7 @@ export default function AmcRequiresPopover({
           </button>
           <button
             onClick={handleSave}
-            className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
+            className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded hover:opacity-90 transition-colors"
           >
             Save
           </button>

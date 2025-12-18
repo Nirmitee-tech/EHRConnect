@@ -116,15 +116,15 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
 
   const userPermissions = session?.permissions || []
 
-  const filteredNavigation = navigation.filter(item => 
+  const filteredNavigation = navigation.filter(item =>
     !item.permission || hasPermission(userPermissions, item.permission)
   )
 
   // Filter navigation based on search query
   const searchFilteredNavigation = searchQuery
     ? filteredNavigation.filter(item =>
-        item.title.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      item.title.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : filteredNavigation
 
   // Group navigation items by category
@@ -150,29 +150,29 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
           <SidebarSectionHeader title="Clinic" />
           <div className="space-y-1">
             {clinicItems.map((item) => {
-        const hasChildren = item.children && item.children.length > 0
-        const filteredChildren = hasChildren
-          ? item.children!.filter(child => !child.permission || hasPermission(userPermissions, child.permission))
-          : []
+              const hasChildren = item.children && item.children.length > 0
+              const filteredChildren = hasChildren
+                ? item.children!.filter(child => !child.permission || hasPermission(userPermissions, child.permission))
+                : []
 
-        const navItem = (
-          <SidebarNavItem
-            key={item.href}
-            title={item.title}
-            icon={<item.icon className="h-5 w-5" />}
-            isActive={pathname === item.href}
-          >
-            {filteredChildren.length > 0 && filteredChildren.map((child) => (
-              <Link key={child.href} href={child.href}>
-                <SidebarNavSubItem
-                  title={child.title}
-                  icon={<child.icon className="h-4 w-4" />}
-                  isActive={pathname === child.href}
-                />
-              </Link>
-            ))}
-          </SidebarNavItem>
-        )
+              const navItem = (
+                <SidebarNavItem
+                  key={item.href}
+                  title={item.title}
+                  icon={<item.icon className="h-5 w-5" />}
+                  isActive={pathname === item.href}
+                >
+                  {filteredChildren.length > 0 && filteredChildren.map((child) => (
+                    <Link key={child.href} href={child.href}>
+                      <SidebarNavSubItem
+                        title={child.title}
+                        icon={<child.icon className="h-4 w-4" />}
+                        isActive={pathname === child.href}
+                      />
+                    </Link>
+                  ))}
+                </SidebarNavItem>
+              )
 
               return hasChildren ? (
                 navItem
@@ -274,7 +274,7 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
 
   // User avatar
   const userAvatar = (
-    <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
+    <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
       <span className="text-sm font-medium text-white">
         {session?.user?.name?.charAt(0) || session?.user?.email?.charAt(0) || 'U'}
       </span>
@@ -318,7 +318,7 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
 
   return (
     <Sidebar
-      logo={<Activity className="h-8 w-8 text-blue-600" />}
+      logo={<Activity className="h-8 w-8 text-primary" />}
       brandName="EHR Connect"
       search={searchComponent}
       navigation={navigationContent}

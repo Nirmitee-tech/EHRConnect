@@ -117,17 +117,17 @@ export function SearchableSelect({
           transition-all duration-200
           ${disabled
             ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
-            : 'hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
+            : 'hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20'
           }
-          ${isOpen ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-300'}
+          ${isOpen ? 'border-primary ring-2 ring-primary/20' : 'border-gray-300'}
           ${!selectedOption ? 'text-gray-400' : ''}
         `}
         style={
           showColorInButton && selectedOption?.color
             ? {
-                backgroundColor: selectedOption.color,
-                color: selectedOption.textColor || '#000000'
-              }
+              backgroundColor: selectedOption.color,
+              color: selectedOption.textColor || '#000000'
+            }
             : { backgroundColor: '#ffffff', color: !selectedOption ? '#9ca3af' : '#111827' }
         }
       >
@@ -162,7 +162,7 @@ export function SearchableSelect({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search..."
-                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
           </div>
@@ -176,7 +176,7 @@ export function SearchableSelect({
                 setIsOpen(false);
                 setSearchQuery('');
               }}
-              className="w-full px-4 py-2.5 text-left transition-colors flex items-center gap-2 border-b-2 border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium sticky top-[60px] z-10"
+              className="w-full px-4 py-2.5 text-left transition-colors flex items-center gap-2 border-b-2 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary font-medium sticky top-[60px] z-10"
             >
               <span className="text-lg">+</span>
               <span>{addNewLabel}</span>
@@ -201,11 +201,11 @@ export function SearchableSelect({
                     className={`
                       w-full px-4 py-2.5 text-left transition-colors
                       flex items-center justify-between gap-2 border-b border-gray-100 last:border-0
-                      ${isSelected ? 'ring-2 ring-blue-400 ring-inset' : 'hover:ring-1 hover:ring-gray-300 hover:ring-inset'}
+                      ${isSelected ? 'ring-2 ring-primary ring-inset' : 'hover:ring-1 hover:ring-gray-300 hover:ring-inset'}
                     `}
                     style={{
-                      backgroundColor: option.color || (isSelected ? '#eff6ff' : '#ffffff'),
-                      color: option.textColor || (isSelected ? '#1e40af' : '#111827')
+                      backgroundColor: option.color || (isSelected ? 'var(--theme-primary-10)' : '#ffffff'),
+                      color: option.textColor || (isSelected ? 'var(--theme-primary)' : '#111827')
                     }}
                   >
                     <div className="flex-1 min-w-0">
@@ -217,7 +217,7 @@ export function SearchableSelect({
                       )}
                     </div>
                     {isSelected && (
-                      <Check className="h-4 w-4 flex-shrink-0" style={{ color: option.textColor || '#1e40af' }} />
+                      <Check className="h-4 w-4 flex-shrink-0" style={{ color: option.textColor || 'var(--theme-primary)' }} />
                     )}
                   </button>
                 );

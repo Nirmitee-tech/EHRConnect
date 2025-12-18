@@ -279,7 +279,7 @@ export function IntegrationConfigWizard({
                   <Check className="w-4 h-4" />
                 ) : (
                   <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
-                    index === currentStep ? 'bg-blue-600 text-white' : 'bg-gray-200'
+                    index === currentStep ? 'bg-primary text-primary-foreground' : 'bg-gray-200'
                   }`}>
                     {index + 1}
                   </span>
@@ -330,7 +330,7 @@ export function IntegrationConfigWizard({
           <button
             type="button"
             onClick={handleNext}
-            className="px-5 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
+            className="px-5 py-2 text-sm font-medium text-white bg-blue-600 hover:opacity-90 rounded-lg transition-colors flex items-center gap-2"
           >
             {isLastStep ? 'Complete' : 'Next'}
             {!isLastStep && <ChevronRight className="w-4 h-4" />}

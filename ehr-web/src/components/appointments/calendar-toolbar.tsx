@@ -74,7 +74,7 @@ export function CalendarToolbar({
         {/* Today Button - Inline with date */}
         <button
           onClick={onToday}
-          className="h-7 px-3 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors"
+          className="h-7 px-3 text-xs font-medium text-primary bg-primary/10 rounded hover:bg-primary/20 transition-colors"
         >
           Today
         </button>
@@ -105,7 +105,7 @@ export function CalendarToolbar({
               className={cn(
                 'h-7 px-3 text-xs font-medium rounded transition-colors',
                 viewMode === 'admin'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-primary text-primary-foreground'
                   : 'text-gray-700 hover:bg-gray-100'
               )}
             >
@@ -116,7 +116,7 @@ export function CalendarToolbar({
               className={cn(
                 'h-7 px-3 text-xs font-medium rounded transition-colors',
                 viewMode === 'doctor'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-primary text-primary-foreground'
                   : 'text-gray-700 hover:bg-gray-100'
               )}
             >
@@ -134,7 +134,7 @@ export function CalendarToolbar({
             className={cn(
               'h-7 px-3 text-xs font-medium rounded transition-colors border',
               view === 'dashboard'
-                ? 'bg-blue-600 text-white border-blue-600'
+                ? 'bg-primary text-primary-foreground border-primary'
                 : 'text-gray-700 border-gray-300 hover:bg-gray-100 hover:border-gray-400'
             )}
           >
@@ -146,7 +146,7 @@ export function CalendarToolbar({
           className={cn(
             'h-7 px-3 text-xs font-medium rounded transition-colors border',
             view === 'list'
-              ? 'bg-blue-600 text-white border-blue-600'
+              ? 'bg-primary text-primary-foreground border-primary'
               : 'text-gray-700 border-gray-300 hover:bg-gray-100 hover:border-gray-400'
           )}
         >
@@ -157,7 +157,7 @@ export function CalendarToolbar({
           className={cn(
             'h-7 px-3 text-xs font-medium rounded transition-colors border',
             view === 'day'
-              ? 'bg-blue-600 text-white border-blue-600'
+              ? 'bg-primary text-primary-foreground border-primary'
               : 'text-gray-700 border-gray-300 hover:bg-gray-100 hover:border-gray-400'
           )}
         >
@@ -169,7 +169,7 @@ export function CalendarToolbar({
             className={cn(
               'h-7 px-3 text-xs font-medium rounded transition-colors border',
               view === 'multi-provider'
-                ? 'bg-blue-600 text-white border-blue-600'
+                ? 'bg-primary text-primary-foreground border-primary'
                 : 'text-gray-700 border-gray-300 hover:bg-gray-100 hover:border-gray-400'
             )}
           >
@@ -181,7 +181,7 @@ export function CalendarToolbar({
           className={cn(
             'h-7 px-3 text-xs font-medium rounded transition-colors border',
             view === 'week'
-              ? 'bg-blue-600 text-white border-blue-600'
+              ? 'bg-primary text-primary-foreground border-primary'
               : 'text-gray-700 border-gray-300 hover:bg-gray-100 hover:border-gray-400'
           )}
         >
@@ -192,7 +192,7 @@ export function CalendarToolbar({
           className={cn(
             'h-7 px-3 text-xs font-medium rounded transition-colors border',
             view === 'month'
-              ? 'bg-blue-600 text-white border-blue-600'
+              ? 'bg-primary text-primary-foreground border-primary'
               : 'text-gray-700 border-gray-300 hover:bg-gray-100 hover:border-gray-400'
           )}
         >

@@ -30,8 +30,8 @@ export function QuickActionBar({
     color?: 'blue' | 'green' | 'gray';
   }) => {
     const colorStyles = {
-      blue: 'bg-blue-600 hover:bg-blue-700 text-white',
-      green: 'bg-green-600 hover:bg-green-700 text-white',
+      blue: 'bg-primary hover:opacity-90 text-primary-foreground',
+      green: 'bg-theme-accent hover:opacity-90 text-white',
       gray: 'bg-gray-100 hover:bg-gray-200 text-gray-700'
     };
 

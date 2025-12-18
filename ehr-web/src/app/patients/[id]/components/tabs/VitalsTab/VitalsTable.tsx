@@ -160,11 +160,10 @@ export function VitalsTable({ observations, onEdit, onDelete, readOnly = false }
         <div className="flex items-center gap-2">
           <span className={getTextColor()}>{vital.display}</span>
           {vital.isAbnormal && (
-            <AlertCircle className={`h-3 w-3 ${
-              vital.severity === 'critical' ? 'text-red-600' :
-              vital.severity === 'high' ? 'text-orange-500' :
-              'text-yellow-600'
-            }`} />
+            <AlertCircle className={`h-3 w-3 ${vital.severity === 'critical' ? 'text-red-600' :
+                vital.severity === 'high' ? 'text-orange-500' :
+                  'text-yellow-600'
+              }`} />
           )}
         </div>
         {/* Hover tooltip - Only for this specific cell */}
@@ -306,7 +305,7 @@ export function VitalsTable({ observations, onEdit, onDelete, readOnly = false }
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-      <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-white">
+      <div className="p-4 border-b bg-gradient-to-r from-primary/5 to-white">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-gray-900">Complete Vitals History</h3>
@@ -317,11 +316,10 @@ export function VitalsTable({ observations, onEdit, onDelete, readOnly = false }
             <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-1">
               <button
                 onClick={() => setIsTransposed(false)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                  !isTransposed
-                    ? 'bg-blue-100 text-blue-700'
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors ${!isTransposed
+                    ? 'bg-primary/10 text-primary'
                     : 'text-gray-600 hover:bg-gray-100'
-                }`}
+                  }`}
                 title="Dates as rows, vitals as columns"
               >
                 <TableIcon className="h-3.5 w-3.5" />
@@ -329,11 +327,10 @@ export function VitalsTable({ observations, onEdit, onDelete, readOnly = false }
               </button>
               <button
                 onClick={() => setIsTransposed(true)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                  isTransposed
-                    ? 'bg-blue-100 text-blue-700'
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors ${isTransposed
+                    ? 'bg-primary/10 text-primary'
                     : 'text-gray-600 hover:bg-gray-100'
-                }`}
+                  }`}
                 title="Vitals as rows, dates as columns (better for 300+ readings)"
               >
                 <ArrowLeftRight className="h-3.5 w-3.5" />
@@ -363,198 +360,198 @@ export function VitalsTable({ observations, onEdit, onDelete, readOnly = false }
         {isTransposed ? (
           renderTransposedTable()
         ) : (
-        <table className="w-full border-collapse">
-          <thead className="bg-gray-50 border-b sticky top-0 z-10">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 bg-gray-50 sticky left-0 z-20 border-r">
-                <div className="flex items-center gap-1">
-                  Date & Time
-                  <Info className="h-3 w-3 text-gray-400" />
-                </div>
-              </th>
-              {Object.entries(VITAL_CONFIG).map(([key, config]) => (
-                <th key={key} className="px-4 py-3 text-left text-xs font-semibold text-gray-700 whitespace-nowrap">
-                  <div className="flex items-center gap-1 group relative">
-                    {config.label}
-                    <Info className="h-3 w-3 text-gray-400 cursor-help" />
-                    {/* Header tooltip */}
-                    <div className="invisible group-hover:visible absolute z-10 top-full left-0 mt-1 px-3 py-2 bg-gray-900 text-white text-xs rounded shadow-lg w-64">
-                      <div className="font-semibold mb-1">{config.label}</div>
-                      <div className="text-gray-300">{config.tooltip}</div>
-                      <div className="mt-2 pt-2 border-t border-gray-700">
-                        <span className="text-green-300">Normal Range:</span> {config.normal}
-                      </div>
-                    </div>
+          <table className="w-full border-collapse">
+            <thead className="bg-gray-50 border-b sticky top-0 z-10">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 bg-gray-50 sticky left-0 z-20 border-r">
+                  <div className="flex items-center gap-1">
+                    Date & Time
+                    <Info className="h-3 w-3 text-gray-400" />
                   </div>
                 </th>
-              ))}
-              {!readOnly && (
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 sticky right-0 bg-gray-50 z-10">
-                  Actions
-                </th>
-              )}
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {sortedDates.map((dateTime) => {
-              const obsGroup = grouped[dateTime];
-              const date = dateTime !== 'unknown' ? new Date(dateTime) : null;
-
-              // Parse all vitals
-              let bpData: VitalValue = { display: '-', value: null, unit: 'mmHg', isAbnormal: false };
-              let hrData: VitalValue = { display: '-', value: null, unit: 'bpm', isAbnormal: false };
-              let tempData: VitalValue = { display: '-', value: null, unit: '°C', isAbnormal: false };
-              let rrData: VitalValue = { display: '-', value: null, unit: '/min', isAbnormal: false };
-              let o2Data: VitalValue = { display: '-', value: null, unit: '%', isAbnormal: false };
-              let weightData: VitalValue = { display: '-', value: null, unit: 'kg', isAbnormal: false };
-              let heightData: VitalValue = { display: '-', value: null, unit: 'cm', isAbnormal: false };
-
-              obsGroup.forEach((obs: any) => {
-                const code = obs.code?.coding?.[0]?.code;
-
-                if (code === '85354-9' && obs.component) {
-                  const sys = obs.component.find((c: any) =>
-                    c.code?.coding?.some((code: any) => code.code === '8480-6')
-                  );
-                  const dia = obs.component.find((c: any) =>
-                    c.code?.coding?.some((code: any) => code.code === '8462-4')
-                  );
-                  const sysVal = sys?.valueQuantity?.value;
-                  const diaVal = dia?.valueQuantity?.value;
-                  const abnormal = checkAbnormal(code, 0, sysVal, diaVal);
-                  bpData = {
-                    display: `${sysVal || '-'}/${diaVal || '-'}`,
-                    value: { sys: sysVal, dia: diaVal },
-                    unit: 'mmHg',
-                    isAbnormal: abnormal.isAbnormal,
-                    severity: abnormal.severity
-                  };
-                } else if (code === '8867-4') {
-                  const val = obs.valueQuantity?.value;
-                  const abnormal = checkAbnormal(code, val);
-                  hrData = {
-                    display: `${val || '-'}`,
-                    value: val,
-                    unit: obs.valueQuantity?.unit || 'bpm',
-                    isAbnormal: abnormal.isAbnormal,
-                    severity: abnormal.severity
-                  };
-                } else if (code === '8310-5') {
-                  const val = obs.valueQuantity?.value;
-                  const abnormal = checkAbnormal(code, val);
-                  tempData = {
-                    display: `${val || '-'}`,
-                    value: val,
-                    unit: obs.valueQuantity?.unit || '°C',
-                    isAbnormal: abnormal.isAbnormal,
-                    severity: abnormal.severity
-                  };
-                } else if (code === '9279-1') {
-                  const val = obs.valueQuantity?.value;
-                  const abnormal = checkAbnormal(code, val);
-                  rrData = {
-                    display: `${val || '-'}`,
-                    value: val,
-                    unit: obs.valueQuantity?.unit || '/min',
-                    isAbnormal: abnormal.isAbnormal,
-                    severity: abnormal.severity
-                  };
-                } else if (code === '59408-5') {
-                  const val = obs.valueQuantity?.value;
-                  const abnormal = checkAbnormal(code, val);
-                  o2Data = {
-                    display: `${val || '-'}`,
-                    value: val,
-                    unit: obs.valueQuantity?.unit || '%',
-                    isAbnormal: abnormal.isAbnormal,
-                    severity: abnormal.severity
-                  };
-                } else if (code === '29463-7') {
-                  const val = obs.valueQuantity?.value;
-                  weightData = {
-                    display: `${val || '-'}`,
-                    value: val,
-                    unit: obs.valueQuantity?.unit || 'kg',
-                    isAbnormal: false
-                  };
-                } else if (code === '8302-2') {
-                  const val = obs.valueQuantity?.value;
-                  heightData = {
-                    display: `${val || '-'}`,
-                    value: val,
-                    unit: obs.valueQuantity?.unit || 'cm',
-                    isAbnormal: false
-                  };
-                }
-              });
-
-              // Calculate BMI
-              const bmi = weightData.value && heightData.value ? calculateBMI(weightData.value as number, heightData.value as number) : null;
-              const bmiData: VitalValue = {
-                display: bmi ? `${bmi}` : '-',
-                value: bmi,
-                unit: 'kg/m²',
-                isAbnormal: bmi ? (bmi < 18.5 || bmi > 25) : false,
-                severity: bmi ? (bmi < 16 || bmi > 30 ? 'critical' : bmi < 18.5 || bmi > 25 ? 'high' : undefined) : undefined
-              };
-
-              return (
-                <tr key={dateTime} className="hover:bg-blue-50/30 transition-colors group">
-                  <td className="px-4 py-3 text-sm bg-white sticky left-0 z-10 border-r">
-                    {date ? (
-                      <div>
-                        <div className="font-semibold text-gray-900">
-                          {date.toLocaleDateString()}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {date.toLocaleTimeString()}
+                {Object.entries(VITAL_CONFIG).map(([key, config]) => (
+                  <th key={key} className="px-4 py-3 text-left text-xs font-semibold text-gray-700 whitespace-nowrap">
+                    <div className="flex items-center gap-1 group relative">
+                      {config.label}
+                      <Info className="h-3 w-3 text-gray-400 cursor-help" />
+                      {/* Header tooltip */}
+                      <div className="invisible group-hover:visible absolute z-10 top-full left-0 mt-1 px-3 py-2 bg-gray-900 text-white text-xs rounded shadow-lg w-64">
+                        <div className="font-semibold mb-1">{config.label}</div>
+                        <div className="text-gray-300">{config.tooltip}</div>
+                        <div className="mt-2 pt-2 border-t border-gray-700">
+                          <span className="text-green-300">Normal Range:</span> {config.normal}
                         </div>
                       </div>
-                    ) : (
-                      <span className="text-gray-500">Unknown</span>
-                    )}
-                  </td>
-                  <VitalCell vital={bpData} config={VITAL_CONFIG.bp} />
-                  <VitalCell vital={hrData} config={VITAL_CONFIG.hr} />
-                  <VitalCell vital={tempData} config={VITAL_CONFIG.temp} />
-                  <VitalCell vital={rrData} config={VITAL_CONFIG.rr} />
-                  <VitalCell vital={o2Data} config={VITAL_CONFIG.o2} />
-                  <VitalCell vital={weightData} config={VITAL_CONFIG.weight} />
-                  <VitalCell vital={heightData} config={VITAL_CONFIG.height} />
-                  <VitalCell vital={bmiData} config={VITAL_CONFIG.bmi} />
-                  {!readOnly && (
-                    <td className="px-4 py-3 text-right bg-white sticky right-0 z-10">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {onEdit && (
-                          <button
-                            onClick={() => onEdit(obsGroup[0])}
-                            className="p-1.5 hover:bg-blue-100 rounded text-blue-600 transition-colors"
-                            title="Edit vitals"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
-                        )}
-                        {onDelete && (
-                          <button
-                            onClick={() => {
-                              if (confirm('Are you sure you want to delete these vital signs?')) {
-                                obsGroup.forEach(obs => onDelete(obs.id));
-                              }
-                            }}
-                            className="p-1.5 hover:bg-red-100 rounded text-red-600 transition-colors"
-                            title="Delete vitals"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
+                    </div>
+                  </th>
+                ))}
+                {!readOnly && (
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 sticky right-0 bg-gray-50 z-10">
+                    Actions
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {sortedDates.map((dateTime) => {
+                const obsGroup = grouped[dateTime];
+                const date = dateTime !== 'unknown' ? new Date(dateTime) : null;
+
+                // Parse all vitals
+                let bpData: VitalValue = { display: '-', value: null, unit: 'mmHg', isAbnormal: false };
+                let hrData: VitalValue = { display: '-', value: null, unit: 'bpm', isAbnormal: false };
+                let tempData: VitalValue = { display: '-', value: null, unit: '°C', isAbnormal: false };
+                let rrData: VitalValue = { display: '-', value: null, unit: '/min', isAbnormal: false };
+                let o2Data: VitalValue = { display: '-', value: null, unit: '%', isAbnormal: false };
+                let weightData: VitalValue = { display: '-', value: null, unit: 'kg', isAbnormal: false };
+                let heightData: VitalValue = { display: '-', value: null, unit: 'cm', isAbnormal: false };
+
+                obsGroup.forEach((obs: any) => {
+                  const code = obs.code?.coding?.[0]?.code;
+
+                  if (code === '85354-9' && obs.component) {
+                    const sys = obs.component.find((c: any) =>
+                      c.code?.coding?.some((code: any) => code.code === '8480-6')
+                    );
+                    const dia = obs.component.find((c: any) =>
+                      c.code?.coding?.some((code: any) => code.code === '8462-4')
+                    );
+                    const sysVal = sys?.valueQuantity?.value;
+                    const diaVal = dia?.valueQuantity?.value;
+                    const abnormal = checkAbnormal(code, 0, sysVal, diaVal);
+                    bpData = {
+                      display: `${sysVal || '-'}/${diaVal || '-'}`,
+                      value: { sys: sysVal, dia: diaVal },
+                      unit: 'mmHg',
+                      isAbnormal: abnormal.isAbnormal,
+                      severity: abnormal.severity
+                    };
+                  } else if (code === '8867-4') {
+                    const val = obs.valueQuantity?.value;
+                    const abnormal = checkAbnormal(code, val);
+                    hrData = {
+                      display: `${val || '-'}`,
+                      value: val,
+                      unit: obs.valueQuantity?.unit || 'bpm',
+                      isAbnormal: abnormal.isAbnormal,
+                      severity: abnormal.severity
+                    };
+                  } else if (code === '8310-5') {
+                    const val = obs.valueQuantity?.value;
+                    const abnormal = checkAbnormal(code, val);
+                    tempData = {
+                      display: `${val || '-'}`,
+                      value: val,
+                      unit: obs.valueQuantity?.unit || '°C',
+                      isAbnormal: abnormal.isAbnormal,
+                      severity: abnormal.severity
+                    };
+                  } else if (code === '9279-1') {
+                    const val = obs.valueQuantity?.value;
+                    const abnormal = checkAbnormal(code, val);
+                    rrData = {
+                      display: `${val || '-'}`,
+                      value: val,
+                      unit: obs.valueQuantity?.unit || '/min',
+                      isAbnormal: abnormal.isAbnormal,
+                      severity: abnormal.severity
+                    };
+                  } else if (code === '59408-5') {
+                    const val = obs.valueQuantity?.value;
+                    const abnormal = checkAbnormal(code, val);
+                    o2Data = {
+                      display: `${val || '-'}`,
+                      value: val,
+                      unit: obs.valueQuantity?.unit || '%',
+                      isAbnormal: abnormal.isAbnormal,
+                      severity: abnormal.severity
+                    };
+                  } else if (code === '29463-7') {
+                    const val = obs.valueQuantity?.value;
+                    weightData = {
+                      display: `${val || '-'}`,
+                      value: val,
+                      unit: obs.valueQuantity?.unit || 'kg',
+                      isAbnormal: false
+                    };
+                  } else if (code === '8302-2') {
+                    const val = obs.valueQuantity?.value;
+                    heightData = {
+                      display: `${val || '-'}`,
+                      value: val,
+                      unit: obs.valueQuantity?.unit || 'cm',
+                      isAbnormal: false
+                    };
+                  }
+                });
+
+                // Calculate BMI
+                const bmi = weightData.value && heightData.value ? calculateBMI(weightData.value as number, heightData.value as number) : null;
+                const bmiData: VitalValue = {
+                  display: bmi ? `${bmi}` : '-',
+                  value: bmi,
+                  unit: 'kg/m²',
+                  isAbnormal: bmi ? (bmi < 18.5 || bmi > 25) : false,
+                  severity: bmi ? (bmi < 16 || bmi > 30 ? 'critical' : bmi < 18.5 || bmi > 25 ? 'high' : undefined) : undefined
+                };
+
+                return (
+                  <tr key={dateTime} className="hover:bg-blue-50/30 transition-colors group">
+                    <td className="px-4 py-3 text-sm bg-white sticky left-0 z-10 border-r">
+                      {date ? (
+                        <div>
+                          <div className="font-semibold text-gray-900">
+                            {date.toLocaleDateString()}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {date.toLocaleTimeString()}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-500">Unknown</span>
+                      )}
                     </td>
-                  )}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    <VitalCell vital={bpData} config={VITAL_CONFIG.bp} />
+                    <VitalCell vital={hrData} config={VITAL_CONFIG.hr} />
+                    <VitalCell vital={tempData} config={VITAL_CONFIG.temp} />
+                    <VitalCell vital={rrData} config={VITAL_CONFIG.rr} />
+                    <VitalCell vital={o2Data} config={VITAL_CONFIG.o2} />
+                    <VitalCell vital={weightData} config={VITAL_CONFIG.weight} />
+                    <VitalCell vital={heightData} config={VITAL_CONFIG.height} />
+                    <VitalCell vital={bmiData} config={VITAL_CONFIG.bmi} />
+                    {!readOnly && (
+                      <td className="px-4 py-3 text-right bg-white sticky right-0 z-10">
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {onEdit && (
+                            <button
+                              onClick={() => onEdit(obsGroup[0])}
+                              className="p-1.5 hover:bg-primary/10 rounded text-primary transition-colors"
+                              title="Edit vitals"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                          )}
+                          {onDelete && (
+                            <button
+                              onClick={() => {
+                                if (confirm('Are you sure you want to delete these vital signs?')) {
+                                  obsGroup.forEach(obs => onDelete(obs.id));
+                                }
+                              }}
+                              className="p-1.5 hover:bg-red-100 rounded text-red-600 transition-colors"
+                              title="Delete vitals"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
         {observations.length === 0 && (
           <div className="p-12 text-center text-gray-500">

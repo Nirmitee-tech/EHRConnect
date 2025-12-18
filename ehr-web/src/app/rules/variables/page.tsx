@@ -148,7 +148,7 @@ export default function RuleVariablesPage() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Loading variables...</p>
         </div>
       </div>
@@ -165,7 +165,7 @@ export default function RuleVariablesPage() {
             Define computed variables for use in rules
           </p>
         </div>
-        <Button onClick={() => router.push('/rules/variables/new')} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => router.push('/rules/variables/new')} className="bg-primary hover:opacity-90">
           <Plus className="h-4 w-4 mr-2" />
           Create Variable
         </Button>
@@ -180,7 +180,7 @@ export default function RuleVariablesPage() {
                 <p className="text-sm text-gray-600">Total Variables</p>
                 <p className="text-2xl font-bold text-gray-900">{variables.length}</p>
               </div>
-              <Variable className="h-8 w-8 text-blue-600" />
+              <Variable className="h-8 w-8 text-primary" />
             </div>
           </CardContent>
         </Card>
@@ -193,7 +193,7 @@ export default function RuleVariablesPage() {
                   {variables.filter((v) => v.computation_type === 'aggregate').length}
                 </p>
               </div>
-              <Database className="h-8 w-8 text-blue-600" />
+              <Database className="h-8 w-8 text-primary/80" />
             </div>
           </CardContent>
         </Card>
@@ -206,7 +206,7 @@ export default function RuleVariablesPage() {
                   {variables.filter((v) => v.computation_type === 'formula').length}
                 </p>
               </div>
-              <Calculator className="h-8 w-8 text-purple-600" />
+              <Calculator className="h-8 w-8 text-primary/60" />
             </div>
           </CardContent>
         </Card>
@@ -296,7 +296,7 @@ export default function RuleVariablesPage() {
               <p className="text-gray-600 mb-4">
                 Create variables to compute aggregates and formulas for your rules
               </p>
-              <Button onClick={() => router.push('/rules/variables/new')} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={() => router.push('/rules/variables/new')} className="bg-primary hover:opacity-90">
                 <Plus className="h-4 w-4 mr-2" />
                 Create Variable
               </Button>

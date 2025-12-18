@@ -245,7 +245,7 @@ export function AppointmentFormFields({
             <button
               type="button"
               onClick={() => setShowAddDoctor(false)}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              className="text-sm text-primary hover:text-primary/80"
             >
               ← Back to selection
             </button>
@@ -292,11 +292,10 @@ export function AppointmentFormFields({
           <button
             type="button"
             onClick={() => onFormDataChange('mode', 'in-person')}
-            className={`flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-lg border-2 transition-all ${
-              formData.mode === 'in-person'
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
+            className={`flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-lg border-2 transition-all ${formData.mode === 'in-person'
+                ? 'border-primary bg-primary/10 text-primary'
                 : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-            }`}
+              }`}
           >
             <Users className="h-5 w-5" />
             <span className="text-xs font-medium">In-Person</span>
@@ -304,11 +303,10 @@ export function AppointmentFormFields({
           <button
             type="button"
             onClick={() => onFormDataChange('mode', 'video-call')}
-            className={`flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-lg border-2 transition-all ${
-              formData.mode === 'video-call'
+            className={`flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-lg border-2 transition-all ${formData.mode === 'video-call'
                 ? 'border-green-500 bg-green-50 text-green-700'
                 : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-            }`}
+              }`}
           >
             <Video className="h-5 w-5" />
             <span className="text-xs font-medium">Video Call</span>
@@ -316,11 +314,10 @@ export function AppointmentFormFields({
           <button
             type="button"
             onClick={() => onFormDataChange('mode', 'voice-call')}
-            className={`flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-lg border-2 transition-all ${
-              formData.mode === 'voice-call'
+            className={`flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-lg border-2 transition-all ${formData.mode === 'voice-call'
                 ? 'border-purple-500 bg-purple-50 text-purple-700'
                 : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-            }`}
+              }`}
           >
             <Phone className="h-5 w-5" />
             <span className="text-xs font-medium">Voice Call</span>
@@ -328,11 +325,10 @@ export function AppointmentFormFields({
           <button
             type="button"
             onClick={() => onFormDataChange('mode', 'other')}
-            className={`flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-lg border-2 transition-all ${
-              formData.mode === 'other'
+            className={`flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-lg border-2 transition-all ${formData.mode === 'other'
                 ? 'border-gray-500 bg-gray-50 text-gray-700'
                 : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-            }`}
+              }`}
           >
             <FileText className="h-5 w-5" />
             <span className="text-xs font-medium">Other</span>
@@ -342,9 +338,9 @@ export function AppointmentFormFields({
 
       {/* Practitioner Availability Info */}
       {selectedPractitioner && !formData.isEmergency && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-          <h4 className="text-xs font-semibold text-blue-900 mb-2">📅 {selectedPractitioner.name}'s Schedule</h4>
-          <div className="space-y-1 text-xs text-blue-800">
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+          <h4 className="text-xs font-semibold text-primary mb-2">📅 {selectedPractitioner.name}'s Schedule</h4>
+          <div className="space-y-1 text-xs text-primary/80">
             {/* Working Days */}
             {selectedPractitioner.officeHours && selectedPractitioner.officeHours.length > 0 && (
               <div>
@@ -398,14 +394,12 @@ export function AppointmentFormFields({
         <button
           type="button"
           onClick={() => onFormDataChange('isAllDay', !formData.isAllDay)}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            formData.isAllDay ? 'bg-blue-600' : 'bg-gray-300'
-          }`}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.isAllDay ? 'bg-primary' : 'bg-gray-300'
+            }`}
         >
           <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-              formData.isAllDay ? 'translate-x-6' : 'translate-x-1'
-            }`}
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isAllDay ? 'translate-x-6' : 'translate-x-1'
+              }`}
           />
         </button>
       </div>
@@ -420,7 +414,7 @@ export function AppointmentFormFields({
             required={formData.isAllDay}
             value={formData.allDayEventType || 'appointment'}
             onChange={(e) => onFormDataChange('allDayEventType', e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="appointment">📅 Regular Appointment</option>
             <option value="leave">🏖️ Leave</option>
@@ -503,7 +497,7 @@ export function AppointmentFormFields({
                     onChange={(e) => onFormDataChange('time', e.target.value)}
                     disabled={!formData.date || (!formData.isEmergency && isDateDisabled(formData.date))}
                     step="900"
-                    className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500 text-sm"
+                    className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:bg-gray-100 disabled:text-gray-500 text-sm"
                   />
                 </div>
               </div>
@@ -560,7 +554,7 @@ export function AppointmentFormFields({
               value={formData.date}
               onChange={(e) => onFormDataChange('date', e.target.value)}
               min={new Date().toISOString().split('T')[0]}
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
@@ -605,7 +599,7 @@ export function AppointmentFormFields({
                 min="0"
                 value={formData.durationHours}
                 onChange={(e) => onFormDataChange('durationHours', parseInt(e.target.value) || 0)}
-                className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="0"
               />
               <span className="mt-1 text-xs text-gray-500">Hour(s)</span>
@@ -617,7 +611,7 @@ export function AppointmentFormFields({
                 max="59"
                 value={formData.durationMinutes}
                 onChange={(e) => onFormDataChange('durationMinutes', parseInt(e.target.value) || 0)}
-                className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="30"
               />
               <span className="mt-1 text-xs text-gray-500">Minute(s)</span>
@@ -633,7 +627,7 @@ export function AppointmentFormFields({
           value={formData.notes}
           onChange={(e) => onFormDataChange('notes', e.target.value)}
           rows={3}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           placeholder="Add any additional notes..."
         />
       </div>
@@ -647,7 +641,7 @@ export function AppointmentFormFields({
               type="checkbox"
               checked={formData.isRecurring || false}
               onChange={(e) => onFormDataChange('isRecurring', e.target.checked)}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+              className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
             />
             <span className="text-sm font-medium text-gray-800">Repeat</span>
           </label>
@@ -663,12 +657,12 @@ export function AppointmentFormFields({
                 min="1"
                 value={formData.recurrenceInterval || 1}
                 onChange={(e) => onFormDataChange('recurrenceInterval', parseInt(e.target.value) || 1)}
-                className="w-14 h-7 rounded-md border border-gray-300 bg-white px-2 text-sm text-center focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                className="w-14 h-7 rounded-md border border-gray-300 bg-white px-2 text-sm text-center focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10"
               />
               <select
                 value={formData.recurrencePeriod || 'week'}
                 onChange={(e) => onFormDataChange('recurrencePeriod', e.target.value)}
-                className="h-7 rounded-md border border-gray-300 bg-white px-2.5 pr-7 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3cpath%20fill%3D%22%23666%22%20d%3D%22M10.293%203.293L6%207.586%201.707%203.293A1%201%200%2000.293%204.707l5%205a1%201%200%20001.414%200l5-5a1%201%200%2010-1.414-1.414z%22%2F%3E%3c%2Fsvg%3E')] bg-[length:12px_12px] bg-[center_right_8px] bg-no-repeat"
+                className="h-7 rounded-md border border-gray-300 bg-white px-2.5 pr-7 text-sm text-gray-700 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3cpath%20fill%3D%22%23666%22%20d%3D%22M10.293%203.293L6%207.586%201.707%203.293A1%201%200%2000.293%204.707l5%205a1%201%200%20001.414%200l5-5a1%201%200%2010-1.414-1.414z%22%2F%3E%3c%2Fsvg%3E')] bg-[length:12px_12px] bg-[center_right_8px] bg-no-repeat"
               >
                 <option value="day">Day</option>
                 <option value="week">Week</option>
@@ -699,7 +693,7 @@ export function AppointmentFormFields({
                       className={`
                         h-9 w-9 rounded-lg text-xs font-semibold transition-all duration-150
                         ${isSelected
-                          ? 'bg-blue-600 text-white shadow-sm scale-105'
+                          ? 'bg-primary text-primary-foreground shadow-sm scale-105'
                           : 'bg-gray-50 text-gray-500 border border-gray-200 hover:border-gray-300 hover:bg-gray-100'
                         }
                       `}
@@ -721,7 +715,7 @@ export function AppointmentFormFields({
                   value={formData.recurrenceEndDate || ''}
                   onChange={(e) => onFormDataChange('recurrenceEndDate', e.target.value)}
                   min={formData.date || new Date().toISOString().split('T')[0]}
-                  className="w-full h-7 rounded-md border border-gray-300 bg-white pl-8 pr-2 text-xs text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  className="w-full h-7 rounded-md border border-gray-300 bg-white pl-8 pr-2 text-xs text-gray-700 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10"
                   placeholder="Choose Date"
                 />
               </div>
@@ -737,7 +731,7 @@ export function AppointmentFormFields({
           type="text"
           value={formData.chiefComplaint || ''}
           onChange={(e) => onFormDataChange('chiefComplaint', e.target.value)}
-          className="block w-full h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-800 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          className="block w-full h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-800 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10"
           placeholder=""
         />
       </div>
@@ -749,7 +743,7 @@ export function AppointmentFormFields({
           value={formData.reason || ''}
           onChange={(e) => onFormDataChange('reason', e.target.value)}
           rows={2}
-          className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 resize-none"
+          className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 resize-none"
           placeholder=""
         />
       </div>

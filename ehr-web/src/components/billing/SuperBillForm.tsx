@@ -234,7 +234,7 @@ export function SuperBillForm({
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs font-medium flex items-center gap-1.5"
+                className="px-4 py-1.5 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-colors text-xs font-medium flex items-center gap-1.5"
               >
                 <Save className="h-3.5 w-3.5" />
                 Save Bill
@@ -339,7 +339,7 @@ export function SuperBillForm({
                     <div className="bg-gray-50 px-2 py-2">
                       <div className="flex items-center gap-2">
                         {/* Row Number */}
-                        <div className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded text-[10px] font-bold flex-shrink-0">
+                        <div className="flex items-center justify-center w-6 h-6 bg-primary text-primary-foreground rounded text-[10px] font-bold flex-shrink-0">
                           {index + 1}
                         </div>
 

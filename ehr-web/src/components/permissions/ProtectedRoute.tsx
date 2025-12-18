@@ -201,7 +201,7 @@ export function UnauthorizedPage() {
         <div className="space-y-2">
           <button
             onClick={() => router.back()}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-colors"
           >
             Go Back
           </button>

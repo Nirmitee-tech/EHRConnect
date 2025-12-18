@@ -13,33 +13,30 @@ export function AppointmentTypeTabs({ appointmentType, onTypeChange }: Appointme
       <button
         type="button"
         onClick={() => onTypeChange('single')}
-        className={`rounded-lg px-4 py-2 text-sm font-medium ${
-          appointmentType === 'single'
-            ? 'bg-blue-50 text-blue-600'
+        className={`rounded-lg px-4 py-2 text-sm font-medium ${appointmentType === 'single'
+            ? 'bg-primary/10 text-primary'
             : 'text-gray-600 hover:bg-gray-50'
-        }`}
+          }`}
       >
         Single Appointment
       </button>
       <button
         type="button"
         onClick={() => onTypeChange('series')}
-        className={`rounded-lg px-4 py-2 text-sm font-medium ${
-          appointmentType === 'series'
-            ? 'bg-blue-50 text-blue-600'
+        className={`rounded-lg px-4 py-2 text-sm font-medium ${appointmentType === 'series'
+            ? 'bg-primary/10 text-primary'
             : 'text-gray-600 hover:bg-gray-50'
-        }`}
+          }`}
       >
         Appointment Series
       </button>
       <button
         type="button"
         onClick={() => onTypeChange('group')}
-        className={`rounded-lg px-4 py-2 text-sm font-medium ${
-          appointmentType === 'group'
-            ? 'bg-blue-50 text-blue-600'
+        className={`rounded-lg px-4 py-2 text-sm font-medium ${appointmentType === 'group'
+            ? 'bg-primary/10 text-primary'
             : 'text-gray-600 hover:bg-gray-50'
-        }`}
+          }`}
       >
         Group Appointment
       </button>

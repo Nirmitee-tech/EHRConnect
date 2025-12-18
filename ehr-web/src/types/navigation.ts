@@ -3,6 +3,7 @@ import { LucideIcon } from 'lucide-react';
 export interface PageInfo {
   title: string;
   actionButton?: ActionButton;
+  features?: Record<string, any>;
 }
 
 export interface ActionButton {

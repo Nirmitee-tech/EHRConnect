@@ -50,7 +50,7 @@ export function UserProfile() {
     return (
       <button
         onClick={handleSignIn}
-        className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all"
+        className="flex items-center space-x-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-all"
       >
         <LogIn className="h-4 w-4" />
         <span className="text-sm font-medium">Sign In</span>
@@ -80,7 +80,7 @@ export function UserProfile() {
       >
         <div className="relative">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <User className="h-4 w-4 text-white" />
+            <User className="h-4 w-4 text-primary-foreground" />
           </div>
           <div className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white" />
         </div>
@@ -104,7 +104,7 @@ export function UserProfile() {
                 {userRoles.slice(0, 3).map((role: string) => (
                   <span
                     key={role}
-                    className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-800"
+                    className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary"
                   >
                     {formatRole(role)}
                   </span>
@@ -121,10 +121,10 @@ export function UserProfile() {
           <Link
             href={`/widget/booking?org=${(session as any)?.org_slug || ''}`}
             target="_blank"
-            className="w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 transition-all flex items-center gap-3 font-semibold"
+            className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-primary/5 transition-all flex items-center gap-3 font-semibold"
             onClick={() => setIsOpen(false)}
           >
-            <Calendar className="h-4 w-4 text-blue-600" />
+            <Calendar className="h-4 w-4 text-primary" />
             <span>Book Appointment (Public Widget)</span>
           </Link>
 

@@ -337,7 +337,7 @@ export function AppointmentListView({
             </button>
             <button
               onClick={onCreateAppointment}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs font-medium"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded hover:opacity-90 transition-colors text-xs font-medium"
             >
               <Plus className="h-3.5 w-3.5" />
               Create Appointment

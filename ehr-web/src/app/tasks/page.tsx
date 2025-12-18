@@ -149,7 +149,7 @@ export default function TasksPage() {
         </div>
         <Button
           onClick={() => setIsCreateSidebarOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
+          className="bg-primary hover:opacity-90 text-white"
         >
           <Plus className="h-4 w-4 mr-2" />
           Create Task
@@ -181,8 +181,8 @@ export default function TasksPage() {
               <div className="text-xl font-bold text-gray-900">{statusCounts.ready}</div>
               <div className="text-xs text-gray-600">Ready</div>
             </div>
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <ListTodo className="h-5 w-5 text-blue-600" />
+            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+              <ListTodo className="h-5 w-5 text-primary" />
             </div>
           </div>
         </div>
@@ -226,7 +226,7 @@ export default function TasksPage() {
       {loading ? (
         <div className="bg-white rounded-lg border border-gray-200 p-8">
           <div className="flex items-center justify-center space-x-2">
-            <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+            <Loader2 className="h-5 w-5 text-primary animate-spin" />
             <span className="text-sm text-gray-600">Loading tasks...</span>
           </div>
         </div>
@@ -238,7 +238,7 @@ export default function TasksPage() {
             {searchQuery ? 'No tasks match your search criteria.' : 'Get started by creating your first task'}
           </p>
           {!searchQuery && (
-            <Button onClick={() => setIsCreateSidebarOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button onClick={() => setIsCreateSidebarOpen(true)} className="bg-primary hover:opacity-90 text-white">
               <Plus className="h-4 w-4 mr-2" />
               Create First Task
             </Button>
@@ -281,7 +281,7 @@ export default function TasksPage() {
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold">
+                        <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white text-sm font-semibold">
                           {task.description?.charAt(0).toUpperCase() || 'T'}
                         </div>
                         <div className="ml-4">
@@ -292,15 +292,14 @@ export default function TasksPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
-                        className={`px-2 py-0.5 text-xs rounded ${
-                          task.priority === 'stat'
-                            ? 'bg-red-500 text-white'
-                            : task.priority === 'asap'
+                        className={`px-2 py-0.5 text-xs rounded ${task.priority === 'stat'
+                          ? 'bg-red-500 text-white'
+                          : task.priority === 'asap'
                             ? 'bg-red-50 text-red-700'
                             : task.priority === 'urgent'
-                            ? 'bg-orange-50 text-orange-700'
-                            : 'bg-gray-50 text-gray-700'
-                        }`}
+                              ? 'bg-orange-50 text-orange-700'
+                              : 'bg-gray-50 text-gray-700'
+                          }`}
                       >
                         {task.priority?.toUpperCase()}
                       </span>
@@ -315,11 +314,10 @@ export default function TasksPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div
-                        className={`text-sm ${
-                          isOverdue(task.dueDate, task.status)
-                            ? 'text-red-600 font-medium'
-                            : 'text-gray-900'
-                        }`}
+                        className={`text-sm ${isOverdue(task.dueDate, task.status)
+                          ? 'text-red-600 font-medium'
+                          : 'text-gray-900'
+                          }`}
                       >
                         {formatDate(task.dueDate)}
                       </div>
@@ -329,15 +327,14 @@ export default function TasksPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          task.status === 'completed'
-                            ? 'bg-green-100 text-green-800'
-                            : task.status === 'in-progress'
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${task.status === 'completed'
+                          ? 'bg-green-100 text-green-800'
+                          : task.status === 'in-progress'
                             ? 'bg-yellow-100 text-yellow-800'
                             : task.status === 'cancelled'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-blue-100 text-blue-800'
-                        }`}
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
                       >
                         {task.status.replace(/-/g, ' ')}
                       </span>
@@ -358,7 +355,8 @@ export default function TasksPage() {
             </table>
           </div>
         </div>
-      )}
+      )
+      }
 
       {/* Create Task Sidebar */}
       <CreateTaskSidebar
@@ -370,16 +368,18 @@ export default function TasksPage() {
       />
 
       {/* Edit Task Sidebar */}
-      {selectedTask && (
-        <EditTaskSidebar
-          open={isEditSidebarOpen}
-          onOpenChange={setIsEditSidebarOpen}
-          onTaskUpdated={handleTaskUpdated}
-          task={selectedTask}
-          orgId={session?.org_id || ''}
-          userId={session?.user?.id}
-        />
-      )}
-    </div>
+      {
+        selectedTask && (
+          <EditTaskSidebar
+            open={isEditSidebarOpen}
+            onOpenChange={setIsEditSidebarOpen}
+            onTaskUpdated={handleTaskUpdated}
+            task={selectedTask}
+            orgId={session?.org_id || ''}
+            userId={session?.user?.id}
+          />
+        )
+      }
+    </div >
   );
 }

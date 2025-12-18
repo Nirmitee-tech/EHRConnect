@@ -74,13 +74,12 @@ export function PatientTabsBar() {
           <button
             key={tabId}
             onClick={() => setActiveTab(tabId)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md text-xs font-medium transition-all ${
-              isActive
-                ? 'bg-white text-blue-700 border border-b-0 border-gray-300 shadow-sm -mb-0.5'
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md text-xs font-medium transition-all ${isActive
+                ? 'bg-white text-primary border border-b-0 border-gray-300 shadow-sm -mb-0.5'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300 border border-transparent'
-            }`}
+              }`}
           >
-            <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
+            <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-primary' : 'text-gray-500'}`} />
             <span>{section.label}</span>
             {openTabs.length > 1 && (
               <span
@@ -112,13 +111,12 @@ export function PatientTabsBar() {
               setActiveTab(`encounter-${encounterId}`);
               setSelectedEncounter(encounterId);
             }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md text-xs font-medium transition-all ${
-              isActive
-                ? 'bg-white text-blue-700 border border-b-0 border-gray-300 shadow-sm -mb-0.5'
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md text-xs font-medium transition-all ${isActive
+                ? 'bg-white text-primary border border-b-0 border-gray-300 shadow-sm -mb-0.5'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300 border border-transparent'
-            }`}
+              }`}
           >
-            <FileText className={`h-3.5 w-3.5 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
+            <FileText className={`h-3.5 w-3.5 ${isActive ? 'text-primary' : 'text-gray-500'}`} />
             <span>{encounterLabel}</span>
             <span
               onClick={(e) => {

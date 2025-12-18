@@ -152,13 +152,13 @@ function PatientSidebarComponent() {
         ...item,
         count:
           item.id === 'allergies' ? allergies.length :
-          item.id === 'problems' ? problems.length :
-          item.id === 'medications' ? medications.length :
-          item.id === 'vaccines' ? immunizations.length :
-          item.id === 'lab' ? labResults.length :
-          item.id === 'imaging' ? imagingStudies.length :
-          item.id === 'documents' ? documents.length :
-          item.count ?? null
+            item.id === 'problems' ? problems.length :
+              item.id === 'medications' ? medications.length :
+                item.id === 'vaccines' ? immunizations.length :
+                  item.id === 'lab' ? labResults.length :
+                    item.id === 'imaging' ? imagingStudies.length :
+                      item.id === 'documents' ? documents.length :
+                        item.count ?? null
       }));
     }
 
@@ -167,13 +167,13 @@ function PatientSidebarComponent() {
       ...item,
       count:
         item.id === 'allergies' ? allergies.length :
-        item.id === 'problems' ? problems.length :
-        item.id === 'medications' ? medications.length :
-        item.id === 'vaccines' ? immunizations.length :
-        item.id === 'lab' ? labResults.length :
-        item.id === 'imaging' ? imagingStudies.length :
-        item.id === 'documents' ? documents.length :
-        item.count ?? null
+          item.id === 'problems' ? problems.length :
+            item.id === 'medications' ? medications.length :
+              item.id === 'vaccines' ? immunizations.length :
+                item.id === 'lab' ? labResults.length :
+                  item.id === 'imaging' ? imagingStudies.length :
+                    item.id === 'documents' ? documents.length :
+                      item.count ?? null
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasSpecialtyNav, specialtyNavigation, sidebarView, allergies.length, problems.length, medications.length, immunizations.length, labResults.length, imagingStudies.length, documents.length]);
@@ -219,9 +219,8 @@ function PatientSidebarComponent() {
 
   return (
     <div
-      className={`bg-white border-r border-gray-200 overflow-y-auto transition-all duration-300 ease-in-out flex-shrink-0 ${
-        sidebarCollapsed ? 'w-12' : 'w-44'
-      }`}
+      className={`bg-white border-r border-gray-200 overflow-y-auto transition-all duration-300 ease-in-out flex-shrink-0 ${sidebarCollapsed ? 'w-12' : 'w-44'
+        }`}
     >
       {/* Header with View Selector and Toggle */}
       <div className="sticky top-0 bg-white/95 backdrop-blur-sm z-10 border-b border-gray-100">
@@ -234,7 +233,7 @@ function PatientSidebarComponent() {
                 <select
                   value={sidebarView}
                   onChange={(e) => setSidebarView(e.target.value as SidebarView)}
-                  className="w-full pl-2 pr-6 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white cursor-pointer appearance-none hover:bg-white transition-colors"
+                  className="w-full pl-2 pr-6 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent focus:bg-white cursor-pointer appearance-none hover:bg-white transition-colors"
                 >
                   {viewOptions.map((option) =>
                     option.isDivider ? (
@@ -254,7 +253,7 @@ function PatientSidebarComponent() {
               {/* Toggle Button */}
               <button
                 onClick={toggleSidebar}
-                className="flex items-center justify-center p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
+                className="flex items-center justify-center p-1.5 text-gray-500 hover:text-primary hover:bg-primary/5 rounded-md transition-all"
                 title="Collapse sidebar"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
@@ -266,7 +265,7 @@ function PatientSidebarComponent() {
             {/* Toggle Button (Collapsed) */}
             <button
               onClick={toggleSidebar}
-              className="w-full flex items-center justify-center p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
+              className="w-full flex items-center justify-center p-1.5 text-gray-500 hover:text-primary hover:bg-primary/5 rounded-md transition-all"
               title="Expand sidebar"
             >
               <ChevronRight className="h-3.5 w-3.5" />
@@ -306,10 +305,10 @@ function PatientSidebarComponent() {
                   className={`
                     w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-all relative
                     ${isActive && isEncounter
-                      ? 'text-blue-700 bg-blue-50 ring-2 ring-blue-500 ring-opacity-50'
+                      ? 'text-primary bg-primary/5 ring-2 ring-primary ring-opacity-50'
                       : isActive
-                      ? 'text-blue-700 bg-blue-50'
-                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                        ? 'text-primary bg-primary/5'
+                        : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
                     }
                     ${sidebarCollapsed ? 'justify-center px-2' : 'justify-between'}
                   `}
@@ -317,7 +316,7 @@ function PatientSidebarComponent() {
                 >
                   {/* Active indicator */}
                   {isActive && !sidebarCollapsed && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-blue-600 rounded-r" />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r" />
                   )}
 
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -328,7 +327,7 @@ function PatientSidebarComponent() {
                   {!sidebarCollapsed && hasCount && (
                     <span className={`
                       inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-semibold rounded-full
-                      ${isActive ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}
+                      ${isActive ? 'bg-primary text-primary-foreground' : 'bg-gray-100 text-gray-600'}
                     `}>
                       {item.count}
                     </span>

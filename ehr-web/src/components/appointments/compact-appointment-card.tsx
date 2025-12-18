@@ -205,19 +205,19 @@ export function CompactAppointmentCard({
             <div className="flex items-center gap-1">
               {/* Video Call Badge - Prominent */}
               {appointment.mode === 'video-call' && (
-                <div className="flex items-center gap-0.5 px-1 py-0.5 bg-green-600 text-white rounded text-[8px] font-bold">
+                <div className="flex items-center gap-0.5 px-1 py-0.5 bg-theme-accent text-white rounded text-[8px] font-bold">
                   <Video className="h-2.5 w-2.5" />
                   <span>VIDEO</span>
                 </div>
               )}
               {appointment.mode === 'voice-call' && (
-                <div className="flex items-center gap-0.5 px-1 py-0.5 bg-purple-600 text-white rounded text-[8px] font-bold">
+                <div className="flex items-center gap-0.5 px-1 py-0.5 bg-theme-secondary text-white rounded text-[8px] font-bold">
                   <Phone className="h-2.5 w-2.5" />
                   <span>CALL</span>
                 </div>
               )}
               {appointment.encounterId && (
-                <div className="flex items-center gap-0.5 px-1 py-0.5 bg-green-500 text-white rounded text-[8px] font-bold animate-pulse">
+                <div className="flex items-center gap-0.5 px-1 py-0.5 bg-theme-accent text-white rounded text-[8px] font-bold animate-pulse">
                   <ActivitySquare className="h-2 w-2" />
                   <span>ENCOUNTER</span>
                 </div>
@@ -288,7 +288,7 @@ export function CompactAppointmentCard({
                   <>
                     <button
                       onClick={(e) => handleAction(e, 'start')}
-                      className="flex-1 flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-blue-600 text-white rounded text-[8px] font-medium hover:bg-blue-700 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-primary text-primary-foreground rounded text-[8px] font-medium hover:opacity-90 transition-colors"
                       title="Start Encounter"
                     >
                       <Play className="h-2 w-2" fill="currentColor" />
@@ -308,7 +308,7 @@ export function CompactAppointmentCard({
                   <>
                     <button
                       onClick={(e) => handleAction(e, 'complete')}
-                      className="flex-1 flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-green-600 text-white rounded text-[8px] font-medium hover:bg-green-700 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-theme-accent text-white rounded text-[8px] font-medium hover:opacity-90 transition-colors"
                       title="Complete Appointment"
                     >
                       <CheckCircle className="h-2 w-2" />
@@ -427,7 +427,7 @@ export function CompactAppointmentCard({
               {appointment.encounterId && (
                 <button
                   onClick={(e) => handleAction(e, 'encounter')}
-                  className="flex items-center gap-1 px-2 py-1 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 transition-colors ring-2 ring-green-400 ring-offset-1 animate-pulse"
+                  className="flex items-center gap-1 px-2 py-1 bg-theme-accent text-white rounded text-xs font-bold hover:opacity-90 transition-colors ring-2 ring-theme-accent/50 ring-offset-1 animate-pulse"
                 >
                   <ActivitySquare className="h-3 w-3" />
                   Open Encounter
@@ -438,7 +438,7 @@ export function CompactAppointmentCard({
                 <>
                   <button
                     onClick={(e) => handleAction(e, 'start')}
-                    className="flex items-center gap-1 px-2 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 bg-primary text-primary-foreground rounded text-xs font-medium hover:opacity-90 transition-colors"
                   >
                     <Play className="h-3 w-3" fill="currentColor" />
                     Start
@@ -455,7 +455,7 @@ export function CompactAppointmentCard({
               {appointment.status === 'in-progress' && (
                 <button
                   onClick={(e) => handleAction(e, 'complete')}
-                  className="flex items-center gap-1 px-2 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 bg-theme-accent text-white rounded text-xs font-medium hover:opacity-90 transition-colors"
                 >
                   <CheckCircle className="h-3 w-3" />
                   Complete
@@ -471,7 +471,7 @@ export function CompactAppointmentCard({
               {appointment.patientId && (
                 <button
                   onClick={handlePatientClick}
-                  className="flex items-center gap-1 px-2 py-1 bg-purple-600 text-white rounded text-xs font-medium hover:bg-purple-700 transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 bg-theme-secondary text-white rounded text-xs font-medium hover:opacity-90 transition-colors"
                 >
                   <User className="h-3 w-3" />
                   Patient

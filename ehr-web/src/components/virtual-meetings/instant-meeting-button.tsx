@@ -91,7 +91,7 @@ export function InstantMeetingButton({
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
           {/* Header */}
-          <div className="bg-gradient-to-r from-primary to-indigo-600 p-6 text-white">
+          <div className="bg-gradient-to-r from-primary to-theme-secondary p-6 text-white">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
@@ -182,7 +182,7 @@ export function InstantMeetingButton({
             <div className="flex gap-3 pt-2">
               <button
                 onClick={handleJoinMeeting}
-                className="flex-1 py-3 bg-gradient-to-r from-primary to-indigo-600 text-white font-semibold rounded-lg hover:from-primary/90 hover:to-indigo-600/90 transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                className="flex-1 py-3 bg-gradient-to-r from-primary to-theme-secondary text-white font-semibold rounded-lg hover:from-primary/90 hover:to-theme-secondary/90 transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
               >
                 <Video className="w-5 h-5" />
                 Join Meeting
@@ -212,11 +212,10 @@ export function InstantMeetingButton({
     <button
       onClick={handleCreateMeeting}
       disabled={loading}
-      className={`${fullWidth ? 'flex w-full justify-center' : 'inline-flex'} items-center ${fullWidth ? 'gap-1.5' : 'gap-2'} ${fullWidth ? 'px-3' : 'px-4'} ${fullWidth ? 'py-2' : 'py-2'} ${fullWidth ? 'rounded-md' : 'rounded-lg'} font-medium ${fullWidth ? 'text-xs' : ''} transition-all ${
-        variant === 'appointment'
-          ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow'
-          : 'bg-gradient-to-r from-primary to-indigo-600 hover:from-primary/90 hover:to-indigo-600/90 text-white shadow-md hover:shadow-lg'
-      } disabled:opacity-50 disabled:cursor-not-allowed`}
+      className={`${fullWidth ? 'flex w-full justify-center' : 'inline-flex'} items-center ${fullWidth ? 'gap-1.5' : 'gap-2'} ${fullWidth ? 'px-3' : 'px-4'} ${fullWidth ? 'py-2' : 'py-2'} ${fullWidth ? 'rounded-md' : 'rounded-lg'} font-medium ${fullWidth ? 'text-xs' : ''} transition-all ${variant === 'appointment'
+          ? 'bg-theme-secondary hover:opacity-90 text-white shadow-sm hover:shadow'
+          : 'bg-gradient-to-r from-primary to-theme-secondary hover:from-primary/90 hover:to-theme-secondary/90 text-white shadow-md hover:shadow-lg'
+        } disabled:opacity-50 disabled:cursor-not-allowed`}
       title={variant === 'appointment' ? 'Start Video Call' : 'Create Instant Meeting'}
     >
       {loading ? (

@@ -30,8 +30,8 @@ export function DocumentsTab() {
   // Get status badge styling
   const getStatusBadge = (status: string) => {
     const styles = {
-      current: { bg: 'bg-green-100', text: 'text-green-800' },
-      superseded: { bg: 'bg-yellow-100', text: 'text-yellow-800' },
+      current: { bg: 'bg-theme-accent/10', text: 'text-theme-accent' },
+      superseded: { bg: 'bg-amber-100', text: 'text-amber-800' },
       'entered-in-error': { bg: 'bg-red-100', text: 'text-red-800' }
     };
     return styles[status as keyof typeof styles] || { bg: 'bg-gray-100', text: 'text-gray-800' };
@@ -43,7 +43,7 @@ export function DocumentsTab() {
         <h2 className="text-lg font-semibold text-gray-900">Documents</h2>
         <button
           onClick={() => setDrawerState('document', true)}
-          className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
+          className="px-3 py-1 text-xs font-medium text-white bg-primary hover:opacity-90 rounded"
         >
           + Add Document
         </button>
@@ -66,7 +66,7 @@ export function DocumentsTab() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <FileText className="h-5 w-5 text-blue-600" />
+                      <FileText className="h-5 w-5 text-primary" />
                       <h3 className="text-base font-semibold text-gray-900">{title}</h3>
                       <span className={`px-2 py-0.5 text-xs font-medium rounded ${statusBadge.bg} ${statusBadge.text}`}>
                         {status}

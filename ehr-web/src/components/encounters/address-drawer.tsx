@@ -293,7 +293,7 @@ export function AddressDrawer({
                 <h3 className="text-base font-semibold text-gray-900">Saved Addresses</h3>
                 <button
                   onClick={handleAddNew}
-                  className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  className="flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-colors text-sm"
                 >
                   <Plus className="h-4 w-4" />
                   Add New Address
@@ -648,7 +648,7 @@ export function AddressDrawer({
                     </div>
                     <button
                       type="button"
-                      className="mt-5 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      className="mt-5 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-colors"
                     >
                       +
                     </button>
@@ -695,7 +695,7 @@ export function AddressDrawer({
           <button
             onClick={handleSaveAll}
             disabled={saving}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-colors disabled:opacity-50"
           >
             {saving ? 'Saving...' : 'Save All Changes'}
           </button>

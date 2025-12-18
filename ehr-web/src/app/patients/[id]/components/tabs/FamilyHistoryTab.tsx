@@ -141,7 +141,7 @@ export function FamilyHistoryTab({ patientId }: FamilyHistoryTabProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -153,9 +153,9 @@ export function FamilyHistoryTab({ patientId }: FamilyHistoryTabProps) {
         {/* Top Row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Users className="h-5 w-5 text-blue-600" />
+            <Users className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-semibold text-gray-900">Family Health History</h2>
-            <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
+            <span className="px-2.5 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded-full">
               {familyHistory.length} {familyHistory.length === 1 ? 'Member' : 'Members'}
             </span>
           </div>
@@ -165,33 +165,30 @@ export function FamilyHistoryTab({ patientId }: FamilyHistoryTabProps) {
             <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('chart')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  viewMode === 'chart'
-                    ? 'bg-white text-blue-600 shadow-sm'
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'chart'
+                    ? 'bg-white text-primary shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
-                }`}
+                  }`}
               >
                 <GitBranch className="h-4 w-4" />
                 Visual Chart
               </button>
               <button
                 onClick={() => setViewMode('tree')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  viewMode === 'tree'
-                    ? 'bg-white text-blue-600 shadow-sm'
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'tree'
+                    ? 'bg-white text-primary shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
-                }`}
+                  }`}
               >
                 <Network className="h-4 w-4" />
                 Grid View
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-white text-blue-600 shadow-sm'
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'list'
+                    ? 'bg-white text-primary shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
-                }`}
+                  }`}
               >
                 <List className="h-4 w-4" />
                 List View
@@ -200,7 +197,7 @@ export function FamilyHistoryTab({ patientId }: FamilyHistoryTabProps) {
 
             <Button
               onClick={handleAddMember}
-              className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
+              className="flex items-center gap-2 bg-primary text-primary-foreground hover:opacity-90"
             >
               <Plus className="h-4 w-4" />
               Add Family Member
@@ -239,31 +236,28 @@ export function FamilyHistoryTab({ patientId }: FamilyHistoryTabProps) {
               <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
                 <button
                   onClick={() => setLineageFilter('all')}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                    lineageFilter === 'all'
-                      ? 'bg-white text-blue-600 shadow-sm'
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${lineageFilter === 'all'
+                      ? 'bg-white text-primary shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
                   All
                 </button>
                 <button
                   onClick={() => setLineageFilter('paternal')}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                    lineageFilter === 'paternal'
-                      ? 'bg-white text-blue-600 shadow-sm'
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${lineageFilter === 'paternal'
+                      ? 'bg-white text-primary shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
                   Paternal
                 </button>
                 <button
                   onClick={() => setLineageFilter('maternal')}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                    lineageFilter === 'maternal'
-                      ? 'bg-white text-blue-600 shadow-sm'
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${lineageFilter === 'maternal'
+                      ? 'bg-white text-primary shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
                   Maternal
                 </button>
@@ -284,7 +278,7 @@ export function FamilyHistoryTab({ patientId }: FamilyHistoryTabProps) {
             <p className="text-sm text-gray-500 mb-6 max-w-md">
               Start building a comprehensive family health history by adding family members and their health conditions.
             </p>
-            <Button onClick={handleAddMember} className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700">
+            <Button onClick={handleAddMember} className="flex items-center gap-2 bg-primary text-primary-foreground hover:opacity-90">
               <Plus className="h-4 w-4" />
               Add First Family Member
             </Button>

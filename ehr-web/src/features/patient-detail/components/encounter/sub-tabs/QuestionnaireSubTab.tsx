@@ -87,7 +87,7 @@ export function QuestionnaireSubTab({
             <button
               type="button"
               onClick={addResponse}
-              className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded hover:opacity-90"
             >
               + Add Question
             </button>
@@ -139,7 +139,7 @@ export function QuestionnaireSubTab({
 
         <button
           onClick={onSave}
-          className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded text-sm font-medium hover:opacity-90"
         >
           {isEditing ? 'Update Questionnaire' : 'Save Questionnaire'}
         </button>

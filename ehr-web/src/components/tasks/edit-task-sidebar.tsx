@@ -494,7 +494,7 @@ export function EditTaskSidebar({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button type="submit" disabled={loading} className="bg-blue-600 hover:opacity-90 text-white">
               {loading ? 'Updating...' : 'Update Task'}
             </Button>
           </SheetFooter>

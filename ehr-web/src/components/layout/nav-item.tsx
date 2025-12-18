@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { LucideIcon, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTabs } from '@/contexts/tab-context';
+import { useTheme } from '@/contexts/theme-context';
 
 interface NavItemChild {
   name: string;
@@ -34,6 +35,7 @@ export function NavItem({
   children
 }: NavItemProps) {
   const { addTab } = useTabs();
+  const { themeSettings } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleClick = () => {
@@ -65,19 +67,17 @@ export function NavItem({
           onClick={handleClick}
           className={cn(
             'flex items-center pl-3 pr-3 py-2.5 text-sm rounded-lg transition-all duration-200 group relative w-full',
-            isActive
-              ? 'text-white font-semibold bg-[#3342A5]'
-              : 'text-[#B0B7D0] font-medium hover:text-white hover:bg-[#1E2A70]'
+            isActive ? 'font-semibold' : 'font-medium'
           )}
+          style={{
+            backgroundColor: isActive ? themeSettings.sidebarActiveColor : 'transparent',
+            color: isActive ? 'var(--theme-sidebar-active-contrast)' : themeSettings.sidebarTextColor
+          }}
         >
           <div className="relative flex items-center gap-3 w-full">
             <Icon
-              className={cn(
-                'flex-shrink-0 transition-all duration-200 h-5 w-5',
-                isActive
-                  ? 'text-white'
-                  : 'text-[#B0B7D0] group-hover:text-white'
-              )}
+              className="flex-shrink-0 transition-all duration-200 h-5 w-5"
+              style={{ color: isActive ? 'var(--theme-sidebar-active-contrast)' : themeSettings.sidebarTextColor }}
             />
             <span className="flex-1 transition-colors duration-200 text-left">
               {name}
@@ -98,12 +98,10 @@ export function NavItem({
                 key={child.href}
                 href={child.href}
                 onClick={() => handleChildClick(child)}
-                className={cn(
-                  'flex items-center pl-3 pr-3 py-2 text-xs rounded-lg transition-all duration-200 group relative w-full',
-                  'text-[#B0B7D0] font-medium hover:text-white hover:bg-[#1E2A70]'
-                )}
+                className="flex items-center pl-3 pr-3 py-2 text-xs rounded-lg transition-all duration-200 group relative w-full font-medium"
+                style={{ color: themeSettings.sidebarTextColor }}
               >
-                <child.icon className="h-4 w-4 mr-2 text-[#B0B7D0] group-hover:text-white" />
+                <child.icon className="h-4 w-4 mr-2" style={{ color: themeSettings.sidebarTextColor }} />
                 <span className="transition-colors duration-200">{child.name}</span>
               </Link>
             ))}
@@ -120,10 +118,12 @@ export function NavItem({
       onClick={handleClick}
       className={cn(
         'flex items-center pl-3 pr-3 py-2.5 text-sm rounded-lg transition-all duration-200 group relative w-full',
-        isActive
-          ? 'text-white font-semibold bg-[#3342A5]'
-          : 'text-[#B0B7D0] font-medium hover:text-white hover:bg-[#1E2A70]'
+        isActive ? 'font-semibold' : 'font-medium'
       )}
+      style={{
+        backgroundColor: isActive ? themeSettings.sidebarActiveColor : 'transparent',
+        color: isActive ? 'var(--theme-sidebar-active-contrast)' : themeSettings.sidebarTextColor
+      }}
       title={isCollapsed ? name : undefined}
     >
 
@@ -132,12 +132,8 @@ export function NavItem({
         isCollapsed ? 'justify-center w-full' : 'w-full'
       )}>
         <Icon
-          className={cn(
-            'flex-shrink-0 transition-all duration-200 h-5 w-5',
-            isActive
-              ? 'text-white'
-              : 'text-[#B0B7D0] group-hover:text-white'
-          )}
+          className="flex-shrink-0 transition-all duration-200 h-5 w-5"
+          style={{ color: isActive ? 'var(--theme-sidebar-active-contrast)' : themeSettings.sidebarTextColor }}
         />
 
         {!isCollapsed && (
@@ -147,11 +143,12 @@ export function NavItem({
             </span>
             {(count !== undefined && count > 0) && (
               <span className={cn(
-                'text-xs px-2 py-0.5 rounded-full font-medium',
-                isActive
-                  ? 'bg-white/20 text-white'
-                  : 'bg-[#1E2A70] text-[#B0B7D0]'
-              )}>
+                'text-xs px-2 py-0.5 rounded-full font-medium transition-colors'
+              )}
+                style={{
+                  backgroundColor: 'rgba(0,0,0,0.1)',
+                  color: isActive ? 'var(--theme-sidebar-active-contrast)' : themeSettings.sidebarTextColor
+                }}>
                 {count}
               </span>
             )}

@@ -50,8 +50,10 @@ export function GeneralFacesheet({ patientId: _ }: GeneralFacesheetProps) {
     imagingStudies,
     insurances,
     loading,
-    openDrawer
+    setDrawerState
   } = usePatientDetailStore();
+
+  const openDrawer = (key: string) => setDrawerState(key as any, true);
 
   if (loading) {
     return (
@@ -401,7 +403,7 @@ export function GeneralFacesheet({ patientId: _ }: GeneralFacesheetProps) {
                   <p className="text-[10px] text-gray-500 mb-2">No diagnoses recorded</p>
                   <button
                     onClick={() => openDrawer('problem')}
-                    className="text-[10px] text-blue-600 hover:text-blue-800 font-medium"
+                    className="text-[10px] text-primary hover:text-primary/80 font-medium"
                   >
                     + Add Diagnosis
                   </button>
@@ -433,7 +435,7 @@ export function GeneralFacesheet({ patientId: _ }: GeneralFacesheetProps) {
                   <p className="text-[10px] text-gray-500 mb-1">No chief complaints</p>
                   <button
                     onClick={() => openDrawer('encounter')}
-                    className="text-[10px] text-blue-600 hover:text-blue-800 font-medium"
+                    className="text-[10px] text-primary hover:text-primary/80 font-medium"
                   >
                     + Add from Encounter
                   </button>
@@ -497,8 +499,8 @@ export function GeneralFacesheet({ patientId: _ }: GeneralFacesheetProps) {
                 <div className="space-y-0 max-h-96 overflow-y-auto">
                   {activeMedications.map((medication: any) => {
                     const name = medication.medicationCodeableConcept?.text ||
-                                medication.medicationCodeableConcept?.coding?.[0]?.display ||
-                                'Unknown';
+                      medication.medicationCodeableConcept?.coding?.[0]?.display ||
+                      'Unknown';
                     const dosage = medication.dosageInstruction?.[0]?.text;
                     const date = medication.authoredOn;
 
@@ -519,7 +521,7 @@ export function GeneralFacesheet({ patientId: _ }: GeneralFacesheetProps) {
                   <p className="text-[10px] text-gray-500 mb-2">No medications</p>
                   <button
                     onClick={() => openDrawer('medication')}
-                    className="text-[10px] text-blue-600 hover:text-blue-800 font-medium"
+                    className="text-[10px] text-primary hover:text-primary/80 font-medium"
                   >
                     + Add Medication
                   </button>
@@ -671,8 +673,8 @@ export function GeneralFacesheet({ patientId: _ }: GeneralFacesheetProps) {
               {labResults && labResults.length > 0 ? (
                 <div className="space-y-0 max-h-[calc(100vh-200px)] overflow-y-auto">
                   {/* CBC Panel */}
-                  <div className="bg-blue-50 px-2 py-1 border-b border-blue-200">
-                    <div className="text-[9px] font-bold text-blue-900 uppercase">Complete Blood Count</div>
+                  <div className="bg-primary/5 px-2 py-1 border-b border-primary/10">
+                    <div className="text-[9px] font-bold text-primary uppercase">Complete Blood Count</div>
                   </div>
                   {labResults.filter((lab: any) =>
                     ['718-7', '789-8', '787-2', '785-6', '777-3'].includes(lab.code?.coding?.[0]?.code)
@@ -957,8 +959,8 @@ export function GeneralFacesheet({ patientId: _ }: GeneralFacesheetProps) {
                 <div className="space-y-0 max-h-64 overflow-y-auto">
                   {immunizations.slice(0, 15).map((immunization: any) => {
                     const vaccine = immunization.vaccineCode?.text ||
-                                   immunization.vaccineCode?.coding?.[0]?.display ||
-                                   'Unknown';
+                      immunization.vaccineCode?.coding?.[0]?.display ||
+                      'Unknown';
                     const date = immunization.occurrenceDateTime || immunization.recorded;
                     const status = immunization.status;
 
@@ -1007,7 +1009,7 @@ export function GeneralFacesheet({ patientId: _ }: GeneralFacesheetProps) {
                   <p className="text-[10px] text-gray-500 mb-2">No surgeries reported</p>
                   <button
                     onClick={() => openDrawer('medicalInfo')}
-                    className="text-[10px] text-blue-600 hover:text-blue-800 font-medium"
+                    className="text-[10px] text-primary hover:text-primary/80 font-medium"
                   >
                     + Add Surgery
                   </button>

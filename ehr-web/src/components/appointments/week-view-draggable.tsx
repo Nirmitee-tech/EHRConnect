@@ -681,7 +681,7 @@ export function WeekViewDraggable({
               <div
                 className={`mt-1 flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
                   isToday
-                    ? 'bg-blue-600 text-white shadow-sm'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >

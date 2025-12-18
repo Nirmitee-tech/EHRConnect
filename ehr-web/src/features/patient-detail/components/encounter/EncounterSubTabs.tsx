@@ -24,11 +24,10 @@ export function EncounterSubTabs({
       {/* Summary Tab - Always visible */}
       <button
         onClick={() => onSubTabClick('summary')}
-        className={`px-3 py-1.5 text-xs font-medium rounded-t whitespace-nowrap transition-colors border-t border-l border-r ${
-          activeSubTab === 'summary'
-            ? 'bg-white text-blue-600 border-gray-300'
+        className={`px-3 py-1.5 text-xs font-medium rounded-t whitespace-nowrap transition-colors border-t border-l border-r ${activeSubTab === 'summary'
+            ? 'bg-white text-primary border-gray-300'
             : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
-        }`}
+          }`}
       >
         Summary
       </button>
@@ -40,11 +39,10 @@ export function EncounterSubTabs({
           <div key={tabId} className="relative group">
             <button
               onClick={() => onSubTabClick(tabId)}
-              className={`px-3 py-1.5 pr-7 text-xs font-medium rounded-t whitespace-nowrap transition-colors border-t border-l border-r ${
-                activeSubTab === tabId
-                  ? 'bg-white text-blue-600 border-gray-300'
+              className={`px-3 py-1.5 pr-7 text-xs font-medium rounded-t whitespace-nowrap transition-colors border-t border-l border-r ${activeSubTab === tabId
+                  ? 'bg-white text-primary border-gray-300'
                   : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
-              }`}
+                }`}
             >
               {tabLabel}
             </button>

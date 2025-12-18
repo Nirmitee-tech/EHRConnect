@@ -103,11 +103,10 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
                 <button
                   key={id}
                   onClick={() => setActiveSection(id as any)}
-                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                    activeSection === id
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeSection === id
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                    }`}
                 >
                   {Icon && <Icon className="h-4 w-4" />}
                   {label}
@@ -129,7 +128,7 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
                       type="text"
                       value={editedStaff.name}
                       onChange={(e) => setEditedStaff({ ...editedStaff, name: e.target.value })}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
                   <div>
@@ -140,7 +139,7 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
                       type="text"
                       value={editedStaff.specialty}
                       onChange={(e) => setEditedStaff({ ...editedStaff, specialty: e.target.value })}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
                   <div>
@@ -151,7 +150,7 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
                       type="tel"
                       value={editedStaff.phone}
                       onChange={(e) => setEditedStaff({ ...editedStaff, phone: e.target.value })}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
                   <div>
@@ -162,7 +161,7 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
                       type="email"
                       value={editedStaff.email}
                       onChange={(e) => setEditedStaff({ ...editedStaff, email: e.target.value })}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
                   <div>
@@ -172,7 +171,7 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
                     <select
                       value={editedStaff.employmentType || 'full-time'}
                       onChange={(e) => setEditedStaff({ ...editedStaff, employmentType: e.target.value as any })}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     >
                       <option value="full-time">Full-time</option>
                       <option value="part-time">Part-time</option>
@@ -187,7 +186,7 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
                     <select
                       value={editedStaff.active ? 'active' : 'inactive'}
                       onChange={(e) => setEditedStaff({ ...editedStaff, active: e.target.value === 'active' })}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
@@ -220,7 +219,7 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
                         type="checkbox"
                         checked={hours.isWorking}
                         onChange={(e) => updateOfficeHours(index, { isWorking: e.target.checked })}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-gray-300 text-primary accent-primary focus:ring-primary"
                       />
                       <span className="ml-2 text-sm text-gray-700">Working</span>
                     </label>
@@ -231,14 +230,14 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
                           type="time"
                           value={hours.startTime}
                           onChange={(e) => updateOfficeHours(index, { startTime: e.target.value })}
-                          className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                         <span className="text-gray-500">to</span>
                         <input
                           type="time"
                           value={hours.endTime}
                           onChange={(e) => updateOfficeHours(index, { endTime: e.target.value })}
-                          className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                       </>
                     )}
@@ -253,7 +252,7 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
                   <h3 className="text-lg font-medium text-gray-900">Vacation & Blocked Time</h3>
                   <button
                     onClick={addVacation}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-colors text-sm"
                   >
                     <Plus className="h-4 w-4" />
                     Add Block
@@ -351,11 +350,10 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
                       <button
                         key={color}
                         onClick={() => setEditedStaff({ ...editedStaff, color })}
-                        className={`h-12 rounded-lg transition-all ${
-                          editedStaff.color === color
-                            ? 'ring-4 ring-offset-2 ring-blue-500'
-                            : 'hover:scale-105'
-                        }`}
+                        className={`h-12 rounded-lg transition-all ${editedStaff.color === color
+                          ? 'ring-4 ring-offset-2 ring-primary/50'
+                          : 'hover:scale-105'
+                          }`}
                         style={{ backgroundColor: color }}
                       />
                     ))}
@@ -370,7 +368,7 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
                     type="text"
                     value={editedStaff.qualification}
                     onChange={(e) => setEditedStaff({ ...editedStaff, qualification: e.target.value })}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
               </div>
@@ -387,7 +385,7 @@ export function StaffDetailDrawer({ isOpen, onClose, staff, onSave }: StaffDetai
             </button>
             <button
               onClick={handleSave}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-colors"
             >
               <Save className="h-4 w-4" />
               {isNewStaff ? 'Create Staff Member' : 'Save Changes'}

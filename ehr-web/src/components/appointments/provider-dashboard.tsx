@@ -390,7 +390,7 @@ export function ProviderDashboard({
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-bold text-gray-900">Upcoming Appointments</h2>
-                <span className="bg-blue-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold">
+                <span className="bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold">
                   {todayAppointments.length}
                 </span>
               </div>
@@ -510,7 +510,7 @@ export function ProviderDashboard({
               <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between bg-gray-50">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-semibold text-gray-900">To Do Task</h3>
-                  <span className="bg-blue-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold">
+                  <span className="bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold">
                     {tasks.filter(t => t.status === 'new').length}
                   </span>
                 </div>
@@ -600,7 +600,7 @@ export function ProviderDashboard({
               <div className="bg-white rounded border border-gray-200">
                 <div className="px-3 py-2 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-gray-900">Messages</h3>
-                  <span className="bg-blue-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold">
+                  <span className="bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold">
                     {messages.filter(m => m.unread).length}
                   </span>
                 </div>

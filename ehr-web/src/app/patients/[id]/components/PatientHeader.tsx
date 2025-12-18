@@ -261,8 +261,8 @@ export function PatientHeader({
         <div className="flex items-center justify-between">
           {/* Left - Patient Info */}
           <div className="flex items-center gap-2 flex-1">
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <User className="h-4 w-4 text-blue-600" />
+            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <User className="h-4 w-4 text-primary" />
             </div>
 
             <div className="text-xs">
@@ -355,7 +355,7 @@ export function PatientHeader({
                 </div>
                 <button
                   onClick={() => setEditingDemographics(true)}
-                  className="text-gray-500 hover:text-blue-600"
+                  className="text-gray-500 hover:text-primary"
                   title="Edit demographics"
                 >
                   <Edit className="h-3 w-3" />
@@ -369,7 +369,7 @@ export function PatientHeader({
             {/* Provider */}
             <div className="pr-3 border-r-2 border-gray-300">
               <div className="text-gray-500 text-[10px] uppercase font-medium">Provider</div>
-              <span className="font-semibold text-blue-600">Dr. Smith</span>
+              <span className="font-semibold text-primary">Dr. Smith</span>
             </div>
 
             {/* Last Visit */}
@@ -387,18 +387,18 @@ export function PatientHeader({
               {/* Social Note */}
               <div className="max-w-[200px] pr-4">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-purple-600 font-semibold text-[10px]">SOCIAL NOTE</span>
+                  <span className="text-theme-secondary font-semibold text-[10px]">SOCIAL NOTE</span>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setShowSocialNoteHistory(true)}
-                      className="text-purple-600 hover:text-purple-700"
+                      className="text-theme-secondary hover:opacity-80"
                       title="View note history"
                     >
                       <History className="h-3 w-3" />
                     </button>
                     <button
                       onClick={() => setEditingSocialNote(true)}
-                      className="text-purple-600 hover:text-purple-700"
+                      className="text-theme-secondary hover:opacity-80"
                       title="Edit social note"
                     >
                       <Edit className="h-3 w-3" />
@@ -414,7 +414,7 @@ export function PatientHeader({
                       {socialNoteText.length > 60 && (
                         <button
                           onClick={() => setExpandedSocialNote(!expandedSocialNote)}
-                          className="text-blue-600 hover:underline ml-1"
+                          className="text-primary hover:underline ml-1"
                         >
                           {expandedSocialNote ? 'Less' : 'More'}
                         </button>
@@ -423,7 +423,7 @@ export function PatientHeader({
                   ) : (
                     <button
                       onClick={() => setEditingSocialNote(true)}
-                      className="text-gray-400 hover:text-purple-600"
+                      className="text-gray-400 hover:text-theme-secondary"
                     >
                       + Add social note
                     </button>
@@ -461,7 +461,7 @@ export function PatientHeader({
                       {internalNoteText.length > 60 && (
                         <button
                           onClick={() => setExpandedInternalNote(!expandedInternalNote)}
-                          className="text-blue-600 hover:underline ml-1"
+                          className="text-primary hover:underline ml-1"
                         >
                           {expandedInternalNote ? 'Less' : 'More'}
                         </button>
@@ -499,68 +499,67 @@ export function PatientHeader({
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setShowEncounterDropdown(!showEncounterDropdown)}
-                  className="px-3 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700"
+                  className="px-3 py-1 bg-theme-accent text-white rounded text-xs font-medium hover:opacity-90"
                 >
                   Select Encounters ({activeEncounters.length})
                 </button>
 
-              {showEncounterDropdown && (
-                <div className="absolute top-full right-0 mt-1 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-auto">
-                  <div className="p-2">
-                    {activeEncounters.map((encounter) => {
-                      const encounterDate = new Date(encounter.period?.start || encounter.startTime || new Date());
-                      const dateStr = encounterDate.toLocaleDateString();
-                      const timeStr = encounterDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                {showEncounterDropdown && (
+                  <div className="absolute top-full right-0 mt-1 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-auto">
+                    <div className="p-2">
+                      {activeEncounters.map((encounter) => {
+                        const encounterDate = new Date(encounter.period?.start || encounter.startTime || new Date());
+                        const dateStr = encounterDate.toLocaleDateString();
+                        const timeStr = encounterDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-                      return (
-                        <button
-                          key={encounter.id}
-                          onClick={() => {
-                            // Update URL with encounter ID as query param
-                            const url = new URL(window.location.href);
-                            url.searchParams.set('encounterId', encounter.id);
-                            router.push(url.pathname + url.search);
+                        return (
+                          <button
+                            key={encounter.id}
+                            onClick={() => {
+                              // Update URL with encounter ID as query param
+                              const url = new URL(window.location.href);
+                              url.searchParams.set('encounterId', encounter.id);
+                              router.push(url.pathname + url.search);
 
-                            // Call the original handler
-                            onEncounterSelect?.(encounter.id);
-                            setShowEncounterDropdown(false);
-                          }}
-                          className={`w-full text-left p-2.5 rounded hover:bg-gray-50 transition-colors ${
-                            selectedEncounter === encounter.id ? 'bg-blue-50 border border-blue-200' : ''
-                          }`}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="font-medium text-gray-900 text-sm">
-                                {(() => {
-                                  const classValue = typeof encounter?.class === 'string'
-                                    ? encounter?.class
-                                    : encounter?.class?.display || encounter?.class?.code || 'Encounter';
-                                  return typeof classValue === 'string'
-                                    ? classValue?.charAt(0)?.toUpperCase() + classValue?.slice(1)
-                                    : 'Encounter';
-                                })()}
+                              // Call the original handler
+                              onEncounterSelect?.(encounter.id);
+                              setShowEncounterDropdown(false);
+                            }}
+                            className={`w-full text-left p-2.5 rounded hover:bg-gray-50 transition-colors ${selectedEncounter === encounter.id ? 'bg-primary/5 border border-primary/20' : ''
+                              }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-900 text-sm">
+                                  {(() => {
+                                    const classValue = typeof encounter?.class === 'string'
+                                      ? encounter?.class
+                                      : encounter?.class?.display || encounter?.class?.code || 'Encounter';
+                                    return typeof classValue === 'string'
+                                      ? classValue?.charAt(0)?.toUpperCase() + classValue?.slice(1)
+                                      : 'Encounter';
+                                  })()}
+                                </div>
+                                <div className="text-xs text-gray-600 mt-0.5">
+                                  {dateStr} • {timeStr}
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-600 mt-0.5">
-                                {dateStr} • {timeStr}
-                              </div>
+                              <span className="px-2 py-0.5 bg-theme-accent/10 text-theme-accent text-xs font-medium rounded">
+                                Active
+                              </span>
                             </div>
-                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
-                              Active
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
 
             <button
               onClick={onNewVisit}
-              className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
+              className="px-3 py-1 text-xs font-medium text-white bg-primary hover:opacity-90 rounded"
             >
               + New Visit
             </button>
@@ -573,7 +572,7 @@ export function PatientHeader({
         <div className="flex items-center flex-wrap lg:flex-nowrap gap-y-2 text-xs gap-x-1">
           {/* Medical Info */}
           <div className="flex items-center gap-1.5 pr-4 border-r-2 border-gray-300 group flex-shrink-0">
-            <Heart className="h-3.5 w-3.5 text-blue-600 flex-shrink-0" />
+            <Heart className="h-3.5 w-3.5 text-primary flex-shrink-0" />
             <div className="flex items-center gap-1.5 text-gray-800 whitespace-nowrap">
               <span className="text-gray-600 font-medium">Blood:</span>
               <span className="font-semibold">-</span>
@@ -581,7 +580,7 @@ export function PatientHeader({
               <span className="text-gray-600 font-medium">Due:</span>
               <span className="font-bold text-green-600">₹0.00</span>
             </div>
-            <button className="px-2 py-0.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-all whitespace-nowrap flex-shrink-0">
+            <button className="px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded hover:opacity-90 font-medium transition-all whitespace-nowrap flex-shrink-0">
               Receive
             </button>
             <button className="px-2 py-0.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 font-medium transition-all whitespace-nowrap flex-shrink-0">
@@ -589,10 +588,10 @@ export function PatientHeader({
             </button>
             <button
               onClick={onOpenMedicalInfo}
-              className="p-0.5 hover:bg-blue-50 rounded transition-colors flex-shrink-0"
+              className="p-0.5 hover:bg-primary/10 rounded transition-colors flex-shrink-0"
               title="Edit Medical Info"
             >
-              <Edit className="h-3.5 w-3.5 text-gray-400 hover:text-blue-600" />
+              <Edit className="h-3.5 w-3.5 text-gray-400 hover:text-primary" />
             </button>
           </div>
 
@@ -653,10 +652,10 @@ export function PatientHeader({
             <span className="text-gray-800 font-medium whitespace-nowrap">Drinks, Alcohol (rare)</span>
             <button
               onClick={onOpenMedicalInfo}
-              className="p-0.5 hover:bg-purple-50 rounded transition-colors ml-1"
+              className="p-0.5 hover:bg-theme-secondary/10 rounded transition-colors ml-1"
               title="Add/Edit Habits"
             >
-              <Plus className="h-3.5 w-3.5 text-gray-400 hover:text-purple-600" />
+              <Plus className="h-3.5 w-3.5 text-gray-400 hover:text-theme-secondary" />
             </button>
           </div>
 
@@ -693,7 +692,7 @@ export function PatientHeader({
 
           {/* Patient Portal Access - Last item, no border */}
           <div className="flex items-center gap-1.5 px-4 group">
-            <Globe className={`h-3.5 w-3.5 ${hasPortalAccess ? 'text-blue-600' : 'text-gray-400'}`} />
+            <Globe className={`h-3.5 w-3.5 ${hasPortalAccess ? 'text-primary' : 'text-gray-400'}`} />
             <span className="text-gray-600 font-medium">Portal:</span>
             {checkingPortalAccess ? (
               <span className="text-gray-500">Loading...</span>
@@ -707,7 +706,7 @@ export function PatientHeader({
                 <span className="text-gray-600 whitespace-nowrap">No Access</span>
                 <button
                   onClick={() => setPortalAccessDialogOpen(true)}
-                  className="px-2 py-0.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-all ml-1 whitespace-nowrap"
+                  className="px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded hover:opacity-90 font-medium transition-all ml-1 whitespace-nowrap"
                   title="Grant Portal Access"
                 >
                   Grant

@@ -138,7 +138,7 @@ export function ClinicalNotesListSection({
         <button
           onClick={handleAdd}
           disabled={editingNote !== null}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-medium rounded hover:opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
         >
           <Plus className="h-3.5 w-3.5" />
           Add Note
@@ -232,7 +232,7 @@ export function ClinicalNotesListSection({
                     </button>
                     <button
                       onClick={handleSave}
-                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:opacity-90 transition-colors"
                     >
                       Save
                     </button>
@@ -364,7 +364,7 @@ export function ClinicalNotesListSection({
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:opacity-90 transition-colors"
                 >
                   Add Note
                 </button>

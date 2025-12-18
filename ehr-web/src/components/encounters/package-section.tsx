@@ -206,7 +206,7 @@ export function PackageSection({
                   <label className="block text-xs font-medium text-gray-700">Package Items</label>
                   <button
                     onClick={handleAddPackageItem}
-                    className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    className="text-xs px-2 py-1 bg-primary text-primary-foreground rounded hover:opacity-90"
                   >
                     + Add Item
                   </button>

@@ -415,9 +415,8 @@ export function AppointmentFormDrawer({
                           <p className="text-sm text-gray-500">Location: {apt.location}</p>
                         )}
                       </div>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        apt.status === 'scheduled' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
-                      }`}>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${apt.status === 'scheduled' ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-600'
+                        }`}>
                         {apt.status}
                       </span>
                     </div>
@@ -455,7 +454,7 @@ export function AppointmentFormDrawer({
                 type="button"
                 onClick={handleConfirmBooking}
                 disabled={loading}
-                className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
               >
                 {loading ? 'Booking...' : 'Book Anyway'}
               </button>
@@ -509,7 +508,7 @@ export function AppointmentFormDrawer({
                       value={newCategory}
                       onChange={(e) => setNewCategory(e.target.value)}
                       placeholder="Enter appointment type name"
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                       autoFocus
                     />
                   </div>
@@ -535,7 +534,7 @@ export function AppointmentFormDrawer({
                       setShowCategoryDrawer(false);
                     }
                   }}
-                  className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
                 >
                   Add Appointment Type
                 </button>

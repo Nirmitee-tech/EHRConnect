@@ -138,7 +138,7 @@ export function MiniCalendar({ selectedDate, onDateSelect }: MiniCalendarProps) 
                 'flex h-9 w-9 items-center justify-center rounded-md text-sm font-medium transition-colors',
                 isCurrentMonth ? 'text-gray-900' : 'text-gray-400',
                 isToday && !isSelected && 'bg-blue-100 text-blue-700 font-bold',
-                isSelected && 'bg-blue-600 text-white hover:bg-blue-700 font-bold',
+                isSelected && 'bg-primary text-primary-foreground hover:opacity-90 font-bold',
                 !isSelected && !isToday && isCurrentMonth && 'hover:bg-gray-100',
                 !isSelected && !isToday && !isCurrentMonth && 'hover:bg-gray-50'
               )}

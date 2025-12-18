@@ -90,7 +90,7 @@ export function PrescriptionsIntegrated({
               onClick={() => setMode('cards')}
               className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition ${
                 mode === 'cards'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-primary text-primary-foreground'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
               title="Compact Cards (10-15s)"

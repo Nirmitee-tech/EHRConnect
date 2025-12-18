@@ -392,7 +392,7 @@ export function InsuranceDrawer({ isOpen, onClose, insurance, onSave }: Insuranc
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+              className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-colors font-medium"
             >
               Save Insurance
             </button>

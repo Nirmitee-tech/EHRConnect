@@ -42,7 +42,7 @@ export function VitalsDrawer({ open, onOpenChange, onSave, editData, mode = 'cre
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-    
+
     debounceTimerRef.current = setTimeout(() => {
       setDebouncedFormData(formData);
     }, 300); // 300ms debounce
@@ -337,11 +337,10 @@ export function VitalsDrawer({ open, onOpenChange, onSave, editData, mode = 'cre
                   placeholder="120"
                   value={formData.bloodPressureSystolic}
                   onChange={(e) => setFormData({ ...formData, bloodPressureSystolic: e.target.value })}
-                  className={`pr-16 ${
-                    bpValidation.status === 'critical' ? 'border-red-500 bg-red-50' :
-                    bpValidation.status === 'warning' ? 'border-orange-400 bg-orange-50' :
-                    bpValidation.status === 'normal' ? 'border-green-500 bg-green-50' : ''
-                  }`}
+                  className={`pr-16 ${bpValidation.status === 'critical' ? 'border-red-500 bg-red-50' :
+                      bpValidation.status === 'warning' ? 'border-orange-400 bg-orange-50' :
+                        bpValidation.status === 'normal' ? 'border-green-500 bg-green-50' : ''
+                    }`}
                 />
                 <div className="absolute right-3 top-9 text-xs font-medium text-gray-500">mmHg</div>
               </div>
@@ -352,21 +351,19 @@ export function VitalsDrawer({ open, onOpenChange, onSave, editData, mode = 'cre
                   placeholder="80"
                   value={formData.bloodPressureDiastolic}
                   onChange={(e) => setFormData({ ...formData, bloodPressureDiastolic: e.target.value })}
-                  className={`pr-16 ${
-                    bpValidation.status === 'critical' ? 'border-red-500 bg-red-50' :
-                    bpValidation.status === 'warning' ? 'border-orange-400 bg-orange-50' :
-                    bpValidation.status === 'normal' ? 'border-green-500 bg-green-50' : ''
-                  }`}
+                  className={`pr-16 ${bpValidation.status === 'critical' ? 'border-red-500 bg-red-50' :
+                      bpValidation.status === 'warning' ? 'border-orange-400 bg-orange-50' :
+                        bpValidation.status === 'normal' ? 'border-green-500 bg-green-50' : ''
+                    }`}
                 />
                 <div className="absolute right-3 top-9 text-xs font-medium text-gray-500">mmHg</div>
               </div>
             </div>
             {bpValidation.message && (
-              <div className={`mt-3 flex items-center gap-2 text-sm font-medium ${
-                bpValidation.status === 'critical' ? 'text-red-600' :
-                bpValidation.status === 'warning' ? 'text-orange-600' :
-                'text-green-600'
-              }`}>
+              <div className={`mt-3 flex items-center gap-2 text-sm font-medium ${bpValidation.status === 'critical' ? 'text-red-600' :
+                  bpValidation.status === 'warning' ? 'text-orange-600' :
+                    'text-green-600'
+                }`}>
                 {(bpValidation.status === 'critical' || bpValidation.status === 'warning') && (
                   <AlertCircle className="h-4 w-4" />
                 )}
@@ -469,22 +466,20 @@ export function VitalsDrawer({ open, onOpenChange, onSave, editData, mode = 'cre
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-gray-700">BMI (Calculated)</span>
                   <div className="flex items-center gap-2">
-                    <span className={`text-lg font-bold ${
-                      parseFloat(bmi) < 16 || parseFloat(bmi) > 30 ? 'text-red-600' :
-                      parseFloat(bmi) < 18.5 || parseFloat(bmi) > 25 ? 'text-orange-600' :
-                      'text-green-600'
-                    }`}>
+                    <span className={`text-lg font-bold ${parseFloat(bmi) < 16 || parseFloat(bmi) > 30 ? 'text-red-600' :
+                        parseFloat(bmi) < 18.5 || parseFloat(bmi) > 25 ? 'text-orange-600' :
+                          'text-green-600'
+                      }`}>
                       {bmi}
                     </span>
                     <span className="text-xs text-gray-500">kg/m²</span>
                   </div>
                 </div>
                 {parseFloat(bmi) && (
-                  <div className={`mt-2 text-xs font-medium ${
-                    parseFloat(bmi) < 16 || parseFloat(bmi) > 30 ? 'text-red-600' :
-                    parseFloat(bmi) < 18.5 || parseFloat(bmi) > 25 ? 'text-orange-600' :
-                    'text-green-600'
-                  }`}>
+                  <div className={`mt-2 text-xs font-medium ${parseFloat(bmi) < 16 || parseFloat(bmi) > 30 ? 'text-red-600' :
+                      parseFloat(bmi) < 18.5 || parseFloat(bmi) > 25 ? 'text-orange-600' :
+                        'text-green-600'
+                    }`}>
                     {getBMIStatus(parseFloat(bmi)).label}
                   </div>
                 )}
@@ -530,7 +525,7 @@ export function VitalsDrawer({ open, onOpenChange, onSave, editData, mode = 'cre
             <Button
               onClick={handleSave}
               disabled={saving || !hasAnyValue}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              className="flex-1 bg-primary hover:opacity-90"
             >
               {saving ? (
                 <>

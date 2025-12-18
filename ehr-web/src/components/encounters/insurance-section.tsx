@@ -75,7 +75,7 @@ export function InsuranceSection({ insuranceCards = [], onUpdate }: InsuranceSec
 
   const getTypeBadgeColor = (type: string) => {
     switch (type) {
-      case 'primary': return 'bg-blue-600 text-white';
+      case 'primary': return 'bg-primary text-primary-foreground';
       case 'secondary': return 'bg-purple-100 text-purple-700';
       case 'tertiary': return 'bg-orange-100 text-orange-700';
       default: return 'bg-gray-100 text-gray-700';

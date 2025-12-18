@@ -48,7 +48,7 @@ export function LabTab() {
         <h2 className="text-lg font-semibold text-gray-900">Laboratory Results</h2>
         <button
           onClick={() => setDrawerState('lab', true)}
-          className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
+          className="px-3 py-1 text-xs font-medium text-primary-foreground bg-primary hover:opacity-90 rounded"
         >
           + Add Lab Result
         </button>
@@ -58,8 +58,8 @@ export function LabTab() {
         <div className="space-y-3">
           {labResults.map((report: any, idx: number) => {
             const code = report.code?.text ||
-                        report.code?.coding?.[0]?.display ||
-                        'Lab Test';
+              report.code?.coding?.[0]?.display ||
+              'Lab Test';
             const effectiveDate = report.effectiveDateTime || report.issued;
             const status = report.status || 'unknown';
             const statusBadge = getStatusBadge(status);

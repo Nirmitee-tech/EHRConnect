@@ -307,7 +307,7 @@ export function TableView({
                     size="sm"
                     className={cn(
                       "h-8 w-8 p-0 text-xs",
-                      currentPage === pageNum && "bg-blue-600 text-white hover:bg-blue-700"
+                      currentPage === pageNum && "bg-primary text-primary-foreground hover:opacity-90"
                     )}
                     onClick={() => goToPage(pageNum)}
                   >

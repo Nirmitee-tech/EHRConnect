@@ -72,7 +72,7 @@ export function WeekView({ currentDate, appointments, onAppointmentClick }: Week
               <div
                 className={`mt-1 flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
                   isToday
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-primary text-primary-foreground'
                     : 'text-gray-900'
                 }`}
               >

@@ -116,7 +116,7 @@ export function StickyNotesSection({
               setFormData({ content: '', remarks: '' });
               setIsExpanded(true);
             }}
-            className="p-0.5 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="p-0.5 bg-primary text-primary-foreground rounded hover:opacity-90"
           >
             <Plus className="h-3 w-3" />
           </button>
@@ -245,7 +245,7 @@ export function StickyNotesSection({
               <div className="flex items-center gap-1">
                 <button
                   onClick={handleAdd}
-                  className="flex-1 px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 flex items-center justify-center gap-1"
+                  className="flex-1 px-2 py-1 bg-primary text-primary-foreground rounded text-xs hover:opacity-90 flex items-center justify-center gap-1"
                 >
                   <Save className="h-3 w-3" />
                   Add Note

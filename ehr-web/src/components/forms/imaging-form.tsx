@@ -233,7 +233,7 @@ export function ImagingForm({ patientId, patientName, onSuccess, onCancel }: Ima
         <Button
           type="submit"
           disabled={saving}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+          className="flex-1 bg-primary hover:bg-primary/80 text-white"
         >
           {saving ? (
             <>
