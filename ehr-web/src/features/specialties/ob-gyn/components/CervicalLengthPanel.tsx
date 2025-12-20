@@ -271,8 +271,15 @@ export function CervicalLengthPanel({ patientId, episodeId }: CervicalLengthPane
                     </td>
                     <td className="px-3 py-2">
                       <button
-                        onClick={() => {
-                          // Delete measurement
+                        onClick={async () => {
+                          if (m.id && window.confirm('Delete this measurement?')) {
+                            try {
+                              // Remove from local state
+                              setMeasurements(prev => prev.filter(item => item.id !== m.id));
+                            } catch (error) {
+                              console.error('Error deleting measurement:', error);
+                            }
+                          }
                         }}
                         className="text-gray-400 hover:text-red-500"
                       >
