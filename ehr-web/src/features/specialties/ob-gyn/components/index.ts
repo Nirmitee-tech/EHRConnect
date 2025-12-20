@@ -19,3 +19,15 @@ export { PostpartumCarePanel } from './PostpartumCarePanel';
 export { UltrasoundTrackingPanel } from './UltrasoundTrackingPanel';
 export { ComplicationsPanel } from './ComplicationsPanel';
 export { BabyLinkagePanel } from './BabyLinkagePanel';
+
+// Pre-pregnancy and history components
+export { PregnancyHistoryPanel } from './PregnancyHistoryPanel';
+
+// Screening and monitoring components
+export { GeneticScreeningPanel } from './GeneticScreeningPanel';
+export { LabsTrackingPanel } from './LabsTrackingPanel';
+export { FetalMovementCounter } from './FetalMovementCounter';
+
+// Planning and timeline components
+export { BirthPlanPanel } from './BirthPlanPanel';
+export { PregnancyTimelinePanel } from './PregnancyTimelinePanel';

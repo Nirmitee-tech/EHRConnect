@@ -26,11 +26,27 @@
         "componentName": "ObGynFacesheet"
       },
       {
+        "id": "pregnancy-timeline",
+        "label": "Timeline",
+        "icon": "Calendar",
+        "category": "clinical",
+        "order": 3,
+        "componentName": "PregnancyTimelinePanel"
+      },
+      {
+        "id": "pregnancy-history",
+        "label": "OB History",
+        "icon": "History",
+        "category": "clinical",
+        "order": 4,
+        "componentName": "PregnancyHistoryPanel"
+      },
+      {
         "id": "prenatal-overview",
         "label": "Prenatal Overview",
         "icon": "Heart",
         "category": "clinical",
-        "order": 3,
+        "order": 5,
         "componentName": "PrenatalOverview"
       },
       {
@@ -38,7 +54,7 @@
         "label": "Prenatal Flowsheet",
         "icon": "ClipboardList",
         "category": "clinical",
-        "order": 4,
+        "order": 6,
         "componentName": "PrenatalFlowsheet"
       },
       {
@@ -46,23 +62,55 @@
         "label": "Ultrasounds",
         "icon": "Eye",
         "category": "clinical",
-        "order": 5,
+        "order": 7,
         "componentName": "UltrasoundTrackingPanel"
+      },
+      {
+        "id": "genetics",
+        "label": "Genetic Screening",
+        "icon": "Dna",
+        "category": "clinical",
+        "order": 8,
+        "componentName": "GeneticScreeningPanel"
+      },
+      {
+        "id": "labs",
+        "label": "Labs",
+        "icon": "TestTube",
+        "category": "clinical",
+        "order": 9,
+        "componentName": "LabsTrackingPanel"
+      },
+      {
+        "id": "kick-counts",
+        "label": "Kick Counts",
+        "icon": "Activity",
+        "category": "clinical",
+        "order": 10,
+        "componentName": "FetalMovementCounter"
       },
       {
         "id": "complications",
         "label": "Complications",
         "icon": "AlertTriangle",
         "category": "clinical",
-        "order": 6,
+        "order": 11,
         "componentName": "ComplicationsPanel"
+      },
+      {
+        "id": "birth-plan",
+        "label": "Birth Plan",
+        "icon": "FileEdit",
+        "category": "clinical",
+        "order": 12,
+        "componentName": "BirthPlanPanel"
       },
       {
         "id": "labor-delivery",
         "label": "Labor & Delivery",
         "icon": "Activity",
         "category": "clinical",
-        "order": 7,
+        "order": 13,
         "componentName": "LaborDeliverySummary"
       },
       {
@@ -70,7 +118,7 @@
         "label": "Newborn Records",
         "icon": "Baby",
         "category": "clinical",
-        "order": 8,
+        "order": 14,
         "componentName": "BabyLinkagePanel"
       },
       {
@@ -78,7 +126,7 @@
         "label": "Postpartum Care",
         "icon": "Heart",
         "category": "clinical",
-        "order": 9,
+        "order": 15,
         "componentName": "PostpartumCarePanel"
       },
       {
@@ -86,7 +134,7 @@
         "label": "EPDS Screening",
         "icon": "Brain",
         "category": "clinical",
-        "order": 10,
+        "order": 16,
         "componentName": "EPDSCalculator"
       },
       {
@@ -94,21 +142,14 @@
         "label": "Medications",
         "icon": "Pill",
         "category": "clinical",
-        "order": 11
-      },
-      {
-        "id": "lab",
-        "label": "Lab Results",
-        "icon": "TestTube",
-        "category": "clinical",
-        "order": 12
+        "order": 17
       },
       {
         "id": "encounters",
         "label": "Visit Details",
         "icon": "Calendar",
         "category": "clinical",
-        "order": 13
+        "order": 18
       }
     ],
     "replaceSections": false,
@@ -136,7 +177,12 @@
     "enableEPDSScreening": true,
     "enablePostpartumCare": true,
     "enableComplicationsTracking": true,
-    "enableBabyLinkage": true
+    "enableBabyLinkage": true,
+    "enablePregnancyHistory": true,
+    "enableLabsTracking": true,
+    "enableKickCounts": true,
+    "enableBirthPlan": true,
+    "enablePregnancyTimeline": true
   },
 
   "devices": [

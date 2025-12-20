@@ -353,16 +353,166 @@ export async function getUltrasoundById(
       getAxiosConfig(headers)
     );
     return response.data.record;
-  } catch (error: any) {
-    if (error.response?.status === 404) {
+  } catch (error: unknown) {
+    if ((error as { response?: { status: number } }).response?.status === 404) {
       return null;
     }
     throw error;
   }
 }
 
+// ============================================
+// Pregnancy History APIs
+// ============================================
+
+export async function savePregnancyHistory(
+  patientId: string,
+  data: Record<string, unknown>,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/pregnancy-history`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.history;
+}
+
+export async function getPregnancyHistory(
+  patientId: string,
+  episodeId?: string,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const params = episodeId ? `?episodeId=${episodeId}` : '';
+  const response = await axios.get(
+    `${API_BASE}/api/patients/${patientId}/obgyn/pregnancy-history${params}`,
+    getAxiosConfig(headers)
+  );
+  return response.data.history;
+}
+
+// ============================================
+// Genetic Screening APIs
+// ============================================
+
+export async function saveGeneticScreening(
+  patientId: string,
+  data: Record<string, unknown>,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/genetic-screening`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.screening;
+}
+
+export async function getGeneticScreening(
+  patientId: string,
+  episodeId?: string,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const params = episodeId ? `?episodeId=${episodeId}` : '';
+  const response = await axios.get(
+    `${API_BASE}/api/patients/${patientId}/obgyn/genetic-screening${params}`,
+    getAxiosConfig(headers)
+  );
+  return response.data.screening;
+}
+
+// ============================================
+// Labs Tracking APIs
+// ============================================
+
+export async function saveLabsTracking(
+  patientId: string,
+  data: Record<string, unknown>,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/labs`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.labs;
+}
+
+export async function getLabsTracking(
+  patientId: string,
+  episodeId?: string,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const params = episodeId ? `?episodeId=${episodeId}` : '';
+  const response = await axios.get(
+    `${API_BASE}/api/patients/${patientId}/obgyn/labs${params}`,
+    getAxiosConfig(headers)
+  );
+  return response.data.labs;
+}
+
+// ============================================
+// Kick Counts APIs
+// ============================================
+
+export async function saveKickCounts(
+  patientId: string,
+  data: Record<string, unknown>,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/kick-counts`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.kickCounts;
+}
+
+export async function getKickCounts(
+  patientId: string,
+  episodeId?: string,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const params = episodeId ? `?episodeId=${episodeId}` : '';
+  const response = await axios.get(
+    `${API_BASE}/api/patients/${patientId}/obgyn/kick-counts${params}`,
+    getAxiosConfig(headers)
+  );
+  return response.data.kickCounts;
+}
+
+// ============================================
+// Birth Plan APIs
+// ============================================
+
+export async function saveBirthPlan(
+  patientId: string,
+  data: Record<string, unknown>,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/birth-plan`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.birthPlan;
+}
+
+export async function getBirthPlan(
+  patientId: string,
+  episodeId?: string,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const params = episodeId ? `?episodeId=${episodeId}` : '';
+  const response = await axios.get(
+    `${API_BASE}/api/patients/${patientId}/obgyn/birth-plan${params}`,
+    getAxiosConfig(headers)
+  );
+  return response.data.birthPlan;
+}
+
 // Export as default service object
-const obgynService = {
+export const obgynService = {
   // EPDS
   saveEPDSAssessment,
   getEPDSAssessments,
@@ -377,7 +527,22 @@ const obgynService = {
   // Ultrasound
   saveUltrasoundRecord,
   getUltrasoundRecords,
-  getUltrasoundById
+  getUltrasoundById,
+  // Pregnancy History
+  savePregnancyHistory,
+  getPregnancyHistory,
+  // Genetic Screening
+  saveGeneticScreening,
+  getGeneticScreening,
+  // Labs Tracking
+  saveLabsTracking,
+  getLabsTracking,
+  // Kick Counts
+  saveKickCounts,
+  getKickCounts,
+  // Birth Plan
+  saveBirthPlan,
+  getBirthPlan
 };
 
 export default obgynService;

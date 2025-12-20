@@ -814,6 +814,374 @@ class ObGynService {
       updatedAt: row.updated_at
     };
   }
+
+  // ============================================
+  // Pregnancy History
+  // ============================================
+
+  /**
+   * Save pregnancy history (GTPAL and prior pregnancies)
+   * @param {string} patientId - Patient ID
+   * @param {Object} data - History data
+   * @returns {Promise<Object>} Saved history
+   */
+  async savePregnancyHistory(patientId, data) {
+    const { episodeId, gtpal, priorPregnancies, riskFactors, orgId, userId } = data;
+    const id = uuidv4();
+
+    // Upsert the history record
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_pregnancy_history
+       (id, patient_id, episode_id, gtpal, prior_pregnancies, risk_factors, org_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (patient_id, COALESCE(episode_id, ''))
+       DO UPDATE SET
+         gtpal = $4,
+         prior_pregnancies = $5,
+         risk_factors = $6,
+         updated_by = $8,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [
+        id,
+        patientId,
+        episodeId,
+        JSON.stringify(gtpal),
+        JSON.stringify(priorPregnancies),
+        JSON.stringify(riskFactors),
+        orgId,
+        userId
+      ]
+    );
+
+    return this._formatPregnancyHistory(result.rows[0]);
+  }
+
+  /**
+   * Get pregnancy history for a patient
+   * @param {string} patientId - Patient ID
+   * @param {string} [episodeId] - Optional episode ID
+   * @returns {Promise<Object|null>} History or null
+   */
+  async getPregnancyHistory(patientId, episodeId = null) {
+    let query = `SELECT * FROM obgyn_pregnancy_history WHERE patient_id = $1`;
+    const params = [patientId];
+
+    if (episodeId) {
+      query += ` AND episode_id = $2`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY updated_at DESC LIMIT 1`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.length > 0 ? this._formatPregnancyHistory(result.rows[0]) : null;
+  }
+
+  _formatPregnancyHistory(row) {
+    return {
+      id: row.id,
+      patientId: row.patient_id,
+      episodeId: row.episode_id,
+      gtpal: row.gtpal ? (typeof row.gtpal === 'string' ? JSON.parse(row.gtpal) : row.gtpal) : null,
+      priorPregnancies: row.prior_pregnancies ? (typeof row.prior_pregnancies === 'string' ? JSON.parse(row.prior_pregnancies) : row.prior_pregnancies) : [],
+      riskFactors: row.risk_factors ? (typeof row.risk_factors === 'string' ? JSON.parse(row.risk_factors) : row.risk_factors) : [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  // ============================================
+  // Genetic Screening
+  // ============================================
+
+  /**
+   * Save genetic screening data
+   * @param {string} patientId - Patient ID
+   * @param {Object} data - Screening data
+   * @returns {Promise<Object>} Saved data
+   */
+  async saveGeneticScreening(patientId, data) {
+    const { episodeId, nipt, nt, invasive, carrier, counseling, orgId, userId } = data;
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_genetic_screening
+       (id, patient_id, episode_id, nipt_results, nt_results, invasive_tests, carrier_screening, counseling_sessions, org_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ON CONFLICT (patient_id, COALESCE(episode_id, ''))
+       DO UPDATE SET
+         nipt_results = $4,
+         nt_results = $5,
+         invasive_tests = $6,
+         carrier_screening = $7,
+         counseling_sessions = $8,
+         updated_by = $10,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [
+        id,
+        patientId,
+        episodeId,
+        JSON.stringify(nipt || []),
+        JSON.stringify(nt || []),
+        JSON.stringify(invasive || []),
+        JSON.stringify(carrier || []),
+        JSON.stringify(counseling || []),
+        orgId,
+        userId
+      ]
+    );
+
+    return this._formatGeneticScreening(result.rows[0]);
+  }
+
+  /**
+   * Get genetic screening for a patient
+   * @param {string} patientId - Patient ID
+   * @param {string} [episodeId] - Optional episode ID
+   * @returns {Promise<Object|null>} Screening data or null
+   */
+  async getGeneticScreening(patientId, episodeId = null) {
+    let query = `SELECT * FROM obgyn_genetic_screening WHERE patient_id = $1`;
+    const params = [patientId];
+
+    if (episodeId) {
+      query += ` AND episode_id = $2`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY updated_at DESC LIMIT 1`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.length > 0 ? this._formatGeneticScreening(result.rows[0]) : null;
+  }
+
+  _formatGeneticScreening(row) {
+    return {
+      id: row.id,
+      patientId: row.patient_id,
+      episodeId: row.episode_id,
+      nipt: row.nipt_results ? (typeof row.nipt_results === 'string' ? JSON.parse(row.nipt_results) : row.nipt_results) : [],
+      nt: row.nt_results ? (typeof row.nt_results === 'string' ? JSON.parse(row.nt_results) : row.nt_results) : [],
+      invasive: row.invasive_tests ? (typeof row.invasive_tests === 'string' ? JSON.parse(row.invasive_tests) : row.invasive_tests) : [],
+      carrier: row.carrier_screening ? (typeof row.carrier_screening === 'string' ? JSON.parse(row.carrier_screening) : row.carrier_screening) : [],
+      counseling: row.counseling_sessions ? (typeof row.counseling_sessions === 'string' ? JSON.parse(row.counseling_sessions) : row.counseling_sessions) : [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  // ============================================
+  // Labs Tracking
+  // ============================================
+
+  /**
+   * Save labs tracking data
+   * @param {string} patientId - Patient ID
+   * @param {Object} data - Labs data
+   * @returns {Promise<Object>} Saved data
+   */
+  async saveLabsTracking(patientId, data) {
+    const { episodeId, labs, glucoseLogs, orgId, userId } = data;
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_labs_tracking
+       (id, patient_id, episode_id, labs, glucose_logs, org_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (patient_id, COALESCE(episode_id, ''))
+       DO UPDATE SET
+         labs = $4,
+         glucose_logs = $5,
+         updated_by = $7,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [
+        id,
+        patientId,
+        episodeId,
+        JSON.stringify(labs || []),
+        JSON.stringify(glucoseLogs || []),
+        orgId,
+        userId
+      ]
+    );
+
+    return this._formatLabsTracking(result.rows[0]);
+  }
+
+  /**
+   * Get labs tracking for a patient
+   * @param {string} patientId - Patient ID
+   * @param {string} [episodeId] - Optional episode ID
+   * @returns {Promise<Object|null>} Labs data or null
+   */
+  async getLabsTracking(patientId, episodeId = null) {
+    let query = `SELECT * FROM obgyn_labs_tracking WHERE patient_id = $1`;
+    const params = [patientId];
+
+    if (episodeId) {
+      query += ` AND episode_id = $2`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY updated_at DESC LIMIT 1`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.length > 0 ? this._formatLabsTracking(result.rows[0]) : null;
+  }
+
+  _formatLabsTracking(row) {
+    return {
+      id: row.id,
+      patientId: row.patient_id,
+      episodeId: row.episode_id,
+      labs: row.labs ? (typeof row.labs === 'string' ? JSON.parse(row.labs) : row.labs) : [],
+      glucoseLogs: row.glucose_logs ? (typeof row.glucose_logs === 'string' ? JSON.parse(row.glucose_logs) : row.glucose_logs) : [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  // ============================================
+  // Kick Counts (Fetal Movement)
+  // ============================================
+
+  /**
+   * Save kick count sessions
+   * @param {string} patientId - Patient ID
+   * @param {Object} data - Kick count data
+   * @returns {Promise<Object>} Saved data
+   */
+  async saveKickCounts(patientId, data) {
+    const { episodeId, sessions, orgId, userId } = data;
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_kick_counts
+       (id, patient_id, episode_id, sessions, org_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (patient_id, COALESCE(episode_id, ''))
+       DO UPDATE SET
+         sessions = $4,
+         updated_by = $6,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [
+        id,
+        patientId,
+        episodeId,
+        JSON.stringify(sessions || []),
+        orgId,
+        userId
+      ]
+    );
+
+    return this._formatKickCounts(result.rows[0]);
+  }
+
+  /**
+   * Get kick counts for a patient
+   * @param {string} patientId - Patient ID
+   * @param {string} [episodeId] - Optional episode ID
+   * @returns {Promise<Object|null>} Kick count data or null
+   */
+  async getKickCounts(patientId, episodeId = null) {
+    let query = `SELECT * FROM obgyn_kick_counts WHERE patient_id = $1`;
+    const params = [patientId];
+
+    if (episodeId) {
+      query += ` AND episode_id = $2`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY updated_at DESC LIMIT 1`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.length > 0 ? this._formatKickCounts(result.rows[0]) : null;
+  }
+
+  _formatKickCounts(row) {
+    return {
+      id: row.id,
+      patientId: row.patient_id,
+      episodeId: row.episode_id,
+      sessions: row.sessions ? (typeof row.sessions === 'string' ? JSON.parse(row.sessions) : row.sessions) : [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  // ============================================
+  // Birth Plan
+  // ============================================
+
+  /**
+   * Save birth plan
+   * @param {string} patientId - Patient ID
+   * @param {Object} data - Birth plan data
+   * @returns {Promise<Object>} Saved plan
+   */
+  async saveBirthPlan(patientId, data) {
+    const { episodeId, orgId, userId, ...planData } = data;
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_birth_plans
+       (id, patient_id, episode_id, plan_data, org_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (patient_id, COALESCE(episode_id, ''))
+       DO UPDATE SET
+         plan_data = $4,
+         updated_by = $6,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [
+        id,
+        patientId,
+        episodeId,
+        JSON.stringify(planData),
+        orgId,
+        userId
+      ]
+    );
+
+    return this._formatBirthPlan(result.rows[0]);
+  }
+
+  /**
+   * Get birth plan for a patient
+   * @param {string} patientId - Patient ID
+   * @param {string} [episodeId] - Optional episode ID
+   * @returns {Promise<Object|null>} Birth plan or null
+   */
+  async getBirthPlan(patientId, episodeId = null) {
+    let query = `SELECT * FROM obgyn_birth_plans WHERE patient_id = $1`;
+    const params = [patientId];
+
+    if (episodeId) {
+      query += ` AND episode_id = $2`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY updated_at DESC LIMIT 1`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.length > 0 ? this._formatBirthPlan(result.rows[0]) : null;
+  }
+
+  _formatBirthPlan(row) {
+    const planData = row.plan_data ? (typeof row.plan_data === 'string' ? JSON.parse(row.plan_data) : row.plan_data) : {};
+    return {
+      id: row.id,
+      patientId: row.patient_id,
+      episodeId: row.episode_id,
+      ...planData,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
 }
 
 module.exports = ObGynService;

@@ -72,6 +72,39 @@ export const ObGynSpecialty: SpecialtyModule = {
         default: m.BabyLinkagePanel,
       }))
     ),
+    // Pre-pregnancy and history components
+    PregnancyHistoryPanel: lazy(() =>
+      import('./components/PregnancyHistoryPanel').then(m => ({
+        default: m.PregnancyHistoryPanel,
+      }))
+    ),
+    // Screening and monitoring components
+    GeneticScreeningPanel: lazy(() =>
+      import('./components/GeneticScreeningPanel').then(m => ({
+        default: m.GeneticScreeningPanel,
+      }))
+    ),
+    LabsTrackingPanel: lazy(() =>
+      import('./components/LabsTrackingPanel').then(m => ({
+        default: m.LabsTrackingPanel,
+      }))
+    ),
+    FetalMovementCounter: lazy(() =>
+      import('./components/FetalMovementCounter').then(m => ({
+        default: m.FetalMovementCounter,
+      }))
+    ),
+    // Planning and timeline components
+    BirthPlanPanel: lazy(() =>
+      import('./components/BirthPlanPanel').then(m => ({
+        default: m.BirthPlanPanel,
+      }))
+    ),
+    PregnancyTimelinePanel: lazy(() =>
+      import('./components/PregnancyTimelinePanel').then(m => ({
+        default: m.PregnancyTimelinePanel,
+      }))
+    ),
   },
 
   /**

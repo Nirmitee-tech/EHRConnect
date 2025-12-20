@@ -532,6 +532,326 @@ function initializeObGynRoutes(pool) {
     }
   });
 
+  // ============================================
+  // Pregnancy History
+  // ============================================
+
+  /**
+   * POST /api/patients/:patientId/obgyn/pregnancy-history
+   * Save pregnancy history (GTPAL, prior pregnancies, risk factors)
+   */
+  router.post('/patients/:patientId/obgyn/pregnancy-history', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.savePregnancyHistory(patientId, {
+        ...req.body,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        history: result
+      });
+    } catch (error) {
+      console.error('Error saving pregnancy history:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * GET /api/patients/:patientId/obgyn/pregnancy-history
+   * Get pregnancy history for a patient
+   */
+  router.get('/patients/:patientId/obgyn/pregnancy-history', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { episodeId } = req.query;
+
+      const history = await obgynService.getPregnancyHistory(patientId, episodeId);
+
+      return res.json({
+        success: true,
+        history
+      });
+    } catch (error) {
+      console.error('Error fetching pregnancy history:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
+  // Genetic Screening
+  // ============================================
+
+  /**
+   * POST /api/patients/:patientId/obgyn/genetic-screening
+   * Save genetic screening data
+   */
+  router.post('/patients/:patientId/obgyn/genetic-screening', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.saveGeneticScreening(patientId, {
+        ...req.body,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        screening: result
+      });
+    } catch (error) {
+      console.error('Error saving genetic screening:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * GET /api/patients/:patientId/obgyn/genetic-screening
+   * Get genetic screening for a patient
+   */
+  router.get('/patients/:patientId/obgyn/genetic-screening', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { episodeId } = req.query;
+
+      const screening = await obgynService.getGeneticScreening(patientId, episodeId);
+
+      return res.json({
+        success: true,
+        screening
+      });
+    } catch (error) {
+      console.error('Error fetching genetic screening:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
+  // Labs Tracking
+  // ============================================
+
+  /**
+   * POST /api/patients/:patientId/obgyn/labs
+   * Save labs tracking data
+   */
+  router.post('/patients/:patientId/obgyn/labs', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.saveLabsTracking(patientId, {
+        ...req.body,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        labs: result
+      });
+    } catch (error) {
+      console.error('Error saving labs tracking:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * GET /api/patients/:patientId/obgyn/labs
+   * Get labs tracking for a patient
+   */
+  router.get('/patients/:patientId/obgyn/labs', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { episodeId } = req.query;
+
+      const labs = await obgynService.getLabsTracking(patientId, episodeId);
+
+      return res.json({
+        success: true,
+        labs
+      });
+    } catch (error) {
+      console.error('Error fetching labs tracking:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
+  // Kick Counts (Fetal Movement)
+  // ============================================
+
+  /**
+   * POST /api/patients/:patientId/obgyn/kick-counts
+   * Save kick count sessions
+   */
+  router.post('/patients/:patientId/obgyn/kick-counts', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.saveKickCounts(patientId, {
+        ...req.body,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        kickCounts: result
+      });
+    } catch (error) {
+      console.error('Error saving kick counts:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * GET /api/patients/:patientId/obgyn/kick-counts
+   * Get kick counts for a patient
+   */
+  router.get('/patients/:patientId/obgyn/kick-counts', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { episodeId } = req.query;
+
+      const kickCounts = await obgynService.getKickCounts(patientId, episodeId);
+
+      return res.json({
+        success: true,
+        kickCounts
+      });
+    } catch (error) {
+      console.error('Error fetching kick counts:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
+  // Birth Plan
+  // ============================================
+
+  /**
+   * POST /api/patients/:patientId/obgyn/birth-plan
+   * Save birth plan
+   */
+  router.post('/patients/:patientId/obgyn/birth-plan', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.saveBirthPlan(patientId, {
+        ...req.body,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        birthPlan: result
+      });
+    } catch (error) {
+      console.error('Error saving birth plan:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * GET /api/patients/:patientId/obgyn/birth-plan
+   * Get birth plan for a patient
+   */
+  router.get('/patients/:patientId/obgyn/birth-plan', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { episodeId } = req.query;
+
+      const birthPlan = await obgynService.getBirthPlan(patientId, episodeId);
+
+      return res.json({
+        success: true,
+        birthPlan
+      });
+    } catch (error) {
+      console.error('Error fetching birth plan:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   return router;
 }
 

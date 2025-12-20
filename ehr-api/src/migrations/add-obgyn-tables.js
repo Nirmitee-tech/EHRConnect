@@ -221,6 +221,113 @@ async function up() {
 
     console.log('✅ Created obgyn_baby_records table');
 
+    // Pregnancy History Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS obgyn_pregnancy_history (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        patient_id VARCHAR(255) NOT NULL,
+        episode_id UUID REFERENCES patient_specialty_episodes(id),
+        gtpal JSONB,
+        prior_pregnancies JSONB DEFAULT '[]',
+        risk_factors JSONB DEFAULT '[]',
+        org_id UUID NOT NULL,
+        created_by VARCHAR(255),
+        updated_by VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(patient_id, COALESCE(episode_id, '00000000-0000-0000-0000-000000000000'::uuid))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_preg_history_patient ON obgyn_pregnancy_history(patient_id);
+    `);
+
+    console.log('✅ Created obgyn_pregnancy_history table');
+
+    // Genetic Screening Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS obgyn_genetic_screening (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        patient_id VARCHAR(255) NOT NULL,
+        episode_id UUID REFERENCES patient_specialty_episodes(id),
+        nipt_results JSONB DEFAULT '[]',
+        nt_results JSONB DEFAULT '[]',
+        invasive_tests JSONB DEFAULT '[]',
+        carrier_screening JSONB DEFAULT '[]',
+        counseling_sessions JSONB DEFAULT '[]',
+        org_id UUID NOT NULL,
+        created_by VARCHAR(255),
+        updated_by VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(patient_id, COALESCE(episode_id, '00000000-0000-0000-0000-000000000000'::uuid))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_genetic_patient ON obgyn_genetic_screening(patient_id);
+    `);
+
+    console.log('✅ Created obgyn_genetic_screening table');
+
+    // Labs Tracking Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS obgyn_labs_tracking (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        patient_id VARCHAR(255) NOT NULL,
+        episode_id UUID REFERENCES patient_specialty_episodes(id),
+        labs JSONB DEFAULT '[]',
+        glucose_logs JSONB DEFAULT '[]',
+        org_id UUID NOT NULL,
+        created_by VARCHAR(255),
+        updated_by VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(patient_id, COALESCE(episode_id, '00000000-0000-0000-0000-000000000000'::uuid))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_labs_patient ON obgyn_labs_tracking(patient_id);
+    `);
+
+    console.log('✅ Created obgyn_labs_tracking table');
+
+    // Kick Counts Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS obgyn_kick_counts (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        patient_id VARCHAR(255) NOT NULL,
+        episode_id UUID REFERENCES patient_specialty_episodes(id),
+        sessions JSONB DEFAULT '[]',
+        org_id UUID NOT NULL,
+        created_by VARCHAR(255),
+        updated_by VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(patient_id, COALESCE(episode_id, '00000000-0000-0000-0000-000000000000'::uuid))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_kicks_patient ON obgyn_kick_counts(patient_id);
+    `);
+
+    console.log('✅ Created obgyn_kick_counts table');
+
+    // Birth Plans Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS obgyn_birth_plans (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        patient_id VARCHAR(255) NOT NULL,
+        episode_id UUID REFERENCES patient_specialty_episodes(id),
+        plan_data JSONB NOT NULL,
+        org_id UUID NOT NULL,
+        created_by VARCHAR(255),
+        updated_by VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(patient_id, COALESCE(episode_id, '00000000-0000-0000-0000-000000000000'::uuid))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_birthplan_patient ON obgyn_birth_plans(patient_id);
+    `);
+
+    console.log('✅ Created obgyn_birth_plans table');
+
     await client.query('COMMIT');
     console.log('✅ Migration completed successfully');
   } catch (error) {
@@ -238,6 +345,11 @@ async function down() {
   try {
     await client.query('BEGIN');
 
+    await client.query('DROP TABLE IF EXISTS obgyn_birth_plans CASCADE');
+    await client.query('DROP TABLE IF EXISTS obgyn_kick_counts CASCADE');
+    await client.query('DROP TABLE IF EXISTS obgyn_labs_tracking CASCADE');
+    await client.query('DROP TABLE IF EXISTS obgyn_genetic_screening CASCADE');
+    await client.query('DROP TABLE IF EXISTS obgyn_pregnancy_history CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_baby_records CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_complications CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_ultrasound_records CASCADE');
