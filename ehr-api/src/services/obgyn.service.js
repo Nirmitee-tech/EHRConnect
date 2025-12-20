@@ -557,6 +557,263 @@ class ObGynService {
       updatedAt: row.updated_at
     };
   }
+
+  // ============================================
+  // Complications
+  // ============================================
+
+  /**
+   * Save complication record
+   * @param {Object} data - Complication data
+   * @returns {Promise<Object>} Saved record
+   */
+  async saveComplication(data) {
+    const {
+      patientId,
+      episodeId,
+      type,
+      severity,
+      detectedAt,
+      detectedDate,
+      status,
+      description,
+      actionsTaken,
+      supportServices,
+      notes,
+      recordedBy,
+      orgId
+    } = data;
+
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_complications
+       (id, patient_id, episode_id, type, severity, detected_at, detected_date,
+        status, description, actions_taken, support_services, notes, recorded_by, org_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+       RETURNING *`,
+      [
+        id,
+        patientId,
+        episodeId,
+        type,
+        severity,
+        detectedAt,
+        detectedDate,
+        status,
+        description,
+        actionsTaken ? JSON.stringify(actionsTaken) : '[]',
+        supportServices ? JSON.stringify(supportServices) : '[]',
+        notes,
+        recordedBy,
+        orgId
+      ]
+    );
+
+    return this._formatComplication(result.rows[0]);
+  }
+
+  /**
+   * Get complications for a patient/episode
+   * @param {string} patientId - Patient ID
+   * @param {string} [episodeId] - Optional episode ID filter
+   * @returns {Promise<Array>} Complications
+   */
+  async getComplications(patientId, episodeId = null) {
+    let query = `SELECT * FROM obgyn_complications WHERE patient_id = $1`;
+    const params = [patientId];
+
+    if (episodeId) {
+      query += ` AND episode_id = $2`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY detected_date DESC`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.map(row => this._formatComplication(row));
+  }
+
+  /**
+   * Update complication status
+   * @param {string} complicationId - Complication ID
+   * @param {Object} updates - Updates to apply
+   * @param {string} updatedBy - User ID
+   * @returns {Promise<Object>} Updated complication
+   */
+  async updateComplication(complicationId, updates, updatedBy) {
+    const { status, actionsTaken, notes } = updates;
+
+    const result = await this.pool.query(
+      `UPDATE obgyn_complications
+       SET status = COALESCE($2, status),
+           actions_taken = COALESCE($3, actions_taken),
+           notes = COALESCE($4, notes),
+           updated_by = $5,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING *`,
+      [
+        complicationId,
+        status,
+        actionsTaken ? JSON.stringify(actionsTaken) : null,
+        notes,
+        updatedBy
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error(`Complication not found: ${complicationId}`);
+    }
+
+    return this._formatComplication(result.rows[0]);
+  }
+
+  _formatComplication(row) {
+    return {
+      id: row.id,
+      patientId: row.patient_id,
+      episodeId: row.episode_id,
+      type: row.type,
+      severity: row.severity,
+      detectedAt: row.detected_at,
+      detectedDate: row.detected_date,
+      status: row.status,
+      description: row.description,
+      actionsTaken: row.actions_taken ? (typeof row.actions_taken === 'string' ? JSON.parse(row.actions_taken) : row.actions_taken) : [],
+      supportServices: row.support_services ? (typeof row.support_services === 'string' ? JSON.parse(row.support_services) : row.support_services) : [],
+      notes: row.notes,
+      recordedBy: row.recorded_by,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  // ============================================
+  // Baby Records
+  // ============================================
+
+  /**
+   * Save baby record
+   * @param {Object} data - Baby data
+   * @returns {Promise<Object>} Saved record
+   */
+  async saveBabyRecord(data) {
+    const {
+      maternalPatientId,
+      deliveryEncounterId,
+      episodeId,
+      birthOrder,
+      sex,
+      birthDateTime,
+      gestationalAgeAtBirth,
+      birthWeight,
+      birthLength,
+      headCircumference,
+      apgarScores,
+      resuscitation,
+      cordBlood,
+      skinToSkin,
+      breastfeedingInitiated,
+      vitaminK,
+      eyeProphylaxis,
+      nicuAdmission,
+      twinType,
+      tttsStatus,
+      createdBy,
+      orgId
+    } = data;
+
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_baby_records
+       (id, maternal_patient_id, delivery_encounter_id, episode_id, birth_order,
+        sex, birth_datetime, gestational_age_at_birth, birth_weight, birth_length,
+        head_circumference, apgar_scores, resuscitation, cord_blood, skin_to_skin,
+        breastfeeding_initiated, vitamin_k, eye_prophylaxis, nicu_admission,
+        twin_type, ttts_status, created_by, org_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+       RETURNING *`,
+      [
+        id,
+        maternalPatientId,
+        deliveryEncounterId,
+        episodeId,
+        birthOrder,
+        sex,
+        birthDateTime,
+        gestationalAgeAtBirth,
+        birthWeight,
+        birthLength,
+        headCircumference,
+        apgarScores ? JSON.stringify(apgarScores) : null,
+        resuscitation,
+        cordBlood,
+        skinToSkin,
+        breastfeedingInitiated,
+        vitaminK,
+        eyeProphylaxis,
+        nicuAdmission ? JSON.stringify(nicuAdmission) : null,
+        twinType,
+        tttsStatus,
+        createdBy,
+        orgId
+      ]
+    );
+
+    return this._formatBabyRecord(result.rows[0]);
+  }
+
+  /**
+   * Get baby records for a maternal patient
+   * @param {string} maternalPatientId - Maternal patient ID
+   * @param {string} [episodeId] - Optional episode ID filter
+   * @returns {Promise<Array>} Baby records
+   */
+  async getBabyRecords(maternalPatientId, episodeId = null) {
+    let query = `SELECT * FROM obgyn_baby_records WHERE maternal_patient_id = $1`;
+    const params = [maternalPatientId];
+
+    if (episodeId) {
+      query += ` AND episode_id = $2`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY birth_order ASC`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.map(row => this._formatBabyRecord(row));
+  }
+
+  _formatBabyRecord(row) {
+    return {
+      id: row.id,
+      maternalPatientId: row.maternal_patient_id,
+      deliveryEncounterId: row.delivery_encounter_id,
+      episodeId: row.episode_id,
+      birthOrder: row.birth_order,
+      sex: row.sex,
+      birthDateTime: row.birth_datetime,
+      gestationalAgeAtBirth: row.gestational_age_at_birth,
+      birthWeight: row.birth_weight,
+      birthLength: row.birth_length,
+      headCircumference: row.head_circumference,
+      apgarScores: row.apgar_scores ? (typeof row.apgar_scores === 'string' ? JSON.parse(row.apgar_scores) : row.apgar_scores) : null,
+      resuscitation: row.resuscitation,
+      cordBlood: row.cord_blood,
+      skinToSkin: row.skin_to_skin,
+      breastfeedingInitiated: row.breastfeeding_initiated,
+      vitaminK: row.vitamin_k,
+      eyeProphylaxis: row.eye_prophylaxis,
+      nicuAdmission: row.nicu_admission ? (typeof row.nicu_admission === 'string' ? JSON.parse(row.nicu_admission) : row.nicu_admission) : null,
+      twinType: row.twin_type,
+      tttsStatus: row.ttts_status,
+      createdBy: row.created_by,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
 }
 
 module.exports = ObGynService;

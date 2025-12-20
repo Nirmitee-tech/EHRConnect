@@ -50,19 +50,35 @@
         "componentName": "UltrasoundTrackingPanel"
       },
       {
+        "id": "complications",
+        "label": "Complications",
+        "icon": "AlertTriangle",
+        "category": "clinical",
+        "order": 6,
+        "componentName": "ComplicationsPanel"
+      },
+      {
         "id": "labor-delivery",
         "label": "Labor & Delivery",
         "icon": "Activity",
         "category": "clinical",
-        "order": 6,
+        "order": 7,
         "componentName": "LaborDeliverySummary"
+      },
+      {
+        "id": "newborn-records",
+        "label": "Newborn Records",
+        "icon": "Baby",
+        "category": "clinical",
+        "order": 8,
+        "componentName": "BabyLinkagePanel"
       },
       {
         "id": "postpartum",
         "label": "Postpartum Care",
-        "icon": "Baby",
+        "icon": "Heart",
         "category": "clinical",
-        "order": 7,
+        "order": 9,
         "componentName": "PostpartumCarePanel"
       },
       {
@@ -70,7 +86,7 @@
         "label": "EPDS Screening",
         "icon": "Brain",
         "category": "clinical",
-        "order": 8,
+        "order": 10,
         "componentName": "EPDSCalculator"
       },
       {
@@ -78,21 +94,21 @@
         "label": "Medications",
         "icon": "Pill",
         "category": "clinical",
-        "order": 9
+        "order": 11
       },
       {
         "id": "lab",
         "label": "Lab Results",
         "icon": "TestTube",
         "category": "clinical",
-        "order": 10
+        "order": 12
       },
       {
         "id": "encounters",
         "label": "Visit Details",
         "icon": "Calendar",
         "category": "clinical",
-        "order": 11
+        "order": 13
       }
     ],
     "replaceSections": false,
@@ -116,9 +132,11 @@
     "enableHighRiskPregnancy": true,
     "enableFetalMonitoring": true,
     "enableGeneticScreening": true,
-    "enableTTTSMonitoring": false,
+    "enableTTTSMonitoring": true,
     "enableEPDSScreening": true,
-    "enablePostpartumCare": true
+    "enablePostpartumCare": true,
+    "enableComplicationsTracking": true,
+    "enableBabyLinkage": true
   },
 
   "devices": [

@@ -369,6 +369,169 @@ function initializeObGynRoutes(pool) {
     }
   });
 
+  // ============================================
+  // Complications
+  // ============================================
+
+  /**
+   * POST /api/patients/:patientId/obgyn/complications
+   * Save complication record
+   */
+  router.post('/patients/:patientId/obgyn/complications', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.saveComplication({
+        ...req.body,
+        patientId,
+        recordedBy: userId,
+        orgId
+      });
+
+      return res.status(201).json({
+        success: true,
+        complication: result
+      });
+    } catch (error) {
+      console.error('Error saving complication:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * GET /api/patients/:patientId/obgyn/complications
+   * Get complications for a patient
+   */
+  router.get('/patients/:patientId/obgyn/complications', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { episodeId } = req.query;
+
+      const complications = await obgynService.getComplications(patientId, episodeId);
+
+      return res.json({
+        success: true,
+        complications,
+        count: complications.length
+      });
+    } catch (error) {
+      console.error('Error fetching complications:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * PATCH /api/patients/:patientId/obgyn/complications/:complicationId
+   * Update complication
+   */
+  router.patch('/patients/:patientId/obgyn/complications/:complicationId', async (req, res) => {
+    try {
+      const { complicationId } = req.params;
+      const userId = req.headers['x-user-id'];
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required header: x-user-id'
+        });
+      }
+
+      const result = await obgynService.updateComplication(complicationId, req.body, userId);
+
+      return res.json({
+        success: true,
+        complication: result
+      });
+    } catch (error) {
+      console.error('Error updating complication:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
+  // Baby Records
+  // ============================================
+
+  /**
+   * POST /api/patients/:patientId/obgyn/babies
+   * Save baby record
+   */
+  router.post('/patients/:patientId/obgyn/babies', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.saveBabyRecord({
+        ...req.body,
+        maternalPatientId: patientId,
+        createdBy: userId,
+        orgId
+      });
+
+      return res.status(201).json({
+        success: true,
+        baby: result
+      });
+    } catch (error) {
+      console.error('Error saving baby record:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * GET /api/patients/:patientId/obgyn/babies
+   * Get baby records for a maternal patient
+   */
+  router.get('/patients/:patientId/obgyn/babies', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { episodeId } = req.query;
+
+      const babies = await obgynService.getBabyRecords(patientId, episodeId);
+
+      return res.json({
+        success: true,
+        babies,
+        count: babies.length
+      });
+    } catch (error) {
+      console.error('Error fetching baby records:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   return router;
 }
 

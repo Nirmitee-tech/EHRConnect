@@ -12,8 +12,10 @@ export { PrenatalVisitDialog } from './PrenatalVisitDialog';
 export { PrenatalVisitsList } from './PrenatalVisitsList';
 export { ObGynFacesheet } from './ObGynFacesheet';
 
-// New specialty components
+// Clinical workflow components
 export { EPDSCalculator } from './EPDSCalculator';
 export { LaborDeliverySummary } from './LaborDeliverySummary';
 export { PostpartumCarePanel } from './PostpartumCarePanel';
 export { UltrasoundTrackingPanel } from './UltrasoundTrackingPanel';
+export { ComplicationsPanel } from './ComplicationsPanel';
+export { BabyLinkagePanel } from './BabyLinkagePanel';

@@ -152,6 +152,75 @@ async function up() {
 
     console.log('✅ Created obgyn_ultrasound_records table');
 
+    // Complications Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS obgyn_complications (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        patient_id VARCHAR(255) NOT NULL,
+        episode_id UUID REFERENCES patient_specialty_episodes(id),
+        type VARCHAR(50) NOT NULL,
+        severity VARCHAR(20) NOT NULL CHECK (severity IN ('mild', 'moderate', 'severe', 'critical')),
+        detected_at VARCHAR(20),
+        detected_date DATE NOT NULL,
+        status VARCHAR(20) NOT NULL CHECK (status IN ('active', 'monitoring', 'resolved', 'resultedInLoss')),
+        description TEXT,
+        actions_taken JSONB DEFAULT '[]',
+        support_services JSONB DEFAULT '[]',
+        notes TEXT,
+        recorded_by VARCHAR(255) NOT NULL,
+        updated_by VARCHAR(255),
+        org_id UUID NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_complications_patient ON obgyn_complications(patient_id);
+      CREATE INDEX IF NOT EXISTS idx_complications_episode ON obgyn_complications(episode_id);
+      CREATE INDEX IF NOT EXISTS idx_complications_type ON obgyn_complications(type);
+      CREATE INDEX IF NOT EXISTS idx_complications_status ON obgyn_complications(status);
+      CREATE INDEX IF NOT EXISTS idx_complications_active ON obgyn_complications(status) WHERE status IN ('active', 'monitoring');
+    `);
+
+    console.log('✅ Created obgyn_complications table');
+
+    // Baby Records Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS obgyn_baby_records (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        maternal_patient_id VARCHAR(255) NOT NULL,
+        delivery_encounter_id VARCHAR(255),
+        episode_id UUID REFERENCES patient_specialty_episodes(id),
+        birth_order CHAR(1) NOT NULL CHECK (birth_order IN ('A', 'B', 'C', 'D')),
+        sex VARCHAR(10) NOT NULL CHECK (sex IN ('Male', 'Female', 'Unknown')),
+        birth_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+        gestational_age_at_birth VARCHAR(20),
+        birth_weight INTEGER NOT NULL,
+        birth_length INTEGER,
+        head_circumference INTEGER,
+        apgar_scores JSONB,
+        resuscitation VARCHAR(50) CHECK (resuscitation IN ('None', 'Stimulation', 'PPV', 'Intubation', 'CPR')),
+        cord_blood BOOLEAN DEFAULT FALSE,
+        skin_to_skin BOOLEAN DEFAULT FALSE,
+        breastfeeding_initiated BOOLEAN DEFAULT FALSE,
+        vitamin_k BOOLEAN DEFAULT FALSE,
+        eye_prophylaxis BOOLEAN DEFAULT FALSE,
+        nicu_admission JSONB,
+        twin_type VARCHAR(50),
+        ttts_status VARCHAR(20) CHECK (ttts_status IN ('None', 'Recipient', 'Donor') OR ttts_status IS NULL),
+        created_by VARCHAR(255) NOT NULL,
+        org_id UUID NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_baby_maternal ON obgyn_baby_records(maternal_patient_id);
+      CREATE INDEX IF NOT EXISTS idx_baby_episode ON obgyn_baby_records(episode_id);
+      CREATE INDEX IF NOT EXISTS idx_baby_encounter ON obgyn_baby_records(delivery_encounter_id);
+      CREATE INDEX IF NOT EXISTS idx_baby_nicu ON obgyn_baby_records((nicu_admission->>'required')) WHERE (nicu_admission->>'required')::boolean = true;
+    `);
+
+    console.log('✅ Created obgyn_baby_records table');
+
     await client.query('COMMIT');
     console.log('✅ Migration completed successfully');
   } catch (error) {
@@ -169,6 +238,8 @@ async function down() {
   try {
     await client.query('BEGIN');
 
+    await client.query('DROP TABLE IF EXISTS obgyn_baby_records CASCADE');
+    await client.query('DROP TABLE IF EXISTS obgyn_complications CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_ultrasound_records CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_postpartum_visits CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_labor_delivery_records CASCADE');
