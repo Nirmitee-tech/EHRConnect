@@ -1172,6 +1172,225 @@ function initializeObGynRoutes(pool) {
     }
   });
 
+  // ============================================
+  // IVF Cycles
+  // ============================================
+
+  /**
+   * GET /api/patients/:patientId/obgyn/ivf-cycles
+   * Get IVF cycles for a patient
+   */
+  router.get('/patients/:patientId/obgyn/ivf-cycles', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { episodeId } = req.query;
+
+      const cycles = await obgynService.getIVFCycles(patientId, episodeId);
+
+      return res.json({
+        success: true,
+        cycles
+      });
+    } catch (error) {
+      console.error('Error fetching IVF cycles:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * POST /api/patients/:patientId/obgyn/ivf-cycles
+   * Create a new IVF cycle
+   */
+  router.post('/patients/:patientId/obgyn/ivf-cycles', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.createIVFCycle(patientId, {
+        ...req.body,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        cycle: result
+      });
+    } catch (error) {
+      console.error('Error creating IVF cycle:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * PATCH /api/patients/:patientId/obgyn/ivf-cycles/:cycleId
+   * Update an IVF cycle
+   */
+  router.patch('/patients/:patientId/obgyn/ivf-cycles/:cycleId', async (req, res) => {
+    try {
+      const { cycleId } = req.params;
+      const userId = req.headers['x-user-id'];
+
+      const result = await obgynService.updateIVFCycle(cycleId, {
+        ...req.body,
+        userId
+      });
+
+      return res.json({
+        success: true,
+        cycle: result
+      });
+    } catch (error) {
+      console.error('Error updating IVF cycle:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
+  // Cervical Length
+  // ============================================
+
+  /**
+   * GET /api/patients/:patientId/obgyn/cervical-length
+   * Get cervical length measurements
+   */
+  router.get('/patients/:patientId/obgyn/cervical-length', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { episodeId } = req.query;
+
+      const measurements = await obgynService.getCervicalLengths(patientId, episodeId);
+
+      return res.json({
+        success: true,
+        measurements
+      });
+    } catch (error) {
+      console.error('Error fetching cervical lengths:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * POST /api/patients/:patientId/obgyn/cervical-length
+   * Save a cervical length measurement
+   */
+  router.post('/patients/:patientId/obgyn/cervical-length', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.saveCervicalLength(patientId, {
+        ...req.body,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        measurement: result
+      });
+    } catch (error) {
+      console.error('Error saving cervical length:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
+  // Patient Education
+  // ============================================
+
+  /**
+   * GET /api/patients/:patientId/obgyn/education
+   * Get patient education records
+   */
+  router.get('/patients/:patientId/obgyn/education', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { episodeId } = req.query;
+
+      const records = await obgynService.getPatientEducation(patientId, episodeId);
+
+      return res.json({
+        success: true,
+        records
+      });
+    } catch (error) {
+      console.error('Error fetching patient education:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * POST /api/patients/:patientId/obgyn/education
+   * Save patient education record
+   */
+  router.post('/patients/:patientId/obgyn/education', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.savePatientEducation(patientId, {
+        ...req.body,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        record: result
+      });
+    } catch (error) {
+      console.error('Error saving patient education:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   return router;
 }
 

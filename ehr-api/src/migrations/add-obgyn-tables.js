@@ -429,6 +429,90 @@ async function up() {
 
     console.log('✅ Created obgyn_consents table');
 
+    // IVF Cycles Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS obgyn_ivf_cycles (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        patient_id VARCHAR(255) NOT NULL,
+        episode_id UUID REFERENCES patient_specialty_episodes(id),
+        cycle_type VARCHAR(50) NOT NULL CHECK (cycle_type IN ('fresh_ivf', 'fet', 'egg_freezing', 'pgt_cycle')),
+        protocol_type VARCHAR(50) CHECK (protocol_type IN ('antagonist', 'long_lupron', 'microdose_flare', 'mild', 'natural')),
+        status VARCHAR(50) NOT NULL CHECK (status IN ('active', 'cancelled', 'completed', 'frozen')),
+        start_date DATE NOT NULL,
+        donor_cycle BOOLEAN DEFAULT FALSE,
+        baseline JSONB,
+        semen_analysis JSONB,
+        medications JSONB DEFAULT '[]',
+        retrieval_date DATE,
+        oocytes_retrieved INTEGER,
+        mature_oocytes INTEGER,
+        embryos JSONB DEFAULT '[]',
+        monitoring_visits JSONB DEFAULT '[]',
+        transfers JSONB DEFAULT '[]',
+        cryo_storage JSONB DEFAULT '[]',
+        outcome JSONB,
+        org_id UUID NOT NULL,
+        created_by VARCHAR(255),
+        updated_by VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_ivf_patient ON obgyn_ivf_cycles(patient_id);
+      CREATE INDEX IF NOT EXISTS idx_ivf_episode ON obgyn_ivf_cycles(episode_id);
+      CREATE INDEX IF NOT EXISTS idx_ivf_status ON obgyn_ivf_cycles(status);
+    `);
+
+    console.log('✅ Created obgyn_ivf_cycles table');
+
+    // Cervical Length Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS obgyn_cervical_length (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        patient_id VARCHAR(255) NOT NULL,
+        episode_id UUID REFERENCES patient_specialty_episodes(id),
+        date DATE NOT NULL,
+        gestational_age VARCHAR(20),
+        length DECIMAL(5,2) NOT NULL,
+        method VARCHAR(50) CHECK (method IN ('transvaginal', 'transabdominal', 'translabial')),
+        funneling BOOLEAN DEFAULT FALSE,
+        funneling_length DECIMAL(5,2),
+        internal_os_open BOOLEAN DEFAULT FALSE,
+        notes TEXT,
+        org_id UUID NOT NULL,
+        created_by VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_cervical_patient ON obgyn_cervical_length(patient_id);
+      CREATE INDEX IF NOT EXISTS idx_cervical_episode ON obgyn_cervical_length(episode_id);
+      CREATE INDEX IF NOT EXISTS idx_cervical_date ON obgyn_cervical_length(date);
+    `);
+
+    console.log('✅ Created obgyn_cervical_length table');
+
+    // Patient Education Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS obgyn_patient_education (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        patient_id VARCHAR(255) NOT NULL,
+        episode_id UUID REFERENCES patient_specialty_episodes(id),
+        module_id VARCHAR(100) NOT NULL,
+        completed BOOLEAN DEFAULT FALSE,
+        completed_date TIMESTAMP WITH TIME ZONE,
+        org_id UUID NOT NULL,
+        created_by VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(patient_id, module_id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_education_patient ON obgyn_patient_education(patient_id);
+      CREATE INDEX IF NOT EXISTS idx_education_module ON obgyn_patient_education(module_id);
+    `);
+
+    console.log('✅ Created obgyn_patient_education table');
+
     await client.query('COMMIT');
     console.log('✅ Migration completed successfully');
   } catch (error) {
@@ -446,6 +530,9 @@ async function down() {
   try {
     await client.query('BEGIN');
 
+    await client.query('DROP TABLE IF EXISTS obgyn_patient_education CASCADE');
+    await client.query('DROP TABLE IF EXISTS obgyn_cervical_length CASCADE');
+    await client.query('DROP TABLE IF EXISTS obgyn_ivf_cycles CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_consents CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_medications CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_risk_assessments CASCADE');

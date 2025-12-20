@@ -38,3 +38,12 @@ export { NSTBPPPanel } from './NSTBPPPanel';
 export { RiskAssessmentPanel } from './RiskAssessmentPanel';
 export { MedicationReviewPanel } from './MedicationReviewPanel';
 export { ConsentManagementPanel } from './ConsentManagementPanel';
+
+// Fertility/IVF components
+export { IVFCaseSheet } from './IVFCaseSheet';
+
+// Preterm risk monitoring
+export { CervicalLengthPanel } from './CervicalLengthPanel';
+
+// Patient education tracking
+export { PatientEducationPanel } from './PatientEducationPanel';

@@ -1530,6 +1530,364 @@ class ObGynService {
       updatedAt: row.updated_at
     };
   }
+
+  // ============================================
+  // IVF Cycles
+  // ============================================
+
+  /**
+   * Get IVF cycles for a patient
+   * @param {string} patientId - Patient ID
+   * @param {string} [episodeId] - Optional episode ID
+   * @returns {Promise<Array>} IVF cycles
+   */
+  async getIVFCycles(patientId, episodeId = null) {
+    let query = `SELECT * FROM obgyn_ivf_cycles WHERE patient_id = $1`;
+    const params = [patientId];
+
+    if (episodeId) {
+      query += ` AND episode_id = $2`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY start_date DESC`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.map(row => this._formatIVFCycle(row));
+  }
+
+  /**
+   * Create a new IVF cycle
+   * @param {string} patientId - Patient ID
+   * @param {Object} data - Cycle data
+   * @returns {Promise<Object>} Created cycle
+   */
+  async createIVFCycle(patientId, data) {
+    const id = uuidv4();
+    const {
+      episodeId,
+      cycleType,
+      protocolType,
+      status,
+      startDate,
+      donorCycle,
+      baseline,
+      semenAnalysis,
+      medications,
+      retrievalDate,
+      oocytesRetrieved,
+      matureOocytes,
+      embryos,
+      monitoringVisits,
+      transfers,
+      cryoStorage,
+      outcome,
+      orgId,
+      userId
+    } = data;
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_ivf_cycles
+       (id, patient_id, episode_id, cycle_type, protocol_type, status, start_date,
+        donor_cycle, baseline, semen_analysis, medications, retrieval_date,
+        oocytes_retrieved, mature_oocytes, embryos, monitoring_visits, transfers,
+        cryo_storage, outcome, org_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+       RETURNING *`,
+      [
+        id,
+        patientId,
+        episodeId,
+        cycleType,
+        protocolType,
+        status || 'active',
+        startDate,
+        donorCycle || false,
+        baseline ? JSON.stringify(baseline) : null,
+        semenAnalysis ? JSON.stringify(semenAnalysis) : null,
+        medications ? JSON.stringify(medications) : null,
+        retrievalDate,
+        oocytesRetrieved,
+        matureOocytes,
+        embryos ? JSON.stringify(embryos) : null,
+        monitoringVisits ? JSON.stringify(monitoringVisits) : null,
+        transfers ? JSON.stringify(transfers) : null,
+        cryoStorage ? JSON.stringify(cryoStorage) : null,
+        outcome ? JSON.stringify(outcome) : null,
+        orgId,
+        userId
+      ]
+    );
+
+    return this._formatIVFCycle(result.rows[0]);
+  }
+
+  /**
+   * Update an IVF cycle
+   * @param {string} cycleId - Cycle ID
+   * @param {Object} updates - Updates to apply
+   * @returns {Promise<Object>} Updated cycle
+   */
+  async updateIVFCycle(cycleId, updates) {
+    const {
+      cycleType,
+      protocolType,
+      status,
+      startDate,
+      donorCycle,
+      baseline,
+      semenAnalysis,
+      medications,
+      retrievalDate,
+      oocytesRetrieved,
+      matureOocytes,
+      embryos,
+      monitoringVisits,
+      transfers,
+      cryoStorage,
+      outcome,
+      userId
+    } = updates;
+
+    const result = await this.pool.query(
+      `UPDATE obgyn_ivf_cycles SET
+        cycle_type = COALESCE($1, cycle_type),
+        protocol_type = COALESCE($2, protocol_type),
+        status = COALESCE($3, status),
+        start_date = COALESCE($4, start_date),
+        donor_cycle = COALESCE($5, donor_cycle),
+        baseline = COALESCE($6, baseline),
+        semen_analysis = COALESCE($7, semen_analysis),
+        medications = COALESCE($8, medications),
+        retrieval_date = COALESCE($9, retrieval_date),
+        oocytes_retrieved = COALESCE($10, oocytes_retrieved),
+        mature_oocytes = COALESCE($11, mature_oocytes),
+        embryos = COALESCE($12, embryos),
+        monitoring_visits = COALESCE($13, monitoring_visits),
+        transfers = COALESCE($14, transfers),
+        cryo_storage = COALESCE($15, cryo_storage),
+        outcome = COALESCE($16, outcome),
+        updated_by = $17,
+        updated_at = CURRENT_TIMESTAMP
+       WHERE id = $18
+       RETURNING *`,
+      [
+        cycleType,
+        protocolType,
+        status,
+        startDate,
+        donorCycle,
+        baseline ? JSON.stringify(baseline) : null,
+        semenAnalysis ? JSON.stringify(semenAnalysis) : null,
+        medications ? JSON.stringify(medications) : null,
+        retrievalDate,
+        oocytesRetrieved,
+        matureOocytes,
+        embryos ? JSON.stringify(embryos) : null,
+        monitoringVisits ? JSON.stringify(monitoringVisits) : null,
+        transfers ? JSON.stringify(transfers) : null,
+        cryoStorage ? JSON.stringify(cryoStorage) : null,
+        outcome ? JSON.stringify(outcome) : null,
+        userId,
+        cycleId
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('IVF cycle not found');
+    }
+
+    return this._formatIVFCycle(result.rows[0]);
+  }
+
+  _formatIVFCycle(row) {
+    const parseJSON = (val) => {
+      if (!val) return null;
+      return typeof val === 'string' ? JSON.parse(val) : val;
+    };
+
+    return {
+      id: row.id,
+      patientId: row.patient_id,
+      episodeId: row.episode_id,
+      cycleType: row.cycle_type,
+      protocolType: row.protocol_type,
+      status: row.status,
+      startDate: row.start_date,
+      donorCycle: row.donor_cycle,
+      baseline: parseJSON(row.baseline),
+      semenAnalysis: parseJSON(row.semen_analysis),
+      medications: parseJSON(row.medications) || [],
+      retrievalDate: row.retrieval_date,
+      oocytesRetrieved: row.oocytes_retrieved,
+      matureOocytes: row.mature_oocytes,
+      embryos: parseJSON(row.embryos) || [],
+      monitoringVisits: parseJSON(row.monitoring_visits) || [],
+      transfers: parseJSON(row.transfers) || [],
+      cryoStorage: parseJSON(row.cryo_storage) || [],
+      outcome: parseJSON(row.outcome),
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  // ============================================
+  // Cervical Length
+  // ============================================
+
+  /**
+   * Get cervical length measurements for a patient
+   * @param {string} patientId - Patient ID
+   * @param {string} [episodeId] - Optional episode ID
+   * @returns {Promise<Array>} Measurements
+   */
+  async getCervicalLengths(patientId, episodeId = null) {
+    let query = `SELECT * FROM obgyn_cervical_length WHERE patient_id = $1`;
+    const params = [patientId];
+
+    if (episodeId) {
+      query += ` AND episode_id = $2`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY date DESC`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.map(row => this._formatCervicalLength(row));
+  }
+
+  /**
+   * Save cervical length measurement
+   * @param {string} patientId - Patient ID
+   * @param {Object} data - Measurement data
+   * @returns {Promise<Object>} Saved measurement
+   */
+  async saveCervicalLength(patientId, data) {
+    const id = uuidv4();
+    const {
+      episodeId,
+      date,
+      gestationalAge,
+      length,
+      method,
+      funneling,
+      funnelingLength,
+      internalOsOpen,
+      notes,
+      orgId,
+      userId
+    } = data;
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_cervical_length
+       (id, patient_id, episode_id, date, gestational_age, length, method,
+        funneling, funneling_length, internal_os_open, notes, org_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       RETURNING *`,
+      [
+        id,
+        patientId,
+        episodeId,
+        date,
+        gestationalAge,
+        length,
+        method,
+        funneling || false,
+        funnelingLength,
+        internalOsOpen || false,
+        notes,
+        orgId,
+        userId
+      ]
+    );
+
+    return this._formatCervicalLength(result.rows[0]);
+  }
+
+  _formatCervicalLength(row) {
+    return {
+      id: row.id,
+      patientId: row.patient_id,
+      episodeId: row.episode_id,
+      date: row.date,
+      gestationalAge: row.gestational_age,
+      length: row.length,
+      method: row.method,
+      funneling: row.funneling,
+      funnelingLength: row.funneling_length,
+      internalOsOpen: row.internal_os_open,
+      notes: row.notes,
+      createdAt: row.created_at
+    };
+  }
+
+  // ============================================
+  // Patient Education
+  // ============================================
+
+  /**
+   * Get patient education records
+   * @param {string} patientId - Patient ID
+   * @param {string} [episodeId] - Optional episode ID
+   * @returns {Promise<Array>} Education records
+   */
+  async getPatientEducation(patientId, episodeId = null) {
+    let query = `SELECT * FROM obgyn_patient_education WHERE patient_id = $1`;
+    const params = [patientId];
+
+    if (episodeId) {
+      query += ` AND episode_id = $2`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY completed_date DESC`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.map(row => ({
+      moduleId: row.module_id,
+      completed: row.completed,
+      completedDate: row.completed_date,
+      episodeId: row.episode_id
+    }));
+  }
+
+  /**
+   * Save patient education record
+   * @param {string} patientId - Patient ID
+   * @param {Object} data - Education data
+   * @returns {Promise<Object>} Saved record
+   */
+  async savePatientEducation(patientId, data) {
+    const { moduleId, completed, completedDate, episodeId, orgId, userId } = data;
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_patient_education
+       (patient_id, episode_id, module_id, completed, completed_date, org_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (patient_id, module_id)
+       DO UPDATE SET
+         completed = $4,
+         completed_date = $5,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [
+        patientId,
+        episodeId,
+        moduleId,
+        completed,
+        completedDate,
+        orgId,
+        userId
+      ]
+    );
+
+    return {
+      moduleId: result.rows[0].module_id,
+      completed: result.rows[0].completed,
+      completedDate: result.rows[0].completed_date,
+      episodeId: result.rows[0].episode_id
+    };
+  }
 }
 
 module.exports = ObGynService;

@@ -131,6 +131,24 @@ export const ObGynSpecialty: SpecialtyModule = {
         default: m.ConsentManagementPanel,
       }))
     ),
+    // IVF/Fertility components
+    IVFCaseSheet: lazy(() =>
+      import('./components/IVFCaseSheet').then(m => ({
+        default: m.IVFCaseSheet,
+      }))
+    ),
+    // Preterm risk monitoring
+    CervicalLengthPanel: lazy(() =>
+      import('./components/CervicalLengthPanel').then(m => ({
+        default: m.CervicalLengthPanel,
+      }))
+    ),
+    // Patient education tracking
+    PatientEducationPanel: lazy(() =>
+      import('./components/PatientEducationPanel').then(m => ({
+        default: m.PatientEducationPanel,
+      }))
+    ),
   },
 
   /**

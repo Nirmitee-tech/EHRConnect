@@ -50,11 +50,19 @@
         "componentName": "PregnancyHistoryPanel"
       },
       {
+        "id": "ivf-casesheet",
+        "label": "IVF Case Sheet",
+        "icon": "FlaskConical",
+        "category": "clinical",
+        "order": 6,
+        "componentName": "IVFCaseSheet"
+      },
+      {
         "id": "prenatal-overview",
         "label": "Prenatal Overview",
         "icon": "Heart",
         "category": "clinical",
-        "order": 6,
+        "order": 7,
         "componentName": "PrenatalOverview"
       },
       {
@@ -62,7 +70,7 @@
         "label": "Prenatal Flowsheet",
         "icon": "ClipboardList",
         "category": "clinical",
-        "order": 7,
+        "order": 8,
         "componentName": "PrenatalFlowsheet"
       },
       {
@@ -70,7 +78,7 @@
         "label": "Vitals Log",
         "icon": "Activity",
         "category": "clinical",
-        "order": 8,
+        "order": 9,
         "componentName": "VitalsLogPanel"
       },
       {
@@ -78,15 +86,23 @@
         "label": "Ultrasounds",
         "icon": "Eye",
         "category": "clinical",
-        "order": 9,
+        "order": 10,
         "componentName": "UltrasoundTrackingPanel"
+      },
+      {
+        "id": "cervical-length",
+        "label": "Cervical Length",
+        "icon": "Ruler",
+        "category": "clinical",
+        "order": 11,
+        "componentName": "CervicalLengthPanel"
       },
       {
         "id": "genetics",
         "label": "Genetic Screening",
         "icon": "Dna",
         "category": "clinical",
-        "order": 10,
+        "order": 12,
         "componentName": "GeneticScreeningPanel"
       },
       {
@@ -94,7 +110,7 @@
         "label": "Labs",
         "icon": "TestTube",
         "category": "clinical",
-        "order": 11,
+        "order": 13,
         "componentName": "LabsTrackingPanel"
       },
       {
@@ -102,7 +118,7 @@
         "label": "NST/BPP",
         "icon": "HeartPulse",
         "category": "clinical",
-        "order": 12,
+        "order": 14,
         "componentName": "NSTBPPPanel"
       },
       {
@@ -110,7 +126,7 @@
         "label": "Kick Counts",
         "icon": "Baby",
         "category": "clinical",
-        "order": 13,
+        "order": 15,
         "componentName": "FetalMovementCounter"
       },
       {
@@ -118,7 +134,7 @@
         "label": "Complications",
         "icon": "AlertTriangle",
         "category": "clinical",
-        "order": 14,
+        "order": 16,
         "componentName": "ComplicationsPanel"
       },
       {
@@ -126,15 +142,23 @@
         "label": "Medications",
         "icon": "Pill",
         "category": "clinical",
-        "order": 15,
+        "order": 17,
         "componentName": "MedicationReviewPanel"
+      },
+      {
+        "id": "education",
+        "label": "Patient Education",
+        "icon": "GraduationCap",
+        "category": "clinical",
+        "order": 18,
+        "componentName": "PatientEducationPanel"
       },
       {
         "id": "consents",
         "label": "Consents",
         "icon": "ClipboardCheck",
         "category": "clinical",
-        "order": 16,
+        "order": 19,
         "componentName": "ConsentManagementPanel"
       },
       {
@@ -142,7 +166,7 @@
         "label": "Birth Plan",
         "icon": "FileEdit",
         "category": "clinical",
-        "order": 17,
+        "order": 20,
         "componentName": "BirthPlanPanel"
       },
       {
@@ -150,7 +174,7 @@
         "label": "Labor & Delivery",
         "icon": "Activity",
         "category": "clinical",
-        "order": 18,
+        "order": 21,
         "componentName": "LaborDeliverySummary"
       },
       {
@@ -158,7 +182,7 @@
         "label": "Newborn Records",
         "icon": "Baby",
         "category": "clinical",
-        "order": 19,
+        "order": 22,
         "componentName": "BabyLinkagePanel"
       },
       {
@@ -166,7 +190,7 @@
         "label": "Postpartum Care",
         "icon": "Heart",
         "category": "clinical",
-        "order": 20,
+        "order": 23,
         "componentName": "PostpartumCarePanel"
       },
       {
@@ -174,7 +198,7 @@
         "label": "EPDS Screening",
         "icon": "Brain",
         "category": "clinical",
-        "order": 21,
+        "order": 24,
         "componentName": "EPDSCalculator"
       },
       {
@@ -182,7 +206,7 @@
         "label": "Visit Details",
         "icon": "Calendar",
         "category": "clinical",
-        "order": 22
+        "order": 25
       }
     ],
     "replaceSections": false,
@@ -220,7 +244,10 @@
     "enableNSTBPP": true,
     "enableRiskAssessment": true,
     "enableMedicationReview": true,
-    "enableConsentManagement": true
+    "enableConsentManagement": true,
+    "enableIVFCaseSheet": true,
+    "enableCervicalLength": true,
+    "enablePatientEducation": true
   },
 
   "devices": [

@@ -666,6 +666,233 @@ export async function getConsents(
   return response.data.consents;
 }
 
+// ============================================
+// IVF Cycle Types and APIs
+// ============================================
+
+export interface Embryo {
+  id: string;
+  embryoNumber: number;
+  day: number;
+  cellNumber?: number;
+  grade: string;
+  status: 'developing' | 'transferred' | 'frozen' | 'discarded';
+  fertilizationMethod: 'ivf' | 'icsi';
+  pgtResult?: 'euploid' | 'aneuploid' | 'mosaic' | 'no_result';
+  notes?: string;
+}
+
+export interface IVFCycle {
+  id: string;
+  patientId: string;
+  episodeId?: string;
+  cycleType: 'fresh_ivf' | 'fet' | 'egg_freezing' | 'pgt_cycle';
+  protocolType: 'antagonist' | 'long_lupron' | 'microdose_flare' | 'mild' | 'natural';
+  status: 'active' | 'cancelled' | 'completed' | 'frozen';
+  startDate: string;
+  donorCycle?: boolean;
+  baseline?: {
+    afcLeft?: number;
+    afcRight?: number;
+    amh?: number;
+    fsh?: number;
+    lh?: number;
+    estradiol?: number;
+    tsh?: number;
+    prolactin?: number;
+  };
+  semenAnalysis?: {
+    volume?: number;
+    concentration?: number;
+    motility?: number;
+    morphology?: number;
+  };
+  medications?: Array<{
+    id: string;
+    name: string;
+    dose: number;
+    unit: string;
+    startDay: number;
+    endDay: number;
+  }>;
+  retrievalDate?: string;
+  oocytesRetrieved?: number;
+  matureOocytes?: number;
+  embryos?: Embryo[];
+  monitoringVisits?: Array<{
+    id: string;
+    cycleDay: number;
+    date: string;
+    estradiol?: number;
+    follicles?: Array<{ ovary: 'left' | 'right'; size: number }>;
+  }>;
+  transfers?: Array<{
+    id: string;
+    date: string;
+    embryoIds: string[];
+    endometrialThickness?: number;
+    transferDifficulty?: string;
+  }>;
+  cryoStorage?: Array<{
+    embryoId: string;
+    tankId: string;
+    slot: string;
+    consentVersion?: string;
+  }>;
+  outcome?: {
+    betaHcg1?: number;
+    betaHcg1Date?: string;
+    betaHcg2?: number;
+    betaHcg2Date?: string;
+    pregnancyConfirmed?: boolean;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export async function getIVFCycles(
+  patientId: string,
+  episodeId?: string,
+  headers?: Record<string, string>
+): Promise<IVFCycle[]> {
+  try {
+    const params = episodeId ? `?episodeId=${episodeId}` : '';
+    const response = await axios.get(
+      `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles${params}`,
+      getAxiosConfig(headers)
+    );
+    return response.data.cycles || [];
+  } catch (error) {
+    if (isAxiosErrorWithStatus(error, 404)) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function createIVFCycle(
+  patientId: string,
+  data: Partial<IVFCycle>,
+  headers?: Record<string, string>
+): Promise<IVFCycle> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.cycle;
+}
+
+export async function updateIVFCycle(
+  patientId: string,
+  cycleId: string,
+  updates: Partial<IVFCycle>,
+  headers?: Record<string, string>
+): Promise<IVFCycle> {
+  const response = await axios.patch(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}`,
+    updates,
+    getAxiosConfig(headers)
+  );
+  return response.data.cycle;
+}
+
+// ============================================
+// Cervical Length Types and APIs
+// ============================================
+
+export interface CervicalLength {
+  id?: string;
+  patientId?: string;
+  episodeId?: string;
+  date: string;
+  gestationalAge: string;
+  length: number;
+  method: 'transvaginal' | 'transabdominal' | 'translabial';
+  funneling: boolean;
+  funnelingLength?: number;
+  internalOsOpen: boolean;
+  notes?: string;
+  createdAt?: string;
+}
+
+export async function getCervicalLengths(
+  patientId: string,
+  episodeId?: string,
+  headers?: Record<string, string>
+): Promise<CervicalLength[]> {
+  try {
+    const params = episodeId ? `?episodeId=${episodeId}` : '';
+    const response = await axios.get(
+      `${API_BASE}/api/patients/${patientId}/obgyn/cervical-length${params}`,
+      getAxiosConfig(headers)
+    );
+    return response.data.measurements || [];
+  } catch (error) {
+    if (isAxiosErrorWithStatus(error, 404)) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function saveCervicalLength(
+  patientId: string,
+  data: CervicalLength,
+  headers?: Record<string, string>
+): Promise<CervicalLength> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/cervical-length`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.measurement;
+}
+
+// ============================================
+// Patient Education Types and APIs
+// ============================================
+
+export interface PatientEducation {
+  moduleId: string;
+  completed: boolean;
+  completedDate?: string;
+  episodeId?: string;
+}
+
+export async function getPatientEducation(
+  patientId: string,
+  episodeId?: string,
+  headers?: Record<string, string>
+): Promise<PatientEducation[]> {
+  try {
+    const params = episodeId ? `?episodeId=${episodeId}` : '';
+    const response = await axios.get(
+      `${API_BASE}/api/patients/${patientId}/obgyn/education${params}`,
+      getAxiosConfig(headers)
+    );
+    return response.data.records || [];
+  } catch (error) {
+    if (isAxiosErrorWithStatus(error, 404)) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function savePatientEducation(
+  patientId: string,
+  data: PatientEducation,
+  headers?: Record<string, string>
+): Promise<PatientEducation> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/education`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.record;
+}
+
 // Export as default service object
 export const obgynService = {
   // EPDS
@@ -712,7 +939,17 @@ export const obgynService = {
   getMedicationReview,
   // Consent Management
   saveConsents,
-  getConsents
+  getConsents,
+  // IVF Cycles
+  getIVFCycles,
+  createIVFCycle,
+  updateIVFCycle,
+  // Cervical Length
+  getCervicalLengths,
+  saveCervicalLength,
+  // Patient Education
+  getPatientEducation,
+  savePatientEducation
 };
 
 export default obgynService;
