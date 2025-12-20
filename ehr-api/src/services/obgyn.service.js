@@ -1182,6 +1182,354 @@ class ObGynService {
       updatedAt: row.updated_at
     };
   }
+
+  // ============================================
+  // Vitals Log
+  // ============================================
+
+  /**
+   * Save vitals log entry
+   * @param {string} patientId - Patient ID
+   * @param {Object} data - Vitals data
+   * @returns {Promise<Object>} Saved entry
+   */
+  async saveVitalsLog(patientId, data) {
+    const { episodeId, entries, orgId, userId } = data;
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_vitals_log
+       (id, patient_id, episode_id, entries, org_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (patient_id, COALESCE(episode_id, ''))
+       DO UPDATE SET
+         entries = $4,
+         updated_by = $6,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [
+        id,
+        patientId,
+        episodeId,
+        JSON.stringify(entries || []),
+        orgId,
+        userId
+      ]
+    );
+
+    return this._formatVitalsLog(result.rows[0]);
+  }
+
+  /**
+   * Get vitals log for a patient
+   * @param {string} patientId - Patient ID
+   * @param {string} [episodeId] - Optional episode ID
+   * @returns {Promise<Object|null>} Vitals log or null
+   */
+  async getVitalsLog(patientId, episodeId = null) {
+    let query = `SELECT * FROM obgyn_vitals_log WHERE patient_id = $1`;
+    const params = [patientId];
+
+    if (episodeId) {
+      query += ` AND episode_id = $2`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY updated_at DESC LIMIT 1`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.length > 0 ? this._formatVitalsLog(result.rows[0]) : null;
+  }
+
+  _formatVitalsLog(row) {
+    return {
+      id: row.id,
+      patientId: row.patient_id,
+      episodeId: row.episode_id,
+      entries: row.entries ? (typeof row.entries === 'string' ? JSON.parse(row.entries) : row.entries) : [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  // ============================================
+  // NST/BPP Records
+  // ============================================
+
+  /**
+   * Save NST record
+   * @param {string} patientId - Patient ID
+   * @param {Object} data - NST data
+   * @returns {Promise<Object>} Saved record
+   */
+  async saveNSTRecord(patientId, data) {
+    const { episodeId, nstRecords, bppRecords, orgId, userId } = data;
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_fetal_assessment
+       (id, patient_id, episode_id, nst_records, bpp_records, org_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (patient_id, COALESCE(episode_id, ''))
+       DO UPDATE SET
+         nst_records = $4,
+         bpp_records = $5,
+         updated_by = $7,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [
+        id,
+        patientId,
+        episodeId,
+        JSON.stringify(nstRecords || []),
+        JSON.stringify(bppRecords || []),
+        orgId,
+        userId
+      ]
+    );
+
+    return this._formatFetalAssessment(result.rows[0]);
+  }
+
+  /**
+   * Get fetal assessment records for a patient
+   * @param {string} patientId - Patient ID
+   * @param {string} [episodeId] - Optional episode ID
+   * @returns {Promise<Object|null>} Assessment records or null
+   */
+  async getFetalAssessment(patientId, episodeId = null) {
+    let query = `SELECT * FROM obgyn_fetal_assessment WHERE patient_id = $1`;
+    const params = [patientId];
+
+    if (episodeId) {
+      query += ` AND episode_id = $2`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY updated_at DESC LIMIT 1`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.length > 0 ? this._formatFetalAssessment(result.rows[0]) : null;
+  }
+
+  _formatFetalAssessment(row) {
+    return {
+      id: row.id,
+      patientId: row.patient_id,
+      episodeId: row.episode_id,
+      nstRecords: row.nst_records ? (typeof row.nst_records === 'string' ? JSON.parse(row.nst_records) : row.nst_records) : [],
+      bppRecords: row.bpp_records ? (typeof row.bpp_records === 'string' ? JSON.parse(row.bpp_records) : row.bpp_records) : [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  // ============================================
+  // Risk Assessment
+  // ============================================
+
+  /**
+   * Save risk assessment
+   * @param {string} patientId - Patient ID
+   * @param {Object} data - Risk assessment data
+   * @returns {Promise<Object>} Saved assessment
+   */
+  async saveRiskAssessment(patientId, data) {
+    const { episodeId, assessments, orgId, userId } = data;
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_risk_assessments
+       (id, patient_id, episode_id, assessments, org_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (patient_id, COALESCE(episode_id, ''))
+       DO UPDATE SET
+         assessments = $4,
+         updated_by = $6,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [
+        id,
+        patientId,
+        episodeId,
+        JSON.stringify(assessments || []),
+        orgId,
+        userId
+      ]
+    );
+
+    return this._formatRiskAssessment(result.rows[0]);
+  }
+
+  /**
+   * Get risk assessments for a patient
+   * @param {string} patientId - Patient ID
+   * @param {string} [episodeId] - Optional episode ID
+   * @returns {Promise<Object|null>} Risk assessments or null
+   */
+  async getRiskAssessment(patientId, episodeId = null) {
+    let query = `SELECT * FROM obgyn_risk_assessments WHERE patient_id = $1`;
+    const params = [patientId];
+
+    if (episodeId) {
+      query += ` AND episode_id = $2`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY updated_at DESC LIMIT 1`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.length > 0 ? this._formatRiskAssessment(result.rows[0]) : null;
+  }
+
+  _formatRiskAssessment(row) {
+    return {
+      id: row.id,
+      patientId: row.patient_id,
+      episodeId: row.episode_id,
+      assessments: row.assessments ? (typeof row.assessments === 'string' ? JSON.parse(row.assessments) : row.assessments) : [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  // ============================================
+  // Medication Review
+  // ============================================
+
+  /**
+   * Save medication review
+   * @param {string} patientId - Patient ID
+   * @param {Object} data - Medication data
+   * @returns {Promise<Object>} Saved review
+   */
+  async saveMedicationReview(patientId, data) {
+    const { episodeId, medications, orgId, userId } = data;
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_medications
+       (id, patient_id, episode_id, medications, org_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (patient_id, COALESCE(episode_id, ''))
+       DO UPDATE SET
+         medications = $4,
+         updated_by = $6,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [
+        id,
+        patientId,
+        episodeId,
+        JSON.stringify(medications || []),
+        orgId,
+        userId
+      ]
+    );
+
+    return this._formatMedicationReview(result.rows[0]);
+  }
+
+  /**
+   * Get medication review for a patient
+   * @param {string} patientId - Patient ID
+   * @param {string} [episodeId] - Optional episode ID
+   * @returns {Promise<Object|null>} Medication review or null
+   */
+  async getMedicationReview(patientId, episodeId = null) {
+    let query = `SELECT * FROM obgyn_medications WHERE patient_id = $1`;
+    const params = [patientId];
+
+    if (episodeId) {
+      query += ` AND episode_id = $2`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY updated_at DESC LIMIT 1`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.length > 0 ? this._formatMedicationReview(result.rows[0]) : null;
+  }
+
+  _formatMedicationReview(row) {
+    return {
+      id: row.id,
+      patientId: row.patient_id,
+      episodeId: row.episode_id,
+      medications: row.medications ? (typeof row.medications === 'string' ? JSON.parse(row.medications) : row.medications) : [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  // ============================================
+  // Consent Management
+  // ============================================
+
+  /**
+   * Save consent records
+   * @param {string} patientId - Patient ID
+   * @param {Object} data - Consent data
+   * @returns {Promise<Object>} Saved consents
+   */
+  async saveConsents(patientId, data) {
+    const { episodeId, consents, orgId, userId } = data;
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_consents
+       (id, patient_id, episode_id, consents, org_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (patient_id, COALESCE(episode_id, ''))
+       DO UPDATE SET
+         consents = $4,
+         updated_by = $6,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [
+        id,
+        patientId,
+        episodeId,
+        JSON.stringify(consents || []),
+        orgId,
+        userId
+      ]
+    );
+
+    return this._formatConsents(result.rows[0]);
+  }
+
+  /**
+   * Get consents for a patient
+   * @param {string} patientId - Patient ID
+   * @param {string} [episodeId] - Optional episode ID
+   * @returns {Promise<Object|null>} Consents or null
+   */
+  async getConsents(patientId, episodeId = null) {
+    let query = `SELECT * FROM obgyn_consents WHERE patient_id = $1`;
+    const params = [patientId];
+
+    if (episodeId) {
+      query += ` AND episode_id = $2`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY updated_at DESC LIMIT 1`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.length > 0 ? this._formatConsents(result.rows[0]) : null;
+  }
+
+  _formatConsents(row) {
+    return {
+      id: row.id,
+      patientId: row.patient_id,
+      episodeId: row.episode_id,
+      consents: row.consents ? (typeof row.consents === 'string' ? JSON.parse(row.consents) : row.consents) : [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
 }
 
 module.exports = ObGynService;

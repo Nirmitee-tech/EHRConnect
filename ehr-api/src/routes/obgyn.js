@@ -852,6 +852,326 @@ function initializeObGynRoutes(pool) {
     }
   });
 
+  // ============================================
+  // Vitals Log
+  // ============================================
+
+  /**
+   * POST /api/patients/:patientId/obgyn/vitals-log
+   * Save vitals log entries
+   */
+  router.post('/patients/:patientId/obgyn/vitals-log', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.saveVitalsLog(patientId, {
+        ...req.body,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        vitalsLog: result
+      });
+    } catch (error) {
+      console.error('Error saving vitals log:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * GET /api/patients/:patientId/obgyn/vitals-log
+   * Get vitals log for a patient
+   */
+  router.get('/patients/:patientId/obgyn/vitals-log', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { episodeId } = req.query;
+
+      const vitalsLog = await obgynService.getVitalsLog(patientId, episodeId);
+
+      return res.json({
+        success: true,
+        vitalsLog
+      });
+    } catch (error) {
+      console.error('Error fetching vitals log:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
+  // Fetal Assessment (NST/BPP)
+  // ============================================
+
+  /**
+   * POST /api/patients/:patientId/obgyn/fetal-assessment
+   * Save NST/BPP records
+   */
+  router.post('/patients/:patientId/obgyn/fetal-assessment', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.saveNSTRecord(patientId, {
+        ...req.body,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        fetalAssessment: result
+      });
+    } catch (error) {
+      console.error('Error saving fetal assessment:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * GET /api/patients/:patientId/obgyn/fetal-assessment
+   * Get fetal assessment records for a patient
+   */
+  router.get('/patients/:patientId/obgyn/fetal-assessment', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { episodeId } = req.query;
+
+      const fetalAssessment = await obgynService.getFetalAssessment(patientId, episodeId);
+
+      return res.json({
+        success: true,
+        fetalAssessment
+      });
+    } catch (error) {
+      console.error('Error fetching fetal assessment:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
+  // Risk Assessment
+  // ============================================
+
+  /**
+   * POST /api/patients/:patientId/obgyn/risk-assessment
+   * Save risk assessment
+   */
+  router.post('/patients/:patientId/obgyn/risk-assessment', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.saveRiskAssessment(patientId, {
+        ...req.body,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        riskAssessment: result
+      });
+    } catch (error) {
+      console.error('Error saving risk assessment:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * GET /api/patients/:patientId/obgyn/risk-assessment
+   * Get risk assessment for a patient
+   */
+  router.get('/patients/:patientId/obgyn/risk-assessment', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { episodeId } = req.query;
+
+      const riskAssessment = await obgynService.getRiskAssessment(patientId, episodeId);
+
+      return res.json({
+        success: true,
+        riskAssessment
+      });
+    } catch (error) {
+      console.error('Error fetching risk assessment:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
+  // Medication Review
+  // ============================================
+
+  /**
+   * POST /api/patients/:patientId/obgyn/medication-review
+   * Save medication review
+   */
+  router.post('/patients/:patientId/obgyn/medication-review', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.saveMedicationReview(patientId, {
+        ...req.body,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        medicationReview: result
+      });
+    } catch (error) {
+      console.error('Error saving medication review:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * GET /api/patients/:patientId/obgyn/medication-review
+   * Get medication review for a patient
+   */
+  router.get('/patients/:patientId/obgyn/medication-review', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { episodeId } = req.query;
+
+      const medicationReview = await obgynService.getMedicationReview(patientId, episodeId);
+
+      return res.json({
+        success: true,
+        medicationReview
+      });
+    } catch (error) {
+      console.error('Error fetching medication review:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
+  // Consent Management
+  // ============================================
+
+  /**
+   * POST /api/patients/:patientId/obgyn/consents
+   * Save consent records
+   */
+  router.post('/patients/:patientId/obgyn/consents', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.saveConsents(patientId, {
+        ...req.body,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        consents: result
+      });
+    } catch (error) {
+      console.error('Error saving consents:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * GET /api/patients/:patientId/obgyn/consents
+   * Get consents for a patient
+   */
+  router.get('/patients/:patientId/obgyn/consents', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { episodeId } = req.query;
+
+      const consents = await obgynService.getConsents(patientId, episodeId);
+
+      return res.json({
+        success: true,
+        consents
+      });
+    } catch (error) {
+      console.error('Error fetching consents:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   return router;
 }
 

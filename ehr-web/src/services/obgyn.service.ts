@@ -516,6 +516,156 @@ export async function getBirthPlan(
   return response.data.birthPlan;
 }
 
+// ============================================
+// Vitals Log APIs
+// ============================================
+
+export async function saveVitalsLog(
+  patientId: string,
+  data: Record<string, unknown>,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/vitals-log`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.vitalsLog;
+}
+
+export async function getVitalsLog(
+  patientId: string,
+  episodeId?: string,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const params = episodeId ? `?episodeId=${episodeId}` : '';
+  const response = await axios.get(
+    `${API_BASE}/api/patients/${patientId}/obgyn/vitals-log${params}`,
+    getAxiosConfig(headers)
+  );
+  return response.data.vitalsLog;
+}
+
+// ============================================
+// Fetal Assessment (NST/BPP) APIs
+// ============================================
+
+export async function saveFetalAssessment(
+  patientId: string,
+  data: Record<string, unknown>,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/fetal-assessment`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.fetalAssessment;
+}
+
+export async function getFetalAssessment(
+  patientId: string,
+  episodeId?: string,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const params = episodeId ? `?episodeId=${episodeId}` : '';
+  const response = await axios.get(
+    `${API_BASE}/api/patients/${patientId}/obgyn/fetal-assessment${params}`,
+    getAxiosConfig(headers)
+  );
+  return response.data.fetalAssessment;
+}
+
+// ============================================
+// Risk Assessment APIs
+// ============================================
+
+export async function saveRiskAssessment(
+  patientId: string,
+  data: Record<string, unknown>,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/risk-assessment`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.riskAssessment;
+}
+
+export async function getRiskAssessment(
+  patientId: string,
+  episodeId?: string,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const params = episodeId ? `?episodeId=${episodeId}` : '';
+  const response = await axios.get(
+    `${API_BASE}/api/patients/${patientId}/obgyn/risk-assessment${params}`,
+    getAxiosConfig(headers)
+  );
+  return response.data.riskAssessment;
+}
+
+// ============================================
+// Medication Review APIs
+// ============================================
+
+export async function saveMedicationReview(
+  patientId: string,
+  data: Record<string, unknown>,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/medication-review`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.medicationReview;
+}
+
+export async function getMedicationReview(
+  patientId: string,
+  episodeId?: string,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const params = episodeId ? `?episodeId=${episodeId}` : '';
+  const response = await axios.get(
+    `${API_BASE}/api/patients/${patientId}/obgyn/medication-review${params}`,
+    getAxiosConfig(headers)
+  );
+  return response.data.medicationReview;
+}
+
+// ============================================
+// Consent Management APIs
+// ============================================
+
+export async function saveConsents(
+  patientId: string,
+  data: Record<string, unknown>,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/consents`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.consents;
+}
+
+export async function getConsents(
+  patientId: string,
+  episodeId?: string,
+  headers?: Record<string, string>
+): Promise<unknown> {
+  const params = episodeId ? `?episodeId=${episodeId}` : '';
+  const response = await axios.get(
+    `${API_BASE}/api/patients/${patientId}/obgyn/consents${params}`,
+    getAxiosConfig(headers)
+  );
+  return response.data.consents;
+}
+
 // Export as default service object
 export const obgynService = {
   // EPDS
@@ -547,7 +697,22 @@ export const obgynService = {
   getKickCounts,
   // Birth Plan
   saveBirthPlan,
-  getBirthPlan
+  getBirthPlan,
+  // Vitals Log
+  saveVitalsLog,
+  getVitalsLog,
+  // Fetal Assessment (NST/BPP)
+  saveFetalAssessment,
+  getFetalAssessment,
+  // Risk Assessment
+  saveRiskAssessment,
+  getRiskAssessment,
+  // Medication Review
+  saveMedicationReview,
+  getMedicationReview,
+  // Consent Management
+  saveConsents,
+  getConsents
 };
 
 export default obgynService;

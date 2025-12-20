@@ -31,3 +31,10 @@ export { FetalMovementCounter } from './FetalMovementCounter';
 // Planning and timeline components
 export { BirthPlanPanel } from './BirthPlanPanel';
 export { PregnancyTimelinePanel } from './PregnancyTimelinePanel';
+
+// Advanced clinical monitoring components
+export { VitalsLogPanel } from './VitalsLogPanel';
+export { NSTBPPPanel } from './NSTBPPPanel';
+export { RiskAssessmentPanel } from './RiskAssessmentPanel';
+export { MedicationReviewPanel } from './MedicationReviewPanel';
+export { ConsentManagementPanel } from './ConsentManagementPanel';

@@ -105,6 +105,32 @@ export const ObGynSpecialty: SpecialtyModule = {
         default: m.PregnancyTimelinePanel,
       }))
     ),
+    // Advanced clinical monitoring components
+    VitalsLogPanel: lazy(() =>
+      import('./components/VitalsLogPanel').then(m => ({
+        default: m.VitalsLogPanel,
+      }))
+    ),
+    NSTBPPPanel: lazy(() =>
+      import('./components/NSTBPPPanel').then(m => ({
+        default: m.NSTBPPPanel,
+      }))
+    ),
+    RiskAssessmentPanel: lazy(() =>
+      import('./components/RiskAssessmentPanel').then(m => ({
+        default: m.RiskAssessmentPanel,
+      }))
+    ),
+    MedicationReviewPanel: lazy(() =>
+      import('./components/MedicationReviewPanel').then(m => ({
+        default: m.MedicationReviewPanel,
+      }))
+    ),
+    ConsentManagementPanel: lazy(() =>
+      import('./components/ConsentManagementPanel').then(m => ({
+        default: m.ConsentManagementPanel,
+      }))
+    ),
   },
 
   /**
