@@ -4,8 +4,24 @@
  */
 
 import axios from 'axios';
+import { Session } from 'next-auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Helper to extract API headers from session
+export interface ApiHeaders {
+  'x-org-id': string;
+  'x-user-id': string;
+  [key: string]: string;
+}
+
+export function getApiHeaders(session: Session | null): ApiHeaders {
+  const extendedSession = session as Session & { org_id?: string; user?: { id?: string } };
+  return {
+    'x-org-id': extendedSession?.org_id || '',
+    'x-user-id': extendedSession?.user?.id || ''
+  };
+}
 
 // Types
 export interface EPDSResult {

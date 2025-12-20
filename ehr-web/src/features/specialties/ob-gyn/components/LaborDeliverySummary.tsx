@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
-import obgynService, { LaborDeliveryRecord } from '@/services/obgyn.service';
+import obgynService, { LaborDeliveryRecord, getApiHeaders } from '@/services/obgyn.service';
 
 /**
  * LABOR & DELIVERY SUMMARY COMPONENT
@@ -151,13 +151,27 @@ export function LaborDeliverySummary({
       if (!episodeId || existingData) return;
       setLoading(true);
       try {
-        const headers = {
-          'x-org-id': (session as any)?.org_id || '',
-          'x-user-id': (session as any)?.user?.id || ''
-        };
+        const headers = getApiHeaders(session);
         const record = await obgynService.getLaborDeliveryRecord(patientId, episodeId, headers);
         if (record) {
-          setFormData(record as any);
+          // Map API response to form data
+          setFormData({
+            deliveryDateTime: record.deliveryDateTime,
+            gestationalAge: record.gestationalAge,
+            deliveryMode: record.deliveryMode,
+            laborOnset: record.laborOnset,
+            ruptureOfMembranes: record.ruptureOfMembranes,
+            amnioticFluid: record.amnioticFluid,
+            anesthesiaType: record.anesthesiaType,
+            bloodLoss: record.bloodLoss,
+            episiotomy: record.episiotomy,
+            laceration: record.laceration,
+            placentaDelivery: record.placentaDelivery,
+            uterotonic: record.uterotonic,
+            maternalComplications: record.maternalComplications,
+            deliveryProvider: record.deliveryProvider,
+            newborn: record.newborn
+          } as Partial<DeliveryData>);
           setIsEditing(false);
         }
       } catch (error) {
@@ -191,15 +205,29 @@ export function LaborDeliverySummary({
     
     setSaving(true);
     try {
-      const headers = {
-        'x-org-id': (session as any)?.org_id || '',
-        'x-user-id': (session as any)?.user?.id || ''
+      const headers = getApiHeaders(session);
+      
+      // Transform form data to API format
+      const recordData: LaborDeliveryRecord = {
+        deliveryDateTime: formData.deliveryDateTime || '',
+        gestationalAge: formData.gestationalAge || '',
+        deliveryMode: formData.deliveryMode || 'SVD',
+        laborOnset: formData.laborOnset,
+        ruptureOfMembranes: formData.ruptureOfMembranes,
+        amnioticFluid: formData.amnioticFluid,
+        anesthesiaType: formData.anesthesiaType,
+        bloodLoss: formData.bloodLoss,
+        episiotomy: formData.episiotomy,
+        laceration: formData.laceration,
+        placentaDelivery: formData.placentaDelivery,
+        uterotonic: formData.uterotonic,
+        maternalComplications: formData.maternalComplications,
+        deliveryProvider: formData.deliveryProvider,
+        newborn: formData.newborn,
+        episodeId
       };
       
-      await obgynService.saveLaborDeliveryRecord(patientId, {
-        ...formData,
-        episodeId
-      } as LaborDeliveryRecord, headers);
+      await obgynService.saveLaborDeliveryRecord(patientId, recordData, headers);
       
       if (onSave) {
         onSave(formData as DeliveryData);

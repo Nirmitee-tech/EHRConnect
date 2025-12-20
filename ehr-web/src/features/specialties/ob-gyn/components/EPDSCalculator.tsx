@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, Clock, FileText, Printer, Loader2
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import obgynService, { EPDSAssessment } from '@/services/obgyn.service';
+import obgynService, { EPDSAssessment, getApiHeaders } from '@/services/obgyn.service';
 
 /**
  * EPDS (Edinburgh Postnatal Depression Scale) Calculator
@@ -185,10 +185,7 @@ export function EPDSCalculator({ patientId, episodeId, onSave, onClose }: EPDSCa
       if (!patientId) return;
       setLoadingHistory(true);
       try {
-        const headers = {
-          'x-org-id': (session as any)?.org_id || '',
-          'x-user-id': (session as any)?.user?.id || ''
-        };
+        const headers = getApiHeaders(session);
         const assessments = await obgynService.getEPDSAssessments(patientId, episodeId, headers);
         setHistory(assessments.map((a: EPDSAssessment) => ({
           date: new Date(a.createdAt).toLocaleDateString(),
@@ -280,10 +277,7 @@ export function EPDSCalculator({ patientId, episodeId, onSave, onClose }: EPDSCa
     
     setSaving(true);
     try {
-      const headers = {
-        'x-org-id': (session as any)?.org_id || '',
-        'x-user-id': (session as any)?.user?.id || ''
-      };
+      const headers = getApiHeaders(session);
       
       await obgynService.saveEPDSAssessment(patientId, result, episodeId, headers);
       

@@ -242,6 +242,9 @@ class ObGynService {
         `SELECT * FROM obgyn_labor_delivery_records WHERE id = $1`,
         [recordId]
       );
+      if (existing.rows.length === 0) {
+        throw new Error(`Labor/delivery record not found: ${recordId}`);
+      }
       return this._formatLaborDeliveryRecord(existing.rows[0]);
     }
 
@@ -252,6 +255,10 @@ class ObGynService {
        RETURNING *`,
       params
     );
+
+    if (result.rows.length === 0) {
+      throw new Error(`Labor/delivery record not found: ${recordId}`);
+    }
 
     return this._formatLaborDeliveryRecord(result.rows[0]);
   }
