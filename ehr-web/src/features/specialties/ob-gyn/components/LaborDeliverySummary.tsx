@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Baby, Clock, AlertTriangle, CheckCircle, User, Activity,
   Droplet, Heart, FileText, Save, X, Calendar, Stethoscope,
-  Scale, Ruler, Scissors, Syringe, Thermometer
+  Scale, Ruler, Scissors, Syringe, Thermometer, Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useSession } from 'next-auth/react';
+import obgynService, { LaborDeliveryRecord } from '@/services/obgyn.service';
 
 /**
  * LABOR & DELIVERY SUMMARY COMPONENT
@@ -104,8 +106,11 @@ export function LaborDeliverySummary({
   onSave,
   readOnly = false
 }: LaborDeliverySummaryProps) {
+  const { data: session } = useSession();
   const [isEditing, setIsEditing] = useState(!existingData);
   const [activeTab, setActiveTab] = useState<'delivery' | 'labor' | 'maternal' | 'newborn'>('delivery');
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
   
   // Form state with defaults
   const [formData, setFormData] = useState<Partial<DeliveryData>>({
@@ -140,6 +145,30 @@ export function LaborDeliverySummary({
     ...existingData
   });
 
+  // Fetch existing record from API
+  useEffect(() => {
+    async function fetchRecord() {
+      if (!episodeId || existingData) return;
+      setLoading(true);
+      try {
+        const headers = {
+          'x-org-id': (session as any)?.org_id || '',
+          'x-user-id': (session as any)?.user?.id || ''
+        };
+        const record = await obgynService.getLaborDeliveryRecord(patientId, episodeId, headers);
+        if (record) {
+          setFormData(record as any);
+          setIsEditing(false);
+        }
+      } catch (error) {
+        console.error('Error fetching labor/delivery record:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchRecord();
+  }, [patientId, episodeId, existingData, session]);
+
   const updateField = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -157,11 +186,30 @@ export function LaborDeliverySummary({
     }));
   };
 
-  const handleSave = () => {
-    if (onSave && formData) {
-      onSave(formData as DeliveryData);
+  const handleSave = async () => {
+    if (!formData) return;
+    
+    setSaving(true);
+    try {
+      const headers = {
+        'x-org-id': (session as any)?.org_id || '',
+        'x-user-id': (session as any)?.user?.id || ''
+      };
+      
+      await obgynService.saveLaborDeliveryRecord(patientId, {
+        ...formData,
+        episodeId
+      } as LaborDeliveryRecord, headers);
+      
+      if (onSave) {
+        onSave(formData as DeliveryData);
+      }
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error saving labor/delivery record:', error);
+    } finally {
+      setSaving(false);
     }
-    setIsEditing(false);
   };
 
   // Calculate blood loss category
@@ -214,15 +262,21 @@ export function LaborDeliverySummary({
                   <button
                     onClick={() => setIsEditing(false)}
                     className="px-2 py-1 text-xs bg-white/20 rounded hover:bg-white/30"
+                    disabled={saving}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSave}
-                    className="px-2 py-1 text-xs bg-white text-pink-600 rounded hover:bg-white/90 flex items-center gap-1 font-semibold"
+                    disabled={saving}
+                    className="px-2 py-1 text-xs bg-white text-pink-600 rounded hover:bg-white/90 flex items-center gap-1 font-semibold disabled:opacity-50"
                   >
-                    <Save className="h-3 w-3" />
-                    Save
+                    {saving ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Save className="h-3 w-3" />
+                    )}
+                    {saving ? 'Saving...' : 'Save'}
                   </button>
                 </>
               ) : (
