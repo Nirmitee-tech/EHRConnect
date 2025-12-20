@@ -60,6 +60,9 @@ import {
 import { cn } from '@/lib/utils';
 import { obgynService } from '@/services/obgyn.service';
 
+// Clinical thresholds
+const MIN_FETAL_FRACTION_PERCENT = 4; // Minimum fetal fraction for reliable NIPT results
+
 interface GeneticScreeningPanelProps {
   patientId: string;
   episodeId?: string;
@@ -672,7 +675,7 @@ export function GeneticScreeningPanel({
                         <div className="text-sm mb-2">
                           Fetal Fraction: <span className={cn(
                             'font-medium',
-                            nipt.fetalFraction < 4 ? 'text-red-500' : 'text-green-600'
+                            nipt.fetalFraction < MIN_FETAL_FRACTION_PERCENT ? 'text-red-500' : 'text-green-600'
                           )}>{nipt.fetalFraction}%</span>
                         </div>
                       )}

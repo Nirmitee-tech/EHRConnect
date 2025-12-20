@@ -851,23 +851,23 @@ export function LabsTrackingPanel({
                   <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <div className="text-sm text-muted-foreground">Avg Fasting</div>
                     <div className="text-lg font-bold">
-                      {Math.round(
-                        glucoseLogs
-                          .filter(g => g.type === 'fasting')
-                          .reduce((sum, g) => sum + g.value, 0) / 
-                        Math.max(glucoseLogs.filter(g => g.type === 'fasting').length, 1)
-                      )} mg/dL
+                      {(() => {
+                        const fastingLogs = glucoseLogs.filter(g => g.type === 'fasting');
+                        if (fastingLogs.length === 0) return '-';
+                        const avg = fastingLogs.reduce((sum, g) => sum + g.value, 0) / fastingLogs.length;
+                        return `${Math.round(avg)} mg/dL`;
+                      })()}
                     </div>
                   </div>
                   <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <div className="text-sm text-muted-foreground">Avg 1h PP</div>
                     <div className="text-lg font-bold">
-                      {Math.round(
-                        glucoseLogs
-                          .filter(g => g.type === 'post_meal_1h')
-                          .reduce((sum, g) => sum + g.value, 0) / 
-                        Math.max(glucoseLogs.filter(g => g.type === 'post_meal_1h').length, 1)
-                      ) || '-'} mg/dL
+                      {(() => {
+                        const postMealLogs = glucoseLogs.filter(g => g.type === 'post_meal_1h');
+                        if (postMealLogs.length === 0) return '-';
+                        const avg = postMealLogs.reduce((sum, g) => sum + g.value, 0) / postMealLogs.length;
+                        return `${Math.round(avg)} mg/dL`;
+                      })()}
                     </div>
                   </div>
                   <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">

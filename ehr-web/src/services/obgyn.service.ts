@@ -3,10 +3,15 @@
  * API client for OB/GYN-specific clinical data
  */
 
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { Session } from 'next-auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Helper to check if error is an Axios error with specific status
+function isAxiosErrorWithStatus(error: unknown, status: number): boolean {
+  return axios.isAxiosError(error) && error.response?.status === status;
+}
 
 // Helper to extract API headers from session
 export interface ApiHeaders {
@@ -354,7 +359,7 @@ export async function getUltrasoundById(
     );
     return response.data.record;
   } catch (error: unknown) {
-    if ((error as { response?: { status: number } }).response?.status === 404) {
+    if (isAxiosErrorWithStatus(error, 404)) {
       return null;
     }
     throw error;
