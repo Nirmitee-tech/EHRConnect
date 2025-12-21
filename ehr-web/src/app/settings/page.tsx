@@ -68,6 +68,7 @@ const SETTINGS_DATA: SettingItem[] = [
   { id: 'vte-risk', title: 'VTE Risk Master', description: 'Venous thromboembolism assessment rules', icon: Activity, href: '#', category: 'Clinical Masters', isComingSoon: true },
   { id: 'fall-risk', title: 'Fall Assessment', description: 'Standardized fall-risk score logic', icon: Activity, href: '#', category: 'Clinical Masters', isComingSoon: true },
   { id: 'wound-care', title: 'Wound Registry', description: 'Staging, image analysis & therapy rules', icon: Camera, href: '#', category: 'Clinical Masters', isComingSoon: true },
+  { id: 'patient-education', title: 'Patient Education', description: 'Manage patient education modules and content', icon: BookOpen, href: '/settings/patient-education', category: 'Clinical Masters', isComingSoon: false },
 
   // --- SPECIALTY CARE UNITS (31-50) ---
   { id: 'icu', title: 'Critical Care (ICU)', description: 'Ventilation protocols & acuity scoring', icon: Heart, href: '#', category: 'Medical Specialty', isComingSoon: true },

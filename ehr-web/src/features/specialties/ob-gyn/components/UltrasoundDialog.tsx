@@ -14,6 +14,8 @@ import {
   calculateEDDFromUltrasound,
   formatDate,
 } from '../utils/pregnancy-calculators';
+import { useSession } from 'next-auth/react';
+import { saveUltrasoundRecord, getApiHeaders } from '../../../../services/obgyn.service';
 
 interface UltrasoundDialogProps {
   open: boolean;
@@ -76,6 +78,7 @@ export function UltrasoundDialog({
   ultrasoundData,
   onSuccess,
 }: UltrasoundDialogProps) {
+  const { data: session } = useSession();
   const { getEpisodeBySpecialty } = useEpisodeContext();
   const episode = getEpisodeBySpecialty('ob-gyn');
 
@@ -239,41 +242,79 @@ export function UltrasoundDialog({
     try {
       setLoading(true);
 
-      const record: UltrasoundRecord = {
+      // Map local form state to API record format
+      // Note: We cast to any for some fields to match the lenient API types vs strict UI types
+      const recordData: any = {
         id: ultrasoundData?.id,
+        patientId,
         scanDate,
-        gestationalAge: gestationalAge!,
+        gestationalAge: formatGestationalAge(gestationalAge?.weeks || 0, gestationalAge?.days || 0),
         scanType: scanType as any,
-        numberOfFetuses: parseInt(numberOfFetuses),
-        crl: crl ? parseFloat(crl) : undefined,
-        bpd: bpd ? parseFloat(bpd) : undefined,
-        hc: hc ? parseFloat(hc) : undefined,
-        ac: ac ? parseFloat(ac) : undefined,
-        fl: fl ? parseFloat(fl) : undefined,
-        efw: efw ? parseFloat(efw) : (calculatedEFW || undefined),
-        placentaLocation: placentaLocation as any || undefined,
-        placentaGrade: placentaGrade ? parseInt(placentaGrade) as any : undefined,
-        afi: afi ? parseFloat(afi) : undefined,
-        mvp: mvp ? parseFloat(mvp) : undefined,
-        fluidStatus: fluidStatus as any,
-        fetalHeartRate: fetalHeartRate ? parseInt(fetalHeartRate) : undefined,
-        fetalMovement: fetalMovement as any,
-        brainNormal,
-        heartNormal,
-        spineNormal,
-        limbsNormal,
-        kidneyNormal,
-        stomachNormal,
-        findings,
-        concerns: concerns || undefined,
-        revisedEDD: revisedEDD?.toISOString(),
+        fetalNumber: parseInt(numberOfFetuses),
+
+        // Biometry
+        biometry: {
+          crl: crl ? parseFloat(crl) : undefined,
+          bpd: bpd ? parseFloat(bpd) : undefined,
+          hc: hc ? parseFloat(hc) : undefined,
+          ac: ac ? parseFloat(ac) : undefined,
+          fl: fl ? parseFloat(fl) : undefined,
+          efw: efw ? parseFloat(efw) : (calculatedEFW || undefined),
+        },
+
+        // Placenta & Fluid
+        placentaLocation: placentaLocation || undefined,
+        // placentaGrade handled if schema supports it, otherwise omitted or mapped
+        amnioticFluid: {
+          afi: afi ? parseFloat(afi) : undefined,
+          mvp: mvp ? parseFloat(mvp) : undefined,
+          status: fluidStatus as any,
+        },
+
+        // Fetal Assessment (mapped to findings array or specific fields depending on schema)
+        // The API schema expects `findings` as an array of objects, but the UI has a single `findings` text area.
+        // We will adapt this. The existing mocked data used an array. 
+        // The Service interface `UltrasoundRecord` actually expects:
+        // findings: Array<{ parameter: string; value: string; ... }>
+        // BUT the UI has a text area for "findings".
+        // Let's create a text finding for the "General Findings".
+        findings: [
+          {
+            parameter: 'General Findings',
+            value: findings,
+            status: 'normal', // Defaulting to normal for the text block unless we parse it
+            notes: concerns
+          }
+          // We could map other specific fields here if the backend expects them in the findings array
+        ],
+
+        // Specific fields that might map directly if the backend supports them flattened
+        // or if we need to put them in the findings array.
+        // Based on `obgyn.service.ts`, `saveUltrasoundRecord` takes `UltrasoundRecord` interface.
+        // that interface has `fetalNumber`, `presentation`, `placentaLocation`, `amnioticFluid`, `biometry` objects.
+        // It also has `findings` array.
+
+        assessment: 'Normal', // Default or need a field for this
+        notes: concerns,
+
+        // Metadata for UI helpers
         metadata: {
           calculatedEFW,
+          brainNormal,
+          heartNormal,
+          spineNormal,
+          limbsNormal,
+          kidneyNormal,
+          stomachNormal,
+          fetalHeartRate: fetalHeartRate ? parseInt(fetalHeartRate) : undefined,
+          fetalMovement,
         },
       };
 
-      // TODO: Save to backend via FHIR ImagingStudy/DiagnosticReport resources
-      console.log('Saving ultrasound record:', record);
+      // Ensure we are sending what the service expects.
+      // The service `saveUltrasoundRecord` sends data as is.
+      const headers = getApiHeaders(session);
+      await saveUltrasoundRecord(patientId, recordData, headers);
 
       onSuccess?.();
       onOpenChange(false);

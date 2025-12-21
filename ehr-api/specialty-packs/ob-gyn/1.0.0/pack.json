@@ -26,11 +26,43 @@
         "componentName": "ObGynFacesheet"
       },
       {
+        "id": "pregnancy-timeline",
+        "label": "Timeline",
+        "icon": "Calendar",
+        "category": "clinical",
+        "order": 3,
+        "componentName": "PregnancyTimelinePanel"
+      },
+      {
+        "id": "risk-assessment",
+        "label": "Risk Assessment",
+        "icon": "Shield",
+        "category": "clinical",
+        "order": 4,
+        "componentName": "RiskAssessmentPanel"
+      },
+      {
+        "id": "pregnancy-history",
+        "label": "OB History",
+        "icon": "History",
+        "category": "clinical",
+        "order": 5,
+        "componentName": "PregnancyHistoryPanel"
+      },
+      {
+        "id": "ivf-casesheet",
+        "label": "IVF Case Sheet",
+        "icon": "FlaskConical",
+        "category": "clinical",
+        "order": 6,
+        "componentName": "IVFCaseSheet"
+      },
+      {
         "id": "prenatal-overview",
         "label": "Prenatal Overview",
         "icon": "Heart",
         "category": "clinical",
-        "order": 3,
+        "order": 7,
         "componentName": "PrenatalOverview"
       },
       {
@@ -38,50 +70,151 @@
         "label": "Prenatal Flowsheet",
         "icon": "ClipboardList",
         "category": "clinical",
-        "order": 4,
+        "order": 8,
         "componentName": "PrenatalFlowsheet"
+      },
+      {
+        "id": "vitals-log",
+        "label": "Vitals Log",
+        "icon": "Activity",
+        "category": "clinical",
+        "order": 9,
+        "componentName": "VitalsLogPanel"
       },
       {
         "id": "ultrasounds",
         "label": "Ultrasounds",
-        "icon": "ImageIcon",
+        "icon": "Eye",
         "category": "clinical",
-        "order": 5
+        "order": 10,
+        "componentName": "UltrasoundTrackingPanel"
       },
       {
-        "id": "labor-delivery",
-        "label": "Labor & Delivery",
-        "icon": "Activity",
+        "id": "cervical-length",
+        "label": "Cervical Length",
+        "icon": "Ruler",
         "category": "clinical",
-        "order": 6
+        "order": 11,
+        "componentName": "CervicalLengthPanel"
       },
       {
-        "id": "postpartum",
-        "label": "Postpartum Care",
+        "id": "genetics",
+        "label": "Genetic Screening",
+        "icon": "Dna",
+        "category": "clinical",
+        "order": 12,
+        "componentName": "GeneticScreeningPanel"
+      },
+      {
+        "id": "labs",
+        "label": "Labs",
+        "icon": "TestTube",
+        "category": "clinical",
+        "order": 13,
+        "componentName": "LabsTrackingPanel"
+      },
+      {
+        "id": "nst-bpp",
+        "label": "NST/BPP",
+        "icon": "HeartPulse",
+        "category": "clinical",
+        "order": 14,
+        "componentName": "NSTBPPPanel"
+      },
+      {
+        "id": "kick-counts",
+        "label": "Kick Counts",
         "icon": "Baby",
         "category": "clinical",
-        "order": 7
+        "order": 15,
+        "componentName": "FetalMovementCounter"
+      },
+      {
+        "id": "complications",
+        "label": "Complications",
+        "icon": "AlertTriangle",
+        "category": "clinical",
+        "order": 16,
+        "componentName": "ComplicationsPanel"
       },
       {
         "id": "medications",
         "label": "Medications",
         "icon": "Pill",
         "category": "clinical",
-        "order": 8
+        "order": 17,
+        "componentName": "MedicationReviewPanel"
       },
       {
-        "id": "lab",
-        "label": "Lab Results",
-        "icon": "TestTube",
+        "id": "education",
+        "label": "Patient Education",
+        "icon": "GraduationCap",
         "category": "clinical",
-        "order": 9
+        "order": 18,
+        "componentName": "PatientEducationPanel"
+      },
+      {
+        "id": "consents",
+        "label": "Consents",
+        "icon": "ClipboardCheck",
+        "category": "clinical",
+        "order": 19,
+        "componentName": "ConsentManagementPanel"
+      },
+      {
+        "id": "birth-plan",
+        "label": "Birth Plan",
+        "icon": "FileEdit",
+        "category": "clinical",
+        "order": 20,
+        "componentName": "BirthPlanPanel"
+      },
+      {
+        "id": "labor-delivery",
+        "label": "Labor & Delivery",
+        "icon": "Activity",
+        "category": "clinical",
+        "order": 21,
+        "componentName": "LaborDeliverySummary"
+      },
+      {
+        "id": "newborn-records",
+        "label": "Newborn Records",
+        "icon": "Baby",
+        "category": "clinical",
+        "order": 22,
+        "componentName": "BabyLinkagePanel"
+      },
+      {
+        "id": "postpartum",
+        "label": "Postpartum Care",
+        "icon": "Heart",
+        "category": "clinical",
+        "order": 23,
+        "componentName": "PostpartumCarePanel"
+      },
+      {
+        "id": "epds-screening",
+        "label": "EPDS Screening",
+        "icon": "Brain",
+        "category": "clinical",
+        "order": 24,
+        "componentName": "EPDSCalculator"
+      },
+      {
+        "id": "care-plans",
+        "label": "Care Plans",
+        "icon": "ClipboardList",
+        "category": "clinical",
+        "order": 25,
+        "componentName": "CarePlanManagementPanel"
       },
       {
         "id": "encounters",
         "label": "Visit Details",
         "icon": "Calendar",
         "category": "clinical",
-        "order": 10
+        "order": 26
       }
     ],
     "replaceSections": false,
@@ -105,7 +238,25 @@
     "enableHighRiskPregnancy": true,
     "enableFetalMonitoring": true,
     "enableGeneticScreening": true,
-    "enableTTTSMonitoring": false
+    "enableTTTSMonitoring": true,
+    "enableEPDSScreening": true,
+    "enablePostpartumCare": true,
+    "enableComplicationsTracking": true,
+    "enableBabyLinkage": true,
+    "enablePregnancyHistory": true,
+    "enableLabsTracking": true,
+    "enableKickCounts": true,
+    "enableBirthPlan": true,
+    "enablePregnancyTimeline": true,
+    "enableVitalsLog": true,
+    "enableNSTBPP": true,
+    "enableRiskAssessment": true,
+    "enableMedicationReview": true,
+    "enableConsentManagement": true,
+    "enableIVFCaseSheet": true,
+    "enableCervicalLength": true,
+    "enablePatientEducation": true,
+    "enableCarePlanManagement": true
   },
 
   "devices": [

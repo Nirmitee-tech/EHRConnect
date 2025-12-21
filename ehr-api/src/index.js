@@ -35,12 +35,14 @@ const specialtyRoutes = require('./routes/specialties');
 const countryRoutes = require('./routes/countries');
 const translationRoutes = require('./routes/translations');
 const initializeEpisodeRoutes = require('./routes/episodes');
+const initializeObGynRoutes = require('./routes/obgyn');
 const formsRoutes = require('./routes/forms');
 const tasksRoutes = require('./routes/tasks');
 const taskRulesRoutes = require('./routes/task-rules');
 const ruleVariablesRoutes = require('./routes/rule-variables');
 const rulesRoutes = require('./routes/rules');
 const abdmRoutes = require('./routes/abdm');
+const educationModuleRoutes = require('./routes/education-modules');
 const { initializeDatabase } = require('./database/init');
 const socketService = require('./services/socket.service');
 const billingJobs = require('./services/billing.jobs');
@@ -264,6 +266,8 @@ app.use('/api/task-rules', taskRulesRoutes); // Task Assignment Rules routes
 app.use('/api/rule-variables', ruleVariablesRoutes); // Rule Variables (aggregates, formulas) routes
 app.use('/api/rules', rulesRoutes); // Universal Rule Engine routes
 app.use('/api/abdm', abdmRoutes); // ABDM (Ayushman Bharat Digital Mission) Integration routes
+app.use('/api/education-modules', educationModuleRoutes);
+app.use('/api', initializeObGynRoutes(dbPool)); // OB/GYN specialty routes
 
 // Health check
 app.get('/health', (req, res) => {
