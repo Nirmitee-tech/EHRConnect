@@ -3,6 +3,7 @@
 import React from 'react';
 import { User } from 'lucide-react';
 import { format } from 'date-fns';
+import { calculateAge } from '@/utils/shared';
 
 interface FacesheetHeaderProps {
   patient: {
@@ -23,19 +24,8 @@ interface FacesheetHeaderProps {
 }
 
 export function FacesheetHeader({ patient, identifiers = [] }: FacesheetHeaderProps) {
-  const calculateAge = (birthDate: string) => {
-    if (!birthDate) return null;
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
-    return age;
-  };
-
   const age = patient.dob ? calculateAge(patient.dob) : null;
+
   const formattedDOB = patient.dob ? format(new Date(patient.dob), 'MM/dd/yyyy') : '-';
 
   return (

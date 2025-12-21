@@ -1,19 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
-
-/**
- * Generate unique Medical Record Number (MRN)
- * Format: PT + 8-digit timestamp + 3-digit random number
- * Example: PT123456789042
- */
-function generateMRN() {
-  const prefix = 'PT';
-  const timestamp = Date.now().toString().slice(-8);
-  const random = Math.floor(Math.random() * 1000)
-    .toString()
-    .padStart(3, '0');
-
-  return `${prefix}${timestamp}${random}`;
-}
+const { generateMRN } = require('../utils/clinical.utils');
+const { validatePatientForm } = require('../utils/validation');
 
 class PatientController {
   // Search patients
@@ -90,6 +77,19 @@ class PatientController {
   // Create new patient
   async create(db, resourceData) {
     try {
+      const errors = validatePatientForm({
+        firstName: resourceData.name?.[0]?.given?.[0],
+        lastName: resourceData.name?.[0]?.family,
+        dateOfBirth: resourceData.birthDate,
+        email: resourceData.telecom?.find(t => t.system === 'email')?.value,
+      });
+
+      if (Object.keys(errors).length > 0) {
+        const error = new Error('Validation failed');
+        error.errors = errors;
+        throw error;
+      }
+
       const id = resourceData.id || uuidv4();
       const now = new Date().toISOString();
 
@@ -102,17 +102,6 @@ class PatientController {
           lastUpdated: now
         }
       };
-
-      // Validate required fields
-      if (!patient.name || !Array.isArray(patient.name) || patient.name.length === 0) {
-        throw new Error('Patient must have at least one name');
-      }
-
-      // Ensure required name structure
-      const name = patient.name[0];
-      if (!name.family && (!name.given || name.given.length === 0)) {
-        throw new Error('Patient name must have either family name or given name');
-      }
 
       // Auto-generate MRN if not provided
       const hasMRN = patient.identifier?.some(
@@ -157,6 +146,9 @@ class PatientController {
 
       return patient;
     } catch (error) {
+      if (error.errors) {
+        throw error;
+      }
       throw new Error(`Failed to create patient: ${error.message}`);
     }
   }
@@ -164,6 +156,20 @@ class PatientController {
   // Update patient
   async update(db, id, resourceData) {
     try {
+
+      const errors = validatePatientForm({
+        firstName: resourceData.name?.[0]?.given?.[0],
+        lastName: resourceData.name?.[0]?.family,
+        dateOfBirth: resourceData.birthDate,
+        email: resourceData.telecom?.find(t => t.system === 'email')?.value,
+      });
+
+      if (Object.keys(errors).length > 0) {
+        const error = new Error('Validation failed');
+        error.errors = errors;
+        throw error;
+      }
+      
       // Check if patient exists
       const existing = await this.read(db, id);
       if (!existing) {
@@ -184,11 +190,6 @@ class PatientController {
         }
       };
 
-      // Validate required fields
-      if (!updatedPatient.name || !Array.isArray(updatedPatient.name) || updatedPatient.name.length === 0) {
-        throw new Error('Patient must have at least one name');
-      }
-
       await db.query(
         `UPDATE fhir_resources 
          SET resource_data = $1, version_id = $2, last_updated = $3
@@ -205,6 +206,9 @@ class PatientController {
 
       return updatedPatient;
     } catch (error) {
+      if (error.errors) {
+        throw error;
+      }
       throw new Error(`Failed to update patient: ${error.message}`);
     }
   }
