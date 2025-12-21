@@ -1650,23 +1650,23 @@ export function VitalsLogPanel({
 
         {/* Full History Tab */}
         <TabsContent value="history" className="px-2">
-          <div className="bg-white border border-gray-200 rounded shadow-sm">
-            <div className="bg-gray-50 px-3 py-1.5 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xs font-bold text-gray-700">Complete Vitals History</h3>
-              <button className="flex items-center gap-1 px-2 py-1 text-[10px] bg-white border border-gray-300 rounded hover:bg-gray-50">
-                <Download className="h-3 w-3" />
-                Export
-              </button>
-            </div>
-            <div className="p-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold">Complete Vitals History</CardTitle>
+                <Button variant="outline" size="sm">
+                  <Download className="h-3 w-3 mr-2" />
+                  Export
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-3">
-                {entries.map(entry => {
+                {entries.map((entry) => {
                   const bpInt = interpretBP(entry.bpSystolic, entry.bpDiastolic);
+
                   return (
-                    <div
-                      key={entry.id}
-                      className="border border-gray-200 rounded p-2 space-y-2"
-                    >
+                    <div key={entry.id} className="border border-gray-200 rounded p-2 space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[9px] font-medium">{entry.gestationalAge}</span>
@@ -1744,7 +1744,8 @@ export function VitalsLogPanel({
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
 
                 {entries.length === 0 && (
                   <div className="text-center text-gray-500 py-8">
