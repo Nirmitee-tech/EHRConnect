@@ -2523,6 +2523,330 @@ class ObGynService {
   }
 
   // ============================================
+  // IVF Transfers (Phase 3)
+  // ============================================
+
+  /**
+   * Get all transfers for a cycle
+   * @param {string} patientId - Patient ID
+   * @param {string} cycleId - Cycle ID
+   * @returns {Promise<Array>} Transfer records
+   */
+  async getIVFTransfers(patientId, cycleId) {
+    const result = await this.pool.query(
+      `SELECT * FROM obgyn_ivf_transfers
+       WHERE patient_id = $1 AND cycle_id = $2
+       ORDER BY transfer_date DESC, created_at DESC`,
+      [patientId, cycleId]
+    );
+    return result.rows.map(row => this._formatIVFTransfer(row));
+  }
+
+  /**
+   * Get single transfer by ID
+   * @param {string} patientId - Patient ID
+   * @param {string} transferId - Transfer ID
+   * @returns {Promise<Object|null>} Transfer record
+   */
+  async getIVFTransfer(patientId, transferId) {
+    const result = await this.pool.query(
+      `SELECT * FROM obgyn_ivf_transfers
+       WHERE patient_id = $1 AND id = $2`,
+      [patientId, transferId]
+    );
+    return result.rows.length > 0 ? this._formatIVFTransfer(result.rows[0]) : null;
+  }
+
+  /**
+   * Create new transfer record
+   * @param {string} patientId - Patient ID
+   * @param {string} cycleId - Cycle ID
+   * @param {Object} data - Transfer data
+   * @param {string} userId - User ID
+   * @returns {Promise<Object>} Created transfer
+   */
+  async createIVFTransfer(patientId, cycleId, data, userId) {
+    const { v4: uuidv4 } = require('uuid');
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_ivf_transfers (
+        id, cycle_id, patient_id, created_by,
+        transfer_date, transfer_time, transfer_type,
+        embryo_ids, number_transferred, embryo_grades, embryo_ages, embryo_day,
+        prep_protocol, prep_start_date,
+        estrogen_medication, estrogen_dose, estrogen_route,
+        progesterone_medication, progesterone_dose, progesterone_route,
+        progesterone_start_date, progesterone_days,
+        estradiol_level, progesterone_level,
+        endometrial_thickness, endometrial_pattern,
+        catheter_type, catheter_loaded_by, transfer_performed_by,
+        difficulty, difficulty_reason,
+        ultrasound_guidance, bladder_volume,
+        cervical_dilation_needed, tenaculum_used, trial_transfer_done,
+        distance_from_fundus, air_bubble_visible, embryo_visibility_confirmed,
+        blood_on_catheter, mucus_on_catheter,
+        bed_rest_minutes, patient_tolerated_well, complications, discharge_time,
+        clinician_confidence, clinician_notes, technical_quality,
+        beta_hcg_date, continue_medications, activity_restrictions,
+        follow_up_instructions, predicted_success_rate
+      ) VALUES (
+        $1, $2, $3, $4,
+        $5, $6, $7,
+        $8, $9, $10, $11, $12,
+        $13, $14,
+        $15, $16, $17,
+        $18, $19, $20,
+        $21, $22,
+        $23, $24,
+        $25, $26,
+        $27, $28, $29,
+        $30, $31,
+        $32, $33,
+        $34, $35, $36,
+        $37, $38, $39,
+        $40, $41,
+        $42, $43, $44, $45,
+        $46, $47, $48,
+        $49, $50, $51,
+        $52, $53
+      ) RETURNING *`,
+      [
+        id, cycleId, patientId, userId,
+        data.transferDate, this._timeToTimestamp(data.transferTime), this._emptyToNull(data.transferType),
+        data.embryoIds ? JSON.stringify(data.embryoIds) : '[]',
+        data.numberTransferred,
+        data.embryoGrades,
+        data.embryoAges ? JSON.stringify(data.embryoAges) : '[]',
+        this._emptyToNull(data.embryoDay),
+        this._emptyToNull(data.prepProtocol), data.prepStartDate,
+        data.estrogenMedication, data.estrogenDose, this._emptyToNull(data.estrogenRoute),
+        data.progesteroneMedication, data.progesteroneDose, this._emptyToNull(data.progesteroneRoute),
+        data.progesteroneStartDate, data.progesteroneDays,
+        data.estradiolLevel, data.progesteroneLevel,
+        data.endometrialThickness, this._emptyToNull(data.endometrialPattern),
+        data.catheterType, data.catheterLoadedBy, data.transferPerformedBy,
+        this._emptyToNull(data.difficulty), data.difficultyReason,
+        data.ultrasoundGuidance !== undefined ? data.ultrasoundGuidance : true,
+        this._emptyToNull(data.bladderVolume),
+        data.cervicalDilationNeeded || false,
+        data.tenaculumUsed || false,
+        data.trialTransferDone || false,
+        data.distanceFromFundus,
+        data.airBubbleVisible,
+        data.embryoVisibilityConfirmed,
+        data.bloodOnCatheter || false,
+        data.mucusOnCatheter || false,
+        data.bedRestMinutes || 15,
+        data.patientToleratedWell !== undefined ? data.patientToleratedWell : true,
+        data.complications,
+        this._timeToTimestamp(data.dischargeTime),
+        data.clinicianConfidence,
+        data.clinicianNotes,
+        this._emptyToNull(data.technicalQuality),
+        data.betaHcgDate,
+        data.continueMedications !== undefined ? data.continueMedications : true,
+        data.activityRestrictions,
+        data.followUpInstructions,
+        data.predictedSuccessRate
+      ]
+    );
+
+    return this._formatIVFTransfer(result.rows[0]);
+  }
+
+  /**
+   * Update transfer record
+   * @param {string} transferId - Transfer ID
+   * @param {Object} updates - Fields to update
+   * @returns {Promise<Object>} Updated transfer
+   */
+  async updateIVFTransfer(transferId, updates) {
+    const fields = [];
+    const values = [];
+    let paramCount = 1;
+
+    const addField = (fieldName, value) => {
+      if (value !== undefined) {
+        fields.push(`${fieldName} = $${paramCount}`);
+        values.push(value);
+        paramCount++;
+      }
+    };
+
+    // Transfer basic fields
+    addField('transfer_date', updates.transferDate);
+    addField('transfer_time', this._timeToTimestamp(updates.transferTime));
+    addField('transfer_type', this._emptyToNull(updates.transferType));
+
+    // Embryo details
+    if (updates.embryoIds) {
+      addField('embryo_ids', JSON.stringify(updates.embryoIds));
+    }
+    addField('number_transferred', updates.numberTransferred);
+    addField('embryo_grades', updates.embryoGrades);
+    if (updates.embryoAges) {
+      addField('embryo_ages', JSON.stringify(updates.embryoAges));
+    }
+    addField('embryo_day', this._emptyToNull(updates.embryoDay));
+
+    // Endometrial preparation
+    addField('prep_protocol', this._emptyToNull(updates.prepProtocol));
+    addField('prep_start_date', updates.prepStartDate);
+    addField('estrogen_medication', updates.estrogenMedication);
+    addField('estrogen_dose', updates.estrogenDose);
+    addField('estrogen_route', this._emptyToNull(updates.estrogenRoute));
+    addField('progesterone_medication', updates.progesteroneMedication);
+    addField('progesterone_dose', updates.progesteroneDose);
+    addField('progesterone_route', this._emptyToNull(updates.progesteroneRoute));
+    addField('progesterone_start_date', updates.progesteroneStartDate);
+    addField('progesterone_days', updates.progesteroneDays);
+
+    // Transfer day labs
+    addField('estradiol_level', updates.estradiolLevel);
+    addField('progesterone_level', updates.progesteroneLevel);
+    addField('endometrial_thickness', updates.endometrialThickness);
+    addField('endometrial_pattern', this._emptyToNull(updates.endometrialPattern));
+
+    // Procedure details
+    addField('catheter_type', updates.catheterType);
+    addField('catheter_loaded_by', updates.catheterLoadedBy);
+    addField('transfer_performed_by', updates.transferPerformedBy);
+    addField('difficulty', this._emptyToNull(updates.difficulty));
+    addField('difficulty_reason', updates.difficultyReason);
+    addField('ultrasound_guidance', updates.ultrasoundGuidance);
+    addField('bladder_volume', this._emptyToNull(updates.bladderVolume));
+    addField('cervical_dilation_needed', updates.cervicalDilationNeeded);
+    addField('tenaculum_used', updates.tenaculumUsed);
+    addField('trial_transfer_done', updates.trialTransferDone);
+    addField('distance_from_fundus', updates.distanceFromFundus);
+    addField('air_bubble_visible', updates.airBubbleVisible);
+    addField('embryo_visibility_confirmed', updates.embryoVisibilityConfirmed);
+    addField('blood_on_catheter', updates.bloodOnCatheter);
+    addField('mucus_on_catheter', updates.mucusOnCatheter);
+
+    // Post-transfer
+    addField('bed_rest_minutes', updates.bedRestMinutes);
+    addField('patient_tolerated_well', updates.patientToleratedWell);
+    addField('complications', updates.complications);
+    addField('discharge_time', this._timeToTimestamp(updates.dischargeTime));
+
+    // Clinical assessment
+    addField('clinician_confidence', updates.clinicianConfidence);
+    addField('clinician_notes', updates.clinicianNotes);
+    addField('technical_quality', this._emptyToNull(updates.technicalQuality));
+
+    // Post-transfer instructions
+    addField('beta_hcg_date', updates.betaHcgDate);
+    addField('continue_medications', updates.continueMedications);
+    addField('activity_restrictions', updates.activityRestrictions);
+    addField('follow_up_instructions', updates.followUpInstructions);
+    addField('predicted_success_rate', updates.predictedSuccessRate);
+
+    if (fields.length === 0) {
+      throw new Error('No fields to update');
+    }
+
+    // Always update timestamp and user
+    fields.push(`updated_at = CURRENT_TIMESTAMP`);
+    if (updates.userId) {
+      fields.push(`updated_by = $${paramCount}`);
+      values.push(updates.userId);
+      paramCount++;
+    }
+    values.push(transferId);
+
+    const query = `UPDATE obgyn_ivf_transfers SET ${fields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+
+    const result = await this.pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      throw new Error('Transfer record not found');
+    }
+
+    return this._formatIVFTransfer(result.rows[0]);
+  }
+
+  /**
+   * Delete transfer record
+   * @param {string} transferId - Transfer ID
+   * @returns {Promise<boolean>} Success
+   */
+  async deleteIVFTransfer(transferId) {
+    const result = await this.pool.query(
+      `DELETE FROM obgyn_ivf_transfers WHERE id = $1`,
+      [transferId]
+    );
+    return result.rowCount > 0;
+  }
+
+  _formatIVFTransfer(row) {
+    const parseJSON = (val) => {
+      if (!val) return null;
+      return typeof val === 'string' ? JSON.parse(val) : val;
+    };
+
+    return {
+      id: row.id,
+      cycleId: row.cycle_id,
+      patientId: row.patient_id,
+      transferDate: row.transfer_date,
+      transferTime: row.transfer_time,
+      transferType: row.transfer_type,
+      embryoIds: parseJSON(row.embryo_ids) || [],
+      numberTransferred: row.number_transferred,
+      embryoGrades: row.embryo_grades,
+      embryoAges: parseJSON(row.embryo_ages) || [],
+      embryoDay: row.embryo_day,
+      prepProtocol: row.prep_protocol,
+      prepStartDate: row.prep_start_date,
+      estrogenMedication: row.estrogen_medication,
+      estrogenDose: row.estrogen_dose,
+      estrogenRoute: row.estrogen_route,
+      progesteroneMedication: row.progesterone_medication,
+      progesteroneDose: row.progesterone_dose,
+      progesteroneRoute: row.progesterone_route,
+      progesteroneStartDate: row.progesterone_start_date,
+      progesteroneDays: row.progesterone_days,
+      estradiolLevel: row.estradiol_level ? parseFloat(row.estradiol_level) : null,
+      progesteroneLevel: row.progesterone_level ? parseFloat(row.progesterone_level) : null,
+      endometrialThickness: row.endometrial_thickness ? parseFloat(row.endometrial_thickness) : null,
+      endometrialPattern: row.endometrial_pattern,
+      catheterType: row.catheter_type,
+      catheterLoadedBy: row.catheter_loaded_by,
+      transferPerformedBy: row.transfer_performed_by,
+      difficulty: row.difficulty,
+      difficultyReason: row.difficulty_reason,
+      ultrasoundGuidance: row.ultrasound_guidance,
+      bladderVolume: row.bladder_volume,
+      cervicalDilationNeeded: row.cervical_dilation_needed,
+      tenaculumUsed: row.tenaculum_used,
+      trialTransferDone: row.trial_transfer_done,
+      distanceFromFundus: row.distance_from_fundus ? parseFloat(row.distance_from_fundus) : null,
+      airBubbleVisible: row.air_bubble_visible,
+      embryoVisibilityConfirmed: row.embryo_visibility_confirmed,
+      bloodOnCatheter: row.blood_on_catheter,
+      mucusOnCatheter: row.mucus_on_catheter,
+      bedRestMinutes: row.bed_rest_minutes,
+      patientToleratedWell: row.patient_tolerated_well,
+      complications: row.complications,
+      dischargeTime: row.discharge_time,
+      clinicianConfidence: row.clinician_confidence,
+      clinicianNotes: row.clinician_notes,
+      technicalQuality: row.technical_quality,
+      betaHcgDate: row.beta_hcg_date,
+      continueMedications: row.continue_medications,
+      activityRestrictions: row.activity_restrictions,
+      followUpInstructions: row.follow_up_instructions,
+      predictedSuccessRate: row.predicted_success_rate ? parseFloat(row.predicted_success_rate) : null,
+      createdAt: row.created_at,
+      createdBy: row.created_by,
+      updatedAt: row.updated_at,
+      updatedBy: row.updated_by
+    };
+  }
+
+  // ============================================
   // Cervical Length
   // ============================================
 

@@ -1635,6 +1635,145 @@ function initializeObGynRoutes(pool) {
   });
 
   // ============================================
+  // IVF Transfers (Phase 3: Transfer Precision)
+  // ============================================
+
+  /**
+   * GET /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/transfers
+   * Get all transfers for a cycle
+   */
+  router.get('/patients/:patientId/obgyn/ivf-cycles/:cycleId/transfers', async (req, res) => {
+    try {
+      const { patientId, cycleId } = req.params;
+
+      const transfers = await obgynService.getIVFTransfers(patientId, cycleId);
+
+      return res.json({
+        success: true,
+        transfers,
+        count: transfers.length
+      });
+    } catch (error) {
+      console.error('Error fetching IVF transfers:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * GET /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/transfers/:transferId
+   * Get single transfer by ID
+   */
+  router.get('/patients/:patientId/obgyn/ivf-cycles/:cycleId/transfers/:transferId', async (req, res) => {
+    try {
+      const { patientId, transferId } = req.params;
+
+      const transfer = await obgynService.getIVFTransfer(patientId, transferId);
+
+      if (!transfer) {
+        return res.status(404).json({
+          success: false,
+          error: 'Transfer not found'
+        });
+      }
+
+      return res.json({
+        success: true,
+        transfer
+      });
+    } catch (error) {
+      console.error('Error fetching IVF transfer:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * POST /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/transfers
+   * Create new transfer record
+   */
+  router.post('/patients/:patientId/obgyn/ivf-cycles/:cycleId/transfers', async (req, res) => {
+    try {
+      const { patientId, cycleId } = req.params;
+      const userId = req.headers['x-user-id'] || req.headers['x-org-id'] || 'system';
+
+      const transfer = await obgynService.createIVFTransfer(patientId, cycleId, req.body, userId);
+
+      return res.status(201).json({
+        success: true,
+        transfer
+      });
+    } catch (error) {
+      console.error('Error creating IVF transfer:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * PATCH /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/transfers/:transferId
+   * Update transfer record
+   */
+  router.patch('/patients/:patientId/obgyn/ivf-cycles/:cycleId/transfers/:transferId', async (req, res) => {
+    try {
+      const { transferId } = req.params;
+      const userId = req.headers['x-user-id'] || req.headers['x-org-id'] || 'system';
+
+      const transfer = await obgynService.updateIVFTransfer(transferId, {
+        ...req.body,
+        userId
+      });
+
+      return res.json({
+        success: true,
+        transfer
+      });
+    } catch (error) {
+      console.error('Error updating IVF transfer:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * DELETE /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/transfers/:transferId
+   * Delete transfer record
+   */
+  router.delete('/patients/:patientId/obgyn/ivf-cycles/:cycleId/transfers/:transferId', async (req, res) => {
+    try {
+      const { transferId } = req.params;
+
+      const success = await obgynService.deleteIVFTransfer(transferId);
+
+      if (!success) {
+        return res.status(404).json({
+          success: false,
+          error: 'Transfer not found'
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Transfer deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting IVF transfer:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
   // Cervical Length
   // ============================================
 
