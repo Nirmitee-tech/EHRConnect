@@ -20,6 +20,7 @@ import OutcomeTrackingPanel from './OutcomeTrackingPanel';
 import CycleComparisonPanel from './CycleComparisonPanel';
 import SuccessProbabilityPanel from './SuccessProbabilityPanel';
 import VisualAnalyticsPanel from './VisualAnalyticsPanel';
+import AdvancedAnalyticsPanel from './AdvancedAnalyticsPanel';
 
 interface IVFCaseSheetProps {
   patientId: string;
@@ -69,7 +70,8 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
     outcome: true,
     cycleComparison: false,
     successProbability: false,
-    visualAnalytics: false
+    visualAnalytics: false,
+    advancedAnalytics: false
   });
 
   // Local editing state for baseline fields
@@ -857,6 +859,38 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
                 <VisualAnalyticsPanel
                   patientId={patientId}
                   cycleId={activeCycle.id}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Advanced Analytics - Phase 6 */}
+          <div className="bg-white rounded border-2 border-indigo-200 overflow-hidden shadow-sm">
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, advancedAnalytics: !prev.advancedAnalytics }))}
+              className="w-full flex items-center justify-between p-2 text-left hover:bg-indigo-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                {expandedSections.advancedAnalytics ? <ChevronDown className="h-3 w-3 text-gray-400" /> : <ChevronRight className="h-3 w-3 text-gray-400" />}
+                <BarChart3 className="h-3.5 w-3.5 text-indigo-600" />
+                <span className="text-xs font-semibold text-gray-900">Advanced Analytics</span>
+                <span className="text-[10px] text-indigo-600 font-medium ml-1">(Interactive Charts)</span>
+              </div>
+              <span className="px-1.5 py-0.5 text-[9px] bg-indigo-100 text-indigo-700 rounded font-semibold">
+                PHASE 6 • WOW FACTOR
+              </span>
+            </button>
+            {expandedSections.advancedAnalytics && activeCycle && (
+              <div className="border-t border-gray-200 p-4 bg-gradient-to-br from-indigo-50/30 to-purple-50/30">
+                <AdvancedAnalyticsPanel
+                  patientId={patientId}
+                  cycleId={activeCycle.id}
+                  totalEmbryos={activeCycle.embryos?.length || 0}
+                  topQualityEmbryos={
+                    activeCycle.embryos?.filter((e: any) =>
+                      ['5AA', '4AA', '4AB', '4BA', '5AB', '5BA'].includes(e.day5Grade)
+                    ).length || 0
+                  }
                 />
               </div>
             )}
