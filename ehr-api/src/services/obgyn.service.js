@@ -4007,7 +4007,7 @@ class ObGynService {
   async calculateOHSSRisk(patientId, cycleId) {
     // Get cycle data
     const cycleResult = await this.pool.query(
-      `SELECT * FROM ivf_cycles WHERE id = $1 AND patient_id = $2`,
+      `SELECT * FROM obgyn_ivf_cycles WHERE id = $1 AND patient_id = $2`,
       [cycleId, patientId]
     );
 
@@ -4034,8 +4034,8 @@ class ObGynService {
         estradiol_pg_ml,
         follicles_right,
         follicles_left
-      FROM ivf_stimulation_monitoring
-      WHERE ivf_cycle_id = $1
+      FROM obgyn_ivf_monitoring
+      WHERE cycle_id = $1
       ORDER BY monitoring_date DESC
       LIMIT 1`,
       [cycleId]
@@ -4049,18 +4049,19 @@ class ObGynService {
 
     // Get retrieval data for oocyte count
     const retrievalResult = await this.pool.query(
-      `SELECT oocytes_retrieved FROM ivf_oocyte_retrievals WHERE ivf_cycle_id = $1`,
+      `SELECT total_oocytes_retrieved FROM obgyn_ivf_retrievals WHERE cycle_id = $1`,
       [cycleId]
     );
 
-    const oocytesRetrieved = retrievalResult.rows[0]?.oocytes_retrieved || null;
+    const oocytesRetrieved = retrievalResult.rows[0]?.total_oocytes_retrieved || null;
 
     // Venice 2016 Criteria Scoring
     let riskScore = 0;
     const riskFactors = [];
 
-    // 1. AFC (Antral Follicle Count) - from baseline_afc
-    const afc = cycle.baseline_afc;
+    // 1. AFC (Antral Follicle Count) - from baseline.afcLeft + afcRight
+    const baseline = cycle.baseline || {};
+    const afc = (baseline.afcLeft || 0) + (baseline.afcRight || 0);
     if (afc && afc >= 24) {
       riskScore += 3;
       riskFactors.push({
@@ -4071,8 +4072,8 @@ class ObGynService {
       });
     }
 
-    // 2. AMH (ng/mL) - from baseline_amh_ng_ml
-    const amh = cycle.baseline_amh_ng_ml;
+    // 2. AMH (ng/mL) - from baseline.amh
+    const amh = baseline.amh || null;
     if (amh && amh > 3.36) {
       riskScore += 3;
       riskFactors.push({
@@ -4094,8 +4095,10 @@ class ObGynService {
       });
     }
 
-    // 4. PCOS - check if stimulation_protocol contains "PCOS" or diagnosis
-    const hasPCOS = cycle.stimulation_protocol?.toLowerCase().includes('pcos') || false;
+    // 4. PCOS - check if protocol_type contains "PCOS" or indications
+    const hasPCOS = cycle.protocol_type?.toLowerCase().includes('pcos') ||
+                    JSON.stringify(cycle.indications || []).toLowerCase().includes('pcos') ||
+                    false;
     if (hasPCOS) {
       riskScore += 2;
       riskFactors.push({
@@ -4223,7 +4226,7 @@ class ObGynService {
   async calculateTriggerReadiness(patientId, cycleId) {
     // Get cycle data
     const cycleResult = await this.pool.query(
-      `SELECT * FROM ivf_cycles WHERE id = $1 AND patient_id = $2`,
+      `SELECT * FROM obgyn_ivf_cycles WHERE id = $1 AND patient_id = $2`,
       [cycleId, patientId]
     );
 
@@ -4245,8 +4248,8 @@ class ObGynService {
         progesterone_ng_ml,
         endometrial_thickness_mm,
         endometrial_pattern
-      FROM ivf_stimulation_monitoring
-      WHERE ivf_cycle_id = $1
+      FROM obgyn_ivf_monitoring
+      WHERE cycle_id = $1
       ORDER BY monitoring_date DESC
       LIMIT 1`,
       [cycleId]
