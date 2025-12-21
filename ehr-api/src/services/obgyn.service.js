@@ -1929,6 +1929,563 @@ class ObGynService {
   }
 
   // ============================================
+  // IVF Retrievals (Egg Collection Procedures)
+  // ============================================
+
+  /**
+   * Get retrieval record for a cycle
+   * @param {string} cycleId - IVF Cycle ID
+   * @returns {Promise<Object|null>} Retrieval record or null
+   */
+  async getIVFRetrieval(cycleId) {
+    const result = await this.pool.query(
+      'SELECT * FROM obgyn_ivf_retrievals WHERE cycle_id = $1',
+      [cycleId]
+    );
+
+    return result.rows.length > 0 ? this._formatIVFRetrieval(result.rows[0]) : null;
+  }
+
+  /**
+   * Create retrieval record
+   * @param {string} cycleId - IVF Cycle ID
+   * @param {Object} data - Retrieval data
+   * @returns {Promise<Object>} Created retrieval record
+   */
+  async createIVFRetrieval(cycleId, data) {
+    const {
+      patientId,
+      retrievalDate,
+      retrievalTime,
+      triggerDate,
+      triggerTime,
+      triggerMedication,
+      anesthesiaType,
+      anesthesiologist,
+      rightOvaryFolliclesAspirated,
+      leftOvaryFolliclesAspirated,
+      aspirationDifficulty,
+      aspirationNotes,
+      totalOocytesRetrieved,
+      matureOocytes,
+      immatureOocytes,
+      cumulusQuality,
+      follicularFluidQuality,
+      complications = [],
+      procedureDuration,
+      primaryPhysician,
+      embryologist,
+      physicianNotes,
+      embryologistNotes,
+      orgId,
+      userId
+    } = data;
+
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_ivf_retrievals
+       (id, cycle_id, patient_id, retrieval_date, retrieval_time, trigger_date, trigger_time,
+        trigger_medication, anesthesia_type, anesthesiologist, right_ovary_follicles_aspirated,
+        left_ovary_follicles_aspirated, aspiration_difficulty, aspiration_notes,
+        total_oocytes_retrieved, mature_oocytes, immature_oocytes, cumulus_quality,
+        follicular_fluid_quality, complications, procedure_duration, primary_physician,
+        embryologist, physician_notes, embryologist_notes, org_id, recorded_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
+       RETURNING *`,
+      [
+        id, cycleId, patientId, retrievalDate, retrievalTime, triggerDate, triggerTime,
+        triggerMedication, anesthesiaType, anesthesiologist, rightOvaryFolliclesAspirated,
+        leftOvaryFolliclesAspirated, aspirationDifficulty, aspirationNotes,
+        totalOocytesRetrieved, matureOocytes, immatureOocytes, cumulusQuality,
+        follicularFluidQuality, JSON.stringify(complications), procedureDuration, primaryPhysician,
+        embryologist, physicianNotes, embryologistNotes, orgId, userId
+      ]
+    );
+
+    return this._formatIVFRetrieval(result.rows[0]);
+  }
+
+  /**
+   * Update retrieval record
+   * @param {string} retrievalId - Retrieval record ID
+   * @param {Object} updates - Updated fields
+   * @returns {Promise<Object>} Updated retrieval record
+   */
+  async updateIVFRetrieval(retrievalId, updates) {
+    const {
+      retrievalDate, retrievalTime, triggerDate, triggerTime, triggerMedication,
+      anesthesiaType, anesthesiologist, rightOvaryFolliclesAspirated,
+      leftOvaryFolliclesAspirated, aspirationDifficulty, aspirationNotes,
+      totalOocytesRetrieved, matureOocytes, immatureOocytes, cumulusQuality,
+      follicularFluidQuality, complications, procedureDuration, primaryPhysician,
+      embryologist, physicianNotes, embryologistNotes
+    } = updates;
+
+    const result = await this.pool.query(
+      `UPDATE obgyn_ivf_retrievals SET
+        retrieval_date = COALESCE($1, retrieval_date),
+        retrieval_time = COALESCE($2, retrieval_time),
+        trigger_date = COALESCE($3, trigger_date),
+        trigger_time = COALESCE($4, trigger_time),
+        trigger_medication = COALESCE($5, trigger_medication),
+        anesthesia_type = COALESCE($6, anesthesia_type),
+        anesthesiologist = COALESCE($7, anesthesiologist),
+        right_ovary_follicles_aspirated = COALESCE($8, right_ovary_follicles_aspirated),
+        left_ovary_follicles_aspirated = COALESCE($9, left_ovary_follicles_aspirated),
+        aspiration_difficulty = COALESCE($10, aspiration_difficulty),
+        aspiration_notes = COALESCE($11, aspiration_notes),
+        total_oocytes_retrieved = COALESCE($12, total_oocytes_retrieved),
+        mature_oocytes = COALESCE($13, mature_oocytes),
+        immature_oocytes = COALESCE($14, immature_oocytes),
+        cumulus_quality = COALESCE($15, cumulus_quality),
+        follicular_fluid_quality = COALESCE($16, follicular_fluid_quality),
+        complications = COALESCE($17, complications),
+        procedure_duration = COALESCE($18, procedure_duration),
+        primary_physician = COALESCE($19, primary_physician),
+        embryologist = COALESCE($20, embryologist),
+        physician_notes = COALESCE($21, physician_notes),
+        embryologist_notes = COALESCE($22, embryologist_notes),
+        updated_at = CURRENT_TIMESTAMP
+       WHERE id = $23
+       RETURNING *`,
+      [
+        retrievalDate, retrievalTime, triggerDate, triggerTime, triggerMedication,
+        anesthesiaType, anesthesiologist, rightOvaryFolliclesAspirated,
+        leftOvaryFolliclesAspirated, aspirationDifficulty, aspirationNotes,
+        totalOocytesRetrieved, matureOocytes, immatureOocytes, cumulusQuality,
+        follicularFluidQuality, complications ? JSON.stringify(complications) : null,
+        procedureDuration, primaryPhysician, embryologist, physicianNotes,
+        embryologistNotes, retrievalId
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Retrieval record not found');
+    }
+
+    return this._formatIVFRetrieval(result.rows[0]);
+  }
+
+  _formatIVFRetrieval(row) {
+    const parseJSON = (val) => {
+      if (!val) return null;
+      return typeof val === 'string' ? JSON.parse(val) : val;
+    };
+
+    return {
+      id: row.id,
+      cycleId: row.cycle_id,
+      patientId: row.patient_id,
+      retrievalDate: row.retrieval_date,
+      retrievalTime: row.retrieval_time,
+      triggerDate: row.trigger_date,
+      triggerTime: row.trigger_time,
+      triggerMedication: row.trigger_medication,
+      anesthesiaType: row.anesthesia_type,
+      anesthesiologist: row.anesthesiologist,
+      rightOvaryFolliclesAspirated: row.right_ovary_follicles_aspirated,
+      leftOvaryFolliclesAspirated: row.left_ovary_follicles_aspirated,
+      aspirationDifficulty: row.aspiration_difficulty,
+      aspirationNotes: row.aspiration_notes,
+      totalOocytesRetrieved: row.total_oocytes_retrieved,
+      matureOocytes: row.mature_oocytes,
+      immatureOocytes: row.immature_oocytes,
+      cumulusQuality: row.cumulus_quality,
+      follicularFluidQuality: row.follicular_fluid_quality,
+      complications: parseJSON(row.complications) || [],
+      procedureDuration: row.procedure_duration,
+      primaryPhysician: row.primary_physician,
+      embryologist: row.embryologist,
+      physicianNotes: row.physician_notes,
+      embryologistNotes: row.embryologist_notes,
+      recordedBy: row.recorded_by,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  // ============================================
+  // IVF Oocytes (Individual Oocyte Tracking)
+  // ============================================
+
+  /**
+   * Get oocytes for a retrieval
+   * @param {string} retrievalId - Retrieval ID
+   * @returns {Promise<Array>} Oocyte records
+   */
+  async getIVFOocytes(retrievalId) {
+    const result = await this.pool.query(
+      'SELECT * FROM obgyn_ivf_oocytes WHERE retrieval_id = $1 ORDER BY oocyte_number ASC',
+      [retrievalId]
+    );
+
+    return result.rows.map(row => this._formatIVFOocyte(row));
+  }
+
+  /**
+   * Create oocyte record
+   * @param {string} retrievalId - Retrieval ID
+   * @param {Object} data - Oocyte data
+   * @returns {Promise<Object>} Created oocyte record
+   */
+  async createIVFOocyte(retrievalId, data) {
+    const {
+      cycleId, patientId, oocyteNumber, ovarySide, maturityGrade, cumulusCells,
+      fertilizationMethod, inseminationTime, fertilizationCheckTime, pronucleiCount,
+      fertilizationStatus, polarBodies, cytoplasmQuality, zonaPellucida,
+      developedToEmbryo, embryoId, embryologistNotes, orgId
+    } = data;
+
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_ivf_oocytes
+       (id, retrieval_id, cycle_id, patient_id, oocyte_number, ovary_side, maturity_grade,
+        cumulus_cells, fertilization_method, insemination_time, fertilization_check_time,
+        pronuclei_count, fertilization_status, polar_bodies, cytoplasm_quality, zona_pellucida,
+        developed_to_embryo, embryo_id, embryologist_notes, org_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+       RETURNING *`,
+      [
+        id, retrievalId, cycleId, patientId, oocyteNumber, ovarySide, maturityGrade,
+        cumulusCells, fertilizationMethod, inseminationTime, fertilizationCheckTime,
+        pronucleiCount, fertilizationStatus, polarBodies, cytoplasmQuality, zonaPellucida,
+        developedToEmbryo, embryoId, embryologistNotes, orgId
+      ]
+    );
+
+    return this._formatIVFOocyte(result.rows[0]);
+  }
+
+  /**
+   * Update oocyte record
+   * @param {string} oocyteId - Oocyte record ID
+   * @param {Object} updates - Updated fields
+   * @returns {Promise<Object>} Updated oocyte record
+   */
+  async updateIVFOocyte(oocyteId, updates) {
+    const {
+      fertilizationMethod, inseminationTime, fertilizationCheckTime, pronucleiCount,
+      fertilizationStatus, polarBodies, cytoplasmQuality, zonaPellucida,
+      developedToEmbryo, embryoId, embryologistNotes
+    } = updates;
+
+    const result = await this.pool.query(
+      `UPDATE obgyn_ivf_oocytes SET
+        fertilization_method = COALESCE($1, fertilization_method),
+        insemination_time = COALESCE($2, insemination_time),
+        fertilization_check_time = COALESCE($3, fertilization_check_time),
+        pronuclei_count = COALESCE($4, pronuclei_count),
+        fertilization_status = COALESCE($5, fertilization_status),
+        polar_bodies = COALESCE($6, polar_bodies),
+        cytoplasm_quality = COALESCE($7, cytoplasm_quality),
+        zona_pellucida = COALESCE($8, zona_pellucida),
+        developed_to_embryo = COALESCE($9, developed_to_embryo),
+        embryo_id = COALESCE($10, embryo_id),
+        embryologist_notes = COALESCE($11, embryologist_notes),
+        updated_at = CURRENT_TIMESTAMP
+       WHERE id = $12
+       RETURNING *`,
+      [
+        fertilizationMethod, inseminationTime, fertilizationCheckTime, pronucleiCount,
+        fertilizationStatus, polarBodies, cytoplasmQuality, zonaPellucida,
+        developedToEmbryo, embryoId, embryologistNotes, oocyteId
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Oocyte record not found');
+    }
+
+    return this._formatIVFOocyte(result.rows[0]);
+  }
+
+  _formatIVFOocyte(row) {
+    return {
+      id: row.id,
+      retrievalId: row.retrieval_id,
+      cycleId: row.cycle_id,
+      patientId: row.patient_id,
+      oocyteNumber: row.oocyte_number,
+      ovarySide: row.ovary_side,
+      maturityGrade: row.maturity_grade,
+      cumulusCells: row.cumulus_cells,
+      fertilizationMethod: row.fertilization_method,
+      inseminationTime: row.insemination_time,
+      fertilizationCheckTime: row.fertilization_check_time,
+      pronucleiCount: row.pronuclei_count,
+      fertilizationStatus: row.fertilization_status,
+      polarBodies: row.polar_bodies,
+      cytoplasmQuality: row.cytoplasm_quality,
+      zonaPellucida: row.zona_pellucida,
+      developedToEmbryo: row.developed_to_embryo,
+      embryoId: row.embryo_id,
+      embryologistNotes: row.embryologist_notes,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  // ============================================
+  // IVF Embryo Development (Day-by-Day Tracking)
+  // ============================================
+
+  /**
+   * Get embryo development records for a cycle
+   * @param {string} cycleId - IVF Cycle ID
+   * @returns {Promise<Array>} Embryo development records
+   */
+  async getIVFEmbryoDevelopment(cycleId) {
+    const result = await this.pool.query(
+      'SELECT * FROM obgyn_ivf_embryo_development WHERE cycle_id = $1 ORDER BY embryo_number ASC',
+      [cycleId]
+    );
+
+    return result.rows.map(row => this._formatIVFEmbryoDevelopment(row));
+  }
+
+  /**
+   * Create embryo development record
+   * @param {string} cycleId - IVF Cycle ID
+   * @param {Object} data - Embryo development data
+   * @returns {Promise<Object>} Created embryo development record
+   */
+  async createIVFEmbryoDevelopment(cycleId, data) {
+    const {
+      oocyteId, patientId, embryoNumber,
+      day1CheckTime, day1Pronuclei, day1PolarBodies, day1Status, day1Notes,
+      day2CheckTime, day2CellCount, day2Fragmentation, day2Symmetry, day2Grade, day2Notes,
+      day3CheckTime, day3CellCount, day3Fragmentation, day3Symmetry, day3Compaction, day3Grade, day3Notes,
+      day4CheckTime, day4Stage, day4Notes,
+      day5CheckTime, day5Stage, day5Expansion, day5IcmGrade, day5TeGrade, day5OverallGrade, day5Notes,
+      day6CheckTime, day6Stage, day6Expansion, day6IcmGrade, day6TeGrade, day6OverallGrade, day6Notes,
+      day7CheckTime, day7Stage, day7Notes,
+      cultureMedia, incubatorType, co2Concentration, o2Concentration,
+      finalDisposition, dispositionDate, freezingMethod, thawSurvival,
+      biopsyDate, biopsyDay, pgtResult, pgtDetails,
+      primaryEmbryologist, orgId
+    } = data;
+
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_ivf_embryo_development
+       (id, oocyte_id, cycle_id, patient_id, embryo_number,
+        day1_check_time, day1_pronuclei, day1_polar_bodies, day1_status, day1_notes,
+        day2_check_time, day2_cell_count, day2_fragmentation, day2_symmetry, day2_grade, day2_notes,
+        day3_check_time, day3_cell_count, day3_fragmentation, day3_symmetry, day3_compaction, day3_grade, day3_notes,
+        day4_check_time, day4_stage, day4_notes,
+        day5_check_time, day5_stage, day5_expansion, day5_icm_grade, day5_te_grade, day5_overall_grade, day5_notes,
+        day6_check_time, day6_stage, day6_expansion, day6_icm_grade, day6_te_grade, day6_overall_grade, day6_notes,
+        day7_check_time, day7_stage, day7_notes,
+        culture_media, incubator_type, co2_concentration, o2_concentration,
+        final_disposition, disposition_date, freezing_method, thaw_survival,
+        biopsy_date, biopsy_day, pgt_result, pgt_details,
+        primary_embryologist, org_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
+               $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+               $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44,
+               $45, $46, $47, $48, $49, $50, $51, $52, $53)
+       RETURNING *`,
+      [
+        id, oocyteId, cycleId, patientId, embryoNumber,
+        day1CheckTime, day1Pronuclei, day1PolarBodies, day1Status, day1Notes,
+        day2CheckTime, day2CellCount, day2Fragmentation, day2Symmetry, day2Grade, day2Notes,
+        day3CheckTime, day3CellCount, day3Fragmentation, day3Symmetry, day3Compaction, day3Grade, day3Notes,
+        day4CheckTime, day4Stage, day4Notes,
+        day5CheckTime, day5Stage, day5Expansion, day5IcmGrade, day5TeGrade, day5OverallGrade, day5Notes,
+        day6CheckTime, day6Stage, day6Expansion, day6IcmGrade, day6TeGrade, day6OverallGrade, day6Notes,
+        day7CheckTime, day7Stage, day7Notes,
+        cultureMedia, incubatorType, co2Concentration, o2Concentration,
+        finalDisposition, dispositionDate, freezingMethod, thawSurvival,
+        biopsyDate, biopsyDay, pgtResult, pgtDetails ? JSON.stringify(pgtDetails) : null,
+        primaryEmbryologist, orgId
+      ]
+    );
+
+    return this._formatIVFEmbryoDevelopment(result.rows[0]);
+  }
+
+  /**
+   * Update embryo development record
+   * @param {string} embryoId - Embryo development record ID
+   * @param {Object} updates - Updated fields
+   * @returns {Promise<Object>} Updated embryo development record
+   */
+  async updateIVFEmbryoDevelopment(embryoId, updates) {
+    // This is a complex update with many optional fields
+    // Build dynamic query based on provided fields
+    const fields = [];
+    const values = [];
+    let paramCount = 1;
+
+    // Helper to add field to update
+    const addField = (dbField, value) => {
+      if (value !== undefined && value !== null) {
+        fields.push(`${dbField} = $${paramCount}`);
+        values.push(value);
+        paramCount++;
+      }
+    };
+
+    // Day 1 fields
+    addField('day1_check_time', updates.day1CheckTime);
+    addField('day1_pronuclei', updates.day1Pronuclei);
+    addField('day1_polar_bodies', updates.day1PolarBodies);
+    addField('day1_status', updates.day1Status);
+    addField('day1_notes', updates.day1Notes);
+
+    // Day 2 fields
+    addField('day2_check_time', updates.day2CheckTime);
+    addField('day2_cell_count', updates.day2CellCount);
+    addField('day2_fragmentation', updates.day2Fragmentation);
+    addField('day2_symmetry', updates.day2Symmetry);
+    addField('day2_grade', updates.day2Grade);
+    addField('day2_notes', updates.day2Notes);
+
+    // Day 3 fields
+    addField('day3_check_time', updates.day3CheckTime);
+    addField('day3_cell_count', updates.day3CellCount);
+    addField('day3_fragmentation', updates.day3Fragmentation);
+    addField('day3_symmetry', updates.day3Symmetry);
+    addField('day3_compaction', updates.day3Compaction);
+    addField('day3_grade', updates.day3Grade);
+    addField('day3_notes', updates.day3Notes);
+
+    // Day 4 fields
+    addField('day4_check_time', updates.day4CheckTime);
+    addField('day4_stage', updates.day4Stage);
+    addField('day4_notes', updates.day4Notes);
+
+    // Day 5 fields
+    addField('day5_check_time', updates.day5CheckTime);
+    addField('day5_stage', updates.day5Stage);
+    addField('day5_expansion', updates.day5Expansion);
+    addField('day5_icm_grade', updates.day5IcmGrade);
+    addField('day5_te_grade', updates.day5TeGrade);
+    addField('day5_overall_grade', updates.day5OverallGrade);
+    addField('day5_notes', updates.day5Notes);
+
+    // Day 6 fields
+    addField('day6_check_time', updates.day6CheckTime);
+    addField('day6_stage', updates.day6Stage);
+    addField('day6_expansion', updates.day6Expansion);
+    addField('day6_icm_grade', updates.day6IcmGrade);
+    addField('day6_te_grade', updates.day6TeGrade);
+    addField('day6_overall_grade', updates.day6OverallGrade);
+    addField('day6_notes', updates.day6Notes);
+
+    // Day 7 fields
+    addField('day7_check_time', updates.day7CheckTime);
+    addField('day7_stage', updates.day7Stage);
+    addField('day7_notes', updates.day7Notes);
+
+    // Culture and outcome fields
+    addField('culture_media', updates.cultureMedia);
+    addField('incubator_type', updates.incubatorType);
+    addField('co2_concentration', updates.co2Concentration);
+    addField('o2_concentration', updates.o2Concentration);
+    addField('final_disposition', updates.finalDisposition);
+    addField('disposition_date', updates.dispositionDate);
+    addField('freezing_method', updates.freezingMethod);
+    addField('thaw_survival', updates.thawSurvival);
+    addField('biopsy_date', updates.biopsyDate);
+    addField('biopsy_day', updates.biopsyDay);
+    addField('pgt_result', updates.pgtResult);
+    if (updates.pgtDetails) {
+      addField('pgt_details', JSON.stringify(updates.pgtDetails));
+    }
+    addField('primary_embryologist', updates.primaryEmbryologist);
+
+    if (fields.length === 0) {
+      throw new Error('No fields to update');
+    }
+
+    // Always update timestamp
+    fields.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(embryoId);
+
+    const query = `UPDATE obgyn_ivf_embryo_development SET ${fields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+
+    const result = await this.pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      throw new Error('Embryo development record not found');
+    }
+
+    return this._formatIVFEmbryoDevelopment(result.rows[0]);
+  }
+
+  _formatIVFEmbryoDevelopment(row) {
+    const parseJSON = (val) => {
+      if (!val) return null;
+      return typeof val === 'string' ? JSON.parse(val) : val;
+    };
+
+    return {
+      id: row.id,
+      oocyteId: row.oocyte_id,
+      cycleId: row.cycle_id,
+      patientId: row.patient_id,
+      embryoNumber: row.embryo_number,
+      day1CheckTime: row.day1_check_time,
+      day1Pronuclei: row.day1_pronuclei,
+      day1PolarBodies: row.day1_polar_bodies,
+      day1Status: row.day1_status,
+      day1Notes: row.day1_notes,
+      day2CheckTime: row.day2_check_time,
+      day2CellCount: row.day2_cell_count,
+      day2Fragmentation: row.day2_fragmentation,
+      day2Symmetry: row.day2_symmetry,
+      day2Grade: row.day2_grade,
+      day2Notes: row.day2_notes,
+      day3CheckTime: row.day3_check_time,
+      day3CellCount: row.day3_cell_count,
+      day3Fragmentation: row.day3_fragmentation,
+      day3Symmetry: row.day3_symmetry,
+      day3Compaction: row.day3_compaction,
+      day3Grade: row.day3_grade,
+      day3Notes: row.day3_notes,
+      day4CheckTime: row.day4_check_time,
+      day4Stage: row.day4_stage,
+      day4Notes: row.day4_notes,
+      day5CheckTime: row.day5_check_time,
+      day5Stage: row.day5_stage,
+      day5Expansion: row.day5_expansion,
+      day5IcmGrade: row.day5_icm_grade,
+      day5TeGrade: row.day5_te_grade,
+      day5OverallGrade: row.day5_overall_grade,
+      day5Notes: row.day5_notes,
+      day6CheckTime: row.day6_check_time,
+      day6Stage: row.day6_stage,
+      day6Expansion: row.day6_expansion,
+      day6IcmGrade: row.day6_icm_grade,
+      day6TeGrade: row.day6_te_grade,
+      day6OverallGrade: row.day6_overall_grade,
+      day6Notes: row.day6_notes,
+      day7CheckTime: row.day7_check_time,
+      day7Stage: row.day7_stage,
+      day7Notes: row.day7_notes,
+      cultureMedia: row.culture_media,
+      incubatorType: row.incubator_type,
+      co2Concentration: row.co2_concentration ? parseFloat(row.co2_concentration) : null,
+      o2Concentration: row.o2_concentration ? parseFloat(row.o2_concentration) : null,
+      finalDisposition: row.final_disposition,
+      dispositionDate: row.disposition_date,
+      freezingMethod: row.freezing_method,
+      thawSurvival: row.thaw_survival,
+      biopsyDate: row.biopsy_date,
+      biopsyDay: row.biopsy_day,
+      pgtResult: row.pgt_result,
+      pgtDetails: parseJSON(row.pgt_details),
+      primaryEmbryologist: row.primary_embryologist,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  // ============================================
   // Cervical Length
   // ============================================
 

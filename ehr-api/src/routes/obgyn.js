@@ -1375,6 +1375,266 @@ function initializeObGynRoutes(pool) {
   });
 
   // ============================================
+  // IVF Retrievals (Egg Collection Procedures)
+  // ============================================
+
+  /**
+   * GET /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/retrieval
+   * Get retrieval record for a cycle
+   */
+  router.get('/patients/:patientId/obgyn/ivf-cycles/:cycleId/retrieval', async (req, res) => {
+    try {
+      const { cycleId } = req.params;
+
+      const record = await obgynService.getIVFRetrieval(cycleId);
+
+      return res.json({
+        success: true,
+        record
+      });
+    } catch (error) {
+      console.error('Error fetching IVF retrieval record:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * POST /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/retrieval
+   * Create retrieval record
+   */
+  router.post('/patients/:patientId/obgyn/ivf-cycles/:cycleId/retrieval', async (req, res) => {
+    try {
+      const { patientId, cycleId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.createIVFRetrieval(cycleId, {
+        ...req.body,
+        patientId,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        record: result
+      });
+    } catch (error) {
+      console.error('Error creating IVF retrieval record:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * PATCH /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/retrieval/:retrievalId
+   * Update retrieval record
+   */
+  router.patch('/patients/:patientId/obgyn/ivf-cycles/:cycleId/retrieval/:retrievalId', async (req, res) => {
+    try {
+      const { retrievalId } = req.params;
+
+      const result = await obgynService.updateIVFRetrieval(retrievalId, req.body);
+
+      return res.json({
+        success: true,
+        record: result
+      });
+    } catch (error) {
+      console.error('Error updating IVF retrieval record:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
+  // IVF Oocytes (Individual Oocyte Tracking)
+  // ============================================
+
+  /**
+   * GET /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/retrieval/:retrievalId/oocytes
+   * Get oocytes for a retrieval
+   */
+  router.get('/patients/:patientId/obgyn/ivf-cycles/:cycleId/retrieval/:retrievalId/oocytes', async (req, res) => {
+    try {
+      const { retrievalId } = req.params;
+
+      const records = await obgynService.getIVFOocytes(retrievalId);
+
+      return res.json({
+        success: true,
+        records,
+        count: records.length
+      });
+    } catch (error) {
+      console.error('Error fetching IVF oocytes:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * POST /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/retrieval/:retrievalId/oocytes
+   * Create oocyte record
+   */
+  router.post('/patients/:patientId/obgyn/ivf-cycles/:cycleId/retrieval/:retrievalId/oocytes', async (req, res) => {
+    try {
+      const { patientId, cycleId, retrievalId } = req.params;
+      const orgId = req.headers['x-org-id'];
+
+      if (!orgId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required header: x-org-id'
+        });
+      }
+
+      const result = await obgynService.createIVFOocyte(retrievalId, {
+        ...req.body,
+        cycleId,
+        patientId,
+        orgId
+      });
+
+      return res.status(201).json({
+        success: true,
+        record: result
+      });
+    } catch (error) {
+      console.error('Error creating IVF oocyte record:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * PATCH /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/retrieval/:retrievalId/oocytes/:oocyteId
+   * Update oocyte record
+   */
+  router.patch('/patients/:patientId/obgyn/ivf-cycles/:cycleId/retrieval/:retrievalId/oocytes/:oocyteId', async (req, res) => {
+    try {
+      const { oocyteId } = req.params;
+
+      const result = await obgynService.updateIVFOocyte(oocyteId, req.body);
+
+      return res.json({
+        success: true,
+        record: result
+      });
+    } catch (error) {
+      console.error('Error updating IVF oocyte record:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
+  // IVF Embryo Development (Day-by-Day Tracking)
+  // ============================================
+
+  /**
+   * GET /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/embryos
+   * Get embryo development records for a cycle
+   */
+  router.get('/patients/:patientId/obgyn/ivf-cycles/:cycleId/embryos', async (req, res) => {
+    try {
+      const { cycleId } = req.params;
+
+      const records = await obgynService.getIVFEmbryoDevelopment(cycleId);
+
+      return res.json({
+        success: true,
+        records,
+        count: records.length
+      });
+    } catch (error) {
+      console.error('Error fetching IVF embryo development records:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * POST /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/embryos
+   * Create embryo development record
+   */
+  router.post('/patients/:patientId/obgyn/ivf-cycles/:cycleId/embryos', async (req, res) => {
+    try {
+      const { patientId, cycleId } = req.params;
+      const orgId = req.headers['x-org-id'];
+
+      if (!orgId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required header: x-org-id'
+        });
+      }
+
+      const result = await obgynService.createIVFEmbryoDevelopment(cycleId, {
+        ...req.body,
+        patientId,
+        orgId
+      });
+
+      return res.status(201).json({
+        success: true,
+        record: result
+      });
+    } catch (error) {
+      console.error('Error creating IVF embryo development record:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * PATCH /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/embryos/:embryoId
+   * Update embryo development record
+   */
+  router.patch('/patients/:patientId/obgyn/ivf-cycles/:cycleId/embryos/:embryoId', async (req, res) => {
+    try {
+      const { embryoId } = req.params;
+
+      const result = await obgynService.updateIVFEmbryoDevelopment(embryoId, req.body);
+
+      return res.json({
+        success: true,
+        record: result
+      });
+    } catch (error) {
+      console.error('Error updating IVF embryo development record:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
   // Cervical Length
   // ============================================
 

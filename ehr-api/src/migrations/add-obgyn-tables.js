@@ -515,6 +515,220 @@ async function up() {
 
     console.log('✅ Created obgyn_ivf_monitoring table');
 
+    // IVF Retrieval Procedures Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS obgyn_ivf_retrievals (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        cycle_id UUID NOT NULL REFERENCES obgyn_ivf_cycles(id) ON DELETE CASCADE,
+        patient_id VARCHAR(255) NOT NULL,
+
+        -- Procedure timing
+        retrieval_date DATE NOT NULL,
+        retrieval_time TIME,
+        trigger_date DATE,
+        trigger_time TIME,
+        trigger_medication VARCHAR(100),
+
+        -- Anesthesia details
+        anesthesia_type VARCHAR(50) CHECK (anesthesia_type IN ('general', 'conscious_sedation', 'local', 'none')),
+        anesthesiologist VARCHAR(255),
+
+        -- Aspiration details
+        right_ovary_follicles_aspirated INTEGER,
+        left_ovary_follicles_aspirated INTEGER,
+        aspiration_difficulty VARCHAR(50) CHECK (aspiration_difficulty IN ('easy', 'moderate', 'difficult')),
+        aspiration_notes TEXT,
+
+        -- Oocyte counts
+        total_oocytes_retrieved INTEGER NOT NULL DEFAULT 0,
+        mature_oocytes INTEGER DEFAULT 0,
+        immature_oocytes INTEGER DEFAULT 0,
+
+        -- Quality assessment
+        cumulus_quality VARCHAR(50) CHECK (cumulus_quality IN ('excellent', 'good', 'fair', 'poor')),
+        follicular_fluid_quality VARCHAR(50) CHECK (follicular_fluid_quality IN ('clear', 'bloody', 'cloudy')),
+
+        -- Procedure outcome
+        complications JSONB DEFAULT '[]',
+        procedure_duration INTEGER, -- minutes
+
+        -- Personnel
+        primary_physician VARCHAR(255),
+        embryologist VARCHAR(255),
+
+        -- Clinical notes
+        physician_notes TEXT,
+        embryologist_notes TEXT,
+
+        -- Tracking
+        org_id UUID NOT NULL,
+        recorded_by VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+        -- Ensure one retrieval per cycle
+        UNIQUE(cycle_id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_ivf_retrievals_cycle ON obgyn_ivf_retrievals(cycle_id);
+      CREATE INDEX IF NOT EXISTS idx_ivf_retrievals_patient ON obgyn_ivf_retrievals(patient_id);
+      CREATE INDEX IF NOT EXISTS idx_ivf_retrievals_date ON obgyn_ivf_retrievals(retrieval_date);
+    `);
+
+    console.log('✅ Created obgyn_ivf_retrievals table');
+
+    // IVF Oocytes Table (Individual oocyte tracking)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS obgyn_ivf_oocytes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        retrieval_id UUID NOT NULL REFERENCES obgyn_ivf_retrievals(id) ON DELETE CASCADE,
+        cycle_id UUID NOT NULL REFERENCES obgyn_ivf_cycles(id) ON DELETE CASCADE,
+        patient_id VARCHAR(255) NOT NULL,
+
+        -- Oocyte identification
+        oocyte_number INTEGER NOT NULL,
+        ovary_side VARCHAR(10) CHECK (ovary_side IN ('right', 'left', 'unknown')),
+
+        -- Maturity assessment (checked at retrieval)
+        maturity_grade VARCHAR(10) NOT NULL CHECK (maturity_grade IN ('MII', 'MI', 'GV', 'degenerated')),
+        cumulus_cells VARCHAR(50) CHECK (cumulus_cells IN ('expanded', 'compact', 'partial', 'denuded')),
+
+        -- Fertilization details
+        fertilization_method VARCHAR(50) CHECK (fertilization_method IN ('ICSI', 'conventional_IVF', 'rescue_ICSI', 'not_inseminated')),
+        insemination_time TIMESTAMP WITH TIME ZONE,
+
+        -- Fertilization check (Day 1 - ~16-18 hours post insemination)
+        fertilization_check_time TIMESTAMP WITH TIME ZONE,
+        pronuclei_count INTEGER CHECK (pronuclei_count BETWEEN 0 AND 5),
+        fertilization_status VARCHAR(50) CHECK (fertilization_status IN ('2PN_normal', '1PN', '3PN', 'unfertilized', 'degenerated')),
+        polar_bodies INTEGER CHECK (polar_bodies BETWEEN 0 AND 2),
+
+        -- Quality markers
+        cytoplasm_quality VARCHAR(50) CHECK (cytoplasm_quality IN ('clear', 'granular', 'dark', 'vacuolated')),
+        zona_pellucida VARCHAR(50) CHECK (zona_pellucida IN ('normal', 'thick', 'thin', 'dark')),
+
+        -- Outcome
+        developed_to_embryo BOOLEAN DEFAULT FALSE,
+        embryo_id UUID, -- Links to embryo_development record
+
+        -- Notes
+        embryologist_notes TEXT,
+
+        -- Tracking
+        org_id UUID NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+        UNIQUE(retrieval_id, oocyte_number)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_ivf_oocytes_retrieval ON obgyn_ivf_oocytes(retrieval_id);
+      CREATE INDEX IF NOT EXISTS idx_ivf_oocytes_cycle ON obgyn_ivf_oocytes(cycle_id);
+      CREATE INDEX IF NOT EXISTS idx_ivf_oocytes_maturity ON obgyn_ivf_oocytes(maturity_grade);
+      CREATE INDEX IF NOT EXISTS idx_ivf_oocytes_fertilization ON obgyn_ivf_oocytes(fertilization_status);
+    `);
+
+    console.log('✅ Created obgyn_ivf_oocytes table');
+
+    // IVF Embryo Development Table (Day-by-day tracking)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS obgyn_ivf_embryo_development (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        oocyte_id UUID REFERENCES obgyn_ivf_oocytes(id) ON DELETE SET NULL,
+        cycle_id UUID NOT NULL REFERENCES obgyn_ivf_cycles(id) ON DELETE CASCADE,
+        patient_id VARCHAR(255) NOT NULL,
+
+        -- Embryo identification
+        embryo_number INTEGER NOT NULL,
+
+        -- Day 1 (Fertilization check - 16-18h post insemination)
+        day1_check_time TIMESTAMP WITH TIME ZONE,
+        day1_pronuclei INTEGER CHECK (day1_pronuclei BETWEEN 0 AND 5),
+        day1_polar_bodies INTEGER CHECK (day1_polar_bodies BETWEEN 0 AND 2),
+        day1_status VARCHAR(50) CHECK (day1_status IN ('2PN', '1PN', '3PN', 'unfertilized')),
+        day1_notes TEXT,
+
+        -- Day 2 (4-cell stage - ~48h post insemination)
+        day2_check_time TIMESTAMP WITH TIME ZONE,
+        day2_cell_count INTEGER,
+        day2_fragmentation INTEGER CHECK (day2_fragmentation BETWEEN 0 AND 100),
+        day2_symmetry VARCHAR(50) CHECK (day2_symmetry IN ('symmetric', 'mildly_asymmetric', 'asymmetric')),
+        day2_grade VARCHAR(10),
+        day2_notes TEXT,
+
+        -- Day 3 (8-cell stage - ~72h post insemination)
+        day3_check_time TIMESTAMP WITH TIME ZONE,
+        day3_cell_count INTEGER,
+        day3_fragmentation INTEGER CHECK (day3_fragmentation BETWEEN 0 AND 100),
+        day3_symmetry VARCHAR(50) CHECK (day3_symmetry IN ('symmetric', 'mildly_asymmetric', 'asymmetric')),
+        day3_compaction VARCHAR(50) CHECK (day3_compaction IN ('none', 'beginning', 'partial', 'full')),
+        day3_grade VARCHAR(10),
+        day3_notes TEXT,
+
+        -- Day 4 (Morula stage)
+        day4_check_time TIMESTAMP WITH TIME ZONE,
+        day4_stage VARCHAR(50) CHECK (day4_stage IN ('compacting', 'morula', 'early_blast', 'arrested')),
+        day4_notes TEXT,
+
+        -- Day 5 (Blastocyst stage)
+        day5_check_time TIMESTAMP WITH TIME ZONE,
+        day5_stage VARCHAR(50) CHECK (day5_stage IN ('early_blast', 'blast', 'expanded_blast', 'hatching_blast', 'hatched_blast', 'arrested')),
+        day5_expansion VARCHAR(10) CHECK (day5_expansion IN ('1', '2', '3', '4', '5', '6')),
+        day5_icm_grade VARCHAR(10) CHECK (day5_icm_grade IN ('A', 'B', 'C')),
+        day5_te_grade VARCHAR(10) CHECK (day5_te_grade IN ('A', 'B', 'C')),
+        day5_overall_grade VARCHAR(10), -- e.g., "4AA", "3BB"
+        day5_notes TEXT,
+
+        -- Day 6 (Extended culture)
+        day6_check_time TIMESTAMP WITH TIME ZONE,
+        day6_stage VARCHAR(50) CHECK (day6_stage IN ('early_blast', 'blast', 'expanded_blast', 'hatching_blast', 'hatched_blast', 'arrested', 'degenerated')),
+        day6_expansion VARCHAR(10) CHECK (day6_expansion IN ('1', '2', '3', '4', '5', '6')),
+        day6_icm_grade VARCHAR(10) CHECK (day6_icm_grade IN ('A', 'B', 'C')),
+        day6_te_grade VARCHAR(10) CHECK (day6_te_grade IN ('A', 'B', 'C')),
+        day6_overall_grade VARCHAR(10),
+        day6_notes TEXT,
+
+        -- Day 7 (Very extended culture - rare)
+        day7_check_time TIMESTAMP WITH TIME ZONE,
+        day7_stage VARCHAR(50),
+        day7_notes TEXT,
+
+        -- Culture conditions
+        culture_media VARCHAR(100),
+        incubator_type VARCHAR(50) CHECK (incubator_type IN ('standard', 'time_lapse', 'benchtop')),
+        co2_concentration DECIMAL(4,2), -- percentage
+        o2_concentration DECIMAL(4,2), -- percentage
+
+        -- Outcome
+        final_disposition VARCHAR(50) CHECK (final_disposition IN ('fresh_transfer', 'frozen', 'biopsied', 'discarded', 'arrested', 'research')),
+        disposition_date DATE,
+        freezing_method VARCHAR(50) CHECK (freezing_method IN ('vitrification', 'slow_freeze', 'not_frozen')),
+        thaw_survival BOOLEAN,
+
+        -- PGT-A testing
+        biopsy_date DATE,
+        biopsy_day INTEGER CHECK (biopsy_day IN (3, 5, 6, 7)),
+        pgt_result VARCHAR(50) CHECK (pgt_result IN ('euploid', 'aneuploid', 'mosaic', 'no_result', 'pending')),
+        pgt_details JSONB,
+
+        -- Tracking
+        primary_embryologist VARCHAR(255),
+        org_id UUID NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+        UNIQUE(cycle_id, embryo_number)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_embryo_dev_cycle ON obgyn_ivf_embryo_development(cycle_id);
+      CREATE INDEX IF NOT EXISTS idx_embryo_dev_oocyte ON obgyn_ivf_embryo_development(oocyte_id);
+      CREATE INDEX IF NOT EXISTS idx_embryo_dev_day5_grade ON obgyn_ivf_embryo_development(day5_overall_grade);
+      CREATE INDEX IF NOT EXISTS idx_embryo_dev_disposition ON obgyn_ivf_embryo_development(final_disposition);
+      CREATE INDEX IF NOT EXISTS idx_embryo_dev_pgt ON obgyn_ivf_embryo_development(pgt_result);
+    `);
+
+    console.log('✅ Created obgyn_ivf_embryo_development table');
+
     // Cervical Length Table
     await client.query(`
       CREATE TABLE IF NOT EXISTS obgyn_cervical_length (
@@ -638,6 +852,9 @@ async function down() {
     await client.query('DROP TABLE IF EXISTS obgyn_care_plans CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_patient_education CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_cervical_length CASCADE');
+    await client.query('DROP TABLE IF EXISTS obgyn_ivf_embryo_development CASCADE');
+    await client.query('DROP TABLE IF EXISTS obgyn_ivf_oocytes CASCADE');
+    await client.query('DROP TABLE IF EXISTS obgyn_ivf_retrievals CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_ivf_monitoring CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_ivf_cycles CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_consents CASCADE');
