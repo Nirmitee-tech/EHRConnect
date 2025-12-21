@@ -436,6 +436,7 @@ async function up() {
         status VARCHAR(50) NOT NULL CHECK (status IN ('active', 'cancelled', 'completed', 'frozen')),
         start_date DATE NOT NULL,
         donor_cycle BOOLEAN DEFAULT FALSE,
+        indications JSONB DEFAULT '[]',
         baseline JSONB,
         semen_analysis JSONB,
         medications JSONB DEFAULT '[]',

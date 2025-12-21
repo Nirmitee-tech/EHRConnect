@@ -1571,6 +1571,7 @@ class ObGynService {
       status,
       startDate,
       donorCycle,
+      indications,
       baseline,
       semenAnalysis,
       medications,
@@ -1589,10 +1590,10 @@ class ObGynService {
     const result = await this.pool.query(
       `INSERT INTO obgyn_ivf_cycles
        (id, patient_id, episode_id, cycle_type, protocol_type, status, start_date,
-        donor_cycle, baseline, semen_analysis, medications, retrieval_date,
+        donor_cycle, indications, baseline, semen_analysis, medications, retrieval_date,
         oocytes_retrieved, mature_oocytes, embryos, monitoring_visits, transfers,
         cryo_storage, outcome, org_id, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
        RETURNING *`,
       [
         id,
@@ -1603,6 +1604,7 @@ class ObGynService {
         status || 'active',
         startDate,
         donorCycle || false,
+        indications ? JSON.stringify(indications) : '[]',
         baseline ? JSON.stringify(baseline) : null,
         semenAnalysis ? JSON.stringify(semenAnalysis) : null,
         medications ? JSON.stringify(medications) : null,
@@ -1635,6 +1637,7 @@ class ObGynService {
       status,
       startDate,
       donorCycle,
+      indications,
       baseline,
       semenAnalysis,
       medications,
@@ -1656,20 +1659,21 @@ class ObGynService {
         status = COALESCE($3, status),
         start_date = COALESCE($4, start_date),
         donor_cycle = COALESCE($5, donor_cycle),
-        baseline = COALESCE($6, baseline),
-        semen_analysis = COALESCE($7, semen_analysis),
-        medications = COALESCE($8, medications),
-        retrieval_date = COALESCE($9, retrieval_date),
-        oocytes_retrieved = COALESCE($10, oocytes_retrieved),
-        mature_oocytes = COALESCE($11, mature_oocytes),
-        embryos = COALESCE($12, embryos),
-        monitoring_visits = COALESCE($13, monitoring_visits),
-        transfers = COALESCE($14, transfers),
-        cryo_storage = COALESCE($15, cryo_storage),
-        outcome = COALESCE($16, outcome),
-        updated_by = $17,
+        indications = COALESCE($6, indications),
+        baseline = COALESCE($7, baseline),
+        semen_analysis = COALESCE($8, semen_analysis),
+        medications = COALESCE($9, medications),
+        retrieval_date = COALESCE($10, retrieval_date),
+        oocytes_retrieved = COALESCE($11, oocytes_retrieved),
+        mature_oocytes = COALESCE($12, mature_oocytes),
+        embryos = COALESCE($13, embryos),
+        monitoring_visits = COALESCE($14, monitoring_visits),
+        transfers = COALESCE($15, transfers),
+        cryo_storage = COALESCE($16, cryo_storage),
+        outcome = COALESCE($17, outcome),
+        updated_by = $18,
         updated_at = CURRENT_TIMESTAMP
-       WHERE id = $18
+       WHERE id = $19
        RETURNING *`,
       [
         cycleType,
@@ -1677,6 +1681,7 @@ class ObGynService {
         status,
         startDate,
         donorCycle,
+        indications ? JSON.stringify(indications) : null,
         baseline ? JSON.stringify(baseline) : null,
         semenAnalysis ? JSON.stringify(semenAnalysis) : null,
         medications ? JSON.stringify(medications) : null,
