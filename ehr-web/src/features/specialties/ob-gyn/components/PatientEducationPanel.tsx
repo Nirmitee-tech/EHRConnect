@@ -8,6 +8,7 @@ import {
   AlertTriangle, Info
 } from 'lucide-react';
 import { obgynService, PatientEducation } from '@/services/obgyn.service';
+import { useApiHeaders } from '@/hooks/useApiHeaders';
 
 interface PatientEducationPanelProps {
   patientId: string;
@@ -37,8 +38,10 @@ interface EducationModule {
  * - Print-friendly patient handouts
  */
 export function PatientEducationPanel({ patientId, episodeId }: PatientEducationPanelProps) {
+  const headers = useApiHeaders();
   const [loading, setLoading] = useState(true);
   const [educationRecords, setEducationRecords] = useState<PatientEducation[]>([]);
+  const [educationModules, setEducationModules] = useState<EducationModule[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     nutrition: true,
     warning_signs: true,
@@ -46,54 +49,6 @@ export function PatientEducationPanel({ patientId, episodeId }: PatientEducation
     breastfeeding: false
   });
   const [currentTrimester, setCurrentTrimester] = useState<1 | 2 | 3>(2);
-
-  // Education modules organized by category
-  const educationModules: EducationModule[] = [
-    // Nutrition
-    { id: 'nutr-1', title: 'Healthy Eating During Pregnancy', description: 'Essential nutrients, foods to avoid, meal planning', category: 'nutrition', trimester: 'all', contentType: 'video', duration: '12 min', required: true, url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
-    { id: 'nutr-2', title: 'Prenatal Vitamins & Supplements', description: 'Folic acid, iron, DHA importance and dosing', category: 'nutrition', trimester: 1, contentType: 'article', duration: '5 min', required: true, url: 'https://www.google.com/search?q=prenatal+vitamins' },
-    { id: 'nutr-3', title: 'Weight Gain Guidelines', description: 'IOM recommendations by BMI category', category: 'nutrition', trimester: 1, contentType: 'checklist', duration: '3 min', required: false },
-    { id: 'nutr-4', title: 'Managing Nausea & Food Aversions', description: 'Tips for first trimester nausea', category: 'nutrition', trimester: 1, contentType: 'article', duration: '4 min', required: false },
-    { id: 'nutr-5', title: 'Gestational Diabetes Diet', description: 'Carb counting, blood sugar management', category: 'nutrition', trimester: 2, contentType: 'interactive', duration: '15 min', required: false },
-
-    // Exercise
-    { id: 'exer-1', title: 'Safe Exercise During Pregnancy', description: 'Recommended activities, modifications, warning signs', category: 'exercise', trimester: 'all', contentType: 'video', duration: '10 min', required: true },
-    { id: 'exer-2', title: 'Pelvic Floor Exercises', description: 'Kegel exercises, pelvic tilts, preparation for labor', category: 'exercise', trimester: 2, contentType: 'video', duration: '8 min', required: true },
-    { id: 'exer-3', title: 'Third Trimester Comfort Positions', description: 'Sleep positions, stretches for back pain', category: 'exercise', trimester: 3, contentType: 'article', duration: '5 min', required: false },
-
-    // Warning Signs
-    { id: 'warn-1', title: 'When to Call Your Provider', description: 'Emergency signs and symptoms in pregnancy', category: 'warning_signs', trimester: 'all', contentType: 'checklist', duration: '5 min', required: true },
-    { id: 'warn-2', title: 'Preterm Labor Signs', description: 'Recognizing contractions, what to do', category: 'warning_signs', trimester: 2, contentType: 'video', duration: '8 min', required: true },
-    { id: 'warn-3', title: 'Preeclampsia Warning Signs', description: 'Headache, vision changes, swelling', category: 'warning_signs', trimester: 3, contentType: 'article', duration: '4 min', required: true },
-    { id: 'warn-4', title: 'Decreased Fetal Movement', description: 'Kick counts, when to call', category: 'warning_signs', trimester: 3, contentType: 'checklist', duration: '3 min', required: true },
-
-    // Medications
-    { id: 'meds-1', title: 'Safe Medications in Pregnancy', description: 'OTC medications, what to avoid', category: 'medications', trimester: 'all', contentType: 'article', duration: '6 min', required: true },
-    { id: 'meds-2', title: 'Understanding Your Prenatal Labs', description: 'What tests mean, follow-up', category: 'medications', trimester: 1, contentType: 'article', duration: '5 min', required: false },
-
-    // Labor Prep
-    { id: 'labor-1', title: 'Signs of Labor', description: 'True vs false labor, when to come in', category: 'labor_prep', trimester: 3, contentType: 'video', duration: '12 min', required: true },
-    { id: 'labor-2', title: 'Pain Management Options', description: 'Epidural, nitrous, natural techniques', category: 'labor_prep', trimester: 3, contentType: 'video', duration: '15 min', required: true },
-    { id: 'labor-3', title: 'Creating Your Birth Plan', description: 'Preferences, flexibility, communication', category: 'labor_prep', trimester: 3, contentType: 'interactive', duration: '20 min', required: false },
-    { id: 'labor-4', title: 'Hospital Bag Checklist', description: 'What to pack for labor and delivery', category: 'labor_prep', trimester: 3, contentType: 'checklist', duration: '5 min', required: false },
-    { id: 'labor-5', title: 'Cesarean Birth Information', description: 'What to expect, recovery', category: 'labor_prep', trimester: 3, contentType: 'video', duration: '10 min', required: false },
-
-    // Breastfeeding
-    { id: 'bf-1', title: 'Breastfeeding Basics', description: 'Benefits, latch, positioning', category: 'breastfeeding', trimester: 3, contentType: 'video', duration: '15 min', required: true },
-    { id: 'bf-2', title: 'Common Breastfeeding Challenges', description: 'Engorgement, mastitis, supply', category: 'breastfeeding', trimester: 'postpartum', contentType: 'article', duration: '8 min', required: false },
-    { id: 'bf-3', title: 'Pumping and Storing Milk', description: 'Pump types, storage guidelines', category: 'breastfeeding', trimester: 'postpartum', contentType: 'video', duration: '10 min', required: false },
-
-    // Newborn Care
-    { id: 'newborn-1', title: 'Newborn Care Essentials', description: 'Feeding, sleep, diapering basics', category: 'newborn_care', trimester: 3, contentType: 'video', duration: '20 min', required: true },
-    { id: 'newborn-2', title: 'Car Seat Safety', description: 'Installation, proper use', category: 'newborn_care', trimester: 3, contentType: 'video', duration: '8 min', required: true },
-    { id: 'newborn-3', title: 'Safe Sleep Guidelines', description: 'SIDS prevention, ABCs of safe sleep', category: 'newborn_care', trimester: 3, contentType: 'article', duration: '5 min', required: true },
-    { id: 'newborn-4', title: 'When to Call the Pediatrician', description: 'Warning signs in newborns', category: 'newborn_care', trimester: 'postpartum', contentType: 'checklist', duration: '4 min', required: true },
-
-    // Mental Health
-    { id: 'mh-1', title: 'Emotional Changes in Pregnancy', description: 'Normal mood changes, when to seek help', category: 'mental_health', trimester: 'all', contentType: 'article', duration: '6 min', required: true },
-    { id: 'mh-2', title: 'Postpartum Depression Awareness', description: 'Signs, risk factors, getting help', category: 'mental_health', trimester: 3, contentType: 'video', duration: '10 min', required: true },
-    { id: 'mh-3', title: 'Partner Support During Pregnancy', description: 'Communication, involvement', category: 'mental_health', trimester: 'all', contentType: 'article', duration: '5 min', required: false },
-  ];
 
   const categoryIcons: Record<string, React.ReactNode> = {
     nutrition: <Apple className="h-4 w-4" />,
@@ -125,13 +80,33 @@ export function PatientEducationPanel({ patientId, episodeId }: PatientEducation
   };
 
   useEffect(() => {
-    fetchEducationRecords();
-  }, [patientId, episodeId]);
+    async function fetchData() {
+      if (!headers['x-org-id'] || !headers['x-user-id']) {
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const [modulesResponse, recordsResponse] = await Promise.all([
+          fetch('/api/education-modules'),
+          obgynService.getPatientEducation(patientId, episodeId, headers)
+        ]);
+        const modulesData = await modulesResponse.json();
+        setEducationModules(modulesData);
+        setEducationRecords(recordsResponse);
+      } catch (error) {
+        console.error('Error fetching education data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [patientId, episodeId, headers['x-org-id'], headers['x-user-id']]);
 
   const fetchEducationRecords = async () => {
     try {
       setLoading(true);
-      const data = await obgynService.getPatientEducation(patientId, episodeId);
+      const data = await obgynService.getPatientEducation(patientId, episodeId, headers);
       setEducationRecords(data);
     } catch (error) {
       console.error('Error fetching education records:', error);
@@ -156,7 +131,7 @@ export function PatientEducationPanel({ patientId, episodeId }: PatientEducation
         completed: true,
         completedDate: new Date().toISOString(),
         episodeId
-      });
+      }, headers);
       setEducationRecords(prev => [
         ...prev.filter(r => r.moduleId !== moduleId),
         { moduleId, completed: true, completedDate: new Date().toISOString() }
