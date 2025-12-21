@@ -1134,6 +1134,170 @@ export interface IVFEmbryoDevelopment {
   updatedAt: string;
 }
 
+// ============================================
+// IVF Transfer Types (Phase 3)
+// ============================================
+
+export interface IVFTransfer {
+  id: string;
+  cycleId: string;
+  patientId: string;
+
+  // Transfer basic info
+  transferDate: string;
+  transferTime?: string;
+  transferType?: 'fresh' | 'frozen' | 'donor';
+
+  // Embryo details
+  embryoIds?: string[];
+  numberTransferred: number;
+  embryoGrades?: string;
+  embryoAges?: any[];
+  embryoDay?: 'day3' | 'day5' | 'day6';
+
+  // Endometrial preparation (FET)
+  prepProtocol?: 'medicated' | 'natural' | 'modified_natural' | 'not_applicable';
+  prepStartDate?: string;
+  estrogenMedication?: string;
+  estrogenDose?: string;
+  estrogenRoute?: 'oral' | 'transdermal' | 'vaginal' | 'injection';
+  progesteroneMedication?: string;
+  progesteroneDose?: string;
+  progesteroneRoute?: 'injection' | 'vaginal' | 'oral' | 'combined';
+  progesteroneStartDate?: string;
+  progesteroneDays?: number;
+
+  // Transfer day labs
+  estradiolLevel?: number;
+  progesteroneLevel?: number;
+  endometrialThickness?: number;
+  endometrialPattern?: 'trilaminar' | 'homogeneous' | 'heterogeneous';
+
+  // Procedure details
+  catheterType?: string;
+  catheterLoadedBy?: string;
+  transferPerformedBy: string;
+  difficulty?: 'easy' | 'moderate' | 'difficult';
+  difficultyReason?: string;
+  ultrasoundGuidance?: boolean;
+  bladderVolume?: 'optimal' | 'adequate' | 'inadequate' | 'overfilled';
+  cervicalDilationNeeded?: boolean;
+  tenaculumUsed?: boolean;
+  trialTransferDone?: boolean;
+  distanceFromFundus?: number;
+  airBubbleVisible?: boolean;
+  embryoVisibilityConfirmed?: boolean;
+  bloodOnCatheter?: boolean;
+  mucusOnCatheter?: boolean;
+
+  // Post-transfer
+  bedRestMinutes?: number;
+  patientToleratedWell?: boolean;
+  complications?: string;
+  dischargeTime?: string;
+
+  // Clinical assessment
+  clinicianConfidence?: number;
+  clinicianNotes?: string;
+  technicalQuality?: 'excellent' | 'good' | 'fair' | 'poor';
+
+  // Post-transfer instructions
+  betaHcgDate?: string;
+  continueMedications?: boolean;
+  activityRestrictions?: string;
+  followUpInstructions?: string;
+  predictedSuccessRate?: number;
+
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
+export async function getIVFTransfers(
+  patientId: string,
+  cycleId: string,
+  headers?: Record<string, string>
+): Promise<IVFTransfer[]> {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/transfers`,
+      getAxiosConfig(headers)
+    );
+    return response.data.transfers || [];
+  } catch (error) {
+    if (isAxiosErrorWithStatus(error, 404)) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function getIVFTransfer(
+  patientId: string,
+  cycleId: string,
+  transferId: string,
+  headers?: Record<string, string>
+): Promise<IVFTransfer | null> {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/transfers/${transferId}`,
+      getAxiosConfig(headers)
+    );
+    return response.data.transfer;
+  } catch (error) {
+    if (isAxiosErrorWithStatus(error, 404)) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function createIVFTransfer(
+  patientId: string,
+  cycleId: string,
+  data: Partial<IVFTransfer>,
+  headers?: Record<string, string>
+): Promise<IVFTransfer> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/transfers`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.transfer;
+}
+
+export async function updateIVFTransfer(
+  patientId: string,
+  cycleId: string,
+  transferId: string,
+  updates: Partial<IVFTransfer>,
+  headers?: Record<string, string>
+): Promise<IVFTransfer> {
+  const response = await axios.patch(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/transfers/${transferId}`,
+    updates,
+    getAxiosConfig(headers)
+  );
+  return response.data.transfer;
+}
+
+export async function deleteIVFTransfer(
+  patientId: string,
+  cycleId: string,
+  transferId: string,
+  headers?: Record<string, string>
+): Promise<void> {
+  await axios.delete(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/transfers/${transferId}`,
+    getAxiosConfig(headers)
+  );
+}
+
+// ============================================
+// IVF Embryo Development
+// ============================================
+
 export async function getIVFEmbryos(
   patientId: string,
   cycleId: string,

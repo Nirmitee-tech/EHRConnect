@@ -14,6 +14,7 @@ import { useApiHeaders } from '@/hooks/useApiHeaders';
 import { StimulationMonitoringPanel } from './StimulationMonitoringPanel';
 import { RetrievalReportPanel } from './RetrievalReportPanel';
 import { EmbryologyLabPanel } from './EmbryologyLabPanel';
+import TransferDayPanel from './TransferDayPanel';
 
 interface IVFCaseSheetProps {
   patientId: string;
@@ -719,6 +720,31 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
             {expandedSections.embryology && activeCycle && (
               <div className="border-t border-gray-200">
                 <EmbryologyLabPanel
+                  patientId={patientId}
+                  cycleId={activeCycle.id}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Transfer Day Section */}
+          <div className="bg-white rounded border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, transfer: !prev.transfer }))}
+              className="w-full flex items-center justify-between p-2 text-left hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                {expandedSections.transfer ? <ChevronDown className="h-3 w-3 text-gray-400" /> : <ChevronRight className="h-3 w-3 text-gray-400" />}
+                <ArrowRightLeft className="h-3.5 w-3.5 text-pink-600" />
+                <span className="text-xs font-semibold text-gray-900">Transfer Day Report</span>
+              </div>
+              <span className="px-1.5 py-0.5 text-[9px] bg-pink-100 text-pink-700 rounded">
+                PHASE 3
+              </span>
+            </button>
+            {expandedSections.transfer && activeCycle && (
+              <div className="border-t border-gray-200">
+                <TransferDayPanel
                   patientId={patientId}
                   cycleId={activeCycle.id}
                 />
