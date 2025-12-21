@@ -6,14 +6,25 @@
  */
 
 import { useEffect } from 'react';
-import { specialtyRegistry, ObGynSpecialty } from '@/features/specialties';
+import {
+  specialtyRegistry,
+  GeneralSpecialty,
+  ObGynSpecialty,
+  PediatricsSpecialty
+} from '@/features/specialties';
 
 export function SpecialtyInitializer() {
   useEffect(() => {
     console.log('🚀 Initializing specialty modules...');
 
+    // Register General specialty (Primary Care)
+    specialtyRegistry.register(GeneralSpecialty);
+
     // Register OB/GYN specialty
     specialtyRegistry.register(ObGynSpecialty);
+
+    // Register Pediatrics specialty
+    specialtyRegistry.register(PediatricsSpecialty);
 
     // Register future specialties here:
     // specialtyRegistry.register(OrthopedicsSpecialty);

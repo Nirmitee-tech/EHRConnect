@@ -24,6 +24,7 @@ export default function SpecialtiesAdminPage() {
   const availablePacks = [
     { slug: 'general', version: '1.0.0', name: 'General Primary Care', description: 'Default specialty pack for general primary care practice' },
     { slug: 'ob-gyn', version: '1.0.0', name: 'OB/GYN & Prenatal', description: 'Obstetrics, gynecology, prenatal care, and postpartum workflows' },
+    { slug: 'pediatrics', version: '1.0.0', name: 'Pediatrics & Child Health', description: 'Pediatric care, growth monitoring, immunizations, and developmental screening' },
     { slug: 'orthopedics', version: '1.0.0', name: 'Orthopedics', description: 'Orthopedic surgery, trauma, and rehabilitation' },
     { slug: 'wound-care', version: '1.0.0', name: 'Wound Care', description: 'Wound assessment, management, and healing tracking' }
   ];
