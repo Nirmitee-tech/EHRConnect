@@ -1,0 +1,386 @@
+{
+  "slug": "pediatrics",
+  "version": "1.0.0",
+  "name": "Pediatrics & Child Health",
+  "description": "Comprehensive pediatric care for patients 0-18 years across all developmental stages",
+  "category": "clinical",
+  "icon": "Baby",
+  "color": "#10B981",
+  "dependencies": ["general"],
+
+  "navigation": {
+    "sections": [
+      {
+        "id": "dashboard",
+        "label": "Dashboard",
+        "icon": "LayoutDashboard",
+        "category": "general",
+        "order": 1
+      },
+      {
+        "id": "pediatric-overview",
+        "label": "Pediatric Overview",
+        "icon": "FileText",
+        "category": "clinical",
+        "order": 2,
+        "componentName": "PediatricOverview"
+      },
+      {
+        "id": "growth-chart",
+        "label": "Growth Chart",
+        "icon": "TrendingUp",
+        "category": "clinical",
+        "order": 3,
+        "componentName": "GrowthChart"
+      },
+      {
+        "id": "vitals-tracking",
+        "label": "Vital Signs",
+        "icon": "Activity",
+        "category": "clinical",
+        "order": 4,
+        "componentName": "VitalSignsPanel"
+      },
+      {
+        "id": "well-visits",
+        "label": "Well-Child Visits",
+        "icon": "Calendar",
+        "category": "clinical",
+        "order": 5,
+        "componentName": "WellVisitPanel"
+      },
+      {
+        "id": "immunizations",
+        "label": "Immunizations",
+        "icon": "Syringe",
+        "category": "clinical",
+        "order": 6,
+        "componentName": "ImmunizationPanel"
+      },
+      {
+        "id": "developmental-screening",
+        "label": "Developmental Screening",
+        "icon": "Brain",
+        "category": "clinical",
+        "order": 7,
+        "componentName": "DevelopmentalScreening"
+      },
+      {
+        "id": "newborn-screening",
+        "label": "Newborn Screening",
+        "icon": "Baby",
+        "category": "clinical",
+        "order": 8,
+        "componentName": "NewbornScreeningPanel"
+      },
+      {
+        "id": "headss-assessment",
+        "label": "HEADSS Assessment",
+        "icon": "UserCheck",
+        "category": "clinical",
+        "order": 9,
+        "componentName": "HEADSSAssessment"
+      },
+      {
+        "id": "nutrition",
+        "label": "Nutrition Assessment",
+        "icon": "Utensils",
+        "category": "clinical",
+        "order": 10,
+        "componentName": "NutritionPanel"
+      },
+      {
+        "id": "lead-screening",
+        "label": "Lead Screening",
+        "icon": "TestTube",
+        "category": "clinical",
+        "order": 11,
+        "componentName": "LeadScreeningPanel"
+      },
+      {
+        "id": "tb-screening",
+        "label": "TB Risk Assessment",
+        "icon": "Stethoscope",
+        "category": "clinical",
+        "order": 12,
+        "componentName": "TBScreeningPanel"
+      },
+      {
+        "id": "autism-screening",
+        "label": "Autism Screening",
+        "icon": "ScanFace",
+        "category": "clinical",
+        "order": 13,
+        "componentName": "AutismScreeningPanel"
+      },
+      {
+        "id": "behavioral-assessment",
+        "label": "Behavioral Assessment",
+        "icon": "MessageSquare",
+        "category": "clinical",
+        "order": 14,
+        "componentName": "BehavioralAssessmentPanel"
+      },
+      {
+        "id": "mental-health",
+        "label": "Mental Health Screening",
+        "icon": "Heart",
+        "category": "clinical",
+        "order": 15,
+        "componentName": "MentalHealthPanel"
+      },
+      {
+        "id": "substance-use",
+        "label": "Substance Use Screening",
+        "icon": "AlertTriangle",
+        "category": "clinical",
+        "order": 16,
+        "componentName": "SubstanceUsePanel"
+      },
+      {
+        "id": "sexual-health",
+        "label": "Sexual Health",
+        "icon": "Shield",
+        "category": "clinical",
+        "order": 17,
+        "componentName": "SexualHealthPanel"
+      },
+      {
+        "id": "injury-prevention",
+        "label": "Injury Prevention",
+        "icon": "ShieldCheck",
+        "category": "clinical",
+        "order": 18,
+        "componentName": "InjuryPreventionPanel"
+      },
+      {
+        "id": "vision-screening",
+        "label": "Vision Screening",
+        "icon": "Eye",
+        "category": "clinical",
+        "order": 19,
+        "componentName": "VisionScreeningPanel"
+      },
+      {
+        "id": "hearing-screening",
+        "label": "Hearing Screening",
+        "icon": "Ear",
+        "category": "clinical",
+        "order": 20,
+        "componentName": "HearingScreeningPanel"
+      },
+      {
+        "id": "medications",
+        "label": "Medications",
+        "icon": "Pill",
+        "category": "clinical",
+        "order": 21,
+        "componentName": "PediatricMedicationsPanel"
+      },
+      {
+        "id": "allergies",
+        "label": "Allergies",
+        "icon": "AlertCircle",
+        "category": "clinical",
+        "order": 22,
+        "componentName": "AllergiesPanel"
+      },
+      {
+        "id": "medical-history",
+        "label": "Medical History",
+        "icon": "History",
+        "category": "clinical",
+        "order": 23,
+        "componentName": "MedicalHistoryPanel"
+      },
+      {
+        "id": "family-history",
+        "label": "Family History",
+        "icon": "Users",
+        "category": "clinical",
+        "order": 24,
+        "componentName": "FamilyHistoryPanel"
+      },
+      {
+        "id": "social-determinants",
+        "label": "Social Determinants",
+        "icon": "Home",
+        "category": "clinical",
+        "order": 25,
+        "componentName": "SocialDeterminantsPanel"
+      },
+      {
+        "id": "sports-physical",
+        "label": "Sports Physical",
+        "icon": "Dumbbell",
+        "category": "clinical",
+        "order": 26,
+        "componentName": "SportsPhysicalPanel"
+      },
+      {
+        "id": "care-coordination",
+        "label": "Care Coordination",
+        "icon": "Network",
+        "category": "clinical",
+        "order": 27,
+        "componentName": "CareCoordinationPanel"
+      },
+      {
+        "id": "encounters",
+        "label": "Visit Details",
+        "icon": "Calendar",
+        "category": "clinical",
+        "order": 28
+      }
+    ],
+    "replaceSections": false,
+    "mergeWith": "general"
+  },
+
+  "templates": [
+    "templates/pediatric-intake.json",
+    "templates/well-child-visit.json",
+    "templates/newborn-visit.json",
+    "templates/adolescent-visit.json",
+    "templates/headss-assessment.json",
+    "templates/developmental-screening.json"
+  ],
+
+  "visitTypes": "visit-types.json",
+
+  "workflows": "workflows/pediatric-care.json",
+
+  "reports": "reports/pediatric-kpis.json",
+
+  "featureFlags": {
+    "enableGrowthTracking": true,
+    "enableImmunizations": true,
+    "enableDevelopmentalScreening": true,
+    "enableNewbornScreening": true,
+    "enableHEADSSAssessment": true,
+    "enableNutritionAssessment": true,
+    "enableLeadScreening": true,
+    "enableTBScreening": true,
+    "enableAutismScreening": true,
+    "enableBehavioralAssessment": true,
+    "enableMentalHealthScreening": true,
+    "enableSubstanceUseScreening": true,
+    "enableSexualHealthAssessment": true,
+    "enableInjuryPrevention": true,
+    "enableVisionScreening": true,
+    "enableHearingScreening": true,
+    "enableSportsPhysicals": true,
+    "enableCareCoordination": true,
+    "enableSocialDeterminants": true,
+    "enableWellVisitTracking": true,
+    "enableVitalSignsTracking": true,
+    "enableMaternalLinkage": true
+  },
+
+  "devices": [],
+
+  "episodeConfig": {
+    "allowConcurrent": true,
+    "defaultState": "active",
+    "requiredFields": ["date_of_birth"],
+    "optionalFields": ["gestational_age_at_birth", "birth_weight", "linked_maternal_patient_id"],
+    "stateTransitions": {
+      "planned": ["active", "cancelled"],
+      "active": ["finished", "cancelled"],
+      "finished": [],
+      "cancelled": []
+    }
+  },
+
+  "ageGroups": [
+    {
+      "id": "newborn",
+      "label": "Newborn",
+      "minAge": 0,
+      "maxAge": 1,
+      "unit": "months"
+    },
+    {
+      "id": "infant",
+      "label": "Infant",
+      "minAge": 1,
+      "maxAge": 12,
+      "unit": "months"
+    },
+    {
+      "id": "toddler",
+      "label": "Toddler",
+      "minAge": 1,
+      "maxAge": 3,
+      "unit": "years"
+    },
+    {
+      "id": "preschool",
+      "label": "Preschool",
+      "minAge": 3,
+      "maxAge": 5,
+      "unit": "years"
+    },
+    {
+      "id": "school-age",
+      "label": "School Age",
+      "minAge": 5,
+      "maxAge": 13,
+      "unit": "years"
+    },
+    {
+      "id": "adolescent",
+      "label": "Adolescent",
+      "minAge": 13,
+      "maxAge": 18,
+      "unit": "years"
+    }
+  ],
+
+  "vitalSignsRanges": {
+    "newborn": {
+      "heartRate": { "min": 100, "max": 160 },
+      "respiratoryRate": { "min": 30, "max": 60 },
+      "systolicBP": { "min": 60, "max": 90 },
+      "diastolicBP": { "min": 20, "max": 60 }
+    },
+    "infant": {
+      "heartRate": { "min": 100, "max": 160 },
+      "respiratoryRate": { "min": 25, "max": 40 },
+      "systolicBP": { "min": 80, "max": 100 },
+      "diastolicBP": { "min": 55, "max": 65 }
+    },
+    "toddler": {
+      "heartRate": { "min": 90, "max": 150 },
+      "respiratoryRate": { "min": 20, "max": 30 },
+      "systolicBP": { "min": 95, "max": 105 },
+      "diastolicBP": { "min": 60, "max": 70 }
+    },
+    "preschool": {
+      "heartRate": { "min": 80, "max": 120 },
+      "respiratoryRate": { "min": 20, "max": 25 },
+      "systolicBP": { "min": 95, "max": 110 },
+      "diastolicBP": { "min": 60, "max": 75 }
+    },
+    "school-age": {
+      "heartRate": { "min": 70, "max": 110 },
+      "respiratoryRate": { "min": 18, "max": 22 },
+      "systolicBP": { "min": 100, "max": 120 },
+      "diastolicBP": { "min": 60, "max": 75 }
+    },
+    "adolescent": {
+      "heartRate": { "min": 60, "max": 100 },
+      "respiratoryRate": { "min": 12, "max": 20 },
+      "systolicBP": { "min": 100, "max": 135 },
+      "diastolicBP": { "min": 65, "max": 85 }
+    }
+  },
+
+  "bmiCategories": {
+    "underweight": { "percentile": 5 },
+    "healthy": { "percentile": 85 },
+    "overweight": { "percentile": 95 },
+    "obese": { "percentile": 95 },
+    "severeObese": { "bmi": 35, "percentile": 120 }
+  }
+}
