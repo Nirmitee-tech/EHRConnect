@@ -1720,6 +1720,7 @@ class ObGynService {
       status: row.status,
       startDate: row.start_date,
       donorCycle: row.donor_cycle,
+      indications: parseJSON(row.indications) || [],
       baseline: parseJSON(row.baseline),
       semenAnalysis: parseJSON(row.semen_analysis),
       medications: parseJSON(row.medications) || [],

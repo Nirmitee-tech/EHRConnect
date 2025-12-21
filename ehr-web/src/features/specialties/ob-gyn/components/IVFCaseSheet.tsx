@@ -44,6 +44,7 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
   const headers = useApiHeaders(); // Get API headers from session
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [cycles, setCycles] = useState<IVFCycle[]>([]);
   const [activeCycleId, setActiveCycleId] = useState<string | null>(null);
   const [showNewCycleDialog, setShowNewCycleDialog] = useState(false);
@@ -58,6 +59,10 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
     transfer: false,
     outcome: true
   });
+
+  // Local editing state for baseline fields
+  const [editingBaseline, setEditingBaseline] = useState<any>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Form state for new cycle
   const [newCycleForm, setNewCycleForm] = useState({
@@ -95,6 +100,14 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
     cycles.find(c => c.id === activeCycleId),
     [cycles, activeCycleId]
   );
+
+  // Initialize editing state when active cycle changes
+  useEffect(() => {
+    if (activeCycle) {
+      setEditingBaseline(activeCycle.baseline || {});
+      setHasUnsavedChanges(false);
+    }
+  }, [activeCycle?.id]);
 
   // Clinical insights based on cycle data
   const clinicalInsights = useMemo(() => {
@@ -230,11 +243,34 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
       setSaving(true);
       const updated = await obgynService.updateIVFCycle(patientId, activeCycle.id, updates, headers);
       setCycles(prev => prev.map(c => c.id === activeCycle.id ? updated : c));
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error('Error updating cycle:', error);
     } finally {
       setSaving(false);
     }
+  };
+
+  const saveBaseline = async () => {
+    if (!activeCycle || !editingBaseline) return;
+    try {
+      setSaving(true);
+      const updated = await obgynService.updateIVFCycle(patientId, activeCycle.id, { baseline: editingBaseline }, headers);
+      setCycles(prev => prev.map(c => c.id === activeCycle.id ? updated : c));
+      setHasUnsavedChanges(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (error) {
+      console.error('Error saving baseline:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateBaselineField = (field: string, value: any) => {
+    setEditingBaseline((prev: any) => ({ ...prev, [field]: value }));
+    setHasUnsavedChanges(true);
   };
 
   const getCycleStatusBadge = (status: string) => {
@@ -479,17 +515,38 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
           {/* Rest of sections with compact styling... */}
           {/* Baseline Evaluation Section */}
           <div className="bg-white border border-gray-200 rounded">
-            <button
-              onClick={() => toggleSection('baseline')}
-              className="w-full flex items-center justify-between p-2 text-left hover:bg-gray-50"
-            >
-              <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-between p-2">
+              <button
+                onClick={() => toggleSection('baseline')}
+                className="flex items-center gap-1.5 flex-1 text-left hover:bg-gray-50 rounded px-1 py-1"
+              >
                 {expandedSections.baseline ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                 <Target className="h-3 w-3 text-purple-600" />
                 <span className="text-xs font-semibold text-gray-900">Baseline Evaluation</span>
-              </div>
-              <span className="text-[10px] text-gray-500">AFC, Hormones, SA</span>
-            </button>
+                <span className="text-[10px] text-gray-500 ml-auto">AFC, Hormones, SA</span>
+              </button>
+              {hasUnsavedChanges && (
+                <button
+                  onClick={saveBaseline}
+                  disabled={saving}
+                  className="ml-2 flex items-center gap-1 px-2 py-1 text-[10px] bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50 transition-all"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : saveSuccess ? (
+                    <>
+                      <CheckCircle className="h-3 w-3" />
+                      <span>Saved!</span>
+                    </>
+                  ) : (
+                    <span>Save Changes</span>
+                  )}
+                </button>
+              )}
+            </div>
 
             {expandedSections.baseline && (
               <div className="p-2 border-t border-gray-200 space-y-2">
@@ -501,10 +558,8 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
                       <label className="text-[9px] text-gray-500">Left</label>
                       <input
                         type="number"
-                        value={activeCycle.baseline?.afcLeft || ''}
-                        onChange={(e) => updateCycle({
-                          baseline: { ...activeCycle.baseline, afcLeft: parseInt(e.target.value) || 0 }
-                        })}
+                        value={editingBaseline?.afcLeft ?? ''}
+                        onChange={(e) => updateBaselineField('afcLeft', parseInt(e.target.value) || 0)}
                         className="w-full mt-0.5 px-1.5 py-0.5 text-[10px] border border-gray-300 rounded focus:ring-primary focus:border-primary"
                         placeholder="0"
                       />
@@ -513,10 +568,8 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
                       <label className="text-[9px] text-gray-500">Right</label>
                       <input
                         type="number"
-                        value={activeCycle.baseline?.afcRight || ''}
-                        onChange={(e) => updateCycle({
-                          baseline: { ...activeCycle.baseline, afcRight: parseInt(e.target.value) || 0 }
-                        })}
+                        value={editingBaseline?.afcRight ?? ''}
+                        onChange={(e) => updateBaselineField('afcRight', parseInt(e.target.value) || 0)}
                         className="w-full mt-0.5 px-1.5 py-0.5 text-[10px] border border-gray-300 rounded focus:ring-primary focus:border-primary"
                         placeholder="0"
                       />
@@ -524,7 +577,7 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
                     <div>
                       <label className="text-[9px] text-gray-500">Total</label>
                       <div className="mt-0.5 px-1.5 py-0.5 text-[10px] bg-gray-50 rounded font-semibold border border-gray-200">
-                        {(activeCycle.baseline?.afcLeft || 0) + (activeCycle.baseline?.afcRight || 0)}
+                        {(editingBaseline?.afcLeft || 0) + (editingBaseline?.afcRight || 0)}
                       </div>
                     </div>
                   </div>
@@ -547,10 +600,8 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
                         <input
                           type="number"
                           step="0.1"
-                          value={(activeCycle.baseline as Record<string, number | undefined>)?.[key] ?? ''}
-                          onChange={(e) => updateCycle({
-                            baseline: { ...activeCycle.baseline, [key]: parseFloat(e.target.value) || 0 }
-                          })}
+                          value={editingBaseline?.[key] ?? ''}
+                          onChange={(e) => updateBaselineField(key, parseFloat(e.target.value) || 0)}
                           className="w-full mt-0.5 px-1.5 py-0.5 text-[10px] border border-gray-300 rounded focus:ring-primary focus:border-primary"
                           placeholder="0"
                         />
