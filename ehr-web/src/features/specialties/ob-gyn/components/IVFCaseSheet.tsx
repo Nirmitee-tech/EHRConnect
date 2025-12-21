@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { obgynService, IVFCycle, Embryo } from '@/services/obgyn.service';
+import { useApiHeaders } from '@/hooks/useApiHeaders';
 
 interface IVFCaseSheetProps {
   patientId: string;
@@ -40,6 +41,7 @@ const FERTILITY_CONDITIONS = [
  */
 export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
   const { data: session } = useSession();
+  const headers = useApiHeaders(); // Get API headers from session
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [cycles, setCycles] = useState<IVFCycle[]>([]);
@@ -67,15 +69,17 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
     donorCycle: false
   });
 
-  // Fetch cycles on mount
+  // Fetch cycles on mount and when session headers change
   useEffect(() => {
-    fetchCycles();
-  }, [patientId, episodeId]);
+    if (headers['x-org-id'] && headers['x-user-id']) {
+      fetchCycles();
+    }
+  }, [patientId, episodeId, headers['x-org-id'], headers['x-user-id']]);
 
   const fetchCycles = async () => {
     try {
       setLoading(true);
-      const data = await obgynService.getIVFCycles(patientId, episodeId);
+      const data = await obgynService.getIVFCycles(patientId, episodeId, headers);
       setCycles(data);
       if (data.length > 0) {
         setActiveCycleId(data[0].id);
@@ -201,7 +205,7 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
         embryos: [],
         transfers: [],
         cryoStorage: []
-      });
+      }, headers);
       setCycles(prev => [newCycle, ...prev]);
       setActiveCycleId(newCycle.id);
       setShowNewCycleDialog(false);
@@ -224,7 +228,7 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
     if (!activeCycle) return;
     try {
       setSaving(true);
-      const updated = await obgynService.updateIVFCycle(patientId, activeCycle.id, updates);
+      const updated = await obgynService.updateIVFCycle(patientId, activeCycle.id, updates, headers);
       setCycles(prev => prev.map(c => c.id === activeCycle.id ? updated : c));
     } catch (error) {
       console.error('Error updating cycle:', error);
