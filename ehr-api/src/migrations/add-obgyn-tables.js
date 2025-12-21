@@ -12,7 +12,11 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  database: process.env.DB_NAME || 'medplum',
+  user: process.env.DB_USER || 'medplum',
+  password: process.env.DB_PASSWORD || 'medplum123'
 });
 
 async function up() {
@@ -234,11 +238,12 @@ async function up() {
         created_by VARCHAR(255),
         updated_by VARCHAR(255),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(patient_id, COALESCE(episode_id, '00000000-0000-0000-0000-000000000000'::uuid))
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE INDEX IF NOT EXISTS idx_preg_history_patient ON obgyn_pregnancy_history(patient_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_preg_history_unique
+        ON obgyn_pregnancy_history(patient_id, COALESCE(episode_id, '00000000-0000-0000-0000-000000000000'::uuid));
     `);
 
     console.log('✅ Created obgyn_pregnancy_history table');
@@ -258,8 +263,7 @@ async function up() {
         created_by VARCHAR(255),
         updated_by VARCHAR(255),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(patient_id, COALESCE(episode_id, '00000000-0000-0000-0000-000000000000'::uuid))
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE INDEX IF NOT EXISTS idx_genetic_patient ON obgyn_genetic_screening(patient_id);
@@ -279,8 +283,7 @@ async function up() {
         created_by VARCHAR(255),
         updated_by VARCHAR(255),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(patient_id, COALESCE(episode_id, '00000000-0000-0000-0000-000000000000'::uuid))
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE INDEX IF NOT EXISTS idx_labs_patient ON obgyn_labs_tracking(patient_id);
@@ -299,8 +302,7 @@ async function up() {
         created_by VARCHAR(255),
         updated_by VARCHAR(255),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(patient_id, COALESCE(episode_id, '00000000-0000-0000-0000-000000000000'::uuid))
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE INDEX IF NOT EXISTS idx_kicks_patient ON obgyn_kick_counts(patient_id);
@@ -319,8 +321,7 @@ async function up() {
         created_by VARCHAR(255),
         updated_by VARCHAR(255),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(patient_id, COALESCE(episode_id, '00000000-0000-0000-0000-000000000000'::uuid))
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE INDEX IF NOT EXISTS idx_birthplan_patient ON obgyn_birth_plans(patient_id);
@@ -339,8 +340,7 @@ async function up() {
         created_by VARCHAR(255),
         updated_by VARCHAR(255),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(patient_id, COALESCE(episode_id, '00000000-0000-0000-0000-000000000000'::uuid))
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE INDEX IF NOT EXISTS idx_vitals_patient ON obgyn_vitals_log(patient_id);
@@ -360,8 +360,7 @@ async function up() {
         created_by VARCHAR(255),
         updated_by VARCHAR(255),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(patient_id, COALESCE(episode_id, '00000000-0000-0000-0000-000000000000'::uuid))
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE INDEX IF NOT EXISTS idx_fetal_patient ON obgyn_fetal_assessment(patient_id);
@@ -380,8 +379,7 @@ async function up() {
         created_by VARCHAR(255),
         updated_by VARCHAR(255),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(patient_id, COALESCE(episode_id, '00000000-0000-0000-0000-000000000000'::uuid))
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE INDEX IF NOT EXISTS idx_risk_patient ON obgyn_risk_assessments(patient_id);
@@ -400,8 +398,7 @@ async function up() {
         created_by VARCHAR(255),
         updated_by VARCHAR(255),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(patient_id, COALESCE(episode_id, '00000000-0000-0000-0000-000000000000'::uuid))
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE INDEX IF NOT EXISTS idx_meds_patient ON obgyn_medications(patient_id);
@@ -420,8 +417,7 @@ async function up() {
         created_by VARCHAR(255),
         updated_by VARCHAR(255),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(patient_id, COALESCE(episode_id, '00000000-0000-0000-0000-000000000000'::uuid))
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE INDEX IF NOT EXISTS idx_consents_patient ON obgyn_consents(patient_id);
