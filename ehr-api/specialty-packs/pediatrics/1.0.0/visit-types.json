@@ -1,0 +1,572 @@
+{
+  "visitTypes": [
+    {
+      "id": "newborn-birth",
+      "name": "Newborn Birth Visit",
+      "description": "Initial assessment at birth",
+      "ageRange": {
+        "min": 0,
+        "max": 0,
+        "unit": "days"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "physical_exam",
+        "apgar_score",
+        "birth_weight_length_hc",
+        "newborn_screening_counseling"
+      ]
+    },
+    {
+      "id": "newborn-3-5-day",
+      "name": "Newborn 3-5 Day Visit",
+      "description": "Early newborn follow-up",
+      "ageRange": {
+        "min": 3,
+        "max": 5,
+        "unit": "days"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "weight_check",
+        "jaundice_assessment",
+        "feeding_assessment",
+        "newborn_screening_status"
+      ]
+    },
+    {
+      "id": "newborn-7-10-day",
+      "name": "Newborn 7-10 Day Visit",
+      "description": "Late newborn follow-up",
+      "ageRange": {
+        "min": 7,
+        "max": 10,
+        "unit": "days"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "weight_check",
+        "feeding_assessment",
+        "umbilical_cord_status"
+      ]
+    },
+    {
+      "id": "well-child-1-month",
+      "name": "1 Month Well-Child Visit",
+      "description": "Well-child check at 1 month",
+      "ageRange": {
+        "min": 1,
+        "max": 1,
+        "unit": "months"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "developmental_screening",
+        "immunizations",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "well-child-2-month",
+      "name": "2 Month Well-Child Visit",
+      "description": "Well-child check at 2 months",
+      "ageRange": {
+        "min": 2,
+        "max": 2,
+        "unit": "months"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "developmental_screening",
+        "immunizations",
+        "anticipatory_guidance"
+      ],
+      "immunizations": ["DTaP", "IPV", "Hib", "PCV13", "Rotavirus", "HepB"]
+    },
+    {
+      "id": "well-child-4-month",
+      "name": "4 Month Well-Child Visit",
+      "description": "Well-child check at 4 months",
+      "ageRange": {
+        "min": 4,
+        "max": 4,
+        "unit": "months"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "developmental_screening",
+        "immunizations",
+        "anticipatory_guidance"
+      ],
+      "immunizations": ["DTaP", "IPV", "Hib", "PCV13", "Rotavirus"]
+    },
+    {
+      "id": "well-child-6-month",
+      "name": "6 Month Well-Child Visit",
+      "description": "Well-child check at 6 months",
+      "ageRange": {
+        "min": 6,
+        "max": 6,
+        "unit": "months"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "developmental_screening",
+        "immunizations",
+        "anticipatory_guidance",
+        "solid_foods_introduction"
+      ],
+      "immunizations": ["DTaP", "IPV", "Hib", "PCV13", "Rotavirus", "Influenza"]
+    },
+    {
+      "id": "well-child-9-month",
+      "name": "9 Month Well-Child Visit",
+      "description": "Well-child check at 9 months",
+      "ageRange": {
+        "min": 9,
+        "max": 9,
+        "unit": "months"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "developmental_screening",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "well-child-12-month",
+      "name": "12 Month Well-Child Visit",
+      "description": "Well-child check at 12 months",
+      "ageRange": {
+        "min": 12,
+        "max": 12,
+        "unit": "months"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "developmental_screening",
+        "immunizations",
+        "lead_screening",
+        "tb_risk_assessment",
+        "anticipatory_guidance"
+      ],
+      "immunizations": ["Hib", "PCV13", "MMR", "Varicella", "HepA"]
+    },
+    {
+      "id": "well-child-15-month",
+      "name": "15 Month Well-Child Visit",
+      "description": "Well-child check at 15 months",
+      "ageRange": {
+        "min": 15,
+        "max": 15,
+        "unit": "months"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "developmental_screening",
+        "immunizations",
+        "anticipatory_guidance"
+      ],
+      "immunizations": ["DTaP"]
+    },
+    {
+      "id": "well-child-18-month",
+      "name": "18 Month Well-Child Visit",
+      "description": "Well-child check at 18 months",
+      "ageRange": {
+        "min": 18,
+        "max": 18,
+        "unit": "months"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "developmental_screening",
+        "autism_screening",
+        "immunizations",
+        "anticipatory_guidance"
+      ],
+      "immunizations": ["HepA", "Influenza"]
+    },
+    {
+      "id": "well-child-24-month",
+      "name": "24 Month Well-Child Visit",
+      "description": "Well-child check at 24 months (2 years)",
+      "ageRange": {
+        "min": 24,
+        "max": 24,
+        "unit": "months"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "developmental_screening",
+        "autism_screening",
+        "lead_screening",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "well-child-30-month",
+      "name": "30 Month Well-Child Visit",
+      "description": "Well-child check at 30 months (2.5 years)",
+      "ageRange": {
+        "min": 30,
+        "max": 30,
+        "unit": "months"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "developmental_screening",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "well-child-3-year",
+      "name": "3 Year Well-Child Visit",
+      "description": "Well-child check at 3 years",
+      "ageRange": {
+        "min": 3,
+        "max": 3,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "developmental_screening",
+        "vision_screening",
+        "hearing_screening",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "well-child-4-year",
+      "name": "4 Year Well-Child Visit",
+      "description": "Well-child check at 4 years",
+      "ageRange": {
+        "min": 4,
+        "max": 4,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "developmental_screening",
+        "vision_screening",
+        "hearing_screening",
+        "immunizations",
+        "anticipatory_guidance"
+      ],
+      "immunizations": ["DTaP", "IPV", "MMR", "Varicella"]
+    },
+    {
+      "id": "well-child-5-year",
+      "name": "5 Year Well-Child Visit",
+      "description": "Well-child check at 5 years (kindergarten)",
+      "ageRange": {
+        "min": 5,
+        "max": 5,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "developmental_screening",
+        "vision_screening",
+        "hearing_screening",
+        "school_readiness_assessment",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "well-child-6-year",
+      "name": "6 Year Well-Child Visit",
+      "description": "Well-child check at 6 years",
+      "ageRange": {
+        "min": 6,
+        "max": 6,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "vision_screening",
+        "hearing_screening",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "well-child-7-year",
+      "name": "7 Year Well-Child Visit",
+      "description": "Well-child check at 7 years",
+      "ageRange": {
+        "min": 7,
+        "max": 7,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "vision_screening",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "well-child-8-year",
+      "name": "8 Year Well-Child Visit",
+      "description": "Well-child check at 8 years",
+      "ageRange": {
+        "min": 8,
+        "max": 8,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "vision_screening",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "well-child-9-year",
+      "name": "9 Year Well-Child Visit",
+      "description": "Well-child check at 9 years",
+      "ageRange": {
+        "min": 9,
+        "max": 9,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "vision_screening",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "well-child-10-year",
+      "name": "10 Year Well-Child Visit",
+      "description": "Well-child check at 10 years",
+      "ageRange": {
+        "min": 10,
+        "max": 10,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "vision_screening",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "well-child-11-year",
+      "name": "11 Year Well-Child Visit",
+      "description": "Well-child check at 11 years",
+      "ageRange": {
+        "min": 11,
+        "max": 11,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "vision_screening",
+        "immunizations",
+        "anticipatory_guidance"
+      ],
+      "immunizations": ["Tdap", "MenACWY", "HPV"]
+    },
+    {
+      "id": "well-child-12-year",
+      "name": "12 Year Well-Child Visit",
+      "description": "Well-child check at 12 years",
+      "ageRange": {
+        "min": 12,
+        "max": 12,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "vision_screening",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "well-child-13-year",
+      "name": "13 Year Well-Child Visit",
+      "description": "Well-child check at 13 years",
+      "ageRange": {
+        "min": 13,
+        "max": 13,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "vision_screening",
+        "headss_assessment",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "well-child-14-year",
+      "name": "14 Year Well-Child Visit",
+      "description": "Well-child check at 14 years",
+      "ageRange": {
+        "min": 14,
+        "max": 14,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "headss_assessment",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "well-child-15-year",
+      "name": "15 Year Well-Child Visit",
+      "description": "Well-child check at 15 years",
+      "ageRange": {
+        "min": 15,
+        "max": 15,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "headss_assessment",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "well-child-16-year",
+      "name": "16 Year Well-Child Visit",
+      "description": "Well-child check at 16 years",
+      "ageRange": {
+        "min": 16,
+        "max": 16,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "headss_assessment",
+        "immunizations",
+        "anticipatory_guidance"
+      ],
+      "immunizations": ["MenACWY", "MenB"]
+    },
+    {
+      "id": "well-child-17-year",
+      "name": "17 Year Well-Child Visit",
+      "description": "Well-child check at 17 years",
+      "ageRange": {
+        "min": 17,
+        "max": 17,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "headss_assessment",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "well-child-18-year",
+      "name": "18 Year Well-Child Visit",
+      "description": "Well-child check at 18 years (transition to adult care)",
+      "ageRange": {
+        "min": 18,
+        "max": 18,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "growth_measurements",
+        "headss_assessment",
+        "transition_planning",
+        "anticipatory_guidance"
+      ]
+    },
+    {
+      "id": "sports-physical",
+      "name": "Sports Physical Examination",
+      "description": "Pre-participation sports physical",
+      "ageRange": {
+        "min": 5,
+        "max": 18,
+        "unit": "years"
+      },
+      "duration": 30,
+      "requiredComponents": [
+        "medical_history_review",
+        "cardiovascular_screening",
+        "musculoskeletal_exam",
+        "clearance_determination"
+      ]
+    },
+    {
+      "id": "sick-visit",
+      "name": "Sick Visit",
+      "description": "Acute illness visit",
+      "ageRange": {
+        "min": 0,
+        "max": 18,
+        "unit": "years"
+      },
+      "duration": 20,
+      "requiredComponents": [
+        "chief_complaint",
+        "focused_exam",
+        "diagnosis",
+        "treatment_plan"
+      ]
+    },
+    {
+      "id": "developmental-screening-visit",
+      "name": "Developmental Screening Visit",
+      "description": "Dedicated developmental assessment",
+      "ageRange": {
+        "min": 0,
+        "max": 5,
+        "unit": "years"
+      },
+      "duration": 45,
+      "requiredComponents": [
+        "developmental_screening",
+        "parent_concerns",
+        "recommendations"
+      ]
+    },
+    {
+      "id": "mental-health-visit",
+      "name": "Mental Health Visit",
+      "description": "Mental health screening and support",
+      "ageRange": {
+        "min": 5,
+        "max": 18,
+        "unit": "years"
+      },
+      "duration": 45,
+      "requiredComponents": [
+        "mental_health_screening",
+        "risk_assessment",
+        "safety_planning",
+        "recommendations"
+      ]
+    }
+  ]
+}

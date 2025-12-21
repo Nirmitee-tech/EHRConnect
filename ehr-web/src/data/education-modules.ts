@@ -1,5 +1,5 @@
 
-interface EducationModule {
+export interface EducationModule {
   id: string;
   title: string;
   description: string;

@@ -1,0 +1,65 @@
+{
+  "slug": "cardiology",
+  "version": "1.0.0",
+  "name": "Cardiology & Cardiovascular Care",
+  "description": "Cardiac assessments, cardiovascular care, and heart disease management",
+  "category": "clinical",
+  "icon": "Heart",
+  "color": "#EF4444",
+  "dependencies": ["general"],
+
+  "navigation": {
+    "sections": [
+      {
+        "id": "dashboard",
+        "label": "Dashboard",
+        "icon": "LayoutDashboard",
+        "category": "general",
+        "order": 1
+      },
+      {
+        "id": "cardiology-overview",
+        "label": "Cardiology Overview",
+        "icon": "LayoutDashboard",
+        "category": "clinical",
+        "order": 2,
+        "componentName": "CardiologyOverview"
+      },
+      {
+        "id": "cardiac-assessment",
+        "label": "Cardiac Assessment",
+        "icon": "Activity",
+        "category": "clinical",
+        "order": 3,
+        "componentName": "CardiacAssessment"
+      }
+    ],
+    "replaceSections": false,
+    "mergeWith": "general"
+  },
+
+  "templates": [],
+  "visitTypes": "visit-types.json",
+  "workflows": "workflows/cardiology.json",
+  "reports": "reports/cardiology-kpis.json",
+
+  "featureFlags": {
+    "enableECGTracking": true,
+    "enableCardiacRiskAssessment": true
+  },
+
+  "devices": [],
+
+  "episodeConfig": {
+    "allowConcurrent": true,
+    "defaultState": "active",
+    "requiredFields": [],
+    "stateTransitions": {
+      "planned": ["active", "cancelled"],
+      "active": ["onhold", "finished", "cancelled"],
+      "onhold": ["active", "finished", "cancelled"],
+      "finished": [],
+      "cancelled": []
+    }
+  }
+}

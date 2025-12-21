@@ -36,6 +36,7 @@ const countryRoutes = require('./routes/countries');
 const translationRoutes = require('./routes/translations');
 const initializeEpisodeRoutes = require('./routes/episodes');
 const initializeObGynRoutes = require('./routes/obgyn');
+const initializePediatricsRoutes = require('./routes/pediatrics');
 const formsRoutes = require('./routes/forms');
 const tasksRoutes = require('./routes/tasks');
 const taskRulesRoutes = require('./routes/task-rules');
@@ -268,6 +269,7 @@ app.use('/api/rules', rulesRoutes); // Universal Rule Engine routes
 app.use('/api/abdm', abdmRoutes); // ABDM (Ayushman Bharat Digital Mission) Integration routes
 app.use('/api/education-modules', educationModuleRoutes);
 app.use('/api', initializeObGynRoutes(dbPool)); // OB/GYN specialty routes
+app.use('/api', initializePediatricsRoutes(dbPool)); // Pediatrics specialty routes
 
 // Health check
 app.get('/health', (req, res) => {

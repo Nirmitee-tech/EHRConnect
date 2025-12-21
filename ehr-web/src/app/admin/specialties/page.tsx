@@ -24,8 +24,12 @@ export default function SpecialtiesAdminPage() {
   const availablePacks = [
     { slug: 'general', version: '1.0.0', name: 'General Primary Care', description: 'Default specialty pack for general primary care practice' },
     { slug: 'ob-gyn', version: '1.0.0', name: 'OB/GYN & Prenatal', description: 'Obstetrics, gynecology, prenatal care, and postpartum workflows' },
-    { slug: 'orthopedics', version: '1.0.0', name: 'Orthopedics', description: 'Orthopedic surgery, trauma, and rehabilitation' },
-    { slug: 'wound-care', version: '1.0.0', name: 'Wound Care', description: 'Wound assessment, management, and healing tracking' }
+    { slug: 'pediatrics', version: '1.0.0', name: 'Pediatrics & Child Health', description: 'Pediatric care, growth monitoring, immunizations, and developmental screening' },
+    { slug: 'orthopedics', version: '1.0.0', name: 'Orthopedics & Sports Medicine', description: 'Orthopedic surgery, sports medicine, joint care, and rehabilitation' },
+    { slug: 'dermatology', version: '1.0.0', name: 'Dermatology & Skin Care', description: 'Skin conditions, dermatological treatments, and cosmetic procedures' },
+    { slug: 'mental-health', version: '1.0.0', name: 'Mental Health & Psychiatry', description: 'Mental health assessments, therapy, and psychiatric care' },
+    { slug: 'cardiology', version: '1.0.0', name: 'Cardiology & Cardiovascular Care', description: 'Cardiac assessments, cardiovascular care, and heart disease management' },
+    { slug: 'wound-care', version: '1.0.0', name: 'Wound Care & Hyperbaric Medicine', description: 'Wound assessment, management, healing tracking, and hyperbaric therapy' }
   ];
 
   useEffect(() => {
