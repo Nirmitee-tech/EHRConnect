@@ -462,6 +462,59 @@ async function up() {
 
     console.log('✅ Created obgyn_ivf_cycles table');
 
+    // IVF Monitoring Table (Daily Stimulation Tracking)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS obgyn_ivf_monitoring (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        cycle_id UUID NOT NULL REFERENCES obgyn_ivf_cycles(id) ON DELETE CASCADE,
+        patient_id VARCHAR(255) NOT NULL,
+        monitoring_date DATE NOT NULL,
+        stim_day INTEGER NOT NULL CHECK (stim_day >= 0),
+
+        -- Follicle measurements (in mm)
+        follicles_right JSONB DEFAULT '[]',
+        follicles_left JSONB DEFAULT '[]',
+
+        -- Hormone levels
+        estradiol_pg_ml DECIMAL(10,2),
+        lh_miu_ml DECIMAL(10,2),
+        progesterone_ng_ml DECIMAL(10,2),
+
+        -- Endometrial thickness
+        endometrial_thickness_mm DECIMAL(5,2),
+        endometrial_pattern VARCHAR(50) CHECK (endometrial_pattern IN ('trilaminar', 'homogeneous', 'irregular')),
+
+        -- Medication adjustments
+        medication_changes JSONB DEFAULT '[]',
+
+        -- Clinical notes
+        assessment TEXT,
+        plan TEXT,
+
+        -- Decision support flags
+        trigger_ready BOOLEAN DEFAULT FALSE,
+        ohss_risk_level VARCHAR(20) CHECK (ohss_risk_level IN ('low', 'moderate', 'high', 'critical')),
+
+        -- Tracking
+        recorded_by VARCHAR(255) NOT NULL,
+        org_id UUID NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+        -- Ensure one entry per cycle per date
+        UNIQUE(cycle_id, monitoring_date)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_ivf_monitoring_cycle ON obgyn_ivf_monitoring(cycle_id);
+      CREATE INDEX IF NOT EXISTS idx_ivf_monitoring_patient ON obgyn_ivf_monitoring(patient_id);
+      CREATE INDEX IF NOT EXISTS idx_ivf_monitoring_date ON obgyn_ivf_monitoring(monitoring_date);
+      CREATE INDEX IF NOT EXISTS idx_ivf_monitoring_stim_day ON obgyn_ivf_monitoring(stim_day);
+      CREATE INDEX IF NOT EXISTS idx_ivf_monitoring_trigger ON obgyn_ivf_monitoring(trigger_ready) WHERE trigger_ready = TRUE;
+      CREATE INDEX IF NOT EXISTS idx_ivf_monitoring_ohss ON obgyn_ivf_monitoring(ohss_risk_level) WHERE ohss_risk_level IN ('high', 'critical');
+    `);
+
+    console.log('✅ Created obgyn_ivf_monitoring table');
+
     // Cervical Length Table
     await client.query(`
       CREATE TABLE IF NOT EXISTS obgyn_cervical_length (
@@ -585,6 +638,7 @@ async function down() {
     await client.query('DROP TABLE IF EXISTS obgyn_care_plans CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_patient_education CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_cervical_length CASCADE');
+    await client.query('DROP TABLE IF EXISTS obgyn_ivf_monitoring CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_ivf_cycles CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_consents CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_medications CASCADE');

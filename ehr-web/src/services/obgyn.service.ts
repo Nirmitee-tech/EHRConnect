@@ -798,6 +798,96 @@ export async function updateIVFCycle(
 }
 
 // ============================================
+// IVF Monitoring (Daily Stimulation Tracking)
+// ============================================
+
+export interface IVFMonitoringRecord {
+  id: string;
+  cycleId: string;
+  patientId: string;
+  monitoringDate: string;
+  stimDay: number;
+  folliclesRight: number[];
+  folliclesLeft: number[];
+  estradiolPgMl: number | null;
+  lhMiuMl: number | null;
+  progesteroneNgMl: number | null;
+  endometrialThicknessMm: number | null;
+  endometrialPattern: 'trilaminar' | 'homogeneous' | 'irregular' | null;
+  medicationChanges: Array<{ medication: string; dosage: string; reason: string }>;
+  assessment: string;
+  plan: string;
+  triggerReady: boolean;
+  ohssRiskLevel: 'low' | 'moderate' | 'high' | 'critical' | null;
+  recordedBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getIVFMonitoring(
+  patientId: string,
+  cycleId: string,
+  headers?: Record<string, string>
+): Promise<{ records: IVFMonitoringRecord[]; count: number }> {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/monitoring`,
+      getAxiosConfig(headers)
+    );
+    return {
+      records: response.data.records || [],
+      count: response.data.count || 0
+    };
+  } catch (error) {
+    if (isAxiosErrorWithStatus(error, 404)) {
+      return { records: [], count: 0 };
+    }
+    throw error;
+  }
+}
+
+export async function createIVFMonitoring(
+  patientId: string,
+  cycleId: string,
+  data: Partial<IVFMonitoringRecord>,
+  headers?: Record<string, string>
+): Promise<IVFMonitoringRecord> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/monitoring`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.record;
+}
+
+export async function updateIVFMonitoring(
+  patientId: string,
+  cycleId: string,
+  monitoringId: string,
+  updates: Partial<IVFMonitoringRecord>,
+  headers?: Record<string, string>
+): Promise<IVFMonitoringRecord> {
+  const response = await axios.patch(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/monitoring/${monitoringId}`,
+    updates,
+    getAxiosConfig(headers)
+  );
+  return response.data.record;
+}
+
+export async function deleteIVFMonitoring(
+  patientId: string,
+  cycleId: string,
+  monitoringId: string,
+  headers?: Record<string, string>
+): Promise<void> {
+  await axios.delete(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/monitoring/${monitoringId}`,
+    getAxiosConfig(headers)
+  );
+}
+
+// ============================================
 // Cervical Length Types and APIs
 // ============================================
 
@@ -1117,6 +1207,11 @@ export const obgynService = {
   getIVFCycles,
   createIVFCycle,
   updateIVFCycle,
+  // IVF Monitoring
+  getIVFMonitoring,
+  createIVFMonitoring,
+  updateIVFMonitoring,
+  deleteIVFMonitoring,
   // Cervical Length
   getCervicalLengths,
   saveCervicalLength,

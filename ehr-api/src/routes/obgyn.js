@@ -1264,6 +1264,117 @@ function initializeObGynRoutes(pool) {
   });
 
   // ============================================
+  // IVF Monitoring (Daily Stimulation Tracking)
+  // ============================================
+
+  /**
+   * GET /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/monitoring
+   * Get monitoring records for an IVF cycle
+   */
+  router.get('/patients/:patientId/obgyn/ivf-cycles/:cycleId/monitoring', async (req, res) => {
+    try {
+      const { cycleId } = req.params;
+
+      const records = await obgynService.getIVFMonitoring(cycleId);
+
+      return res.json({
+        success: true,
+        records,
+        count: records.length
+      });
+    } catch (error) {
+      console.error('Error fetching IVF monitoring records:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * POST /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/monitoring
+   * Create a monitoring record
+   */
+  router.post('/patients/:patientId/obgyn/ivf-cycles/:cycleId/monitoring', async (req, res) => {
+    try {
+      const { patientId, cycleId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.createIVFMonitoring(cycleId, {
+        ...req.body,
+        patientId,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        record: result
+      });
+    } catch (error) {
+      console.error('Error creating IVF monitoring record:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * PATCH /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/monitoring/:monitoringId
+   * Update a monitoring record
+   */
+  router.patch('/patients/:patientId/obgyn/ivf-cycles/:cycleId/monitoring/:monitoringId', async (req, res) => {
+    try {
+      const { monitoringId } = req.params;
+
+      const result = await obgynService.updateIVFMonitoring(monitoringId, req.body);
+
+      return res.json({
+        success: true,
+        record: result
+      });
+    } catch (error) {
+      console.error('Error updating IVF monitoring record:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * DELETE /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/monitoring/:monitoringId
+   * Delete a monitoring record
+   */
+  router.delete('/patients/:patientId/obgyn/ivf-cycles/:cycleId/monitoring/:monitoringId', async (req, res) => {
+    try {
+      const { monitoringId } = req.params;
+
+      await obgynService.deleteIVFMonitoring(monitoringId);
+
+      return res.json({
+        success: true,
+        message: 'Monitoring record deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting IVF monitoring record:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
   // Cervical Length
   // ============================================
 

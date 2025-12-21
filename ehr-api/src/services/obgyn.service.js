@@ -1738,6 +1738,197 @@ class ObGynService {
   }
 
   // ============================================
+  // IVF Monitoring (Daily Stimulation Tracking)
+  // ============================================
+
+  /**
+   * Get monitoring records for an IVF cycle
+   * @param {string} cycleId - IVF Cycle ID
+   * @returns {Promise<Array>} Monitoring records
+   */
+  async getIVFMonitoring(cycleId) {
+    const result = await this.pool.query(
+      `SELECT * FROM obgyn_ivf_monitoring
+       WHERE cycle_id = $1
+       ORDER BY monitoring_date ASC, stim_day ASC`,
+      [cycleId]
+    );
+
+    return result.rows.map(row => this._formatIVFMonitoring(row));
+  }
+
+  /**
+   * Create monitoring record
+   * @param {string} cycleId - IVF Cycle ID
+   * @param {Object} data - Monitoring data
+   * @returns {Promise<Object>} Created monitoring record
+   */
+  async createIVFMonitoring(cycleId, data) {
+    const {
+      patientId,
+      monitoringDate,
+      stimDay,
+      folliclesRight = [],
+      folliclesLeft = [],
+      estradiolPgMl,
+      lhMiuMl,
+      progesteroneNgMl,
+      endometrialThicknessMm,
+      endometrialPattern,
+      medicationChanges = [],
+      assessment,
+      plan,
+      triggerReady = false,
+      ohssRiskLevel,
+      orgId,
+      userId
+    } = data;
+
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_ivf_monitoring
+       (id, cycle_id, patient_id, monitoring_date, stim_day,
+        follicles_right, follicles_left, estradiol_pg_ml, lh_miu_ml, progesterone_ng_ml,
+        endometrial_thickness_mm, endometrial_pattern, medication_changes,
+        assessment, plan, trigger_ready, ohss_risk_level, org_id, recorded_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+       RETURNING *`,
+      [
+        id,
+        cycleId,
+        patientId,
+        monitoringDate,
+        stimDay,
+        JSON.stringify(folliclesRight),
+        JSON.stringify(folliclesLeft),
+        estradiolPgMl,
+        lhMiuMl,
+        progesteroneNgMl,
+        endometrialThicknessMm,
+        endometrialPattern,
+        JSON.stringify(medicationChanges),
+        assessment,
+        plan,
+        triggerReady,
+        ohssRiskLevel,
+        orgId,
+        userId
+      ]
+    );
+
+    return this._formatIVFMonitoring(result.rows[0]);
+  }
+
+  /**
+   * Update monitoring record
+   * @param {string} monitoringId - Monitoring record ID
+   * @param {Object} updates - Updated fields
+   * @returns {Promise<Object>} Updated monitoring record
+   */
+  async updateIVFMonitoring(monitoringId, updates) {
+    const {
+      stimDay,
+      folliclesRight,
+      folliclesLeft,
+      estradiolPgMl,
+      lhMiuMl,
+      progesteroneNgMl,
+      endometrialThicknessMm,
+      endometrialPattern,
+      medicationChanges,
+      assessment,
+      plan,
+      triggerReady,
+      ohssRiskLevel
+    } = updates;
+
+    const result = await this.pool.query(
+      `UPDATE obgyn_ivf_monitoring SET
+        stim_day = COALESCE($1, stim_day),
+        follicles_right = COALESCE($2, follicles_right),
+        follicles_left = COALESCE($3, follicles_left),
+        estradiol_pg_ml = COALESCE($4, estradiol_pg_ml),
+        lh_miu_ml = COALESCE($5, lh_miu_ml),
+        progesterone_ng_ml = COALESCE($6, progesterone_ng_ml),
+        endometrial_thickness_mm = COALESCE($7, endometrial_thickness_mm),
+        endometrial_pattern = COALESCE($8, endometrial_pattern),
+        medication_changes = COALESCE($9, medication_changes),
+        assessment = COALESCE($10, assessment),
+        plan = COALESCE($11, plan),
+        trigger_ready = COALESCE($12, trigger_ready),
+        ohss_risk_level = COALESCE($13, ohss_risk_level),
+        updated_at = CURRENT_TIMESTAMP
+       WHERE id = $14
+       RETURNING *`,
+      [
+        stimDay,
+        folliclesRight ? JSON.stringify(folliclesRight) : null,
+        folliclesLeft ? JSON.stringify(folliclesLeft) : null,
+        estradiolPgMl,
+        lhMiuMl,
+        progesteroneNgMl,
+        endometrialThicknessMm,
+        endometrialPattern,
+        medicationChanges ? JSON.stringify(medicationChanges) : null,
+        assessment,
+        plan,
+        triggerReady,
+        ohssRiskLevel,
+        monitoringId
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Monitoring record not found');
+    }
+
+    return this._formatIVFMonitoring(result.rows[0]);
+  }
+
+  /**
+   * Delete monitoring record
+   * @param {string} monitoringId - Monitoring record ID
+   * @returns {Promise<void>}
+   */
+  async deleteIVFMonitoring(monitoringId) {
+    await this.pool.query(
+      'DELETE FROM obgyn_ivf_monitoring WHERE id = $1',
+      [monitoringId]
+    );
+  }
+
+  _formatIVFMonitoring(row) {
+    const parseJSON = (val) => {
+      if (!val) return null;
+      return typeof val === 'string' ? JSON.parse(val) : val;
+    };
+
+    return {
+      id: row.id,
+      cycleId: row.cycle_id,
+      patientId: row.patient_id,
+      monitoringDate: row.monitoring_date,
+      stimDay: row.stim_day,
+      folliclesRight: parseJSON(row.follicles_right) || [],
+      folliclesLeft: parseJSON(row.follicles_left) || [],
+      estradiolPgMl: row.estradiol_pg_ml ? parseFloat(row.estradiol_pg_ml) : null,
+      lhMiuMl: row.lh_miu_ml ? parseFloat(row.lh_miu_ml) : null,
+      progesteroneNgMl: row.progesterone_ng_ml ? parseFloat(row.progesterone_ng_ml) : null,
+      endometrialThicknessMm: row.endometrial_thickness_mm ? parseFloat(row.endometrial_thickness_mm) : null,
+      endometrialPattern: row.endometrial_pattern,
+      medicationChanges: parseJSON(row.medication_changes) || [],
+      assessment: row.assessment,
+      plan: row.plan,
+      triggerReady: row.trigger_ready,
+      ohssRiskLevel: row.ohss_risk_level,
+      recordedBy: row.recorded_by,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  // ============================================
   // Cervical Length
   // ============================================
 

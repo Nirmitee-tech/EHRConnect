@@ -11,6 +11,7 @@ import {
 import { useSession } from 'next-auth/react';
 import { obgynService, IVFCycle, Embryo } from '@/services/obgyn.service';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
+import { StimulationMonitoringPanel } from './StimulationMonitoringPanel';
 
 interface IVFCaseSheetProps {
   patientId: string;
@@ -644,6 +645,31 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Stimulation Monitoring Section */}
+          <div className="bg-white rounded border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, monitoring: !prev.monitoring }))}
+              className="w-full flex items-center justify-between p-2 text-left hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                {expandedSections.monitoring ? <ChevronDown className="h-3 w-3 text-gray-400" /> : <ChevronRight className="h-3 w-3 text-gray-400" />}
+                <Activity className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-semibold text-gray-900">Daily Monitoring</span>
+              </div>
+              <span className="px-1.5 py-0.5 text-[9px] bg-blue-100 text-blue-700 rounded">
+                CLINICAL GRADE
+              </span>
+            </button>
+            {expandedSections.monitoring && activeCycle && (
+              <div className="border-t border-gray-200">
+                <StimulationMonitoringPanel
+                  patientId={patientId}
+                  cycleId={activeCycle.id}
+                />
               </div>
             )}
           </div>
