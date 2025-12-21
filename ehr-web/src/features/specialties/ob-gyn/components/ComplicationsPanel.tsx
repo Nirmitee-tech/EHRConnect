@@ -555,7 +555,7 @@ export function ComplicationsPanel({
               <div>
                 <div className="text-[10px] font-bold text-blue-900">Monochorionic Twin Alert</div>
                 <div className="text-[9px] text-blue-700">
-                  High risk for TTTS. Perform ultrasound every 2 weeks from 16-26 weeks. Monitor for: oligohydramnios/polyhydramnios sequence, growth discordance >20%, abnormal Dopplers.
+                  High risk for TTTS. Perform ultrasound every 2 weeks from 16-26 weeks. Monitor for: oligohydramnios/polyhydramnios sequence, growth discordance &gt;20%, abnormal Dopplers.
                 </div>
               </div>
             </div>
