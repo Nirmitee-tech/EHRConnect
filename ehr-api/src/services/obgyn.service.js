@@ -2246,6 +2246,16 @@ class ObGynService {
   }
 
   /**
+   * Helper: Convert empty string to null for database
+   * @param {any} value - Value to normalize
+   * @returns {any|null} Value or null if empty
+   */
+  _emptyToNull(value) {
+    if (value === '' || value === undefined) return null;
+    return value;
+  }
+
+  /**
    * Helper: Convert time string (HH:MM) to timestamp using today's date
    * @param {string} timeStr - Time in HH:MM format or full timestamp
    * @returns {string|null} ISO timestamp or null
@@ -2317,17 +2327,17 @@ class ObGynService {
        RETURNING *`,
       [
         id, oocyteId, cycleId, patientId, embryoNumber,
-        day1Timestamp, day1Pronuclei, day1PolarBodies, day1Status, day1Notes,
-        day2Timestamp, day2CellCount, day2Fragmentation, day2Symmetry, day2Grade, day2Notes,
-        day3Timestamp, day3CellCount, day3Fragmentation, day3Symmetry, day3Compaction, day3Grade, day3Notes,
-        day4Timestamp, day4Stage, day4Notes,
-        day5Timestamp, day5Stage, day5Expansion, day5IcmGrade, day5TeGrade, day5OverallGrade, day5Notes,
-        day6Timestamp, day6Stage, day6Expansion, day6IcmGrade, day6TeGrade, day6OverallGrade, day6Notes,
-        day7Timestamp, day7Stage, day7Notes,
-        cultureMedia, incubatorType, co2Concentration, o2Concentration,
-        finalDisposition, dispositionDate, freezingMethod, thawSurvival,
-        biopsyDate, biopsyDay, pgtResult, pgtDetails ? JSON.stringify(pgtDetails) : null,
-        primaryEmbryologist, orgId
+        day1Timestamp, day1Pronuclei, day1PolarBodies, this._emptyToNull(day1Status), this._emptyToNull(day1Notes),
+        day2Timestamp, day2CellCount, day2Fragmentation, this._emptyToNull(day2Symmetry), this._emptyToNull(day2Grade), this._emptyToNull(day2Notes),
+        day3Timestamp, day3CellCount, day3Fragmentation, this._emptyToNull(day3Symmetry), this._emptyToNull(day3Compaction), this._emptyToNull(day3Grade), this._emptyToNull(day3Notes),
+        day4Timestamp, this._emptyToNull(day4Stage), this._emptyToNull(day4Notes),
+        day5Timestamp, this._emptyToNull(day5Stage), this._emptyToNull(day5Expansion), this._emptyToNull(day5IcmGrade), this._emptyToNull(day5TeGrade), this._emptyToNull(day5OverallGrade), this._emptyToNull(day5Notes),
+        day6Timestamp, this._emptyToNull(day6Stage), this._emptyToNull(day6Expansion), this._emptyToNull(day6IcmGrade), this._emptyToNull(day6TeGrade), this._emptyToNull(day6OverallGrade), this._emptyToNull(day6Notes),
+        day7Timestamp, this._emptyToNull(day7Stage), this._emptyToNull(day7Notes),
+        this._emptyToNull(cultureMedia), this._emptyToNull(incubatorType), co2Concentration, o2Concentration,
+        this._emptyToNull(finalDisposition), dispositionDate, this._emptyToNull(freezingMethod), thawSurvival,
+        biopsyDate, biopsyDay, this._emptyToNull(pgtResult), pgtDetails ? JSON.stringify(pgtDetails) : null,
+        this._emptyToNull(primaryEmbryologist), orgId
       ]
     );
 
