@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { FHIRPatient } from '@/types/fhir';
-import { ValidationError } from '@/utils/form-validation';
+import { ValidationError } from '@/utils/shared';
 import { CreatePatientRequest } from '@/services/patient.service';
 
 export type FieldErrors = ValidationError;
@@ -246,18 +246,8 @@ const splitList = (value: string): string[] =>
     .map(entry => entry.trim())
     .filter(Boolean);
 
-const calculateAge = (dob: string): string => {
-  if (!dob) return '';
-  const birth = new Date(dob);
-  if (Number.isNaN(birth.getTime())) return '';
-  const todayDate = new Date();
-  let age = todayDate.getFullYear() - birth.getFullYear();
-  const monthDiff = todayDate.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && todayDate.getDate() < birth.getDate())) {
-    age -= 1;
-  }
-  return age >= 0 ? `${age}` : '';
-};
+import { calculateAge } from '@/utils/shared';
+
 
 const calculateBMI = (heightCm: string, weightKg: string): string => {
   const height = parseFloat(heightCm);
@@ -316,7 +306,7 @@ export function usePatientForm(patient?: FHIRPatient, facilityId?: string) {
   }, [patient]);
 
   const calculatedAge = useMemo(
-    () => calculateAge(formData.demographics.dateOfBirth),
+    () => String(calculateAge(formData.demographics.dateOfBirth)),
     [formData.demographics.dateOfBirth]
   );
 
