@@ -15,6 +15,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@medplum/core": "^4.4.1",
     "@medplum/react": "^4.4.1",
+    "@medplum/react-hooks": "^5.0.10",
     "@monaco-editor/react": "^4.7.0",
     "@nirmitee.io/design-system": "^1.0.0",
     "@radix-ui/react-accordion": "^1.2.12",

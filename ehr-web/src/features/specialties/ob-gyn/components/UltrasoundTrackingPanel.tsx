@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Eye, Calendar, Plus, AlertTriangle, CheckCircle, Clock,
   FileText, Download, Printer, Edit2, Trash2, X, Save,
   ChevronDown, ChevronUp, Image, Activity, Baby, Ruler
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import { getUltrasoundRecords, UltrasoundRecord as ServiceUltrasoundRecord } from '../../../../services/obgyn.service';
+import { UltrasoundDialog } from './UltrasoundDialog';
 
 /**
  * ULTRASOUND TRACKING PANEL
@@ -24,61 +26,10 @@ import { format, parseISO } from 'date-fns';
  * - Targeted: Specific follow-up for abnormalities
  */
 
-interface UltrasoundFinding {
-  parameter: string;
-  value: string;
-  unit?: string;
-  status: 'normal' | 'abnormal' | 'borderline';
-  percentile?: number;
-  notes?: string;
-}
-
-interface UltrasoundRecord {
-  id: string;
-  date: string;
-  gestationalAge: string;
-  type: 'dating' | 'nt_screening' | 'anatomy' | 'growth' | 'bpp' | 'targeted' | 'cervical_length';
-  indication?: string;
-  provider: string;
-  facility?: string;
-  
-  // General findings
-  fetalNumber: number;
-  presentation?: 'Vertex' | 'Breech' | 'Transverse' | 'Variable';
-  placentaLocation?: string;
-  amnioticFluid?: {
-    afi?: number; // AFI in cm
-    mvp?: number; // Max vertical pocket in cm
-    status: 'Normal' | 'Oligohydramnios' | 'Polyhydramnios';
-  };
-  
-  // Biometry
-  biometry?: {
-    crl?: number; // Crown-rump length (1st trimester)
-    bpd?: number; // Biparietal diameter
-    hc?: number; // Head circumference
-    ac?: number; // Abdominal circumference
-    fl?: number; // Femur length
-    efw?: number; // Estimated fetal weight (grams)
-    efwPercentile?: number;
-  };
-  
-  // Specific findings
-  findings: UltrasoundFinding[];
-  
-  // Assessment
-  assessment: 'Normal' | 'Abnormal' | 'Follow-up recommended';
-  abnormalFindings?: string[];
-  recommendations?: string[];
-  
-  // Images (placeholder for actual image references)
-  imageCount?: number;
-  images?: string[];
-  
-  // Report
-  reportUrl?: string;
-  notes?: string;
-}
+// Use the service type or extend it if needed for UI specific things not in backend yet
+// For now we will use the service record type but alias it for clarity in this file if needed
+// or just use ServiceUltrasoundRecord.
+type UltrasoundRecord = ServiceUltrasoundRecord;
 
 interface UltrasoundTrackingPanelProps {
   patientId: string;
@@ -97,107 +48,25 @@ export function UltrasoundTrackingPanel({
   fetalCount = 1
 }: UltrasoundTrackingPanelProps) {
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<UltrasoundRecord | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [records, setRecords] = useState<UltrasoundRecord[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Mock data - in production, fetch from API
-  const [records] = useState<UltrasoundRecord[]>([
-    {
-      id: '1',
-      date: '2024-12-15',
-      gestationalAge: '12w 2d',
-      type: 'dating',
-      provider: 'Dr. Smith',
-      facility: "Women's Imaging Center",
-      fetalNumber: 1,
-      presentation: 'Variable',
-      placentaLocation: 'Anterior',
-      biometry: {
-        crl: 58, // mm
-      },
-      findings: [
-        { parameter: 'Cardiac Activity', value: 'Present', status: 'normal' },
-        { parameter: 'Fetal Heart Rate', value: '165', unit: 'bpm', status: 'normal' },
-        { parameter: 'Yolk Sac', value: 'Normal', status: 'normal' },
-      ],
-      assessment: 'Normal',
-      imageCount: 6,
-      notes: 'Dating scan consistent with LMP. Single live intrauterine pregnancy.'
-    },
-    {
-      id: '2',
-      date: '2025-02-20',
-      gestationalAge: '20w 0d',
-      type: 'anatomy',
-      indication: 'Routine anatomy survey',
-      provider: 'Dr. Johnson',
-      facility: "Women's Imaging Center",
-      fetalNumber: 1,
-      presentation: 'Vertex',
-      placentaLocation: 'Posterior, Grade 0',
-      amnioticFluid: {
-        afi: 14,
-        status: 'Normal'
-      },
-      biometry: {
-        bpd: 48,
-        hc: 175,
-        ac: 158,
-        fl: 33,
-        efw: 390,
-        efwPercentile: 52
-      },
-      findings: [
-        { parameter: 'Brain/Ventricles', value: 'Normal', status: 'normal' },
-        { parameter: 'Face/Lips', value: 'Normal', status: 'normal' },
-        { parameter: 'Spine', value: 'Normal', status: 'normal' },
-        { parameter: 'Heart (4-chamber)', value: 'Normal', status: 'normal' },
-        { parameter: 'Kidneys', value: 'Normal', status: 'normal' },
-        { parameter: 'Stomach', value: 'Visualized', status: 'normal' },
-        { parameter: 'Bladder', value: 'Visualized', status: 'normal' },
-        { parameter: 'Cord Insertion', value: 'Normal', status: 'normal' },
-        { parameter: 'Cord Vessels', value: '3-vessel cord', status: 'normal' },
-        { parameter: 'Cervical Length', value: '38', unit: 'mm', status: 'normal' },
-      ],
-      assessment: 'Normal',
-      imageCount: 24,
-      notes: 'Complete anatomy survey. All visualized structures appear normal. Sex: Male (if requested).'
-    },
-    {
-      id: '3',
-      date: '2025-03-26',
-      gestationalAge: '25w 2d',
-      type: 'growth',
-      indication: 'Gestational diabetes screening positive - assess fetal growth',
-      provider: 'Dr. Johnson',
-      facility: "Women's Imaging Center",
-      fetalNumber: 1,
-      presentation: 'Vertex',
-      placentaLocation: 'Posterior',
-      amnioticFluid: {
-        afi: 16,
-        status: 'Normal'
-      },
-      biometry: {
-        bpd: 65,
-        hc: 238,
-        ac: 220,
-        fl: 48,
-        efw: 850,
-        efwPercentile: 62
-      },
-      findings: [
-        { parameter: 'Fetal Heart Rate', value: '148', unit: 'bpm', status: 'normal' },
-        { parameter: 'Fetal Movement', value: 'Active', status: 'normal' },
-        { parameter: 'Growth Velocity', value: 'Appropriate', status: 'normal' },
-        { parameter: 'Umbilical Artery Doppler', value: 'Normal S/D ratio', status: 'normal' },
-      ],
-      assessment: 'Normal',
-      recommendations: ['Repeat growth scan in 4 weeks given GDM'],
-      imageCount: 12,
-      notes: 'Growth appropriate for dates. No evidence of macrosomia. Continue GDM management.'
+  const fetchRecords = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await getUltrasoundRecords(patientId, episodeId);
+      setRecords(data);
+    } catch (error) {
+      console.error('Failed to fetch ultrasound records:', error);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  }, [patientId, episodeId]);
+
+  useEffect(() => {
+    fetchRecords();
+  }, [fetchRecords]);
 
   // Upcoming scans based on current GA and schedule
   const getScheduledScans = () => {
@@ -205,9 +74,9 @@ export function UltrasoundTrackingPanel({
     const scheduled = [];
 
     // Check what's already done
-    const hasDating = records.some(r => r.type === 'dating');
-    const hasAnatomy = records.some(r => r.type === 'anatomy');
-    const hasGrowth = records.some(r => r.type === 'growth' && parseInt(r.gestationalAge.split('w')[0]) >= 28);
+    const hasDating = records.some(r => r.scanType === 'dating');
+    const hasAnatomy = records.some(r => r.scanType === 'anatomy');
+    const hasGrowth = records.some(r => r.scanType === 'growth' && parseInt(r.gestationalAge.split('w')[0]) >= 28);
 
     if (!hasGrowth && gaWeeks < 36) {
       scheduled.push({
@@ -321,8 +190,8 @@ export function UltrasoundTrackingPanel({
         </div>
 
         <div className="space-y-2">
-          {records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((record) => {
-            const typeInfo = getScanTypeInfo(record.type);
+          {records.sort((a, b) => new Date(b.scanDate).getTime() - new Date(a.scanDate).getTime()).map((record) => {
+            const typeInfo = getScanTypeInfo(record.scanType);
             const isExpanded = expandedId === record.id;
 
             return (
@@ -332,7 +201,7 @@ export function UltrasoundTrackingPanel({
               >
                 {/* Scan Header */}
                 <button
-                  onClick={() => setExpandedId(isExpanded ? null : record.id)}
+                  onClick={() => setExpandedId(isExpanded ? null : record.id || '')}
                   className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex items-center gap-3">
@@ -342,18 +211,17 @@ export function UltrasoundTrackingPanel({
                     <div className="text-left">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold text-gray-900">{typeInfo.label}</span>
-                        <span className={`px-1.5 py-0.5 text-[9px] rounded ${
-                          record.assessment === 'Normal' 
-                            ? 'bg-green-100 text-green-700' 
-                            : record.assessment === 'Abnormal'
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-yellow-100 text-yellow-700'
-                        }`}>
+                        <span className={`px-1.5 py-0.5 text-[9px] rounded ${record.assessment === 'Normal'
+                          ? 'bg-green-100 text-green-700'
+                          : record.assessment === 'Abnormal'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                          }`}>
                           {record.assessment}
                         </span>
                       </div>
                       <div className="text-[10px] text-gray-600">
-                        {format(parseISO(record.date), 'MMM d, yyyy')} • GA: {record.gestationalAge}
+                        {format(parseISO(record.scanDate), 'MMM d, yyyy')} • GA: {record.gestationalAge}
                       </div>
                     </div>
                   </div>
@@ -445,11 +313,10 @@ export function UltrasoundTrackingPanel({
 
                     {/* AFI (if present) */}
                     {record.amnioticFluid && (
-                      <div className={`flex items-center gap-2 text-xs p-2 rounded ${
-                        record.amnioticFluid.status === 'Normal' 
-                          ? 'bg-green-50 border border-green-200' 
-                          : 'bg-orange-50 border border-orange-200'
-                      }`}>
+                      <div className={`flex items-center gap-2 text-xs p-2 rounded ${record.amnioticFluid.status === 'Normal'
+                        ? 'bg-green-50 border border-green-200'
+                        : 'bg-orange-50 border border-orange-200'
+                        }`}>
                         <span className="font-semibold">Amniotic Fluid:</span>
                         <span>{record.amnioticFluid.status}</span>
                         {record.amnioticFluid.afi && (
@@ -466,22 +333,20 @@ export function UltrasoundTrackingPanel({
                           {record.findings.map((finding, idx) => (
                             <div
                               key={idx}
-                              className={`flex items-center justify-between px-2 py-1 rounded text-[10px] ${
-                                finding.status === 'normal' 
-                                  ? 'bg-gray-50' 
-                                  : finding.status === 'abnormal'
-                                    ? 'bg-red-50'
-                                    : 'bg-yellow-50'
-                              }`}
+                              className={`flex items-center justify-between px-2 py-1 rounded text-[10px] ${finding.status === 'normal'
+                                ? 'bg-gray-50'
+                                : finding.status === 'abnormal'
+                                  ? 'bg-red-50'
+                                  : 'bg-yellow-50'
+                                }`}
                             >
                               <span className="text-gray-700">{finding.parameter}</span>
-                              <span className={`font-semibold ${
-                                finding.status === 'normal' 
-                                  ? 'text-green-600' 
-                                  : finding.status === 'abnormal'
-                                    ? 'text-red-600'
-                                    : 'text-yellow-600'
-                              }`}>
+                              <span className={`font-semibold ${finding.status === 'normal'
+                                ? 'text-green-600'
+                                : finding.status === 'abnormal'
+                                  ? 'text-red-600'
+                                  : 'text-yellow-600'
+                                }`}>
                                 {finding.value}{finding.unit && ` ${finding.unit}`}
                               </span>
                             </div>
@@ -559,6 +424,15 @@ export function UltrasoundTrackingPanel({
           Dating (8-13w) • NT Screening (11-14w) • Anatomy (18-22w) • Growth (32-36w)
         </div>
       </div>
+
+      <UltrasoundDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        patientId={patientId}
+        onSuccess={() => {
+          fetchRecords();
+        }}
+      />
     </div>
   );
 }
