@@ -1419,6 +1419,116 @@ export interface IVFPregnancyOutcome {
   updatedBy?: string;
 }
 
+// ============================================
+// IVF PHASE 5: Clinical Intelligence & Analytics Types
+// ============================================
+
+export interface IVFCycleComparison {
+  patientId: string;
+  totalCycles: number;
+  cycles: Array<{
+    cycleNumber: number;
+    cycleId: string;
+    protocol: string | null;
+    afc: number | null;
+    stimDays: number | null;
+    peakE2: number | null;
+    oocytesRetrieved: number | null;
+    matureOocytes: number | null;
+    maturityRate: number | null;
+    fertilized: number;
+    fertilizationRate: number | null;
+    blastocysts: number;
+    blastocystRate: number | null;
+    topQuality: number;
+    outcome: string;
+    startDate: string;
+  }>;
+  insights: string[];
+}
+
+export interface IVFSuccessProbability {
+  patientId: string;
+  cycleId: string;
+  inputFactors: {
+    age: number;
+    amh?: number;
+    afc?: number;
+    bmi?: number;
+    previousIVFCount?: number;
+    diagnosis?: string;
+    oocytesRetrieved?: number;
+    matureOocytes?: number;
+    blastocysts?: number;
+    topQualityBlastocysts?: number;
+  };
+  predictions: {
+    perEmbryoTransfer: {
+      fresh: {
+        clinicalPregnancy: number;
+        liveBirth: number;
+      };
+      frozen: {
+        clinicalPregnancy: number;
+        liveBirth: number;
+      };
+    };
+    cumulative: {
+      totalEmbryos: number;
+      atLeastOneLiveBirth: number;
+    };
+  };
+  riskCategory: 'excellent' | 'good' | 'fair' | 'guarded';
+  recommendation: string;
+  calculatedAt: string;
+}
+
+export interface IVFCycleAnalytics {
+  cycleId: string;
+  patientId: string;
+  follicleGrowth: Array<{
+    stimDay: number;
+    date: string;
+    totalCount: number;
+    bySize: {
+      small: number;
+      medium: number;
+      large: number;
+      mature: number;
+    };
+    avgSize: number;
+    leadFollicleSize: number;
+  }>;
+  growthVelocity: Array<{
+    fromDay: number;
+    toDay: number;
+    mmPerDay: number;
+  }>;
+  e2Trend: Array<{
+    stimDay: number;
+    date: string;
+    value: number;
+    perFollicle: number;
+  }>;
+  lhTrend: Array<{
+    stimDay: number;
+    date: string;
+    value: number;
+  }>;
+  endoThicknessTrend: Array<{
+    stimDay: number;
+    date: string;
+    thickness: number;
+    pattern: string | null;
+  }>;
+  summary: {
+    totalMonitoringVisits: number;
+    stimDaysTracked: number;
+    peakE2: number | null;
+    maxFollicles: number;
+  };
+}
+
 export async function getIVFPregnancyOutcome(
   patientId: string,
   cycleId: string,
@@ -1497,6 +1607,70 @@ export async function deleteIVFPregnancyOutcome(
     `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/pregnancy-outcome/${outcomeId}`,
     getAxiosConfig(headers)
   );
+}
+
+// ============================================
+// IVF PHASE 5: Clinical Intelligence & Analytics APIs
+// ============================================
+
+/**
+ * Compare all IVF cycles for a patient
+ * Returns comprehensive comparison data for repeat patients
+ */
+export async function compareIVFCycles(
+  patientId: string,
+  headers?: Record<string, string>
+): Promise<IVFCycleComparison> {
+  const response = await axios.get(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/comparison`,
+    getAxiosConfig(headers)
+  );
+  return response.data.data;
+}
+
+/**
+ * Calculate success probability for IVF cycle
+ * Based on SART data and patient/cycle factors
+ */
+export async function calculateSuccessProbability(
+  patientId: string,
+  cycleId: string,
+  factors: {
+    age: number;
+    amh?: number;
+    afc?: number;
+    bmi?: number;
+    previousIVFCount?: number;
+    diagnosis?: string;
+    oocytesRetrieved?: number;
+    matureOocytes?: number;
+    blastocysts?: number;
+    topQualityBlastocysts?: number;
+  },
+  headers?: Record<string, string>
+): Promise<IVFSuccessProbability> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/success-probability`,
+    factors,
+    getAxiosConfig(headers)
+  );
+  return response.data.data;
+}
+
+/**
+ * Get IVF cycle analytics data for visualization
+ * Returns data formatted for charts (follicle growth, E2 trends)
+ */
+export async function getIVFCycleAnalytics(
+  patientId: string,
+  cycleId: string,
+  headers?: Record<string, string>
+): Promise<IVFCycleAnalytics> {
+  const response = await axios.get(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/analytics`,
+    getAxiosConfig(headers)
+  );
+  return response.data.data;
 }
 
 // ============================================
@@ -1852,7 +2026,11 @@ export const obgynService = {
   getGoals,
   createGoal,
   updateGoal,
-  deleteGoal
+  deleteGoal,
+  // IVF Phase 5: Clinical Intelligence & Analytics
+  compareIVFCycles,
+  calculateSuccessProbability,
+  getIVFCycleAnalytics
 };
 
 export default obgynService;

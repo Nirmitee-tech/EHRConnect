@@ -6,7 +6,8 @@ import {
   FlaskConical, Microscope, Snowflake, Heart, CheckCircle,
   Target, TrendingUp, Activity, Syringe,
   Loader2, Info, AlertTriangle, History, FileText,
-  TrendingDown, Users, Stethoscope, AlertCircle, ArrowRightLeft
+  TrendingDown, Users, Stethoscope, AlertCircle, ArrowRightLeft,
+  BarChart3
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { obgynService, IVFCycle, Embryo } from '@/services/obgyn.service';
@@ -16,6 +17,9 @@ import { RetrievalReportPanel } from './RetrievalReportPanel';
 import { EmbryologyLabPanel } from './EmbryologyLabPanel';
 import TransferDayPanel from './TransferDayPanel';
 import OutcomeTrackingPanel from './OutcomeTrackingPanel';
+import CycleComparisonPanel from './CycleComparisonPanel';
+import SuccessProbabilityPanel from './SuccessProbabilityPanel';
+import VisualAnalyticsPanel from './VisualAnalyticsPanel';
 
 interface IVFCaseSheetProps {
   patientId: string;
@@ -62,7 +66,10 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
     retrieval: false,
     embryology: true,
     transfer: false,
-    outcome: true
+    outcome: true,
+    cycleComparison: false,
+    successProbability: false,
+    visualAnalytics: false
   });
 
   // Local editing state for baseline fields
@@ -771,6 +778,83 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
             {expandedSections.outcome && activeCycle && (
               <div className="border-t border-gray-200">
                 <OutcomeTrackingPanel
+                  patientId={patientId}
+                  cycleId={activeCycle.id}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Cycle Comparison - Phase 5 */}
+          <div className="bg-white rounded border border-purple-200 overflow-hidden">
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, cycleComparison: !prev.cycleComparison }))}
+              className="w-full flex items-center justify-between p-2 text-left hover:bg-purple-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                {expandedSections.cycleComparison ? <ChevronDown className="h-3 w-3 text-gray-400" /> : <ChevronRight className="h-3 w-3 text-gray-400" />}
+                <BarChart3 className="h-3.5 w-3.5 text-purple-600" />
+                <span className="text-xs font-semibold text-gray-900">Cycle Comparison</span>
+              </div>
+              <span className="px-1.5 py-0.5 text-[9px] bg-purple-100 text-purple-700 rounded">
+                PHASE 5
+              </span>
+            </button>
+            {expandedSections.cycleComparison && (
+              <div className="border-t border-gray-200 p-4">
+                <CycleComparisonPanel
+                  patientId={patientId}
+                  currentCycleId={activeCycle?.id}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Success Probability - Phase 5 */}
+          <div className="bg-white rounded border border-purple-200 overflow-hidden">
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, successProbability: !prev.successProbability }))}
+              className="w-full flex items-center justify-between p-2 text-left hover:bg-purple-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                {expandedSections.successProbability ? <ChevronDown className="h-3 w-3 text-gray-400" /> : <ChevronRight className="h-3 w-3 text-gray-400" />}
+                <Target className="h-3.5 w-3.5 text-purple-600" />
+                <span className="text-xs font-semibold text-gray-900">Success Probability</span>
+              </div>
+              <span className="px-1.5 py-0.5 text-[9px] bg-purple-100 text-purple-700 rounded">
+                PHASE 5
+              </span>
+            </button>
+            {expandedSections.successProbability && activeCycle && (
+              <div className="border-t border-gray-200 p-4">
+                <SuccessProbabilityPanel
+                  patientId={patientId}
+                  cycleId={activeCycle.id}
+                  cycle={activeCycle}
+                  patientAge={undefined}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Visual Analytics - Phase 5 */}
+          <div className="bg-white rounded border border-purple-200 overflow-hidden">
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, visualAnalytics: !prev.visualAnalytics }))}
+              className="w-full flex items-center justify-between p-2 text-left hover:bg-purple-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                {expandedSections.visualAnalytics ? <ChevronDown className="h-3 w-3 text-gray-400" /> : <ChevronRight className="h-3 w-3 text-gray-400" />}
+                <Activity className="h-3.5 w-3.5 text-purple-600" />
+                <span className="text-xs font-semibold text-gray-900">Visual Analytics</span>
+              </div>
+              <span className="px-1.5 py-0.5 text-[9px] bg-purple-100 text-purple-700 rounded">
+                PHASE 5
+              </span>
+            </button>
+            {expandedSections.visualAnalytics && activeCycle && (
+              <div className="border-t border-gray-200 p-4">
+                <VisualAnalyticsPanel
                   patientId={patientId}
                   cycleId={activeCycle.id}
                 />
