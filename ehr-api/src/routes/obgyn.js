@@ -1391,6 +1391,260 @@ function initializeObGynRoutes(pool) {
     }
   });
 
+  // ============================================
+  // Care Plans (FHIR R4)
+  // ============================================
+
+  /**
+   * GET /api/patients/:patientId/obgyn/care-plans
+   * Get care plans for a patient
+   */
+  router.get('/patients/:patientId/obgyn/care-plans', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { episodeId } = req.query;
+
+      const carePlans = await obgynService.getCarePlans(patientId, episodeId);
+
+      return res.json({
+        success: true,
+        carePlans
+      });
+    } catch (error) {
+      console.error('Error fetching care plans:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * POST /api/patients/:patientId/obgyn/care-plans
+   * Create a new care plan
+   */
+  router.post('/patients/:patientId/obgyn/care-plans', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.createCarePlan(patientId, {
+        ...req.body,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        carePlan: result
+      });
+    } catch (error) {
+      console.error('Error creating care plan:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * PATCH /api/patients/:patientId/obgyn/care-plans/:carePlanId
+   * Update a care plan
+   */
+  router.patch('/patients/:patientId/obgyn/care-plans/:carePlanId', async (req, res) => {
+    try {
+      const { patientId, carePlanId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.updateCarePlan(carePlanId, req.body);
+
+      return res.json({
+        success: true,
+        carePlan: result
+      });
+    } catch (error) {
+      console.error('Error updating care plan:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * POST /api/patients/:patientId/obgyn/care-plans/:carePlanId/activities
+   * Add activity to care plan
+   */
+  router.post('/patients/:patientId/obgyn/care-plans/:carePlanId/activities', async (req, res) => {
+    try {
+      const { carePlanId } = req.params;
+      const { activity } = req.body;
+
+      const result = await obgynService.addCarePlanActivity(carePlanId, activity);
+
+      return res.status(201).json({
+        success: true,
+        carePlan: result
+      });
+    } catch (error) {
+      console.error('Error adding activity:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * PATCH /api/patients/:patientId/obgyn/care-plans/:carePlanId/activities/:activityIndex
+   * Update activity status
+   */
+  router.patch('/patients/:patientId/obgyn/care-plans/:carePlanId/activities/:activityIndex', async (req, res) => {
+    try {
+      const { carePlanId, activityIndex } = req.params;
+      const { status } = req.body;
+
+      const result = await obgynService.updateActivityStatus(carePlanId, parseInt(activityIndex), status);
+
+      return res.json({
+        success: true,
+        carePlan: result
+      });
+    } catch (error) {
+      console.error('Error updating activity:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
+  // Goals (FHIR R4)
+  // ============================================
+
+  /**
+   * GET /api/patients/:patientId/obgyn/goals
+   * Get goals for a patient
+   */
+  router.get('/patients/:patientId/obgyn/goals', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { carePlanId, episodeId } = req.query;
+
+      const goals = await obgynService.getGoals(patientId, carePlanId, episodeId);
+
+      return res.json({
+        success: true,
+        goals
+      });
+    } catch (error) {
+      console.error('Error fetching goals:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * POST /api/patients/:patientId/obgyn/goals
+   * Create a new goal
+   */
+  router.post('/patients/:patientId/obgyn/goals', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const orgId = req.headers['x-org-id'];
+      const userId = req.headers['x-user-id'];
+
+      if (!orgId || !userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required headers: x-org-id, x-user-id'
+        });
+      }
+
+      const result = await obgynService.createGoal(patientId, {
+        ...req.body,
+        orgId,
+        userId
+      });
+
+      return res.status(201).json({
+        success: true,
+        goal: result
+      });
+    } catch (error) {
+      console.error('Error creating goal:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * PATCH /api/patients/:patientId/obgyn/goals/:goalId
+   * Update a goal
+   */
+  router.patch('/patients/:patientId/obgyn/goals/:goalId', async (req, res) => {
+    try {
+      const { goalId } = req.params;
+
+      const result = await obgynService.updateGoal(goalId, req.body);
+
+      return res.json({
+        success: true,
+        goal: result
+      });
+    } catch (error) {
+      console.error('Error updating goal:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * DELETE /api/patients/:patientId/obgyn/goals/:goalId
+   * Delete a goal
+   */
+  router.delete('/patients/:patientId/obgyn/goals/:goalId', async (req, res) => {
+    try {
+      const { goalId } = req.params;
+
+      await obgynService.deleteGoal(goalId);
+
+      return res.json({
+        success: true,
+        message: 'Goal deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   return router;
 }
 

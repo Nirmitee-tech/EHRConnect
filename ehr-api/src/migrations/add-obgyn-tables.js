@@ -513,6 +513,60 @@ async function up() {
 
     console.log('✅ Created obgyn_patient_education table');
 
+    // Care Plans table (FHIR R4)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS obgyn_care_plans (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        patient_id VARCHAR(255) NOT NULL,
+        episode_id UUID REFERENCES patient_specialty_episodes(id),
+        status VARCHAR(50) NOT NULL DEFAULT 'active',
+        intent VARCHAR(50) NOT NULL DEFAULT 'plan',
+        title VARCHAR(500) NOT NULL,
+        description TEXT,
+        period_start TIMESTAMP WITH TIME ZONE,
+        period_end TIMESTAMP WITH TIME ZONE,
+        activity JSONB DEFAULT '[]',
+        org_id UUID NOT NULL,
+        created_by VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_careplan_patient ON obgyn_care_plans(patient_id);
+      CREATE INDEX IF NOT EXISTS idx_careplan_episode ON obgyn_care_plans(episode_id);
+      CREATE INDEX IF NOT EXISTS idx_careplan_status ON obgyn_care_plans(status);
+    `);
+
+    console.log('✅ Created obgyn_care_plans table');
+
+    // Goals table (FHIR R4)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS obgyn_goals (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        patient_id VARCHAR(255) NOT NULL,
+        care_plan_id UUID REFERENCES obgyn_care_plans(id) ON DELETE SET NULL,
+        episode_id UUID REFERENCES patient_specialty_episodes(id),
+        lifecycle_status VARCHAR(50) NOT NULL DEFAULT 'active',
+        achievement_status JSONB,
+        priority JSONB,
+        category JSONB,
+        description TEXT NOT NULL,
+        start_date DATE,
+        target JSONB,
+        notes JSONB,
+        org_id UUID NOT NULL,
+        created_by VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_goal_patient ON obgyn_goals(patient_id);
+      CREATE INDEX IF NOT EXISTS idx_goal_careplan ON obgyn_goals(care_plan_id);
+      CREATE INDEX IF NOT EXISTS idx_goal_status ON obgyn_goals(lifecycle_status);
+    `);
+
+    console.log('✅ Created obgyn_goals table');
+
     await client.query('COMMIT');
     console.log('✅ Migration completed successfully');
   } catch (error) {
@@ -530,6 +584,8 @@ async function down() {
   try {
     await client.query('BEGIN');
 
+    await client.query('DROP TABLE IF EXISTS obgyn_goals CASCADE');
+    await client.query('DROP TABLE IF EXISTS obgyn_care_plans CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_patient_education CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_cervical_length CASCADE');
     await client.query('DROP TABLE IF EXISTS obgyn_ivf_cycles CASCADE');

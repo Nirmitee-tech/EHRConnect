@@ -202,11 +202,19 @@
         "componentName": "EPDSCalculator"
       },
       {
+        "id": "care-plans",
+        "label": "Care Plans",
+        "icon": "ClipboardList",
+        "category": "clinical",
+        "order": 25,
+        "componentName": "CarePlanManagementPanel"
+      },
+      {
         "id": "encounters",
         "label": "Visit Details",
         "icon": "Calendar",
         "category": "clinical",
-        "order": 25
+        "order": 26
       }
     ],
     "replaceSections": false,
@@ -247,7 +255,8 @@
     "enableConsentManagement": true,
     "enableIVFCaseSheet": true,
     "enableCervicalLength": true,
-    "enablePatientEducation": true
+    "enablePatientEducation": true,
+    "enableCarePlanManagement": true
   },
 
   "devices": [

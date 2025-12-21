@@ -893,6 +893,179 @@ export async function savePatientEducation(
   return response.data.record;
 }
 
+// ============================================
+// Care Plan APIs (FHIR R4)
+// ============================================
+
+export interface CarePlanActivity {
+  id?: string;
+  detail: {
+    kind?: string;
+    code?: { text: string };
+    status: string;
+    description?: string;
+    scheduledString?: string;
+    performer?: { display: string }[];
+  };
+}
+
+export interface CarePlan {
+  id: string;
+  resourceType: 'CarePlan';
+  status: string;
+  intent: string;
+  title: string;
+  description?: string;
+  subject: { reference: string };
+  period?: { start: string; end?: string };
+  created: string;
+  activity: CarePlanActivity[];
+  episodeId?: string;
+}
+
+export interface Goal {
+  id: string;
+  resourceType: 'Goal';
+  lifecycleStatus: string;
+  priority?: { coding: { code: string; display: string }[] };
+  category?: { coding: { code: string; display: string }[] }[];
+  description: { text: string };
+  subject: { reference: string };
+  startDate?: string;
+  target?: { dueDate?: string; measure?: { text: string }; detailString?: string }[];
+  carePlanId?: string;
+  episodeId?: string;
+}
+
+export async function getCarePlans(
+  patientId: string,
+  episodeId?: string,
+  headers?: Record<string, string>
+): Promise<CarePlan[]> {
+  const params = episodeId ? `?episodeId=${episodeId}` : '';
+  const response = await axios.get(
+    `${API_BASE}/api/patients/${patientId}/obgyn/care-plans${params}`,
+    getAxiosConfig(headers)
+  );
+  return response.data.carePlans || [];
+}
+
+export async function createCarePlan(
+  patientId: string,
+  data: { carePlan: Partial<CarePlan>; episodeId?: string },
+  headers?: Record<string, string>
+): Promise<CarePlan> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/care-plans`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.carePlan;
+}
+
+export async function updateCarePlan(
+  patientId: string,
+  carePlanId: string,
+  updates: Partial<CarePlan>,
+  headers?: Record<string, string>
+): Promise<CarePlan> {
+  const response = await axios.patch(
+    `${API_BASE}/api/patients/${patientId}/obgyn/care-plans/${carePlanId}`,
+    updates,
+    getAxiosConfig(headers)
+  );
+  return response.data.carePlan;
+}
+
+export async function addCarePlanActivity(
+  patientId: string,
+  carePlanId: string,
+  activity: CarePlanActivity,
+  headers?: Record<string, string>
+): Promise<CarePlan> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/care-plans/${carePlanId}/activities`,
+    { activity },
+    getAxiosConfig(headers)
+  );
+  return response.data.carePlan;
+}
+
+export async function updateActivityStatus(
+  patientId: string,
+  carePlanId: string,
+  activityIndex: number,
+  status: string,
+  headers?: Record<string, string>
+): Promise<CarePlan> {
+  const response = await axios.patch(
+    `${API_BASE}/api/patients/${patientId}/obgyn/care-plans/${carePlanId}/activities/${activityIndex}`,
+    { status },
+    getAxiosConfig(headers)
+  );
+  return response.data.carePlan;
+}
+
+// ============================================
+// Goal APIs (FHIR R4)
+// ============================================
+
+export async function getGoals(
+  patientId: string,
+  carePlanId?: string,
+  episodeId?: string,
+  headers?: Record<string, string>
+): Promise<Goal[]> {
+  const params = new URLSearchParams();
+  if (carePlanId) params.append('carePlanId', carePlanId);
+  if (episodeId) params.append('episodeId', episodeId);
+  const queryString = params.toString() ? `?${params.toString()}` : '';
+  
+  const response = await axios.get(
+    `${API_BASE}/api/patients/${patientId}/obgyn/goals${queryString}`,
+    getAxiosConfig(headers)
+  );
+  return response.data.goals || [];
+}
+
+export async function createGoal(
+  patientId: string,
+  data: { goal: Partial<Goal>; carePlanId?: string; episodeId?: string },
+  headers?: Record<string, string>
+): Promise<Goal> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/goals`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.goal;
+}
+
+export async function updateGoal(
+  patientId: string,
+  goalId: string,
+  updates: Partial<Goal>,
+  headers?: Record<string, string>
+): Promise<Goal> {
+  const response = await axios.patch(
+    `${API_BASE}/api/patients/${patientId}/obgyn/goals/${goalId}`,
+    updates,
+    getAxiosConfig(headers)
+  );
+  return response.data.goal;
+}
+
+export async function deleteGoal(
+  patientId: string,
+  goalId: string,
+  headers?: Record<string, string>
+): Promise<void> {
+  await axios.delete(
+    `${API_BASE}/api/patients/${patientId}/obgyn/goals/${goalId}`,
+    getAxiosConfig(headers)
+  );
+}
+
 // Export as default service object
 export const obgynService = {
   // EPDS
@@ -949,7 +1122,18 @@ export const obgynService = {
   saveCervicalLength,
   // Patient Education
   getPatientEducation,
-  savePatientEducation
+  savePatientEducation,
+  // Care Plans (FHIR R4)
+  getCarePlans,
+  createCarePlan,
+  updateCarePlan,
+  addCarePlanActivity,
+  updateActivityStatus,
+  // Goals (FHIR R4)
+  getGoals,
+  createGoal,
+  updateGoal,
+  deleteGoal
 };
 
 export default obgynService;

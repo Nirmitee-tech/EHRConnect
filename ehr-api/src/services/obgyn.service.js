@@ -1888,6 +1888,320 @@ class ObGynService {
       episodeId: result.rows[0].episode_id
     };
   }
+
+  // ============================================
+  // Care Plans (FHIR R4)
+  // ============================================
+
+  /**
+   * Get care plans for a patient
+   * @param {string} patientId - Patient ID
+   * @param {string} [episodeId] - Optional episode ID filter
+   * @returns {Promise<Array>} Care plans
+   */
+  async getCarePlans(patientId, episodeId = null) {
+    let query = `SELECT * FROM obgyn_care_plans WHERE patient_id = $1`;
+    const params = [patientId];
+
+    if (episodeId) {
+      query += ` AND episode_id = $2`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY created_at DESC`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.map(row => this._formatCarePlan(row));
+  }
+
+  /**
+   * Create a new care plan
+   * @param {string} patientId - Patient ID
+   * @param {Object} data - Care plan data
+   * @returns {Promise<Object>} Created care plan
+   */
+  async createCarePlan(patientId, data) {
+    const { carePlan, episodeId, orgId, userId } = data;
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_care_plans
+       (id, patient_id, episode_id, status, intent, title, description, 
+        period_start, period_end, activity, org_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       RETURNING *`,
+      [
+        id,
+        patientId,
+        episodeId,
+        carePlan.status || 'active',
+        carePlan.intent || 'plan',
+        carePlan.title,
+        carePlan.description,
+        carePlan.period?.start,
+        carePlan.period?.end,
+        JSON.stringify(carePlan.activity || []),
+        orgId,
+        userId
+      ]
+    );
+
+    return this._formatCarePlan(result.rows[0]);
+  }
+
+  /**
+   * Update a care plan
+   * @param {string} carePlanId - Care plan ID
+   * @param {Object} updates - Fields to update
+   * @returns {Promise<Object>} Updated care plan
+   */
+  async updateCarePlan(carePlanId, updates) {
+    const { status, title, description, activity } = updates;
+    
+    const result = await this.pool.query(
+      `UPDATE obgyn_care_plans
+       SET status = COALESCE($2, status),
+           title = COALESCE($3, title),
+           description = COALESCE($4, description),
+           activity = COALESCE($5, activity),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING *`,
+      [
+        carePlanId,
+        status,
+        title,
+        description,
+        activity ? JSON.stringify(activity) : null
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Care plan not found');
+    }
+
+    return this._formatCarePlan(result.rows[0]);
+  }
+
+  /**
+   * Add activity to care plan
+   * @param {string} carePlanId - Care plan ID
+   * @param {Object} activity - Activity to add
+   * @returns {Promise<Object>} Updated care plan
+   */
+  async addCarePlanActivity(carePlanId, activity) {
+    // Get current activities
+    const current = await this.pool.query(
+      `SELECT activity FROM obgyn_care_plans WHERE id = $1`,
+      [carePlanId]
+    );
+
+    if (current.rows.length === 0) {
+      throw new Error('Care plan not found');
+    }
+
+    const activities = current.rows[0].activity || [];
+    activities.push(activity);
+
+    const result = await this.pool.query(
+      `UPDATE obgyn_care_plans
+       SET activity = $2, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING *`,
+      [carePlanId, JSON.stringify(activities)]
+    );
+
+    return this._formatCarePlan(result.rows[0]);
+  }
+
+  /**
+   * Update activity status
+   * @param {string} carePlanId - Care plan ID
+   * @param {number} activityIndex - Index of activity to update
+   * @param {string} status - New status
+   * @returns {Promise<Object>} Updated care plan
+   */
+  async updateActivityStatus(carePlanId, activityIndex, status) {
+    // Get current activities
+    const current = await this.pool.query(
+      `SELECT activity FROM obgyn_care_plans WHERE id = $1`,
+      [carePlanId]
+    );
+
+    if (current.rows.length === 0) {
+      throw new Error('Care plan not found');
+    }
+
+    const activities = current.rows[0].activity || [];
+    if (activityIndex < 0 || activityIndex >= activities.length) {
+      throw new Error('Invalid activity index');
+    }
+
+    activities[activityIndex].detail.status = status;
+
+    const result = await this.pool.query(
+      `UPDATE obgyn_care_plans
+       SET activity = $2, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING *`,
+      [carePlanId, JSON.stringify(activities)]
+    );
+
+    return this._formatCarePlan(result.rows[0]);
+  }
+
+  /**
+   * Format care plan from database row
+   */
+  _formatCarePlan(row) {
+    return {
+      id: row.id,
+      resourceType: 'CarePlan',
+      status: row.status,
+      intent: row.intent,
+      title: row.title,
+      description: row.description,
+      subject: { reference: `Patient/${row.patient_id}` },
+      period: {
+        start: row.period_start,
+        end: row.period_end
+      },
+      created: row.created_at,
+      activity: row.activity || [],
+      episodeId: row.episode_id
+    };
+  }
+
+  // ============================================
+  // Goals (FHIR R4)
+  // ============================================
+
+  /**
+   * Get goals for a patient
+   * @param {string} patientId - Patient ID
+   * @param {string} [carePlanId] - Optional care plan ID filter
+   * @param {string} [episodeId] - Optional episode ID filter
+   * @returns {Promise<Array>} Goals
+   */
+  async getGoals(patientId, carePlanId = null, episodeId = null) {
+    let query = `SELECT * FROM obgyn_goals WHERE patient_id = $1`;
+    const params = [patientId];
+    let paramIndex = 2;
+
+    if (carePlanId) {
+      query += ` AND care_plan_id = $${paramIndex}`;
+      params.push(carePlanId);
+      paramIndex++;
+    }
+
+    if (episodeId) {
+      query += ` AND episode_id = $${paramIndex}`;
+      params.push(episodeId);
+    }
+
+    query += ` ORDER BY created_at DESC`;
+
+    const result = await this.pool.query(query, params);
+    return result.rows.map(row => this._formatGoal(row));
+  }
+
+  /**
+   * Create a new goal
+   * @param {string} patientId - Patient ID
+   * @param {Object} data - Goal data
+   * @returns {Promise<Object>} Created goal
+   */
+  async createGoal(patientId, data) {
+    const { goal, carePlanId, episodeId, orgId, userId } = data;
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_goals
+       (id, patient_id, care_plan_id, episode_id, lifecycle_status, priority, 
+        category, description, start_date, target, org_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       RETURNING *`,
+      [
+        id,
+        patientId,
+        carePlanId,
+        episodeId,
+        goal.lifecycleStatus || 'active',
+        JSON.stringify(goal.priority),
+        JSON.stringify(goal.category),
+        goal.description?.text,
+        goal.startDate,
+        JSON.stringify(goal.target),
+        orgId,
+        userId
+      ]
+    );
+
+    return this._formatGoal(result.rows[0]);
+  }
+
+  /**
+   * Update a goal
+   * @param {string} goalId - Goal ID
+   * @param {Object} updates - Fields to update
+   * @returns {Promise<Object>} Updated goal
+   */
+  async updateGoal(goalId, updates) {
+    const { lifecycleStatus, achievementStatus, note } = updates;
+    
+    const result = await this.pool.query(
+      `UPDATE obgyn_goals
+       SET lifecycle_status = COALESCE($2, lifecycle_status),
+           achievement_status = COALESCE($3, achievement_status),
+           notes = COALESCE($4, notes),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING *`,
+      [
+        goalId,
+        lifecycleStatus,
+        achievementStatus ? JSON.stringify(achievementStatus) : null,
+        note ? JSON.stringify(note) : null
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Goal not found');
+    }
+
+    return this._formatGoal(result.rows[0]);
+  }
+
+  /**
+   * Delete a goal
+   * @param {string} goalId - Goal ID
+   */
+  async deleteGoal(goalId) {
+    await this.pool.query(`DELETE FROM obgyn_goals WHERE id = $1`, [goalId]);
+  }
+
+  /**
+   * Format goal from database row
+   */
+  _formatGoal(row) {
+    return {
+      id: row.id,
+      resourceType: 'Goal',
+      lifecycleStatus: row.lifecycle_status,
+      achievementStatus: row.achievement_status,
+      priority: row.priority,
+      category: row.category,
+      description: { text: row.description },
+      subject: { reference: `Patient/${row.patient_id}` },
+      startDate: row.start_date,
+      target: row.target,
+      carePlanId: row.care_plan_id,
+      episodeId: row.episode_id,
+      note: row.notes,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
 }
 
 module.exports = ObGynService;
