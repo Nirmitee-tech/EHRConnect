@@ -4257,9 +4257,57 @@ class ObGynService {
 
     if (monitoringResult.rows.length === 0) {
       return {
-        ready: false,
-        reason: 'No monitoring data available',
-        recommendation: 'Continue stimulation and monitoring'
+        cycleId,
+        patientId,
+        stimDay: 0,
+        monitoringDate: new Date().toISOString(),
+        isReady: false,
+        confidenceScore: 0,
+        recommendation: '⏳ NO DATA - Begin stimulation monitoring',
+        follicleAnalysis: {
+          lead: { count: 0, sizes: [], right: [], left: [] },
+          supporting: { count: 0, sizes: [], right: [], left: [] },
+          small: { count: 0, note: 'No monitoring data available' },
+          total: 0
+        },
+        hormonalReadiness: {
+          e2: { value: null, perFollicle: null, status: 'unknown', target: '150-300 pg/mL per lead follicle' },
+          lh: { value: null, status: 'unknown', target: '<10 mIU/mL' },
+          progesterone: { value: null, status: 'unknown', target: '<1.5 ng/mL' }
+        },
+        endometrialStatus: {
+          thickness: null,
+          pattern: null,
+          status: 'unknown',
+          target: '≥8mm trilaminar'
+        },
+        triggerRecommendation: {
+          medication: 'Not determined yet',
+          rationale: 'Awaiting monitoring data',
+          ohssRisk: 'not_assessed',
+          timing: 'Not yet ready'
+        },
+        expectedYield: {
+          matureOocytes: '0',
+          mostLikely: 0,
+          confidence: 'None',
+          basis: 'No monitoring data available'
+        },
+        nextSteps: [
+          'Begin stimulation monitoring',
+          'Schedule first ultrasound and bloodwork',
+          'Track follicle growth and hormone levels'
+        ],
+        checks: {
+          follicles: { pass: false, value: 0, target: '≥3 lead follicles (≥18mm)', status: 'insufficient' },
+          cohortSync: { pass: false, value: 0, target: 'Good cohort synchronization', status: 'unknown' },
+          e2Level: { pass: false, value: null, target: '500-5000 pg/mL', status: 'unknown' },
+          e2PerFollicle: { pass: false, value: null, target: '150-300 pg/mL per lead follicle', status: 'unknown' },
+          lhSurge: { pass: true, value: null, target: '<10 mIU/mL', status: 'unknown' },
+          progesterone: { pass: true, value: null, target: '<1.5 ng/mL', status: 'unknown' },
+          endometrium: { pass: false, value: null, target: '≥8mm trilaminar', status: 'unknown' }
+        },
+        calculationDate: new Date().toISOString()
       };
     }
 
