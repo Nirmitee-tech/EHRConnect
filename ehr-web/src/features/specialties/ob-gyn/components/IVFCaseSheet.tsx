@@ -7,7 +7,7 @@ import {
   Target, TrendingUp, Activity, Syringe,
   Loader2, Info, AlertTriangle, History, FileText,
   TrendingDown, Users, Stethoscope, AlertCircle, ArrowRightLeft,
-  BarChart3
+  BarChart3, Shield
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { obgynService, IVFCycle, Embryo } from '@/services/obgyn.service';
@@ -21,6 +21,7 @@ import CycleComparisonPanel from './CycleComparisonPanel';
 import SuccessProbabilityPanel from './SuccessProbabilityPanel';
 import VisualAnalyticsPanel from './VisualAnalyticsPanel';
 import AdvancedAnalyticsPanel from './AdvancedAnalyticsPanel';
+import OHSSRiskPanel from './OHSSRiskPanel';
 
 interface IVFCaseSheetProps {
   patientId: string;
@@ -71,7 +72,8 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
     cycleComparison: false,
     successProbability: false,
     visualAnalytics: false,
-    advancedAnalytics: false
+    advancedAnalytics: false,
+    ohssRisk: false
   });
 
   // Local editing state for baseline fields
@@ -891,6 +893,32 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
                       ['5AA', '4AA', '4AB', '4BA', '5AB', '5BA'].includes(e.day5Grade)
                     ).length || 0
                   }
+                />
+              </div>
+            )}
+          </div>
+
+          {/* OHSS Risk Calculator - Phase 7.1 */}
+          <div className="bg-white rounded border-2 border-red-200 overflow-hidden shadow-sm">
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, ohssRisk: !prev.ohssRisk }))}
+              className="w-full flex items-center justify-between p-2 text-left hover:bg-red-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                {expandedSections.ohssRisk ? <ChevronDown className="h-3 w-3 text-gray-400" /> : <ChevronRight className="h-3 w-3 text-gray-400" />}
+                <Shield className="h-3.5 w-3.5 text-red-600" />
+                <span className="text-xs font-semibold text-gray-900">OHSS Risk Assessment</span>
+                <span className="text-[10px] text-red-600 font-medium ml-1">(Venice 2016 Criteria)</span>
+              </div>
+              <span className="px-1.5 py-0.5 text-[9px] bg-red-100 text-red-700 rounded font-semibold">
+                PHASE 7.1 • CLINICAL SAFETY
+              </span>
+            </button>
+            {expandedSections.ohssRisk && activeCycle && (
+              <div className="border-t border-gray-200 p-4 bg-gradient-to-br from-red-50/30 to-orange-50/30">
+                <OHSSRiskPanel
+                  patientId={patientId}
+                  cycleId={activeCycle.id}
                 />
               </div>
             )}

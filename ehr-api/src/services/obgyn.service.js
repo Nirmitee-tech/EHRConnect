@@ -3997,6 +3997,222 @@ class ObGynService {
       }
     };
   }
+
+  /**
+   * Calculate OHSS risk using Venice 2016 criteria
+   * @param {string} patientId - Patient ID
+   * @param {string} cycleId - IVF cycle ID
+   * @returns {Promise<Object>} OHSS risk assessment
+   */
+  async calculateOHSSRisk(patientId, cycleId) {
+    // Get cycle data
+    const cycleResult = await this.db.query(
+      `SELECT * FROM ivf_cycles WHERE id = $1 AND patient_id = $2`,
+      [cycleId, patientId]
+    );
+
+    if (cycleResult.rows.length === 0) {
+      throw new Error('IVF cycle not found');
+    }
+
+    const cycle = cycleResult.rows[0];
+
+    // Get patient demographics for age
+    const patientResult = await this.db.query(
+      `SELECT date_of_birth FROM patients WHERE id = $1`,
+      [patientId]
+    );
+
+    const patient = patientResult.rows[0];
+    const age = patient?.date_of_birth
+      ? Math.floor((Date.now() - new Date(patient.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+      : null;
+
+    // Get latest monitoring data for peak E2 and follicle count
+    const monitoringResult = await this.db.query(
+      `SELECT
+        estradiol_pg_ml,
+        follicles_right,
+        follicles_left
+      FROM ivf_stimulation_monitoring
+      WHERE ivf_cycle_id = $1
+      ORDER BY monitoring_date DESC
+      LIMIT 1`,
+      [cycleId]
+    );
+
+    const latestMonitoring = monitoringResult.rows[0];
+    const peakE2 = latestMonitoring?.estradiol_pg_ml ? parseFloat(latestMonitoring.estradiol_pg_ml) : null;
+    const rightFollicles = latestMonitoring?.follicles_right || [];
+    const leftFollicles = latestMonitoring?.follicles_left || [];
+    const totalFollicles = rightFollicles.length + leftFollicles.length;
+
+    // Get retrieval data for oocyte count
+    const retrievalResult = await this.db.query(
+      `SELECT oocytes_retrieved FROM ivf_oocyte_retrievals WHERE ivf_cycle_id = $1`,
+      [cycleId]
+    );
+
+    const oocytesRetrieved = retrievalResult.rows[0]?.oocytes_retrieved || null;
+
+    // Venice 2016 Criteria Scoring
+    let riskScore = 0;
+    const riskFactors = [];
+
+    // 1. AFC (Antral Follicle Count) - from baseline_afc
+    const afc = cycle.baseline_afc;
+    if (afc && afc >= 24) {
+      riskScore += 3;
+      riskFactors.push({
+        factor: 'High AFC (≥24)',
+        value: afc,
+        points: 3,
+        interpretation: 'High ovarian reserve increases OHSS risk'
+      });
+    }
+
+    // 2. AMH (ng/mL) - from baseline_amh_ng_ml
+    const amh = cycle.baseline_amh_ng_ml;
+    if (amh && amh > 3.36) {
+      riskScore += 3;
+      riskFactors.push({
+        factor: 'High AMH (>3.36 ng/mL)',
+        value: amh,
+        points: 3,
+        interpretation: 'Elevated AMH indicates polycystic ovarian morphology'
+      });
+    }
+
+    // 3. Age (<30 years)
+    if (age && age < 30) {
+      riskScore += 1;
+      riskFactors.push({
+        factor: 'Young age (<30 years)',
+        value: age,
+        points: 1,
+        interpretation: 'Younger women have higher ovarian response'
+      });
+    }
+
+    // 4. PCOS - check if stimulation_protocol contains "PCOS" or diagnosis
+    const hasPCOS = cycle.stimulation_protocol?.toLowerCase().includes('pcos') || false;
+    if (hasPCOS) {
+      riskScore += 2;
+      riskFactors.push({
+        factor: 'PCOS diagnosis',
+        value: 'Yes',
+        points: 2,
+        interpretation: 'PCOS significantly increases OHSS risk'
+      });
+    }
+
+    // 5. Peak E2 (1 point per 1000 pg/mL above 3000)
+    if (peakE2 && peakE2 > 3000) {
+      const e2Points = Math.floor((peakE2 - 3000) / 1000);
+      riskScore += e2Points;
+      riskFactors.push({
+        factor: 'Elevated E2 (>3000 pg/mL)',
+        value: Math.round(peakE2),
+        points: e2Points,
+        interpretation: `Each 1000 pg/mL above 3000 adds 1 point`
+      });
+    }
+
+    // 6. Oocytes retrieved (1 point per 5 oocytes above 10)
+    if (oocytesRetrieved && oocytesRetrieved > 10) {
+      const oocytePoints = Math.floor((oocytesRetrieved - 10) / 5);
+      riskScore += oocytePoints;
+      riskFactors.push({
+        factor: 'High oocyte yield (>10)',
+        value: oocytesRetrieved,
+        points: oocytePoints,
+        interpretation: `Each 5 oocytes above 10 adds 1 point`
+      });
+    }
+
+    // Determine risk category
+    let riskCategory = 'low';
+    let riskLevel = 'Low Risk';
+    let riskColor = 'green';
+    let clinicalAction = 'Standard protocols appropriate';
+    let preventionStrategies = [];
+
+    if (riskScore >= 10) {
+      riskCategory = 'critical';
+      riskLevel = 'Critical Risk';
+      riskColor = 'red';
+      clinicalAction = 'IMMEDIATE ACTION REQUIRED - Implement all prevention strategies';
+      preventionStrategies = [
+        'Use GnRH agonist trigger (NOT hCG)',
+        'Freeze all embryos - NO fresh transfer',
+        'Coasting (hold FSH) if E2 continues rising',
+        'Cabergoline 0.5mg daily × 8 days post-retrieval',
+        'IV albumin 20% during retrieval',
+        'Close monitoring Days 3, 5, 7, 10 post-retrieval',
+        'Patient education on symptoms and hydration',
+        'Consider cycle cancellation if extremely high risk'
+      ];
+    } else if (riskScore >= 7) {
+      riskCategory = 'high';
+      riskLevel = 'High Risk';
+      riskColor = 'orange';
+      clinicalAction = 'High risk - Implement prevention protocols';
+      preventionStrategies = [
+        'Consider GnRH agonist trigger',
+        'Freeze all embryos recommended',
+        'Cabergoline 0.5mg daily × 8 days',
+        'Monitor closely Days 3, 5, 7 post-retrieval',
+        'Patient education on OHSS symptoms'
+      ];
+    } else if (riskScore >= 4) {
+      riskCategory = 'moderate';
+      riskLevel = 'Moderate Risk';
+      riskColor = 'yellow';
+      clinicalAction = 'Moderate risk - Enhanced monitoring recommended';
+      preventionStrategies = [
+        'Consider coasting if E2 continues to rise',
+        'Monitor closely on Days 3, 5, 7',
+        'Patient education on symptoms',
+        'Consider cabergoline if retrieval yield high'
+      ];
+    } else {
+      preventionStrategies = [
+        'Standard post-retrieval monitoring',
+        'Patient education on symptoms',
+        'Routine follow-up'
+      ];
+    }
+
+    // Clinical context
+    const clinicalContext = {
+      baselineData: {
+        afc: afc || 'Not recorded',
+        amh: amh ? `${amh} ng/mL` : 'Not recorded',
+        age: age ? `${age} years` : 'Not recorded',
+        pcos: hasPCOS ? 'Yes' : 'No'
+      },
+      currentCycleData: {
+        peakE2: peakE2 ? `${Math.round(peakE2)} pg/mL` : 'Not available',
+        follicleCount: totalFollicles || 'Not available',
+        oocytesRetrieved: oocytesRetrieved || 'Not yet retrieved'
+      }
+    };
+
+    return {
+      cycleId,
+      patientId,
+      riskScore,
+      riskCategory,
+      riskLevel,
+      riskColor,
+      riskFactors,
+      clinicalAction,
+      preventionStrategies,
+      clinicalContext,
+      calculationDate: new Date().toISOString(),
+      criteria: 'Venice 2016'
+    };
+  }
 }
 
 module.exports = ObGynService;

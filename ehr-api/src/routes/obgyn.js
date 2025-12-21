@@ -2379,6 +2379,33 @@ function initializeObGynRoutes(pool) {
     }
   });
 
+  // Phase 7.1: OHSS Risk Calculator (Venice 2016 Criteria)
+  router.get('/patients/:patientId/obgyn/ivf-cycles/:cycleId/ohss-risk', async (req, res) => {
+    try {
+      const { patientId, cycleId } = req.params;
+
+      if (!patientId || !cycleId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Patient ID and cycle ID are required'
+        });
+      }
+
+      const riskAssessment = await obgynService.calculateOHSSRisk(patientId, cycleId);
+
+      return res.status(200).json({
+        success: true,
+        data: riskAssessment
+      });
+    } catch (error) {
+      console.error('Error calculating OHSS risk:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   return router;
 }
 

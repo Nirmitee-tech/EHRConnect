@@ -1674,6 +1674,56 @@ export async function getIVFCycleAnalytics(
 }
 
 // ============================================
+// Phase 7.1: OHSS Risk Assessment (Venice 2016)
+// ============================================
+
+export interface OHSSRiskFactor {
+  factor: string;
+  value: number | string;
+  points: number;
+  interpretation: string;
+}
+
+export interface OHSSRiskAssessment {
+  cycleId: string;
+  patientId: string;
+  riskScore: number;
+  riskCategory: 'low' | 'moderate' | 'high' | 'critical';
+  riskLevel: string;
+  riskColor: string;
+  riskFactors: OHSSRiskFactor[];
+  clinicalAction: string;
+  preventionStrategies: string[];
+  clinicalContext: {
+    baselineData: {
+      afc: number | string;
+      amh: string;
+      age: string;
+      pcos: string;
+    };
+    currentCycleData: {
+      peakE2: string;
+      follicleCount: number | string;
+      oocytesRetrieved: number | string;
+    };
+  };
+  calculationDate: string;
+  criteria: string;
+}
+
+export async function calculateOHSSRisk(
+  patientId: string,
+  cycleId: string,
+  headers?: Record<string, string>
+): Promise<OHSSRiskAssessment> {
+  const response = await axios.get(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/ohss-risk`,
+    getAxiosConfig(headers)
+  );
+  return response.data.data;
+}
+
+// ============================================
 // Cervical Length Types and APIs
 // ============================================
 
@@ -2030,7 +2080,9 @@ export const obgynService = {
   // IVF Phase 5: Clinical Intelligence & Analytics
   compareIVFCycles,
   calculateSuccessProbability,
-  getIVFCycleAnalytics
+  getIVFCycleAnalytics,
+  // IVF Phase 7.1: OHSS Risk Assessment
+  calculateOHSSRisk
 };
 
 export default obgynService;
