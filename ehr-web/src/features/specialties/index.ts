@@ -13,6 +13,7 @@ export * from './shared';
 // Individual specialty modules
 export { GeneralSpecialty } from './general';
 export { ObGynSpecialty } from './ob-gyn';
+export { PediatricsSpecialty } from './pediatrics';
 
 // Future specialty modules:
 // export { OrthopedicsSpecialty } from './orthopedics';
