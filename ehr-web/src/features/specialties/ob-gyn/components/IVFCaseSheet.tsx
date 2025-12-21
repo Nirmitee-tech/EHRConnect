@@ -15,6 +15,7 @@ import { StimulationMonitoringPanel } from './StimulationMonitoringPanel';
 import { RetrievalReportPanel } from './RetrievalReportPanel';
 import { EmbryologyLabPanel } from './EmbryologyLabPanel';
 import TransferDayPanel from './TransferDayPanel';
+import OutcomeTrackingPanel from './OutcomeTrackingPanel';
 
 interface IVFCaseSheetProps {
   patientId: string;
@@ -752,8 +753,30 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
             )}
           </div>
 
-          {/* Continue with other sections (Protocol, Outcome) with same compact styling pattern... */}
-          {/* For brevity, I'm keeping the structure similar but more compact */}
+          {/* Outcome Tracking Section */}
+          <div className="bg-white rounded border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, outcome: !prev.outcome }))}
+              className="w-full flex items-center justify-between p-2 text-left hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                {expandedSections.outcome ? <ChevronDown className="h-3 w-3 text-gray-400" /> : <ChevronRight className="h-3 w-3 text-gray-400" />}
+                <TrendingUp className="h-3.5 w-3.5 text-green-600" />
+                <span className="text-xs font-semibold text-gray-900">Pregnancy Outcome</span>
+              </div>
+              <span className="px-1.5 py-0.5 text-[9px] bg-green-100 text-green-700 rounded">
+                PHASE 4
+              </span>
+            </button>
+            {expandedSections.outcome && activeCycle && (
+              <div className="border-t border-gray-200">
+                <OutcomeTrackingPanel
+                  patientId={patientId}
+                  cycleId={activeCycle.id}
+                />
+              </div>
+            )}
+          </div>
         </div>
       )}
 

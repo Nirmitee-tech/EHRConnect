@@ -1347,6 +1347,159 @@ export async function updateIVFEmbryo(
 }
 
 // ============================================
+// IVF Pregnancy Outcomes (Phase 4)
+// ============================================
+
+export interface IVFPregnancyOutcome {
+  id: string;
+  cycleId: string;
+  transferId?: string;
+  patientId: string;
+
+  // Beta hCG tracking
+  betaHcgSeries?: Array<{
+    date: string;
+    value: number;
+    dpo?: number; // Days post ovulation/transfer
+    interpretation?: string;
+  }>;
+  firstBetaDate?: string;
+  firstBetaValue?: number;
+  secondBetaDate?: string;
+  secondBetaValue?: number;
+  doublingTimeHours?: number;
+
+  // Early ultrasounds
+  ultrasounds?: Array<{
+    date: string;
+    gestationalAge?: string;
+    gestationalSacs?: number;
+    yolkSacs?: number;
+    fetalPoles?: number;
+    heartbeatDetected?: boolean;
+    heartbeatBpm?: number;
+    crlMm?: number;
+    notes?: string;
+  }>;
+  firstUltrasoundDate?: string;
+  gestationalSacs?: number;
+  yolkSacs?: number;
+  fetalPoles?: number;
+  heartbeatDetected?: boolean;
+  heartbeatBpm?: number;
+  crlMm?: number;
+
+  // Outcome
+  outcome?: 'ongoing' | 'biochemical' | 'clinical_pregnancy' | 'miscarriage' | 'ectopic' | 'live_birth' | 'pending';
+  outcomeDate?: string;
+  gestationalAgeAtOutcome?: string;
+
+  // Live birth details
+  deliveryDate?: string;
+  deliveryType?: string;
+  babies?: Array<{
+    gender?: 'M' | 'F';
+    weightG?: number;
+    apgar1?: number;
+    apgar5?: number;
+    complications?: string;
+  }>;
+
+  // Complications & notes
+  complications?: Array<{
+    type: string;
+    date?: string;
+    description?: string;
+  }>;
+  notes?: string;
+
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
+export async function getIVFPregnancyOutcome(
+  patientId: string,
+  cycleId: string,
+  headers?: Record<string, string>
+): Promise<IVFPregnancyOutcome | null> {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/pregnancy-outcome`,
+      getAxiosConfig(headers)
+    );
+    return response.data.outcome;
+  } catch (error) {
+    if (isAxiosErrorWithStatus(error, 404)) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function getIVFPregnancyOutcomeByTransfer(
+  patientId: string,
+  cycleId: string,
+  transferId: string,
+  headers?: Record<string, string>
+): Promise<IVFPregnancyOutcome | null> {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/transfers/${transferId}/pregnancy-outcome`,
+      getAxiosConfig(headers)
+    );
+    return response.data.outcome;
+  } catch (error) {
+    if (isAxiosErrorWithStatus(error, 404)) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function createIVFPregnancyOutcome(
+  patientId: string,
+  cycleId: string,
+  data: Partial<IVFPregnancyOutcome>,
+  headers?: Record<string, string>
+): Promise<IVFPregnancyOutcome> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/pregnancy-outcome`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.outcome;
+}
+
+export async function updateIVFPregnancyOutcome(
+  patientId: string,
+  cycleId: string,
+  outcomeId: string,
+  updates: Partial<IVFPregnancyOutcome>,
+  headers?: Record<string, string>
+): Promise<IVFPregnancyOutcome> {
+  const response = await axios.patch(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/pregnancy-outcome/${outcomeId}`,
+    updates,
+    getAxiosConfig(headers)
+  );
+  return response.data.outcome;
+}
+
+export async function deleteIVFPregnancyOutcome(
+  patientId: string,
+  cycleId: string,
+  outcomeId: string,
+  headers?: Record<string, string>
+): Promise<void> {
+  await axios.delete(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/pregnancy-outcome/${outcomeId}`,
+    getAxiosConfig(headers)
+  );
+}
+
+// ============================================
 // Cervical Length Types and APIs
 // ============================================
 
