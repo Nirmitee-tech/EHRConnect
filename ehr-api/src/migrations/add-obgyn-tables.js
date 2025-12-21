@@ -653,7 +653,7 @@ async function up() {
         day2_cell_count INTEGER,
         day2_fragmentation INTEGER CHECK (day2_fragmentation BETWEEN 0 AND 100),
         day2_symmetry VARCHAR(50) CHECK (day2_symmetry IN ('symmetric', 'mildly_asymmetric', 'asymmetric')),
-        day2_grade VARCHAR(10),
+        day2_grade VARCHAR(50),
         day2_notes TEXT,
 
         -- Day 3 (8-cell stage - ~72h post insemination)
@@ -662,7 +662,7 @@ async function up() {
         day3_fragmentation INTEGER CHECK (day3_fragmentation BETWEEN 0 AND 100),
         day3_symmetry VARCHAR(50) CHECK (day3_symmetry IN ('symmetric', 'mildly_asymmetric', 'asymmetric')),
         day3_compaction VARCHAR(50) CHECK (day3_compaction IN ('none', 'beginning', 'partial', 'full')),
-        day3_grade VARCHAR(10),
+        day3_grade VARCHAR(50),
         day3_notes TEXT,
 
         -- Day 4 (Morula stage)
