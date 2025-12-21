@@ -494,7 +494,7 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
                               : current.filter((v: string) => v !== condition.value);
                             updateCycle({ indications: updated } as Partial<IVFCycle>);
                           }}
-                          className="w-3 h-3 rounded border-gray-300 text-primary focus:ring-primary"
+                          className="w-3 h-3 rounded border-gray-300 text-primary focus:ring-primary accent-primary"
                         />
                         <span>{condition.label}</span>
                       </label>
