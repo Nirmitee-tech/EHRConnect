@@ -888,6 +888,301 @@ export async function deleteIVFMonitoring(
 }
 
 // ============================================
+// IVF Retrieval (Egg Retrieval Procedure)
+// ============================================
+
+export interface IVFRetrieval {
+  id: string;
+  cycleId: string;
+  patientId: string;
+  retrievalDate: string;
+  retrievalTime?: string;
+  triggerDate?: string;
+  triggerTime?: string;
+  triggerMedication?: string;
+  anesthesiaType?: 'general' | 'conscious_sedation' | 'local' | 'none';
+  anesthesiologist?: string;
+  rightOvaryFolliclesAspirated?: number;
+  leftOvaryFolliclesAspirated?: number;
+  aspirationDifficulty?: 'easy' | 'moderate' | 'difficult';
+  aspirationNotes?: string;
+  totalOocytesRetrieved: number;
+  matureOocytes?: number;
+  immatureOocytes?: number;
+  cumulusQuality?: 'excellent' | 'good' | 'fair' | 'poor';
+  follicularFluidQuality?: 'clear' | 'bloody' | 'cloudy';
+  complications?: Array<{ type: string; severity: string; notes: string }>;
+  procedureDuration?: number;
+  primaryPhysician?: string;
+  embryologist?: string;
+  physicianNotes?: string;
+  embryologistNotes?: string;
+  recordedBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getIVFRetrieval(
+  patientId: string,
+  cycleId: string,
+  headers?: Record<string, string>
+): Promise<IVFRetrieval | null> {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/retrieval`,
+      getAxiosConfig(headers)
+    );
+    return response.data.record || null;
+  } catch (error) {
+    if (isAxiosErrorWithStatus(error, 404)) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function createIVFRetrieval(
+  patientId: string,
+  cycleId: string,
+  data: Partial<IVFRetrieval>,
+  headers?: Record<string, string>
+): Promise<IVFRetrieval> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/retrieval`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.record;
+}
+
+export async function updateIVFRetrieval(
+  patientId: string,
+  cycleId: string,
+  retrievalId: string,
+  updates: Partial<IVFRetrieval>,
+  headers?: Record<string, string>
+): Promise<IVFRetrieval> {
+  const response = await axios.patch(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/retrieval/${retrievalId}`,
+    updates,
+    getAxiosConfig(headers)
+  );
+  return response.data.record;
+}
+
+// ============================================
+// IVF Oocytes (Individual Oocyte Tracking)
+// ============================================
+
+export interface IVFOocyte {
+  id: string;
+  retrievalId: string;
+  cycleId: string;
+  patientId: string;
+  oocyteNumber: number;
+  ovarySide?: 'right' | 'left' | 'unknown';
+  maturityGrade: 'MII' | 'MI' | 'GV' | 'degenerated';
+  cumulusCells?: 'expanded' | 'compact' | 'partial' | 'denuded';
+  fertilizationMethod?: 'ICSI' | 'conventional_IVF' | 'rescue_ICSI' | 'not_inseminated';
+  inseminationTime?: string;
+  fertilizationCheckTime?: string;
+  pronucleiCount?: number;
+  fertilizationStatus?: '2PN_normal' | '1PN' | '3PN' | 'unfertilized' | 'degenerated';
+  polarBodies?: number;
+  cytoplasmQuality?: 'clear' | 'granular' | 'dark' | 'vacuolated';
+  zonaPellucida?: 'normal' | 'thick' | 'thin' | 'dark';
+  developedToEmbryo: boolean;
+  embryoId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getIVFOocytes(
+  patientId: string,
+  cycleId: string,
+  retrievalId: string,
+  headers?: Record<string, string>
+): Promise<IVFOocyte[]> {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/retrieval/${retrievalId}/oocytes`,
+      getAxiosConfig(headers)
+    );
+    return response.data.records || [];
+  } catch (error) {
+    if (isAxiosErrorWithStatus(error, 404)) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function createIVFOocyte(
+  patientId: string,
+  cycleId: string,
+  retrievalId: string,
+  data: Partial<IVFOocyte>,
+  headers?: Record<string, string>
+): Promise<IVFOocyte> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/retrieval/${retrievalId}/oocytes`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.record;
+}
+
+export async function updateIVFOocyte(
+  patientId: string,
+  cycleId: string,
+  retrievalId: string,
+  oocyteId: string,
+  updates: Partial<IVFOocyte>,
+  headers?: Record<string, string>
+): Promise<IVFOocyte> {
+  const response = await axios.patch(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/retrieval/${retrievalId}/oocytes/${oocyteId}`,
+    updates,
+    getAxiosConfig(headers)
+  );
+  return response.data.record;
+}
+
+// ============================================
+// IVF Embryo Development (Day-by-Day Tracking)
+// ============================================
+
+export interface IVFEmbryoDevelopment {
+  id: string;
+  oocyteId?: string;
+  cycleId: string;
+  patientId: string;
+  embryoNumber: number;
+
+  // Day 1 assessment
+  day1CheckTime?: string;
+  day1Pronuclei?: number;
+  day1PolarBodies?: number;
+  day1Status?: '2PN' | '1PN' | '3PN' | 'unfertilized';
+  day1Notes?: string;
+
+  // Day 2 assessment
+  day2CheckTime?: string;
+  day2CellCount?: number;
+  day2Fragmentation?: number;
+  day2Symmetry?: 'symmetric' | 'mildly_asymmetric' | 'asymmetric';
+  day2Grade?: string;
+  day2Notes?: string;
+
+  // Day 3 assessment
+  day3CheckTime?: string;
+  day3CellCount?: number;
+  day3Fragmentation?: number;
+  day3Symmetry?: 'symmetric' | 'mildly_asymmetric' | 'asymmetric';
+  day3Compaction?: 'none' | 'beginning' | 'partial' | 'full';
+  day3Grade?: string;
+  day3Notes?: string;
+
+  // Day 4 assessment
+  day4CheckTime?: string;
+  day4Stage?: 'compacting' | 'morula' | 'early_blast' | 'arrested';
+  day4Notes?: string;
+
+  // Day 5 assessment (blastocyst)
+  day5CheckTime?: string;
+  day5Stage?: 'early_blast' | 'blast' | 'expanded_blast' | 'hatching_blast' | 'hatched_blast' | 'arrested';
+  day5Expansion?: '1' | '2' | '3' | '4' | '5' | '6';
+  day5IcmGrade?: 'A' | 'B' | 'C';
+  day5TeGrade?: 'A' | 'B' | 'C';
+  day5OverallGrade?: string;
+  day5Notes?: string;
+
+  // Day 6 assessment
+  day6CheckTime?: string;
+  day6Stage?: string;
+  day6Expansion?: string;
+  day6IcmGrade?: string;
+  day6TeGrade?: string;
+  day6OverallGrade?: string;
+  day6Notes?: string;
+
+  // Day 7 assessment
+  day7CheckTime?: string;
+  day7Stage?: string;
+  day7Notes?: string;
+
+  // Culture conditions
+  cultureMedia?: string;
+  incubatorType?: 'standard' | 'time_lapse' | 'benchtop';
+  co2Concentration?: number;
+  o2Concentration?: number;
+
+  // Final outcome
+  finalDisposition?: 'fresh_transfer' | 'frozen' | 'biopsied' | 'discarded' | 'arrested' | 'research';
+  dispositionDate?: string;
+  freezingMethod?: 'vitrification' | 'slow_freeze' | 'not_frozen';
+  thawSurvival?: boolean;
+
+  // PGT-A testing
+  biopsyDate?: string;
+  biopsyDay?: number;
+  pgtResult?: 'euploid' | 'aneuploid' | 'mosaic' | 'no_result' | 'pending';
+  pgtDetails?: any;
+
+  primaryEmbryologist?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getIVFEmbryos(
+  patientId: string,
+  cycleId: string,
+  headers?: Record<string, string>
+): Promise<IVFEmbryoDevelopment[]> {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/embryos`,
+      getAxiosConfig(headers)
+    );
+    return response.data.records || [];
+  } catch (error) {
+    if (isAxiosErrorWithStatus(error, 404)) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function createIVFEmbryo(
+  patientId: string,
+  cycleId: string,
+  data: Partial<IVFEmbryoDevelopment>,
+  headers?: Record<string, string>
+): Promise<IVFEmbryoDevelopment> {
+  const response = await axios.post(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/embryos`,
+    data,
+    getAxiosConfig(headers)
+  );
+  return response.data.record;
+}
+
+export async function updateIVFEmbryo(
+  patientId: string,
+  cycleId: string,
+  embryoId: string,
+  updates: Partial<IVFEmbryoDevelopment>,
+  headers?: Record<string, string>
+): Promise<IVFEmbryoDevelopment> {
+  const response = await axios.patch(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/embryos/${embryoId}`,
+    updates,
+    getAxiosConfig(headers)
+  );
+  return response.data.record;
+}
+
+// ============================================
 // Cervical Length Types and APIs
 // ============================================
 
@@ -1212,6 +1507,18 @@ export const obgynService = {
   createIVFMonitoring,
   updateIVFMonitoring,
   deleteIVFMonitoring,
+  // IVF Retrieval
+  getIVFRetrieval,
+  createIVFRetrieval,
+  updateIVFRetrieval,
+  // IVF Oocytes
+  getIVFOocytes,
+  createIVFOocyte,
+  updateIVFOocyte,
+  // IVF Embryos
+  getIVFEmbryos,
+  createIVFEmbryo,
+  updateIVFEmbryo,
   // Cervical Length
   getCervicalLengths,
   saveCervicalLength,

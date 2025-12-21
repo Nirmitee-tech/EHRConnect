@@ -12,6 +12,8 @@ import { useSession } from 'next-auth/react';
 import { obgynService, IVFCycle, Embryo } from '@/services/obgyn.service';
 import { useApiHeaders } from '@/hooks/useApiHeaders';
 import { StimulationMonitoringPanel } from './StimulationMonitoringPanel';
+import { RetrievalReportPanel } from './RetrievalReportPanel';
+import { EmbryologyLabPanel } from './EmbryologyLabPanel';
 
 interface IVFCaseSheetProps {
   patientId: string;
@@ -674,7 +676,57 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
             )}
           </div>
 
-          {/* Continue with other sections (Protocol, Embryology, Outcome) with same compact styling pattern... */}
+          {/* Retrieval Report Section */}
+          <div className="bg-white rounded border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, retrieval: !prev.retrieval }))}
+              className="w-full flex items-center justify-between p-2 text-left hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                {expandedSections.retrieval ? <ChevronDown className="h-3 w-3 text-gray-400" /> : <ChevronRight className="h-3 w-3 text-gray-400" />}
+                <Syringe className="h-3.5 w-3.5 text-green-600" />
+                <span className="text-xs font-semibold text-gray-900">Retrieval Report</span>
+              </div>
+              <span className="px-1.5 py-0.5 text-[9px] bg-purple-100 text-purple-700 rounded">
+                PHASE 2
+              </span>
+            </button>
+            {expandedSections.retrieval && activeCycle && (
+              <div className="border-t border-gray-200">
+                <RetrievalReportPanel
+                  patientId={patientId}
+                  cycleId={activeCycle.id}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Embryology Lab Section */}
+          <div className="bg-white rounded border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, embryology: !prev.embryology }))}
+              className="w-full flex items-center justify-between p-2 text-left hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                {expandedSections.embryology ? <ChevronDown className="h-3 w-3 text-gray-400" /> : <ChevronRight className="h-3 w-3 text-gray-400" />}
+                <Microscope className="h-3.5 w-3.5 text-purple-600" />
+                <span className="text-xs font-semibold text-gray-900">Embryology Lab</span>
+              </div>
+              <span className="px-1.5 py-0.5 text-[9px] bg-purple-100 text-purple-700 rounded">
+                DAY-BY-DAY
+              </span>
+            </button>
+            {expandedSections.embryology && activeCycle && (
+              <div className="border-t border-gray-200">
+                <EmbryologyLabPanel
+                  patientId={patientId}
+                  cycleId={activeCycle.id}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Continue with other sections (Protocol, Outcome) with same compact styling pattern... */}
           {/* For brevity, I'm keeping the structure similar but more compact */}
         </div>
       )}
