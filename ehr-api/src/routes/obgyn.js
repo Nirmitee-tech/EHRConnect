@@ -2286,6 +2286,99 @@ function initializeObGynRoutes(pool) {
     }
   });
 
+  // ============================================
+  // IVF PHASE 5: Clinical Intelligence & Analytics Routes
+  // ============================================
+
+  /**
+   * GET /api/patients/:patientId/obgyn/ivf-cycles/comparison
+   * Compare all IVF cycles for a patient
+   */
+  router.get('/patients/:patientId/obgyn/ivf-cycles/comparison', async (req, res) => {
+    try {
+      const { patientId } = req.params;
+
+      console.log('🔍 Fetching IVF cycle comparison for patient:', patientId);
+
+      const comparison = await obgynService.compareIVFCycles(patientId);
+
+      return res.status(200).json({
+        success: true,
+        data: comparison
+      });
+    } catch (error) {
+      console.error('Error fetching IVF cycle comparison:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * POST /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/success-probability
+   * Calculate success probability for IVF cycle
+   * Body: { age, amh, afc, bmi, previousIVFCount, diagnosis, oocytesRetrieved, matureOocytes, blastocysts, topQualityBlastocysts }
+   */
+  router.post('/patients/:patientId/obgyn/ivf-cycles/:cycleId/success-probability', async (req, res) => {
+    try {
+      const { patientId, cycleId } = req.params;
+      const factors = req.body;
+
+      console.log('🎯 Calculating success probability for cycle:', cycleId);
+
+      // Validate required factors
+      if (!factors.age) {
+        return res.status(400).json({
+          success: false,
+          error: 'Age is required for success probability calculation'
+        });
+      }
+
+      const probability = await obgynService.calculateSuccessProbability(
+        patientId,
+        cycleId,
+        factors
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: probability
+      });
+    } catch (error) {
+      console.error('Error calculating success probability:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * GET /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/analytics
+   * Get IVF cycle analytics data for visualization
+   */
+  router.get('/patients/:patientId/obgyn/ivf-cycles/:cycleId/analytics', async (req, res) => {
+    try {
+      const { patientId, cycleId } = req.params;
+
+      console.log('📊 Fetching IVF cycle analytics for cycle:', cycleId);
+
+      const analytics = await obgynService.getIVFCycleAnalytics(patientId, cycleId);
+
+      return res.status(200).json({
+        success: true,
+        data: analytics
+      });
+    } catch (error) {
+      console.error('Error fetching IVF cycle analytics:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   return router;
 }
 

@@ -3546,6 +3546,457 @@ class ObGynService {
       updatedAt: row.updated_at
     };
   }
+
+  // ============================================
+  // IVF PHASE 5: Clinical Intelligence & Analytics
+  // ============================================
+
+  /**
+   * Compare multiple IVF cycles for a patient
+   * Returns comprehensive comparison data for repeat patients
+   * @param {string} patientId - Patient ID
+   * @returns {Promise<Object>} Cycle comparison data
+   */
+  async compareIVFCycles(patientId) {
+    // Get all cycles for the patient
+    const cyclesResult = await this.pool.query(
+      `SELECT c.*,
+        (SELECT COUNT(*) FROM obgyn_ivf_monitoring WHERE cycle_id = c.id) as monitoring_count,
+        (SELECT COUNT(*) FROM obgyn_ivf_embryo_development WHERE cycle_id = c.id) as embryo_count
+      FROM obgyn_ivf_cycles c
+      WHERE c.patient_id = $1
+      ORDER BY c.start_date ASC`,
+      [patientId]
+    );
+
+    if (cyclesResult.rows.length === 0) {
+      return {
+        patientId,
+        totalCycles: 0,
+        cycles: [],
+        insights: []
+      };
+    }
+
+    const cycles = [];
+
+    for (const cycleRow of cyclesResult.rows) {
+      const cycleId = cycleRow.id;
+
+      // Get retrieval data
+      const retrievalResult = await this.pool.query(
+        `SELECT * FROM obgyn_ivf_retrievals WHERE cycle_id = $1 LIMIT 1`,
+        [cycleId]
+      );
+      const retrieval = retrievalResult.rows[0];
+
+      // Get monitoring data (to get peak E2, stim days, total medication)
+      const monitoringResult = await this.pool.query(
+        `SELECT
+          MAX(estradiol_pg_ml) as peak_e2,
+          MAX(stim_day) as stim_days,
+          COUNT(*) as visit_count
+        FROM obgyn_ivf_monitoring
+        WHERE cycle_id = $1`,
+        [cycleId]
+      );
+      const monitoringStats = monitoringResult.rows[0];
+
+      // Get embryo development data
+      const embryoResult = await this.pool.query(
+        `SELECT
+          COUNT(*) as total_embryos,
+          COUNT(*) FILTER (WHERE day5_overall_grade IN ('5AA', '4AA', '4AB', '4BA', '5AB', '5BA')) as top_quality,
+          COUNT(*) FILTER (WHERE final_disposition = 'frozen') as frozen_count,
+          COUNT(*) FILTER (WHERE final_disposition = 'fresh_transfer') as transferred_count
+        FROM obgyn_ivf_embryo_development
+        WHERE cycle_id = $1 AND day1_status = '2PN'`,
+        [cycleId]
+      );
+      const embryoStats = embryoResult.rows[0];
+
+      // Get outcome data
+      const outcomeResult = await this.pool.query(
+        `SELECT outcome FROM obgyn_ivf_pregnancy_outcomes WHERE cycle_id = $1 LIMIT 1`,
+        [cycleId]
+      );
+      const outcome = outcomeResult.rows[0]?.outcome || 'pending';
+
+      cycles.push({
+        cycleNumber: cycles.length + 1,
+        cycleId,
+        protocol: cycleRow.protocol_type,
+        afc: cycleRow.baseline?.afc || null,
+        stimDays: parseInt(monitoringStats.stim_days) || null,
+        peakE2: parseFloat(monitoringStats.peak_e2) || null,
+        oocytesRetrieved: retrieval?.total_oocytes_retrieved || null,
+        matureOocytes: retrieval?.mature_oocytes || null,
+        maturityRate: retrieval?.total_oocytes_retrieved && retrieval?.mature_oocytes
+          ? Math.round((retrieval.mature_oocytes / retrieval.total_oocytes_retrieved) * 100)
+          : null,
+        fertilized: parseInt(embryoStats.total_embryos) || 0,
+        fertilizationRate: retrieval?.mature_oocytes && embryoStats.total_embryos
+          ? Math.round((parseInt(embryoStats.total_embryos) / retrieval.mature_oocytes) * 100)
+          : null,
+        blastocysts: (parseInt(embryoStats.frozen_count) || 0) + (parseInt(embryoStats.transferred_count) || 0),
+        blastocystRate: embryoStats.total_embryos
+          ? Math.round(((parseInt(embryoStats.frozen_count) + parseInt(embryoStats.transferred_count)) / parseInt(embryoStats.total_embryos)) * 100)
+          : null,
+        topQuality: parseInt(embryoStats.top_quality) || 0,
+        outcome,
+        startDate: cycleRow.start_date
+      });
+    }
+
+    // Generate insights by comparing trends
+    const insights = this._generateCycleComparisonInsights(cycles);
+
+    return {
+      patientId,
+      totalCycles: cycles.length,
+      cycles,
+      insights
+    };
+  }
+
+  /**
+   * Generate insights from cycle comparison data
+   * @private
+   */
+  _generateCycleComparisonInsights(cycles) {
+    if (cycles.length < 2) {
+      return ['First IVF cycle - no comparison data available'];
+    }
+
+    const insights = [];
+    const current = cycles[cycles.length - 1];
+    const previous = cycles[cycles.length - 2];
+
+    // Compare maturity rates
+    if (current.maturityRate && previous.maturityRate) {
+      if (current.maturityRate > previous.maturityRate + 5) {
+        insights.push(`✅ Improved oocyte maturity: ${current.maturityRate}% vs ${previous.maturityRate}% (up ${current.maturityRate - previous.maturityRate}%)`);
+      } else if (current.maturityRate < previous.maturityRate - 5) {
+        insights.push(`⚠️ Lower maturity rate: ${current.maturityRate}% vs ${previous.maturityRate}% (down ${previous.maturityRate - current.maturityRate}%)`);
+      }
+    }
+
+    // Compare blastocyst formation
+    if (current.blastocysts > previous.blastocysts) {
+      insights.push(`✅ More blastocysts formed: ${current.blastocysts} vs ${previous.blastocysts} (up ${current.blastocysts - previous.blastocysts})`);
+    }
+
+    // Compare top quality embryos
+    if (current.topQuality > previous.topQuality) {
+      insights.push(`✅ More top-quality embryos: ${current.topQuality} vs ${previous.topQuality} (up ${current.topQuality - previous.topQuality})`);
+    }
+
+    // Protocol optimization
+    if (current.protocol !== previous.protocol) {
+      insights.push(`📋 Protocol changed from ${previous.protocol} to ${current.protocol}`);
+    }
+
+    // Overall assessment
+    if (cycles.length >= 2) {
+      const avgMaturity = cycles.filter(c => c.maturityRate).reduce((sum, c) => sum + c.maturityRate, 0) / cycles.filter(c => c.maturityRate).length;
+      const avgBlastRate = cycles.filter(c => c.blastocystRate).reduce((sum, c) => sum + c.blastocystRate, 0) / cycles.filter(c => c.blastocystRate).length;
+
+      if (current.maturityRate > avgMaturity && current.blastocystRate > avgBlastRate) {
+        insights.push('🎯 Best cycle yet - both maturity and blastocyst rates above average');
+      }
+    }
+
+    return insights.length > 0 ? insights : ['Cycle data collected - trends will emerge with more cycles'];
+  }
+
+  /**
+   * Calculate success probability for IVF cycle
+   * Based on SART data and patient/cycle factors
+   * @param {string} patientId - Patient ID
+   * @param {string} cycleId - Cycle ID
+   * @param {Object} factors - Patient and cycle factors
+   * @returns {Promise<Object>} Success probability estimates
+   */
+  async calculateSuccessProbability(patientId, cycleId, factors) {
+    const {
+      age,
+      amh,
+      afc,
+      bmi,
+      previousIVFCount = 0,
+      diagnosis,
+      oocytesRetrieved,
+      matureOocytes,
+      blastocysts,
+      topQualityBlastocysts
+    } = factors;
+
+    // Base rates from SART data (simplified model)
+    let clinicalPregnancyRate = 50; // Base 50%
+    let liveBirthRate = 40; // Base 40%
+
+    // Age adjustment (most important factor)
+    if (age < 30) {
+      clinicalPregnancyRate += 15;
+      liveBirthRate += 15;
+    } else if (age < 35) {
+      clinicalPregnancyRate += 10;
+      liveBirthRate += 10;
+    } else if (age >= 35 && age < 38) {
+      clinicalPregnancyRate += 0;
+      liveBirthRate += 0;
+    } else if (age >= 38 && age < 40) {
+      clinicalPregnancyRate -= 10;
+      liveBirthRate -= 12;
+    } else if (age >= 40 && age < 42) {
+      clinicalPregnancyRate -= 20;
+      liveBirthRate -= 25;
+    } else if (age >= 42) {
+      clinicalPregnancyRate -= 35;
+      liveBirthRate -= 40;
+    }
+
+    // AMH adjustment (ovarian reserve)
+    if (amh !== undefined && amh !== null) {
+      if (amh >= 2.0) {
+        clinicalPregnancyRate += 5;
+        liveBirthRate += 5;
+      } else if (amh < 1.0) {
+        clinicalPregnancyRate -= 10;
+        liveBirthRate -= 10;
+      }
+    }
+
+    // AFC adjustment
+    if (afc !== undefined && afc !== null) {
+      if (afc >= 15) {
+        clinicalPregnancyRate += 5;
+        liveBirthRate += 5;
+      } else if (afc < 8) {
+        clinicalPregnancyRate -= 10;
+        liveBirthRate -= 10;
+      }
+    }
+
+    // BMI adjustment
+    if (bmi !== undefined && bmi !== null) {
+      if (bmi >= 30) {
+        clinicalPregnancyRate -= 8;
+        liveBirthRate -= 10;
+      } else if (bmi >= 35) {
+        clinicalPregnancyRate -= 15;
+        liveBirthRate -= 18;
+      }
+    }
+
+    // Previous IVF attempts (diminishing returns)
+    if (previousIVFCount > 0) {
+      clinicalPregnancyRate -= Math.min(previousIVFCount * 3, 12);
+      liveBirthRate -= Math.min(previousIVFCount * 4, 15);
+    }
+
+    // Cycle-specific factors
+    if (oocytesRetrieved !== undefined && oocytesRetrieved !== null) {
+      if (oocytesRetrieved >= 15) {
+        clinicalPregnancyRate += 8;
+        liveBirthRate += 8;
+      } else if (oocytesRetrieved >= 10) {
+        clinicalPregnancyRate += 5;
+        liveBirthRate += 5;
+      } else if (oocytesRetrieved < 5) {
+        clinicalPregnancyRate -= 15;
+        liveBirthRate -= 18;
+      }
+    }
+
+    // Blastocyst quality (very strong predictor)
+    if (topQualityBlastocysts !== undefined && topQualityBlastocysts !== null) {
+      if (topQualityBlastocysts >= 3) {
+        clinicalPregnancyRate += 15;
+        liveBirthRate += 12;
+      } else if (topQualityBlastocysts >= 1) {
+        clinicalPregnancyRate += 10;
+        liveBirthRate += 8;
+      }
+    }
+
+    // Ensure rates stay within 0-100% range
+    clinicalPregnancyRate = Math.max(5, Math.min(95, clinicalPregnancyRate));
+    liveBirthRate = Math.max(3, Math.min(90, liveBirthRate));
+
+    // FET typically has slightly better outcomes than fresh (no OHSS risk, better endo)
+    const fetClinicalPregnancyRate = Math.min(95, clinicalPregnancyRate + 5);
+    const fetLiveBirthRate = Math.min(90, liveBirthRate + 5);
+
+    // Calculate cumulative probability for multiple embryos
+    let cumulativeLiveBirth = 0;
+    const totalEmbryos = blastocysts || 0;
+    if (totalEmbryos > 0) {
+      // Use complement rule: P(at least one success) = 1 - P(all fail)
+      const singleEmbryoFailRate = 1 - (fetLiveBirthRate / 100);
+      const allFailRate = Math.pow(singleEmbryoFailRate, Math.min(totalEmbryos, 6)); // Cap at 6 transfers
+      cumulativeLiveBirth = Math.round((1 - allFailRate) * 100);
+    }
+
+    // Generate risk category
+    let riskCategory = 'excellent';
+    let recommendation = '';
+
+    if (liveBirthRate >= 50) {
+      riskCategory = 'excellent';
+      recommendation = 'Excellent prognosis. Consider single embryo transfer to reduce twin risk.';
+    } else if (liveBirthRate >= 35) {
+      riskCategory = 'good';
+      recommendation = 'Good prognosis. FET preferred for better outcomes.';
+    } else if (liveBirthRate >= 20) {
+      riskCategory = 'fair';
+      recommendation = 'Fair prognosis. May need multiple transfers or additional cycles.';
+    } else {
+      riskCategory = 'guarded';
+      recommendation = 'Guarded prognosis. Consider additional testing or donor options.';
+    }
+
+    return {
+      patientId,
+      cycleId,
+      inputFactors: factors,
+      predictions: {
+        perEmbryoTransfer: {
+          fresh: {
+            clinicalPregnancy: Math.round(clinicalPregnancyRate),
+            liveBirth: Math.round(liveBirthRate)
+          },
+          frozen: {
+            clinicalPregnancy: Math.round(fetClinicalPregnancyRate),
+            liveBirth: Math.round(fetLiveBirthRate)
+          }
+        },
+        cumulative: {
+          totalEmbryos,
+          atLeastOneLiveBirth: cumulativeLiveBirth
+        }
+      },
+      riskCategory,
+      recommendation,
+      calculatedAt: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Get IVF cycle analytics data for visualization
+   * Returns data formatted for charts (follicle growth, E2 trends)
+   * @param {string} patientId - Patient ID
+   * @param {string} cycleId - Cycle ID
+   * @returns {Promise<Object>} Analytics data
+   */
+  async getIVFCycleAnalytics(patientId, cycleId) {
+    // Get all monitoring entries for this cycle
+    const monitoringResult = await this.pool.query(
+      `SELECT * FROM obgyn_ivf_monitoring
+      WHERE cycle_id = $1 AND patient_id = $2
+      ORDER BY monitoring_date ASC, stim_day ASC`,
+      [cycleId, patientId]
+    );
+
+    const follicleGrowth = [];
+    const e2Trend = [];
+    const lhTrend = [];
+    const endoThicknessTrend = [];
+
+    for (const row of monitoringResult.rows) {
+      const stimDay = row.stim_day;
+      const date = row.monitoring_date;
+
+      // Follicle growth data
+      const rightFollicles = row.follicles_right || [];
+      const leftFollicles = row.follicles_left || [];
+      const allFollicles = [...rightFollicles, ...leftFollicles];
+
+      follicleGrowth.push({
+        stimDay,
+        date,
+        totalCount: allFollicles.length,
+        bySize: {
+          small: allFollicles.filter(f => f < 10).length,
+          medium: allFollicles.filter(f => f >= 10 && f < 14).length,
+          large: allFollicles.filter(f => f >= 14 && f < 18).length,
+          mature: allFollicles.filter(f => f >= 18).length
+        },
+        avgSize: allFollicles.length > 0
+          ? Math.round(allFollicles.reduce((sum, f) => sum + f, 0) / allFollicles.length * 10) / 10
+          : 0,
+        leadFollicleSize: allFollicles.length > 0 ? Math.max(...allFollicles) : 0
+      });
+
+      // Hormone trends
+      if (row.estradiol_pg_ml) {
+        e2Trend.push({
+          stimDay,
+          date,
+          value: parseFloat(row.estradiol_pg_ml),
+          perFollicle: allFollicles.length > 0
+            ? Math.round(parseFloat(row.estradiol_pg_ml) / allFollicles.length)
+            : 0
+        });
+      }
+
+      if (row.lh_miu_ml) {
+        lhTrend.push({
+          stimDay,
+          date,
+          value: parseFloat(row.lh_miu_ml)
+        });
+      }
+
+      // Endometrial thickness
+      if (row.endometrial_thickness_mm) {
+        endoThicknessTrend.push({
+          stimDay,
+          date,
+          thickness: parseFloat(row.endometrial_thickness_mm),
+          pattern: row.endometrial_pattern
+        });
+      }
+    }
+
+    // Calculate growth velocities
+    const growthVelocity = [];
+    for (let i = 1; i < follicleGrowth.length; i++) {
+      const current = follicleGrowth[i];
+      const previous = follicleGrowth[i - 1];
+      const daysDiff = current.stimDay - previous.stimDay;
+
+      if (daysDiff > 0) {
+        growthVelocity.push({
+          fromDay: previous.stimDay,
+          toDay: current.stimDay,
+          mmPerDay: Math.round((current.avgSize - previous.avgSize) / daysDiff * 10) / 10
+        });
+      }
+    }
+
+    return {
+      cycleId,
+      patientId,
+      follicleGrowth,
+      growthVelocity,
+      e2Trend,
+      lhTrend,
+      endoThicknessTrend,
+      summary: {
+        totalMonitoringVisits: monitoringResult.rows.length,
+        stimDaysTracked: monitoringResult.rows.length > 0
+          ? monitoringResult.rows[monitoringResult.rows.length - 1].stim_day
+          : 0,
+        peakE2: e2Trend.length > 0
+          ? Math.max(...e2Trend.map(e => e.value))
+          : null,
+        maxFollicles: follicleGrowth.length > 0
+          ? Math.max(...follicleGrowth.map(f => f.totalCount))
+          : 0
+      }
+    };
+  }
 }
 
 module.exports = ObGynService;
