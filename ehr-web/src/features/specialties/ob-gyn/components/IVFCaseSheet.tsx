@@ -6,7 +6,7 @@ import {
   FlaskConical, Microscope, Snowflake, Heart, CheckCircle,
   Target, TrendingUp, Activity, Syringe,
   Loader2, Info, AlertTriangle, History, FileText,
-  TrendingDown, Users, Stethoscope, AlertCircle
+  TrendingDown, Users, Stethoscope, AlertCircle, ArrowRightLeft
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { obgynService, IVFCycle, Embryo } from '@/services/obgyn.service';
