@@ -50,8 +50,8 @@ export function PatientEducationPanel({ patientId, episodeId }: PatientEducation
   // Education modules organized by category
   const educationModules: EducationModule[] = [
     // Nutrition
-    { id: 'nutr-1', title: 'Healthy Eating During Pregnancy', description: 'Essential nutrients, foods to avoid, meal planning', category: 'nutrition', trimester: 'all', contentType: 'video', duration: '12 min', required: true },
-    { id: 'nutr-2', title: 'Prenatal Vitamins & Supplements', description: 'Folic acid, iron, DHA importance and dosing', category: 'nutrition', trimester: 1, contentType: 'article', duration: '5 min', required: true },
+    { id: 'nutr-1', title: 'Healthy Eating During Pregnancy', description: 'Essential nutrients, foods to avoid, meal planning', category: 'nutrition', trimester: 'all', contentType: 'video', duration: '12 min', required: true, url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+    { id: 'nutr-2', title: 'Prenatal Vitamins & Supplements', description: 'Folic acid, iron, DHA importance and dosing', category: 'nutrition', trimester: 1, contentType: 'article', duration: '5 min', required: true, url: 'https://www.google.com/search?q=prenatal+vitamins' },
     { id: 'nutr-3', title: 'Weight Gain Guidelines', description: 'IOM recommendations by BMI category', category: 'nutrition', trimester: 1, contentType: 'checklist', duration: '3 min', required: false },
     { id: 'nutr-4', title: 'Managing Nausea & Food Aversions', description: 'Tips for first trimester nausea', category: 'nutrition', trimester: 1, contentType: 'article', duration: '4 min', required: false },
     { id: 'nutr-5', title: 'Gestational Diabetes Diet', description: 'Carb counting, blood sugar management', category: 'nutrition', trimester: 2, contentType: 'interactive', duration: '15 min', required: false },
@@ -333,7 +333,11 @@ export function PatientEducationPanel({ patientId, episodeId }: PatientEducation
                         </div>
 
                         {/* View button */}
-                        <button className="flex items-center gap-1 px-2 py-1 text-xs text-pink-600 hover:text-pink-700 hover:bg-pink-50 rounded">
+                        <button
+                          onClick={() => module.url && window.open(module.url, '_blank')}
+                          disabled={!module.url}
+                          className="flex items-center gap-1 px-2 py-1 text-xs text-pink-600 hover:text-pink-700 hover:bg-pink-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                           View
                           <ExternalLink className="h-3 w-3" />
                         </button>
