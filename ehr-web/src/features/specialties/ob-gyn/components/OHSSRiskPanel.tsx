@@ -79,35 +79,35 @@ export default function OHSSRiskPanel({ patientId, cycleId }: OHSSRiskPanelProps
     switch (riskData.riskCategory) {
       case 'critical':
       case 'high':
-        return <AlertTriangle className="h-6 w-6" />;
+        return <AlertTriangle className="h-5 w-5" />;
       case 'moderate':
-        return <AlertCircle className="h-6 w-6" />;
+        return <AlertCircle className="h-5 w-5" />;
       default:
-        return <CheckCircle className="h-6 w-6" />;
+        return <CheckCircle className="h-5 w-5" />;
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Risk Meter Header */}
-      <div className={`bg-gradient-to-r ${getRiskGradient()} text-white rounded-lg p-6 shadow-lg`}>
+      <div className={`bg-gradient-to-r ${getRiskGradient()} text-white rounded-lg p-3 shadow-lg`}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {getRiskIcon()}
             <div>
-              <h3 className="text-2xl font-bold">{riskData.riskLevel}</h3>
-              <p className="text-sm opacity-90">Venice 2016 Criteria</p>
+              <h3 className="text-lg font-bold">{riskData.riskLevel}</h3>
+              <p className="text-xs opacity-90">Venice 2016 Criteria</p>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-4xl font-bold">{riskData.riskScore}</div>
+            <div className="text-2xl font-bold">{riskData.riskScore}</div>
             <div className="text-xs opacity-90">Risk Score</div>
           </div>
         </div>
 
         {/* Risk Score Bar */}
-        <div className="mt-4">
-          <div className="bg-white/20 rounded-full h-3 overflow-hidden">
+        <div className="mt-2">
+          <div className="bg-white/20 rounded-full h-2 overflow-hidden">
             <div
               className="bg-white h-full transition-all duration-500"
               style={{ width: `${Math.min((riskData.riskScore / 14) * 100, 100)}%` }}
@@ -123,21 +123,21 @@ export default function OHSSRiskPanel({ patientId, cycleId }: OHSSRiskPanelProps
       </div>
 
       {/* Clinical Action */}
-      <div className={`p-4 rounded-lg border-2 ${
+      <div className={`p-2 rounded-lg border-2 ${
         riskData.riskCategory === 'critical' ? 'bg-red-50 border-red-300' :
         riskData.riskCategory === 'high' ? 'bg-orange-50 border-orange-300' :
         riskData.riskCategory === 'moderate' ? 'bg-yellow-50 border-yellow-300' :
         'bg-green-50 border-green-300'
       }`}>
         <div className="flex items-start gap-2">
-          <AlertCircle className={`h-5 w-5 mt-0.5 ${
+          <AlertCircle className={`h-4 w-4 mt-0.5 ${
             riskData.riskCategory === 'critical' ? 'text-red-700' :
             riskData.riskCategory === 'high' ? 'text-orange-700' :
             riskData.riskCategory === 'moderate' ? 'text-yellow-700' :
             'text-green-700'
           }`} />
           <div>
-            <div className={`text-sm font-semibold ${
+            <div className={`text-xs font-semibold ${
               riskData.riskCategory === 'critical' ? 'text-red-900' :
               riskData.riskCategory === 'high' ? 'text-orange-900' :
               riskData.riskCategory === 'moderate' ? 'text-yellow-900' :
@@ -145,7 +145,7 @@ export default function OHSSRiskPanel({ patientId, cycleId }: OHSSRiskPanelProps
             }`}>
               Clinical Action Required
             </div>
-            <div className={`text-sm mt-1 ${
+            <div className={`text-xs mt-0.5 ${
               riskData.riskCategory === 'critical' ? 'text-red-800' :
               riskData.riskCategory === 'high' ? 'text-orange-800' :
               riskData.riskCategory === 'moderate' ? 'text-yellow-800' :
@@ -159,22 +159,22 @@ export default function OHSSRiskPanel({ patientId, cycleId }: OHSSRiskPanelProps
 
       {/* Risk Factors */}
       {riskData.riskFactors.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h4 className="text-sm font-semibold text-gray-900 mb-3">Risk Factors Contributing to Score</h4>
-          <div className="space-y-2">
+        <div className="bg-white rounded-lg border border-gray-200 p-2">
+          <h4 className="text-xs font-semibold text-gray-900 mb-1.5">Risk Factors Contributing to Score</h4>
+          <div className="space-y-1">
             {riskData.riskFactors.map((factor, idx) => (
-              <div key={idx} className="flex items-start gap-3 p-2 bg-gray-50 rounded">
-                <div className="flex-shrink-0 w-12 text-center">
-                  <div className="inline-block bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded">
+              <div key={idx} className="flex items-start gap-2 p-1.5 bg-gray-50 rounded">
+                <div className="flex-shrink-0 w-10 text-center">
+                  <div className="inline-block bg-red-100 text-red-700 text-xs font-bold px-1.5 py-0.5 rounded">
                     +{factor.points}
                   </div>
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900">{factor.factor}</div>
-                  <div className="text-xs text-gray-600 mt-0.5">
+                  <div className="text-xs font-medium text-gray-900">{factor.factor}</div>
+                  <div className="text-xs text-gray-600">
                     Value: <span className="font-medium">{factor.value}</span>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">{factor.interpretation}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">{factor.interpretation}</div>
                 </div>
               </div>
             ))}
@@ -184,11 +184,11 @@ export default function OHSSRiskPanel({ patientId, cycleId }: OHSSRiskPanelProps
 
       {/* Prevention Strategies */}
       {riskData.preventionStrategies.length > 0 && (
-        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-blue-900 mb-3">🛡️ OHSS Prevention Strategies</h4>
-          <div className="space-y-1.5">
+        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-2">
+          <h4 className="text-xs font-semibold text-blue-900 mb-1.5">🛡️ OHSS Prevention Strategies</h4>
+          <div className="space-y-0.5">
             {riskData.preventionStrategies.map((strategy, idx) => (
-              <div key={idx} className="flex items-start gap-2 text-sm text-blue-800">
+              <div key={idx} className="flex items-start gap-1.5 text-xs text-blue-800">
                 <span className="text-blue-600 mt-0.5">•</span>
                 <span>{strategy}</span>
               </div>
@@ -198,10 +198,10 @@ export default function OHSSRiskPanel({ patientId, cycleId }: OHSSRiskPanelProps
       )}
 
       {/* Clinical Context */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-          <h4 className="text-xs font-semibold text-purple-900 mb-2">Baseline Data</h4>
-          <div className="space-y-1 text-xs">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-2">
+          <h4 className="text-xs font-semibold text-purple-900 mb-1">Baseline Data</h4>
+          <div className="space-y-0.5 text-xs">
             <div className="flex justify-between">
               <span className="text-purple-700">AFC:</span>
               <span className="font-medium text-purple-900">{riskData.clinicalContext.baselineData.afc}</span>
@@ -221,9 +221,9 @@ export default function OHSSRiskPanel({ patientId, cycleId }: OHSSRiskPanelProps
           </div>
         </div>
 
-        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
-          <h4 className="text-xs font-semibold text-indigo-900 mb-2">Current Cycle Data</h4>
-          <div className="space-y-1 text-xs">
+        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-2">
+          <h4 className="text-xs font-semibold text-indigo-900 mb-1">Current Cycle Data</h4>
+          <div className="space-y-0.5 text-xs">
             <div className="flex justify-between">
               <span className="text-indigo-700">Peak E2:</span>
               <span className="font-medium text-indigo-900">{riskData.clinicalContext.currentCycleData.peakE2}</span>
@@ -241,8 +241,8 @@ export default function OHSSRiskPanel({ patientId, cycleId }: OHSSRiskPanelProps
       </div>
 
       {/* Footer */}
-      <div className="text-center text-xs text-gray-500 pt-2 border-t border-gray-200">
-        Calculated using Venice 2016 Criteria • Last updated: {new Date(riskData.calculationDate).toLocaleString()}
+      <div className="text-center text-xs text-gray-500 pt-1.5 border-t border-gray-200">
+        Venice 2016 Criteria • {new Date(riskData.calculationDate).toLocaleString()}
       </div>
     </div>
   );
