@@ -22,6 +22,7 @@ import SuccessProbabilityPanel from './SuccessProbabilityPanel';
 import VisualAnalyticsPanel from './VisualAnalyticsPanel';
 import AdvancedAnalyticsPanel from './AdvancedAnalyticsPanel';
 import OHSSRiskPanel from './OHSSRiskPanel';
+import TriggerDecisionPanel from './TriggerDecisionPanel';
 
 interface IVFCaseSheetProps {
   patientId: string;
@@ -73,7 +74,8 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
     successProbability: false,
     visualAnalytics: false,
     advancedAnalytics: false,
-    ohssRisk: false
+    ohssRisk: false,
+    triggerDecision: false
   });
 
   // Local editing state for baseline fields
@@ -917,6 +919,32 @@ export function IVFCaseSheet({ patientId, episodeId }: IVFCaseSheetProps) {
             {expandedSections.ohssRisk && activeCycle && (
               <div className="border-t border-gray-200 p-4 bg-gradient-to-br from-red-50/30 to-orange-50/30">
                 <OHSSRiskPanel
+                  patientId={patientId}
+                  cycleId={activeCycle.id}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Trigger Decision Support - Phase 7.2 */}
+          <div className="bg-white rounded border-2 border-green-200 overflow-hidden shadow-sm">
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, triggerDecision: !prev.triggerDecision }))}
+              className="w-full flex items-center justify-between p-2 text-left hover:bg-green-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                {expandedSections.triggerDecision ? <ChevronDown className="h-3 w-3 text-gray-400" /> : <ChevronRight className="h-3 w-3 text-gray-400" />}
+                <Target className="h-3.5 w-3.5 text-green-600" />
+                <span className="text-xs font-semibold text-gray-900">Trigger Decision Support</span>
+                <span className="text-[10px] text-green-600 font-medium ml-1">(AI-Powered Timing)</span>
+              </div>
+              <span className="px-1.5 py-0.5 text-[9px] bg-green-100 text-green-700 rounded font-semibold">
+                PHASE 7.2 • AI SUPPORT
+              </span>
+            </button>
+            {expandedSections.triggerDecision && activeCycle && (
+              <div className="border-t border-gray-200 p-4 bg-gradient-to-br from-green-50/30 to-cyan-50/30">
+                <TriggerDecisionPanel
                   patientId={patientId}
                   cycleId={activeCycle.id}
                 />

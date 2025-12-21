@@ -488,7 +488,7 @@ class ObGynService {
       ruptureOfMembranes: row.rupture_of_membranes,
       amnioticFluid: row.amniotic_fluid,
       anesthesiaType: row.anesthesia_type,
-      cesareanDetails: row.cesarean_details ? 
+      cesareanDetails: row.cesarean_details ?
         (typeof row.cesarean_details === 'string' ? JSON.parse(row.cesarean_details) : row.cesarean_details) : null,
       bloodLoss: row.blood_loss,
       episiotomy: row.episiotomy,
@@ -3301,7 +3301,7 @@ class ObGynService {
    */
   async updateCarePlan(carePlanId, updates) {
     const { status, title, description, activity } = updates;
-    
+
     const result = await this.pool.query(
       `UPDATE obgyn_care_plans
        SET status = COALESCE($2, status),
@@ -3492,7 +3492,7 @@ class ObGynService {
    */
   async updateGoal(goalId, updates) {
     const { lifecycleStatus, achievementStatus, note } = updates;
-    
+
     const result = await this.pool.query(
       `UPDATE obgyn_goals
        SET lifecycle_status = COALESCE($2, lifecycle_status),
@@ -4211,6 +4211,317 @@ class ObGynService {
       clinicalContext,
       calculationDate: new Date().toISOString(),
       criteria: 'Venice 2016'
+    };
+  }
+
+  /**
+   * Calculate trigger readiness and provide timing recommendations
+   * @param {string} patientId - Patient ID
+   * @param {string} cycleId - IVF cycle ID
+   * @returns {Promise<Object>} Trigger decision support assessment
+   */
+  async calculateTriggerReadiness(patientId, cycleId) {
+    // Get cycle data
+    const cycleResult = await this.db.query(
+      `SELECT * FROM ivf_cycles WHERE id = $1 AND patient_id = $2`,
+      [cycleId, patientId]
+    );
+
+    if (cycleResult.rows.length === 0) {
+      throw new Error('IVF cycle not found');
+    }
+
+    const cycle = cycleResult.rows[0];
+
+    // Get latest monitoring data
+    const monitoringResult = await this.db.query(
+      `SELECT
+        stim_day,
+        monitoring_date,
+        follicles_right,
+        follicles_left,
+        estradiol_pg_ml,
+        lh_miu_ml,
+        progesterone_ng_ml,
+        endometrial_thickness_mm,
+        endometrial_pattern
+      FROM ivf_stimulation_monitoring
+      WHERE ivf_cycle_id = $1
+      ORDER BY monitoring_date DESC
+      LIMIT 1`,
+      [cycleId]
+    );
+
+    if (monitoringResult.rows.length === 0) {
+      return {
+        ready: false,
+        reason: 'No monitoring data available',
+        recommendation: 'Continue stimulation and monitoring'
+      };
+    }
+
+    const latest = monitoringResult.rows[0];
+    const rightFollicles = latest.follicles_right || [];
+    const leftFollicles = latest.follicles_left || [];
+    const allFollicles = [...rightFollicles, ...leftFollicles];
+
+    // Follicle cohort analysis
+    const leadFollicles = allFollicles.filter(f => f >= 18);
+    const supportingCohort = allFollicles.filter(f => f >= 16 && f < 18);
+    const smallFollicles = allFollicles.filter(f => f < 14);
+
+    const leadRight = rightFollicles.filter(f => f >= 18);
+    const leadLeft = leftFollicles.filter(f => f >= 18);
+    const supportingRight = rightFollicles.filter(f => f >= 16 && f < 18);
+    const supportingLeft = leftFollicles.filter(f => f >= 16 && f < 18);
+
+    // Hormonal parameters
+    const e2 = latest.estradiol_pg_ml ? parseFloat(latest.estradiol_pg_ml) : null;
+    const lh = latest.lh_miu_ml ? parseFloat(latest.lh_miu_ml) : null;
+    const p4 = latest.progesterone_ng_ml ? parseFloat(latest.progesterone_ng_ml) : null;
+
+    // E2 per lead follicle
+    const e2PerFollicle = e2 && leadFollicles.length > 0
+      ? Math.round(e2 / leadFollicles.length)
+      : null;
+
+    // Endometrial assessment
+    const endoThickness = latest.endometrial_thickness_mm
+      ? parseFloat(latest.endometrial_thickness_mm)
+      : null;
+    const endoPattern = latest.endometrial_pattern;
+
+    // Decision criteria checks
+    const checks = {
+      follicles: {
+        pass: leadFollicles.length >= 3,
+        value: leadFollicles.length,
+        target: '≥3 lead follicles (≥18mm)',
+        status: leadFollicles.length >= 3 ? 'optimal' : 'insufficient'
+      },
+      cohortSync: {
+        pass: (leadFollicles.length + supportingCohort.length) >= leadFollicles.length * 1.5,
+        value: leadFollicles.length + supportingCohort.length,
+        target: 'Good cohort synchronization',
+        status: supportingCohort.length >= 3 ? 'optimal' : 'acceptable'
+      },
+      e2Level: {
+        pass: e2 !== null && e2 >= 500 && e2 <= 5000,
+        value: e2,
+        target: '500-5000 pg/mL',
+        status: e2 === null ? 'unknown' :
+                e2 < 500 ? 'low' :
+                e2 > 5000 ? 'too_high' : 'optimal'
+      },
+      e2PerFollicle: {
+        pass: e2PerFollicle !== null && e2PerFollicle >= 150 && e2PerFollicle <= 300,
+        value: e2PerFollicle,
+        target: '150-300 pg/mL per lead follicle',
+        status: e2PerFollicle === null ? 'unknown' :
+                e2PerFollicle < 150 ? 'low' :
+                e2PerFollicle > 300 ? 'high' : 'optimal'
+      },
+      lhSurge: {
+        pass: lh !== null && lh < 10,
+        value: lh,
+        target: 'LH <10 mIU/mL (no spontaneous surge)',
+        status: lh === null ? 'unknown' :
+                lh >= 10 ? 'surge_detected' : 'normal'
+      },
+      progesterone: {
+        pass: p4 !== null && p4 < 1.5,
+        value: p4,
+        target: 'P4 <1.5 ng/mL (no premature luteinization)',
+        status: p4 === null ? 'unknown' :
+                p4 >= 1.5 ? 'elevated' : 'normal'
+      },
+      endometrium: {
+        pass: endoThickness !== null && endoThickness >= 8,
+        value: endoThickness,
+        target: '≥8mm with trilaminar pattern',
+        status: endoThickness === null ? 'unknown' :
+                endoThickness < 7 ? 'thin' :
+                endoThickness >= 8 && endoPattern === 'trilaminar' ? 'optimal' :
+                endoThickness >= 8 ? 'acceptable' : 'suboptimal'
+      }
+    };
+
+    // Calculate confidence score (0-100)
+    let confidenceScore = 0;
+    let passedChecks = 0;
+    const totalChecks = Object.keys(checks).length;
+
+    for (const [key, check] of Object.entries(checks)) {
+      if (check.pass) {
+        passedChecks++;
+        // Weight important checks more heavily
+        if (key === 'follicles' || key === 'e2PerFollicle') {
+          confidenceScore += 20;
+        } else if (key === 'lhSurge' || key === 'progesterone') {
+          confidenceScore += 15;
+        } else {
+          confidenceScore += 10;
+        }
+      }
+    }
+
+    confidenceScore = Math.min(100, confidenceScore);
+
+    // Determine readiness
+    const isReady = checks.follicles.pass &&
+                    checks.e2Level.pass &&
+                    checks.e2PerFollicle.pass &&
+                    checks.lhSurge.pass &&
+                    checks.progesterone.pass;
+
+    // Get OHSS risk for trigger medication selection
+    let ohssRisk = null;
+    try {
+      const riskAssessment = await this.calculateOHSSRisk(patientId, cycleId);
+      ohssRisk = riskAssessment.riskCategory;
+    } catch (err) {
+      console.log('Could not calculate OHSS risk for trigger decision:', err);
+    }
+
+    // Trigger medication recommendation
+    let triggerMedication = 'hCG 10,000 IU';
+    let triggerRationale = 'Standard trigger for low OHSS risk';
+
+    if (ohssRisk === 'high' || ohssRisk === 'critical') {
+      triggerMedication = 'GnRH agonist (Lupron 80 units)';
+      triggerRationale = `OHSS risk is ${ohssRisk} - GnRH agonist reduces risk`;
+    } else if (ohssRisk === 'moderate' && e2 && e2 > 2500) {
+      triggerMedication = 'GnRH agonist (Lupron 80 units) or reduced hCG dose';
+      triggerRationale = 'Moderate OHSS risk with elevated E2 - consider agonist trigger';
+    }
+
+    // Expected yield prediction
+    const matureFollicleCount = leadFollicles.length + Math.floor(supportingCohort.length * 0.7);
+    const expectedYield = {
+      min: Math.max(1, Math.floor(matureFollicleCount * 0.7)),
+      max: Math.ceil(matureFollicleCount * 0.9),
+      likely: Math.round(matureFollicleCount * 0.8)
+    };
+
+    // Recommendation
+    let recommendation = '';
+    let nextSteps = [];
+
+    if (isReady && confidenceScore >= 80) {
+      recommendation = '✅ READY TO TRIGGER TONIGHT';
+      nextSteps = [
+        'Confirm trigger medication with patient',
+        'Schedule retrieval for 36 hours post-trigger',
+        'Send patient education materials',
+        'Activate OHSS prevention protocol if indicated',
+        'Confirm patient fasting status for retrieval'
+      ];
+    } else if (isReady && confidenceScore >= 60) {
+      recommendation = '⚠️ LIKELY READY - Consider trigger tonight or wait 1 more day';
+      nextSteps = [
+        'Review all monitoring parameters',
+        'Consider patient-specific factors',
+        'Repeat E2/LH tomorrow AM if delaying',
+        'Discuss timing with patient'
+      ];
+    } else if (leadFollicles.length >= 2 && leadFollicles.length < 3) {
+      recommendation = '⏳ ALMOST READY - Continue stimulation 1-2 more days';
+      nextSteps = [
+        'Repeat monitoring in 1-2 days',
+        'Continue current FSH dose',
+        'Monitor for LH surge',
+        'Reassess trigger timing'
+      ];
+    } else if (checks.lhSurge.status === 'surge_detected') {
+      recommendation = '🚨 URGENT - Spontaneous LH surge detected, trigger immediately';
+      nextSteps = [
+        'Trigger within 2-4 hours',
+        'Schedule emergency retrieval',
+        'Contact patient immediately'
+      ];
+    } else if (checks.progesterone.status === 'elevated') {
+      recommendation = '⚠️ CAUTION - Elevated progesterone, consider triggering soon';
+      nextSteps = [
+        'Trigger within 12-24 hours',
+        'May indicate premature luteinization',
+        'Discuss fresh vs freeze-all strategy'
+      ];
+    } else {
+      recommendation = '⏳ NOT READY YET - Continue stimulation';
+      nextSteps = [
+        'Continue FSH stimulation',
+        'Repeat monitoring in 2-3 days',
+        'Assess follicle growth velocity',
+        'Adjust dosing if needed'
+      ];
+    }
+
+    return {
+      cycleId,
+      patientId,
+      stimDay: latest.stim_day,
+      monitoringDate: latest.monitoring_date,
+      isReady,
+      confidenceScore,
+      recommendation,
+      follicleAnalysis: {
+        lead: {
+          count: leadFollicles.length,
+          sizes: leadFollicles.sort((a, b) => b - a),
+          right: leadRight.sort((a, b) => b - a),
+          left: leadLeft.sort((a, b) => b - a)
+        },
+        supporting: {
+          count: supportingCohort.length,
+          sizes: supportingCohort.sort((a, b) => b - a),
+          right: supportingRight.sort((a, b) => b - a),
+          left: supportingLeft.sort((a, b) => b - a)
+        },
+        small: {
+          count: smallFollicles.length,
+          note: 'Will likely not mature in time'
+        },
+        total: allFollicles.length
+      },
+      hormonalReadiness: {
+        e2: {
+          value: e2,
+          perFollicle: e2PerFollicle,
+          status: checks.e2PerFollicle.status,
+          target: '150-300 pg/mL per lead follicle'
+        },
+        lh: {
+          value: lh,
+          status: checks.lhSurge.status,
+          target: '<10 mIU/mL'
+        },
+        progesterone: {
+          value: p4,
+          status: checks.progesterone.status,
+          target: '<1.5 ng/mL'
+        }
+      },
+      endometrialStatus: {
+        thickness: endoThickness,
+        pattern: endoPattern,
+        status: checks.endometrium.status,
+        target: '≥8mm trilaminar'
+      },
+      triggerRecommendation: {
+        medication: triggerMedication,
+        rationale: triggerRationale,
+        ohssRisk: ohssRisk || 'not_calculated',
+        timing: isReady ? 'Tonight (10:00 PM recommended)' : 'Not yet ready'
+      },
+      expectedYield: {
+        matureOocytes: `${expectedYield.min}-${expectedYield.max}`,
+        mostLikely: expectedYield.likely,
+        confidence: confidenceScore >= 80 ? 'High' : confidenceScore >= 60 ? 'Moderate' : 'Low',
+        basis: `Based on ${matureFollicleCount} follicles ≥16mm`
+      },
+      nextSteps,
+      checks,
+      calculationDate: new Date().toISOString()
     };
   }
 }

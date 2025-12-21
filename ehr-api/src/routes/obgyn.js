@@ -2406,6 +2406,33 @@ function initializeObGynRoutes(pool) {
     }
   });
 
+  // Phase 7.2: Trigger Decision Support System
+  router.get('/patients/:patientId/obgyn/ivf-cycles/:cycleId/trigger-readiness', async (req, res) => {
+    try {
+      const { patientId, cycleId } = req.params;
+
+      if (!patientId || !cycleId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Patient ID and cycle ID are required'
+        });
+      }
+
+      const triggerAssessment = await obgynService.calculateTriggerReadiness(patientId, cycleId);
+
+      return res.status(200).json({
+        success: true,
+        data: triggerAssessment
+      });
+    } catch (error) {
+      console.error('Error calculating trigger readiness:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   return router;
 }
 

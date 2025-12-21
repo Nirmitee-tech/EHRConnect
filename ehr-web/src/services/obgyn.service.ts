@@ -1724,6 +1724,97 @@ export async function calculateOHSSRisk(
 }
 
 // ============================================
+// Phase 7.2: Trigger Decision Support System
+// ============================================
+
+export interface TriggerDecisionCheck {
+  pass: boolean;
+  value: number | null | string;
+  target: string;
+  status: string;
+}
+
+export interface TriggerDecisionAssessment {
+  cycleId: string;
+  patientId: string;
+  stimDay: number;
+  monitoringDate: string;
+  isReady: boolean;
+  confidenceScore: number;
+  recommendation: string;
+  follicleAnalysis: {
+    lead: {
+      count: number;
+      sizes: number[];
+      right: number[];
+      left: number[];
+    };
+    supporting: {
+      count: number;
+      sizes: number[];
+      right: number[];
+      left: number[];
+    };
+    small: {
+      count: number;
+      note: string;
+    };
+    total: number;
+  };
+  hormonalReadiness: {
+    e2: {
+      value: number | null;
+      perFollicle: number | null;
+      status: string;
+      target: string;
+    };
+    lh: {
+      value: number | null;
+      status: string;
+      target: string;
+    };
+    progesterone: {
+      value: number | null;
+      status: string;
+      target: string;
+    };
+  };
+  endometrialStatus: {
+    thickness: number | null;
+    pattern: string | null;
+    status: string;
+    target: string;
+  };
+  triggerRecommendation: {
+    medication: string;
+    rationale: string;
+    ohssRisk: string;
+    timing: string;
+  };
+  expectedYield: {
+    matureOocytes: string;
+    mostLikely: number;
+    confidence: string;
+    basis: string;
+  };
+  nextSteps: string[];
+  checks: Record<string, TriggerDecisionCheck>;
+  calculationDate: string;
+}
+
+export async function calculateTriggerReadiness(
+  patientId: string,
+  cycleId: string,
+  headers?: Record<string, string>
+): Promise<TriggerDecisionAssessment> {
+  const response = await axios.get(
+    `${API_BASE}/api/patients/${patientId}/obgyn/ivf-cycles/${cycleId}/trigger-readiness`,
+    getAxiosConfig(headers)
+  );
+  return response.data.data;
+}
+
+// ============================================
 // Cervical Length Types and APIs
 // ============================================
 
@@ -2082,7 +2173,9 @@ export const obgynService = {
   calculateSuccessProbability,
   getIVFCycleAnalytics,
   // IVF Phase 7.1: OHSS Risk Assessment
-  calculateOHSSRisk
+  calculateOHSSRisk,
+  // IVF Phase 7.2: Trigger Decision Support
+  calculateTriggerReadiness
 };
 
 export default obgynService;
