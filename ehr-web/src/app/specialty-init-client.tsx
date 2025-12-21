@@ -10,7 +10,12 @@ import {
   specialtyRegistry,
   GeneralSpecialty,
   ObGynSpecialty,
-  PediatricsSpecialty
+  PediatricsSpecialty,
+  OrthopedicsSpecialty,
+  DermatologySpecialty,
+  MentalHealthSpecialty,
+  CardiologySpecialty,
+  WoundCareSpecialty,
 } from '@/features/specialties';
 
 export function SpecialtyInitializer() {
@@ -26,9 +31,20 @@ export function SpecialtyInitializer() {
     // Register Pediatrics specialty
     specialtyRegistry.register(PediatricsSpecialty);
 
-    // Register future specialties here:
-    // specialtyRegistry.register(OrthopedicsSpecialty);
-    // specialtyRegistry.register(WoundCareSpecialty);
+    // Register Orthopedics specialty
+    specialtyRegistry.register(OrthopedicsSpecialty);
+
+    // Register Dermatology specialty
+    specialtyRegistry.register(DermatologySpecialty);
+
+    // Register Mental Health specialty
+    specialtyRegistry.register(MentalHealthSpecialty);
+
+    // Register Cardiology specialty
+    specialtyRegistry.register(CardiologySpecialty);
+
+    // Register Wound Care specialty
+    specialtyRegistry.register(WoundCareSpecialty);
 
     // Log stats
     const stats = specialtyRegistry.getStats();

@@ -1,0 +1,65 @@
+{
+  "slug": "dermatology",
+  "version": "1.0.0",
+  "name": "Dermatology & Skin Care",
+  "description": "Skin conditions, dermatological treatments, and cosmetic procedures",
+  "category": "clinical",
+  "icon": "Sparkles",
+  "color": "#EC4899",
+  "dependencies": ["general"],
+
+  "navigation": {
+    "sections": [
+      {
+        "id": "dashboard",
+        "label": "Dashboard",
+        "icon": "LayoutDashboard",
+        "category": "general",
+        "order": 1
+      },
+      {
+        "id": "dermatology-overview",
+        "label": "Dermatology Overview",
+        "icon": "LayoutDashboard",
+        "category": "clinical",
+        "order": 2,
+        "componentName": "DermatologyOverview"
+      },
+      {
+        "id": "skin-assessment",
+        "label": "Skin Assessment",
+        "icon": "Scan",
+        "category": "clinical",
+        "order": 3,
+        "componentName": "SkinAssessment"
+      }
+    ],
+    "replaceSections": false,
+    "mergeWith": "general"
+  },
+
+  "templates": [],
+  "visitTypes": "visit-types.json",
+  "workflows": "workflows/dermatology.json",
+  "reports": "reports/dermatology-kpis.json",
+
+  "featureFlags": {
+    "enableSkinAssessments": true,
+    "enablePhotoTracking": true
+  },
+
+  "devices": [],
+
+  "episodeConfig": {
+    "allowConcurrent": true,
+    "defaultState": "active",
+    "requiredFields": [],
+    "stateTransitions": {
+      "planned": ["active", "cancelled"],
+      "active": ["onhold", "finished", "cancelled"],
+      "onhold": ["active", "finished", "cancelled"],
+      "finished": [],
+      "cancelled": []
+    }
+  }
+}

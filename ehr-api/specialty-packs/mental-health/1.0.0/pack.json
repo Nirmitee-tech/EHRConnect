@@ -1,0 +1,65 @@
+{
+  "slug": "mental-health",
+  "version": "1.0.0",
+  "name": "Mental Health & Psychiatry",
+  "description": "Mental health assessments, therapy, and psychiatric care",
+  "category": "clinical",
+  "icon": "Brain",
+  "color": "#8B5CF6",
+  "dependencies": ["general"],
+
+  "navigation": {
+    "sections": [
+      {
+        "id": "dashboard",
+        "label": "Dashboard",
+        "icon": "LayoutDashboard",
+        "category": "general",
+        "order": 1
+      },
+      {
+        "id": "mental-health-overview",
+        "label": "Mental Health Overview",
+        "icon": "LayoutDashboard",
+        "category": "clinical",
+        "order": 2,
+        "componentName": "MentalHealthOverview"
+      },
+      {
+        "id": "mood-assessment",
+        "label": "Mood Assessment",
+        "icon": "Heart",
+        "category": "clinical",
+        "order": 3,
+        "componentName": "MoodAssessment"
+      }
+    ],
+    "replaceSections": false,
+    "mergeWith": "general"
+  },
+
+  "templates": [],
+  "visitTypes": "visit-types.json",
+  "workflows": "workflows/mental-health.json",
+  "reports": "reports/mental-health-kpis.json",
+
+  "featureFlags": {
+    "enableMoodTracking": true,
+    "enableTherapyNotes": true
+  },
+
+  "devices": [],
+
+  "episodeConfig": {
+    "allowConcurrent": true,
+    "defaultState": "active",
+    "requiredFields": [],
+    "stateTransitions": {
+      "planned": ["active", "cancelled"],
+      "active": ["onhold", "finished", "cancelled"],
+      "onhold": ["active", "finished", "cancelled"],
+      "finished": [],
+      "cancelled": []
+    }
+  }
+}

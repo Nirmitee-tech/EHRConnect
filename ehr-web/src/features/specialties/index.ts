@@ -14,7 +14,8 @@ export * from './shared';
 export { GeneralSpecialty } from './general';
 export { ObGynSpecialty } from './ob-gyn';
 export { PediatricsSpecialty } from './pediatrics';
-
-// Future specialty modules:
-// export { OrthopedicsSpecialty } from './orthopedics';
-// export { WoundCareSpecialty } from './wound-care';
+export { MentalHealthSpecialty } from './mental-health';
+export { WoundCareSpecialty } from './wound-care';
+export { DermatologySpecialty } from './dermatology';
+export { OrthopedicsSpecialty } from './orthopedics';
+export { CardiologySpecialty } from './cardiology';

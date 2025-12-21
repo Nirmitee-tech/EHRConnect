@@ -1,0 +1,66 @@
+{
+  "slug": "wound-care",
+  "version": "1.0.0",
+  "name": "Wound Care & Hyperbaric Medicine",
+  "description": "Wound assessment, management, healing tracking, and hyperbaric therapy",
+  "category": "clinical",
+  "icon": "Bandage",
+  "color": "#F59E0B",
+  "dependencies": ["general"],
+
+  "navigation": {
+    "sections": [
+      {
+        "id": "dashboard",
+        "label": "Dashboard",
+        "icon": "LayoutDashboard",
+        "category": "general",
+        "order": 1
+      },
+      {
+        "id": "wound-care-overview",
+        "label": "Wound Care Overview",
+        "icon": "LayoutDashboard",
+        "category": "clinical",
+        "order": 2,
+        "componentName": "WoundCareOverview"
+      },
+      {
+        "id": "wound-assessment",
+        "label": "Wound Assessment",
+        "icon": "FileText",
+        "category": "clinical",
+        "order": 3,
+        "componentName": "WoundAssessment"
+      }
+    ],
+    "replaceSections": false,
+    "mergeWith": "general"
+  },
+
+  "templates": [],
+  "visitTypes": "visit-types.json",
+  "workflows": "workflows/wound-care.json",
+  "reports": "reports/wound-care-kpis.json",
+
+  "featureFlags": {
+    "enableWoundTracking": true,
+    "enablePhotoDocumentation": true,
+    "enableHyperbaricTherapy": true
+  },
+
+  "devices": [],
+
+  "episodeConfig": {
+    "allowConcurrent": true,
+    "defaultState": "active",
+    "requiredFields": [],
+    "stateTransitions": {
+      "planned": ["active", "cancelled"],
+      "active": ["onhold", "finished", "cancelled"],
+      "onhold": ["active", "finished", "cancelled"],
+      "finished": [],
+      "cancelled": []
+    }
+  }
+}

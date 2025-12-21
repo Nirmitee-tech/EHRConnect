@@ -34,37 +34,36 @@ const SPECIALTY_PACKS = [
     description: 'Pediatrics & Child Health',
     enabled_by_default: true,
   },
-  // Future specialty packs - uncomment when implemented:
-  // {
-  //   pack_slug: 'orthopedics',
-  //   pack_version: '1.0.0',
-  //   description: 'Orthopedic Surgery & Sports Medicine',
-  //   enabled_by_default: false,
-  // },
-  // {
-  //   pack_slug: 'dermatology',
-  //   pack_version: '1.0.0',
-  //   description: 'Dermatology & Skin Care',
-  //   enabled_by_default: false,
-  // },
-  // {
-  //   pack_slug: 'mental-health',
-  //   pack_version: '1.0.0',
-  //   description: 'Mental Health & Psychiatry',
-  //   enabled_by_default: false,
-  // },
-  // {
-  //   pack_slug: 'cardiology',
-  //   pack_version: '1.0.0',
-  //   description: 'Cardiology & Cardiovascular Care',
-  //   enabled_by_default: false,
-  // },
-  // {
-  //   pack_slug: 'wound-care',
-  //   pack_version: '1.0.0',
-  //   description: 'Wound Care & Hyperbaric Medicine',
-  //   enabled_by_default: false,
-  // },
+  {
+    pack_slug: 'orthopedics',
+    pack_version: '1.0.0',
+    description: 'Orthopedic Surgery & Sports Medicine',
+    enabled_by_default: false,
+  },
+  {
+    pack_slug: 'dermatology',
+    pack_version: '1.0.0',
+    description: 'Dermatology & Skin Care',
+    enabled_by_default: false,
+  },
+  {
+    pack_slug: 'mental-health',
+    pack_version: '1.0.0',
+    description: 'Mental Health & Psychiatry',
+    enabled_by_default: false,
+  },
+  {
+    pack_slug: 'cardiology',
+    pack_version: '1.0.0',
+    description: 'Cardiology & Cardiovascular Care',
+    enabled_by_default: false,
+  },
+  {
+    pack_slug: 'wound-care',
+    pack_version: '1.0.0',
+    description: 'Wound Care & Hyperbaric Medicine',
+    enabled_by_default: false,
+  },
 ];
 
 async function seedSpecialtyPacks() {

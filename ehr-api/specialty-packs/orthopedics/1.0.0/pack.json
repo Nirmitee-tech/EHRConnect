@@ -1,0 +1,65 @@
+{
+  "slug": "orthopedics",
+  "version": "1.0.0",
+  "name": "Orthopedics & Sports Medicine",
+  "description": "Orthopedic surgery, sports medicine, joint care, and rehabilitation",
+  "category": "clinical",
+  "icon": "Bone",
+  "color": "#3B82F6",
+  "dependencies": ["general"],
+
+  "navigation": {
+    "sections": [
+      {
+        "id": "dashboard",
+        "label": "Dashboard",
+        "icon": "LayoutDashboard",
+        "category": "general",
+        "order": 1
+      },
+      {
+        "id": "orthopedics-overview",
+        "label": "Orthopedics Overview",
+        "icon": "LayoutDashboard",
+        "category": "clinical",
+        "order": 2,
+        "componentName": "OrthopedicsOverview"
+      },
+      {
+        "id": "joint-assessment",
+        "label": "Joint Assessment",
+        "icon": "Activity",
+        "category": "clinical",
+        "order": 3,
+        "componentName": "JointAssessment"
+      }
+    ],
+    "replaceSections": false,
+    "mergeWith": "general"
+  },
+
+  "templates": [],
+  "visitTypes": "visit-types.json",
+  "workflows": "workflows/orthopedics.json",
+  "reports": "reports/orthopedics-kpis.json",
+
+  "featureFlags": {
+    "enableJointAssessments": true,
+    "enableMobilityTracking": true
+  },
+
+  "devices": [],
+
+  "episodeConfig": {
+    "allowConcurrent": true,
+    "defaultState": "active",
+    "requiredFields": [],
+    "stateTransitions": {
+      "planned": ["active", "cancelled"],
+      "active": ["onhold", "finished", "cancelled"],
+      "onhold": ["active", "finished", "cancelled"],
+      "finished": [],
+      "cancelled": []
+    }
+  }
+}
