@@ -1774,6 +1774,137 @@ function initializeObGynRoutes(pool) {
   });
 
   // ============================================
+  // IVF Pregnancy Outcomes (Phase 4: Outcome Intelligence)
+  // ============================================
+
+  /**
+   * GET /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/pregnancy-outcome
+   * Get pregnancy outcome for a cycle
+   */
+  router.get('/patients/:patientId/obgyn/ivf-cycles/:cycleId/pregnancy-outcome', async (req, res) => {
+    try {
+      const { patientId, cycleId } = req.params;
+
+      const outcome = await obgynService.getIVFPregnancyOutcome(patientId, cycleId);
+
+      return res.json({
+        success: true,
+        outcome
+      });
+    } catch (error) {
+      console.error('Error fetching pregnancy outcome:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * GET /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/transfers/:transferId/pregnancy-outcome
+   * Get pregnancy outcome by transfer ID
+   */
+  router.get('/patients/:patientId/obgyn/ivf-cycles/:cycleId/transfers/:transferId/pregnancy-outcome', async (req, res) => {
+    try {
+      const { transferId } = req.params;
+
+      const outcome = await obgynService.getIVFPregnancyOutcomeByTransfer(transferId);
+
+      return res.json({
+        success: true,
+        outcome
+      });
+    } catch (error) {
+      console.error('Error fetching pregnancy outcome by transfer:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * POST /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/pregnancy-outcome
+   * Create pregnancy outcome record
+   */
+  router.post('/patients/:patientId/obgyn/ivf-cycles/:cycleId/pregnancy-outcome', async (req, res) => {
+    try {
+      const { patientId, cycleId } = req.params;
+      const userId = req.headers['x-user-id'] || req.headers['x-org-id'] || 'system';
+
+      const outcome = await obgynService.createIVFPregnancyOutcome(patientId, cycleId, req.body, userId);
+
+      return res.status(201).json({
+        success: true,
+        outcome
+      });
+    } catch (error) {
+      console.error('Error creating pregnancy outcome:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * PATCH /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/pregnancy-outcome/:outcomeId
+   * Update pregnancy outcome record
+   */
+  router.patch('/patients/:patientId/obgyn/ivf-cycles/:cycleId/pregnancy-outcome/:outcomeId', async (req, res) => {
+    try {
+      const { outcomeId } = req.params;
+      const userId = req.headers['x-user-id'] || req.headers['x-org-id'] || 'system';
+
+      const outcome = await obgynService.updateIVFPregnancyOutcome(outcomeId, {
+        ...req.body,
+        userId
+      });
+
+      return res.json({
+        success: true,
+        outcome
+      });
+    } catch (error) {
+      console.error('Error updating pregnancy outcome:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  /**
+   * DELETE /api/patients/:patientId/obgyn/ivf-cycles/:cycleId/pregnancy-outcome/:outcomeId
+   * Delete pregnancy outcome record
+   */
+  router.delete('/patients/:patientId/obgyn/ivf-cycles/:cycleId/pregnancy-outcome/:outcomeId', async (req, res) => {
+    try {
+      const { outcomeId } = req.params;
+
+      const success = await obgynService.deleteIVFPregnancyOutcome(outcomeId);
+
+      if (!success) {
+        return res.status(404).json({
+          success: false,
+          error: 'Pregnancy outcome not found'
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Pregnancy outcome deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting pregnancy outcome:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // ============================================
   // Cervical Length
   // ============================================
 

@@ -2847,6 +2847,235 @@ class ObGynService {
   }
 
   // ============================================
+  // IVF Pregnancy Outcomes (Phase 4)
+  // ============================================
+
+  /**
+   * Get pregnancy outcome for a cycle
+   * @param {string} patientId - Patient ID
+   * @param {string} cycleId - Cycle ID
+   * @returns {Promise<Object|null>} Outcome record
+   */
+  async getIVFPregnancyOutcome(patientId, cycleId) {
+    const result = await this.pool.query(
+      `SELECT * FROM obgyn_ivf_pregnancy_outcomes
+       WHERE patient_id = $1 AND cycle_id = $2
+       LIMIT 1`,
+      [patientId, cycleId]
+    );
+    return result.rows.length > 0 ? this._formatIVFPregnancyOutcome(result.rows[0]) : null;
+  }
+
+  /**
+   * Get outcome by transfer ID
+   * @param {string} transferId - Transfer ID
+   * @returns {Promise<Object|null>} Outcome record
+   */
+  async getIVFPregnancyOutcomeByTransfer(transferId) {
+    const result = await this.pool.query(
+      `SELECT * FROM obgyn_ivf_pregnancy_outcomes
+       WHERE transfer_id = $1
+       LIMIT 1`,
+      [transferId]
+    );
+    return result.rows.length > 0 ? this._formatIVFPregnancyOutcome(result.rows[0]) : null;
+  }
+
+  /**
+   * Create pregnancy outcome record
+   * @param {string} patientId - Patient ID
+   * @param {string} cycleId - Cycle ID
+   * @param {Object} data - Outcome data
+   * @param {string} userId - User ID
+   * @returns {Promise<Object>} Created outcome
+   */
+  async createIVFPregnancyOutcome(patientId, cycleId, data, userId) {
+    const { v4: uuidv4 } = require('uuid');
+    const id = uuidv4();
+
+    const result = await this.pool.query(
+      `INSERT INTO obgyn_ivf_pregnancy_outcomes (
+        id, cycle_id, transfer_id, patient_id, created_by,
+        beta_hcg_series,
+        first_beta_date, first_beta_value,
+        second_beta_date, second_beta_value, doubling_time_hours,
+        ultrasounds,
+        first_ultrasound_date, gestational_sacs, yolk_sacs,
+        fetal_poles, heartbeat_detected, heartbeat_bpm, crl_mm,
+        outcome, outcome_date, gestational_age_at_outcome,
+        delivery_date, delivery_type, babies,
+        complications, notes
+      ) VALUES (
+        $1, $2, $3, $4, $5,
+        $6,
+        $7, $8,
+        $9, $10, $11,
+        $12,
+        $13, $14, $15,
+        $16, $17, $18, $19,
+        $20, $21, $22,
+        $23, $24, $25,
+        $26, $27
+      ) RETURNING *`,
+      [
+        id, cycleId, data.transferId, patientId, userId,
+        data.betaHcgSeries ? JSON.stringify(data.betaHcgSeries) : '[]',
+        data.firstBetaDate, data.firstBetaValue,
+        data.secondBetaDate, data.secondBetaValue, data.doublingTimeHours,
+        data.ultrasounds ? JSON.stringify(data.ultrasounds) : '[]',
+        data.firstUltrasoundDate, data.gestationalSacs, data.yolkSacs,
+        data.fetalPoles, data.heartbeatDetected, data.heartbeatBpm, data.crlMm,
+        this._emptyToNull(data.outcome), data.outcomeDate, data.gestationalAgeAtOutcome,
+        data.deliveryDate, data.deliveryType,
+        data.babies ? JSON.stringify(data.babies) : '[]',
+        data.complications ? JSON.stringify(data.complications) : '[]',
+        data.notes
+      ]
+    );
+
+    return this._formatIVFPregnancyOutcome(result.rows[0]);
+  }
+
+  /**
+   * Update pregnancy outcome record
+   * @param {string} outcomeId - Outcome ID
+   * @param {Object} updates - Fields to update
+   * @returns {Promise<Object>} Updated outcome
+   */
+  async updateIVFPregnancyOutcome(outcomeId, updates) {
+    const fields = [];
+    const values = [];
+    let paramCount = 1;
+
+    const addField = (fieldName, value) => {
+      if (value !== undefined) {
+        fields.push(`${fieldName} = $${paramCount}`);
+        values.push(value);
+        paramCount++;
+      }
+    };
+
+    // Transfer ID
+    addField('transfer_id', updates.transferId);
+
+    // Beta hCG tracking
+    if (updates.betaHcgSeries) {
+      addField('beta_hcg_series', JSON.stringify(updates.betaHcgSeries));
+    }
+    addField('first_beta_date', updates.firstBetaDate);
+    addField('first_beta_value', updates.firstBetaValue);
+    addField('second_beta_date', updates.secondBetaDate);
+    addField('second_beta_value', updates.secondBetaValue);
+    addField('doubling_time_hours', updates.doublingTimeHours);
+
+    // Ultrasounds
+    if (updates.ultrasounds) {
+      addField('ultrasounds', JSON.stringify(updates.ultrasounds));
+    }
+    addField('first_ultrasound_date', updates.firstUltrasoundDate);
+    addField('gestational_sacs', updates.gestationalSacs);
+    addField('yolk_sacs', updates.yolkSacs);
+    addField('fetal_poles', updates.fetalPoles);
+    addField('heartbeat_detected', updates.heartbeatDetected);
+    addField('heartbeat_bpm', updates.heartbeatBpm);
+    addField('crl_mm', updates.crlMm);
+
+    // Outcome
+    addField('outcome', this._emptyToNull(updates.outcome));
+    addField('outcome_date', updates.outcomeDate);
+    addField('gestational_age_at_outcome', updates.gestationalAgeAtOutcome);
+
+    // Live birth
+    addField('delivery_date', updates.deliveryDate);
+    addField('delivery_type', updates.deliveryType);
+    if (updates.babies) {
+      addField('babies', JSON.stringify(updates.babies));
+    }
+
+    // Complications
+    if (updates.complications) {
+      addField('complications', JSON.stringify(updates.complications));
+    }
+    addField('notes', updates.notes);
+
+    if (fields.length === 0) {
+      throw new Error('No fields to update');
+    }
+
+    // Always update timestamp and user
+    fields.push(`updated_at = CURRENT_TIMESTAMP`);
+    if (updates.userId) {
+      fields.push(`updated_by = $${paramCount}`);
+      values.push(updates.userId);
+      paramCount++;
+    }
+    values.push(outcomeId);
+
+    const query = `UPDATE obgyn_ivf_pregnancy_outcomes SET ${fields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+
+    const result = await this.pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      throw new Error('Pregnancy outcome record not found');
+    }
+
+    return this._formatIVFPregnancyOutcome(result.rows[0]);
+  }
+
+  /**
+   * Delete pregnancy outcome record
+   * @param {string} outcomeId - Outcome ID
+   * @returns {Promise<boolean>} Success
+   */
+  async deleteIVFPregnancyOutcome(outcomeId) {
+    const result = await this.pool.query(
+      `DELETE FROM obgyn_ivf_pregnancy_outcomes WHERE id = $1`,
+      [outcomeId]
+    );
+    return result.rowCount > 0;
+  }
+
+  _formatIVFPregnancyOutcome(row) {
+    const parseJSON = (val) => {
+      if (!val) return null;
+      return typeof val === 'string' ? JSON.parse(val) : val;
+    };
+
+    return {
+      id: row.id,
+      cycleId: row.cycle_id,
+      transferId: row.transfer_id,
+      patientId: row.patient_id,
+      betaHcgSeries: parseJSON(row.beta_hcg_series) || [],
+      firstBetaDate: row.first_beta_date,
+      firstBetaValue: row.first_beta_value ? parseFloat(row.first_beta_value) : null,
+      secondBetaDate: row.second_beta_date,
+      secondBetaValue: row.second_beta_value ? parseFloat(row.second_beta_value) : null,
+      doublingTimeHours: row.doubling_time_hours ? parseFloat(row.doubling_time_hours) : null,
+      ultrasounds: parseJSON(row.ultrasounds) || [],
+      firstUltrasoundDate: row.first_ultrasound_date,
+      gestationalSacs: row.gestational_sacs,
+      yolkSacs: row.yolk_sacs,
+      fetalPoles: row.fetal_poles,
+      heartbeatDetected: row.heartbeat_detected,
+      heartbeatBpm: row.heartbeat_bpm,
+      crlMm: row.crl_mm ? parseFloat(row.crl_mm) : null,
+      outcome: row.outcome,
+      outcomeDate: row.outcome_date,
+      gestationalAgeAtOutcome: row.gestational_age_at_outcome,
+      deliveryDate: row.delivery_date,
+      deliveryType: row.delivery_type,
+      babies: parseJSON(row.babies) || [],
+      complications: parseJSON(row.complications) || [],
+      notes: row.notes,
+      createdAt: row.created_at,
+      createdBy: row.created_by,
+      updatedAt: row.updated_at,
+      updatedBy: row.updated_by
+    };
+  }
+
+  // ============================================
   // Cervical Length
   // ============================================
 
