@@ -62,7 +62,7 @@ import { PrenatalFlowsheet, PrenatalVitals } from '@/features/specialties/ob-gyn
 import { TasksTab } from './tabs/tasks-tab';
 // Phase 2: Specialty system imports
 import { specialtyRegistry } from '@/features/specialties';
-import { useSpecialtyNavigation } from '@/features/specialties/shared/hooks/useSpecialtyNavigation';
+import { useRegistryNavigation } from '@/features/specialties/shared/hooks/useRegistryNavigation';
 import { EpisodeProvider } from '@/contexts/episode-context';
 
 export function PatientDetailShell() {
@@ -995,7 +995,7 @@ interface SpecialtyComponentRendererProps {
 
 function SpecialtyComponentRenderer({ activeTab, patientId }: SpecialtyComponentRendererProps) {
   // Get specialty navigation to find component mappings
-  const { navigation } = useSpecialtyNavigation('all');
+  const { navigation } = useRegistryNavigation('all');
 
   console.log('🔍 SpecialtyComponentRenderer - activeTab:', activeTab);
   console.log('🔍 Navigation sections:', navigation.map(n => ({ id: n.id, componentName: n.componentName })));
