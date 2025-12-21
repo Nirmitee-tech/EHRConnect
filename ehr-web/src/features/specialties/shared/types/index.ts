@@ -7,6 +7,47 @@ import { LucideIcon } from 'lucide-react';
 import { ComponentType, LazyExoticComponent } from 'react';
 
 /**
+ * Navigation section as defined in config (uses string icon names)
+ * This is what specialty modules define in their config files
+ */
+export interface NavigationSection {
+  id: string;
+  label: string;
+  icon: string; // Icon name as string (e.g., 'LayoutDashboard')
+  category: 'clinical' | 'administrative' | 'financial' | 'general';
+  componentName?: string; // Component to render (e.g., 'PrenatalOverview')
+  order?: number;
+  badge?: string;
+  count?: number | null;
+  hidden?: boolean;
+}
+
+/**
+ * Navigation item for runtime (uses actual icon components)
+ * This is what the UI components work with
+ */
+export interface NavigationItem {
+  id: string;
+  label: string;
+  icon: LucideIcon; // Actual icon component
+  count: number | null;
+  category: string;
+  encounterId?: string;
+  specialtySlug?: string; // Which specialty this belongs to
+  badge?: string;
+  hidden?: boolean;
+  componentName?: string; // Component to render (e.g., 'PrenatalOverview')
+}
+
+/**
+ * Specialty navigation configuration
+ * Defined in specialty module config files
+ */
+export interface SpecialtyNavigationConfig {
+  sections: NavigationSection[];
+}
+
+/**
  * Specialty Module Interface
  * Each specialty module must implement this interface
  */
@@ -19,14 +60,15 @@ export interface SpecialtyModule {
   /**
    * Lazy-loaded components for this specialty
    * Components are loaded on-demand when needed
+   * Uses 'any' for props to allow flexible component signatures
    */
-  components?: Record<string, LazyExoticComponent<ComponentType<unknown>>>;
+  components?: Record<string, LazyExoticComponent<ComponentType<any>>>;
 
   /**
    * Navigation configuration
    * Will be merged with base navigation
    */
-  navigation?: unknown;
+  navigation?: SpecialtyNavigationConfig;
 
   /**
    * Episode handlers
@@ -48,28 +90,3 @@ export type SidebarView =
   | 'administrative'
   | 'financial'
   | string; // Allow specialty slugs (e.g., 'ob-gyn', 'orthopedics')
-
-/**
- * Navigation item for sidebar
- */
-export interface NavigationItem {
-  id: string;
-  label: string;
-  icon: LucideIcon;
-  count: number | null;
-  category: string;
-  encounterId?: string;
-  specialtySlug?: string; // Which specialty this belongs to
-  badge?: string;
-  hidden?: boolean;
-  componentName?: string; // Component to render (e.g., 'PrenatalOverview')
-}
-
-/**
- * Specialty navigation configuration
- */
-export interface SpecialtyNavigationConfig {
-  sections: NavigationItem[];
-  replaceSections?: boolean;
-  mergeWith?: string;
-}

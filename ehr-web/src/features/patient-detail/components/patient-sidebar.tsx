@@ -29,7 +29,7 @@ import {
   LucideIcon
 } from 'lucide-react';
 import { usePatientDetailStore } from '../store/patient-detail-store';
-import { useSpecialtyNavigation, useHasSpecialtyNavigation } from '@/features/specialties/shared/hooks/useSpecialtyNavigation';
+import { useRegistryNavigation, useHasRegistryNavigation } from '@/features/specialties/shared/hooks/useRegistryNavigation';
 
 type SidebarView = 'all' | 'clinical' | 'administrative' | 'financial' | string;
 
@@ -64,9 +64,9 @@ function PatientSidebarComponent() {
   const setActiveTab = usePatientDetailStore((state) => state.setActiveTab);
   const closeEncounterTab = usePatientDetailStore((state) => state.closeEncounterTab);
 
-  // Try to use specialty navigation (Phase 2 enhancement)
-  const hasSpecialtyNav = useHasSpecialtyNavigation();
-  const { navigation: specialtyNavigation, viewOptions: specialtyViewOptions } = useSpecialtyNavigation(sidebarView);
+  // Use registry-based specialty navigation
+  const hasSpecialtyNav = useHasRegistryNavigation();
+  const { navigation: specialtyNavigation, viewOptions: specialtyViewOptions } = useRegistryNavigation(sidebarView);
 
   // All navigation sections organized by category
   const allSections = {
