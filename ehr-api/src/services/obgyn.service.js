@@ -4006,7 +4006,7 @@ class ObGynService {
    */
   async calculateOHSSRisk(patientId, cycleId) {
     // Get cycle data
-    const cycleResult = await this.db.query(
+    const cycleResult = await this.pool.query(
       `SELECT * FROM ivf_cycles WHERE id = $1 AND patient_id = $2`,
       [cycleId, patientId]
     );
@@ -4018,7 +4018,7 @@ class ObGynService {
     const cycle = cycleResult.rows[0];
 
     // Get patient demographics for age
-    const patientResult = await this.db.query(
+    const patientResult = await this.pool.query(
       `SELECT date_of_birth FROM patients WHERE id = $1`,
       [patientId]
     );
@@ -4029,7 +4029,7 @@ class ObGynService {
       : null;
 
     // Get latest monitoring data for peak E2 and follicle count
-    const monitoringResult = await this.db.query(
+    const monitoringResult = await this.pool.query(
       `SELECT
         estradiol_pg_ml,
         follicles_right,
@@ -4048,7 +4048,7 @@ class ObGynService {
     const totalFollicles = rightFollicles.length + leftFollicles.length;
 
     // Get retrieval data for oocyte count
-    const retrievalResult = await this.db.query(
+    const retrievalResult = await this.pool.query(
       `SELECT oocytes_retrieved FROM ivf_oocyte_retrievals WHERE ivf_cycle_id = $1`,
       [cycleId]
     );
@@ -4222,7 +4222,7 @@ class ObGynService {
    */
   async calculateTriggerReadiness(patientId, cycleId) {
     // Get cycle data
-    const cycleResult = await this.db.query(
+    const cycleResult = await this.pool.query(
       `SELECT * FROM ivf_cycles WHERE id = $1 AND patient_id = $2`,
       [cycleId, patientId]
     );
@@ -4234,7 +4234,7 @@ class ObGynService {
     const cycle = cycleResult.rows[0];
 
     // Get latest monitoring data
-    const monitoringResult = await this.db.query(
+    const monitoringResult = await this.pool.query(
       `SELECT
         stim_day,
         monitoring_date,
