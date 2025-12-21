@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { User, Edit, Plus, ChevronDown, AlertTriangle, Activity, Phone, Mail, Heart, Clock, Shield, Globe, CheckCircle2, MapPin, Languages, Flag, DollarSign, UserCircle, Calendar as CalendarIcon, Stethoscope, Users, FileText, X, Tag, History, Save, XCircle } from 'lucide-react';
 import { PatientDetails } from './types';
@@ -9,6 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { calculateAge } from '@/utils/shared';
+import { format } from 'date-fns';
 
 interface EncounterClass {
   code?: string;
@@ -238,21 +242,8 @@ export function PatientHeader({
     p.clinicalStatus?.coding?.[0]?.code === 'active'
   ).slice(0, 3);
 
-  // Calculate age from birthDate
-  const calculateAge = (birthDate: string) => {
-    if (!birthDate) return null;
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
-    return age;
-  };
-
   const age = patient.dob ? calculateAge(patient.dob) : null;
-  const formattedDOB = patient.dob ? new Date(patient.dob).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : '-';
+  const formattedDOB = patient.dob ? format(new Date(patient.dob), 'MM/dd/yyyy') : '-';
 
   return (
     <div className="bg-white border-b border-gray-200">
@@ -377,7 +368,7 @@ export function PatientHeader({
               <div className="pr-3 border-r-2 border-gray-300">
                 <div className="text-gray-500 text-[10px] uppercase font-medium">Last Visit</div>
                 <span className="font-medium">
-                  {new Date(encounters[0].period?.start || encounters[0].startTime || '').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {new Date(encounters[0].period?.start || encounters[0].startTime || new Date()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
               </div>
             )}

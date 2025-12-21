@@ -1,0 +1,20 @@
+{
+  "admin": {
+    "email": "jitendra@nirmitee.io",
+    "password": "nilkamal0_Y",
+    "role": "ORG_ADMIN",
+    "name": "Jitendra"
+  },
+  "testDoctor": {
+    "email": "test.doctor@ehr.test",
+    "password": "Test@1234",
+    "role": "DOCTOR",
+    "name": "Test Doctor"
+  },
+  "testNurse": {
+    "email": "test.nurse@ehr.test",
+    "password": "Test@1234",
+    "role": "NURSE",
+    "name": "Test Nurse"
+  }
+}

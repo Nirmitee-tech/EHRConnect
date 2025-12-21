@@ -1,19 +1,16 @@
-export interface ValidationError {
-  [key: string]: string;
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validateRequired(value, fieldName) {
+  return value && value.trim() ? null : `${fieldName} is required`;
 }
 
-export const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-export const validateRequired = (value: string, fieldName: string): string | null => {
-  return value.trim() ? null : `${fieldName} is required`;
-};
-
-export const validateEmail = (email: string): string | null => {
+function validateEmail(email) {
   if (!email) return null;
   return emailRegex.test(email) ? null : 'Please enter a valid email address';
-};
+}
 
-export const validateDate = (dateString: string, fieldName: string): string | null => {
+function validateDate(dateString, fieldName) {
   if (!dateString) return `${fieldName} is required`;
   
   const date = new Date(dateString);
@@ -24,16 +21,10 @@ export const validateDate = (dateString: string, fieldName: string): string | nu
   }
   
   return null;
-};
+}
 
-export const validatePatientForm = (formData: {
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  email: string;
-  facilityId?: string;
-}): ValidationError => {
-  const errors: ValidationError = {};
+function validatePatientForm(formData) {
+  const errors = {};
 
   const firstNameError = validateRequired(formData.firstName, 'First name');
   if (firstNameError) errors.firstName = firstNameError;
@@ -52,4 +43,12 @@ export const validatePatientForm = (formData: {
   }
 
   return errors;
+}
+
+module.exports = {
+  emailRegex,
+  validateRequired,
+  validateEmail,
+  validateDate,
+  validatePatientForm,
 };
