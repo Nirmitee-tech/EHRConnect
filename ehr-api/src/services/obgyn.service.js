@@ -4019,13 +4019,13 @@ class ObGynService {
 
     // Get patient demographics for age
     const patientResult = await this.pool.query(
-      `SELECT date_of_birth FROM patients WHERE id = $1`,
+      `SELECT birth_date FROM fhir_patients WHERE id = $1`,
       [patientId]
     );
 
     const patient = patientResult.rows[0];
-    const age = patient?.date_of_birth
-      ? Math.floor((Date.now() - new Date(patient.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+    const age = patient?.birth_date
+      ? Math.floor((Date.now() - new Date(patient.birth_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
       : null;
 
     // Get latest monitoring data for peak E2 and follicle count
