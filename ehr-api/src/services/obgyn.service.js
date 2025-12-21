@@ -2246,6 +2246,24 @@ class ObGynService {
   }
 
   /**
+   * Helper: Convert time string (HH:MM) to timestamp using today's date
+   * @param {string} timeStr - Time in HH:MM format or full timestamp
+   * @returns {string|null} ISO timestamp or null
+   */
+  _timeToTimestamp(timeStr) {
+    if (!timeStr || timeStr.trim() === '') return null;
+
+    // If already a full timestamp, return as-is
+    if (timeStr.includes('T') || timeStr.includes(' ')) {
+      return timeStr;
+    }
+
+    // Convert HH:MM to today's date + time
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    return `${today}T${timeStr}:00`;
+  }
+
+  /**
    * Create embryo development record
    * @param {string} cycleId - IVF Cycle ID
    * @param {Object} data - Embryo development data
@@ -2269,6 +2287,15 @@ class ObGynService {
 
     const id = uuidv4();
 
+    // Convert time-only strings to full timestamps
+    const day1Timestamp = this._timeToTimestamp(day1CheckTime);
+    const day2Timestamp = this._timeToTimestamp(day2CheckTime);
+    const day3Timestamp = this._timeToTimestamp(day3CheckTime);
+    const day4Timestamp = this._timeToTimestamp(day4CheckTime);
+    const day5Timestamp = this._timeToTimestamp(day5CheckTime);
+    const day6Timestamp = this._timeToTimestamp(day6CheckTime);
+    const day7Timestamp = this._timeToTimestamp(day7CheckTime);
+
     const result = await this.pool.query(
       `INSERT INTO obgyn_ivf_embryo_development
        (id, oocyte_id, cycle_id, patient_id, embryo_number,
@@ -2290,13 +2317,13 @@ class ObGynService {
        RETURNING *`,
       [
         id, oocyteId, cycleId, patientId, embryoNumber,
-        day1CheckTime, day1Pronuclei, day1PolarBodies, day1Status, day1Notes,
-        day2CheckTime, day2CellCount, day2Fragmentation, day2Symmetry, day2Grade, day2Notes,
-        day3CheckTime, day3CellCount, day3Fragmentation, day3Symmetry, day3Compaction, day3Grade, day3Notes,
-        day4CheckTime, day4Stage, day4Notes,
-        day5CheckTime, day5Stage, day5Expansion, day5IcmGrade, day5TeGrade, day5OverallGrade, day5Notes,
-        day6CheckTime, day6Stage, day6Expansion, day6IcmGrade, day6TeGrade, day6OverallGrade, day6Notes,
-        day7CheckTime, day7Stage, day7Notes,
+        day1Timestamp, day1Pronuclei, day1PolarBodies, day1Status, day1Notes,
+        day2Timestamp, day2CellCount, day2Fragmentation, day2Symmetry, day2Grade, day2Notes,
+        day3Timestamp, day3CellCount, day3Fragmentation, day3Symmetry, day3Compaction, day3Grade, day3Notes,
+        day4Timestamp, day4Stage, day4Notes,
+        day5Timestamp, day5Stage, day5Expansion, day5IcmGrade, day5TeGrade, day5OverallGrade, day5Notes,
+        day6Timestamp, day6Stage, day6Expansion, day6IcmGrade, day6TeGrade, day6OverallGrade, day6Notes,
+        day7Timestamp, day7Stage, day7Notes,
         cultureMedia, incubatorType, co2Concentration, o2Concentration,
         finalDisposition, dispositionDate, freezingMethod, thawSurvival,
         biopsyDate, biopsyDay, pgtResult, pgtDetails ? JSON.stringify(pgtDetails) : null,
@@ -2330,14 +2357,14 @@ class ObGynService {
     };
 
     // Day 1 fields
-    addField('day1_check_time', updates.day1CheckTime);
+    addField('day1_check_time', this._timeToTimestamp(updates.day1CheckTime));
     addField('day1_pronuclei', updates.day1Pronuclei);
     addField('day1_polar_bodies', updates.day1PolarBodies);
     addField('day1_status', updates.day1Status);
     addField('day1_notes', updates.day1Notes);
 
     // Day 2 fields
-    addField('day2_check_time', updates.day2CheckTime);
+    addField('day2_check_time', this._timeToTimestamp(updates.day2CheckTime));
     addField('day2_cell_count', updates.day2CellCount);
     addField('day2_fragmentation', updates.day2Fragmentation);
     addField('day2_symmetry', updates.day2Symmetry);
@@ -2345,7 +2372,7 @@ class ObGynService {
     addField('day2_notes', updates.day2Notes);
 
     // Day 3 fields
-    addField('day3_check_time', updates.day3CheckTime);
+    addField('day3_check_time', this._timeToTimestamp(updates.day3CheckTime));
     addField('day3_cell_count', updates.day3CellCount);
     addField('day3_fragmentation', updates.day3Fragmentation);
     addField('day3_symmetry', updates.day3Symmetry);
@@ -2354,12 +2381,12 @@ class ObGynService {
     addField('day3_notes', updates.day3Notes);
 
     // Day 4 fields
-    addField('day4_check_time', updates.day4CheckTime);
+    addField('day4_check_time', this._timeToTimestamp(updates.day4CheckTime));
     addField('day4_stage', updates.day4Stage);
     addField('day4_notes', updates.day4Notes);
 
     // Day 5 fields
-    addField('day5_check_time', updates.day5CheckTime);
+    addField('day5_check_time', this._timeToTimestamp(updates.day5CheckTime));
     addField('day5_stage', updates.day5Stage);
     addField('day5_expansion', updates.day5Expansion);
     addField('day5_icm_grade', updates.day5IcmGrade);
@@ -2368,7 +2395,7 @@ class ObGynService {
     addField('day5_notes', updates.day5Notes);
 
     // Day 6 fields
-    addField('day6_check_time', updates.day6CheckTime);
+    addField('day6_check_time', this._timeToTimestamp(updates.day6CheckTime));
     addField('day6_stage', updates.day6Stage);
     addField('day6_expansion', updates.day6Expansion);
     addField('day6_icm_grade', updates.day6IcmGrade);
@@ -2377,7 +2404,7 @@ class ObGynService {
     addField('day6_notes', updates.day6Notes);
 
     // Day 7 fields
-    addField('day7_check_time', updates.day7CheckTime);
+    addField('day7_check_time', this._timeToTimestamp(updates.day7CheckTime));
     addField('day7_stage', updates.day7Stage);
     addField('day7_notes', updates.day7Notes);
 
