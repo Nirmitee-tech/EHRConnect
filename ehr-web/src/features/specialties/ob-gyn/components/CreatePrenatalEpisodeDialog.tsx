@@ -44,6 +44,9 @@ export function CreatePrenatalEpisodeDialog({
   const [previousCesarean, setPreviousCesarean] = useState(false);
   const [previousPreterm, setPreviousPreterm] = useState(false);
   const [multipleGestation, setMultipleGestation] = useState(false);
+  const [numberOfFetuses, setNumberOfFetuses] = useState('1');
+  const [chorionicity, setChorionicity] = useState<'monochorionic' | 'dichorionic' | ''>('');
+  const [amnionicity, setAmnionicity] = useState<'monoamniotic' | 'diamniotic' | ''>('');
   const [chronicConditions, setChronicConditions] = useState('');
   const [previousLoss, setPreviousLoss] = useState(false);
 
@@ -56,10 +59,24 @@ export function CreatePrenatalEpisodeDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Auto-calculate EDD when LMP changes
+  // Auto-calculate EDD when LMP changes with smart validation
   useEffect(() => {
     if (lmp) {
       const lmpDate = new Date(lmp);
+      const now = new Date();
+      const daysSinceLMP = Math.floor((now.getTime() - lmpDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Smart validation: check for unrealistic dates
+      if (daysSinceLMP > 300) {
+        setError('⚠️ Something is wrong here - LMP date seems too old for current pregnancy');
+        return;
+      }
+      if (daysSinceLMP < 0) {
+        setError('⚠️ Something is wrong here - LMP date cannot be in the future');
+        return;
+      }
+      setError(''); // Clear error if validation passes
+
       const calculatedDate = calculateEDDFromLMP(lmpDate);
       setCalculatedEDD(calculatedDate);
       setEdd(calculatedDate.toISOString().split('T')[0]);
@@ -69,6 +86,18 @@ export function CreatePrenatalEpisodeDialog({
       setGestationalAge(ga);
     }
   }, [lmp]);
+
+  // Auto-set multipleGestation when numberOfFetuses > 1
+  useEffect(() => {
+    const fetusCount = parseInt(numberOfFetuses);
+    if (fetusCount > 1) {
+      setMultipleGestation(true);
+    } else {
+      setMultipleGestation(false);
+      setChorionicity('');
+      setAmnionicity('');
+    }
+  }, [numberOfFetuses]);
 
   // Calculate BMI when weight/height changes
   useEffect(() => {
@@ -133,6 +162,9 @@ export function CreatePrenatalEpisodeDialog({
           previousCesarean,
           previousPreterm,
           multipleGestation,
+          numberOfFetuses: parseInt(numberOfFetuses) || 1,
+          chorionicity: multipleGestation && numberOfFetuses === '2' ? chorionicity : undefined,
+          amnionicity: multipleGestation && numberOfFetuses === '2' ? amnionicity : undefined,
           chronicConditions: chronicConditions.split(',').map(c => c.trim()).filter(c => c),
           previousLoss,
           gestationalAgeAtStart: gestationalAge ? {
@@ -158,6 +190,9 @@ export function CreatePrenatalEpisodeDialog({
       setPreviousCesarean(false);
       setPreviousPreterm(false);
       setMultipleGestation(false);
+      setNumberOfFetuses('1');
+      setChorionicity('');
+      setAmnionicity('');
       setPreviousLoss(false);
     } catch (err) {
       console.error('Error creating prenatal episode:', err);
@@ -359,15 +394,69 @@ export function CreatePrenatalEpisodeDialog({
                 <span className="text-sm">History of preterm birth</span>
               </label>
 
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={multipleGestation}
-                  onChange={(e) => setMultipleGestation(e.target.checked)}
-                  className="rounded border-gray-300"
-                />
-                <span className="text-sm">Multiple gestation (twins/triplets)</span>
-              </label>
+              <div className="border border-gray-200 rounded-md p-3 bg-white">
+                <div className="grid grid-cols-3 gap-3 mb-2">
+                  <div>
+                    <Label htmlFor="numberOfFetuses" className="text-xs">Number of Fetuses</Label>
+                    <select
+                      id="numberOfFetuses"
+                      value={numberOfFetuses}
+                      onChange={(e) => setNumberOfFetuses(e.target.value)}
+                      className="w-full mt-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-primary focus:border-primary"
+                    >
+                      <option value="1">Singleton</option>
+                      <option value="2">Twins</option>
+                      <option value="3">Triplets</option>
+                      <option value="4">Quadruplets</option>
+                    </select>
+                  </div>
+
+                  {multipleGestation && numberOfFetuses === '2' && (
+                    <>
+                      <div>
+                        <Label htmlFor="chorionicity" className="text-xs">Chorionicity</Label>
+                        <select
+                          id="chorionicity"
+                          value={chorionicity}
+                          onChange={(e) => setChorionicity(e.target.value as typeof chorionicity)}
+                          className="w-full mt-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-primary focus:border-primary"
+                        >
+                          <option value="">Select...</option>
+                          <option value="monochorionic">Monochorionic</option>
+                          <option value="dichorionic">Dichorionic</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Label htmlFor="amnionicity" className="text-xs">Amnionicity</Label>
+                        <select
+                          id="amnionicity"
+                          value={amnionicity}
+                          onChange={(e) => setAmnionicity(e.target.value as typeof amnionicity)}
+                          className="w-full mt-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-primary focus:border-primary"
+                        >
+                          <option value="">Select...</option>
+                          <option value="monoamniotic">Monoamniotic</option>
+                          <option value="diamniotic">Diamniotic</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {multipleGestation && (
+                  <div className="text-xs bg-blue-50 p-2 rounded border border-blue-200">
+                    <div className="font-semibold text-blue-800 mb-1">Multiple Pregnancy Detected</div>
+                    <div className="text-blue-700">
+                      {numberOfFetuses === '2' && chorionicity && amnionicity && (
+                        <span>Type: {chorionicity.replace('chorionic', '')} / {amnionicity.replace('amniotic', '')} twins</span>
+                      )}
+                      {parseInt(numberOfFetuses) > 2 && (
+                        <span>Higher-order multiple pregnancy - Refer to MFM specialist</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
