@@ -35,7 +35,7 @@ CREATE INDEX IF NOT EXISTS idx_payment_gateways_org_active_default ON billing_pa
 CREATE INDEX IF NOT EXISTS idx_payment_gateways_provider ON billing_payment_gateways(gateway_provider);
 
 -- Add trigger
-CREATE TRIGGER IF NOT EXISTS update_billing_payment_gateways_updated_at 
+CREATE OR REPLACE TRIGGER update_billing_payment_gateways_updated_at 
   BEFORE UPDATE ON billing_payment_gateways
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 `;

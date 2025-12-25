@@ -35,7 +35,7 @@ COMMENT ON COLUMN billing_tenant_settings.approval_thresholds IS 'Adjustment/ref
 COMMENT ON COLUMN billing_tenant_settings.statement_settings IS 'Frequency, generation day';
 
 -- Add trigger if not exists
-CREATE TRIGGER IF NOT EXISTS update_billing_tenant_settings_updated_at 
+CREATE OR REPLACE TRIGGER update_billing_tenant_settings_updated_at 
   BEFORE UPDATE ON billing_tenant_settings
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 `;

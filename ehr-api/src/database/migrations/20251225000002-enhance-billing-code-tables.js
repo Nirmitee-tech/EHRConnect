@@ -61,15 +61,15 @@ CREATE INDEX IF NOT EXISTS idx_modifiers_active_type ON billing_modifiers(active
 -- UPDATE EXISTING TRIGGERS
 -- =====================================================
 -- Ensure updated_at triggers exist
-CREATE TRIGGER IF NOT EXISTS update_billing_cpt_codes_updated_at 
+CREATE OR REPLACE TRIGGER update_billing_cpt_codes_updated_at 
   BEFORE UPDATE ON billing_cpt_codes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER IF NOT EXISTS update_billing_icd_codes_updated_at 
+CREATE OR REPLACE TRIGGER update_billing_icd_codes_updated_at 
   BEFORE UPDATE ON billing_icd_codes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER IF NOT EXISTS update_billing_modifiers_updated_at 
+CREATE OR REPLACE TRIGGER update_billing_modifiers_updated_at 
   BEFORE UPDATE ON billing_modifiers
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 `;

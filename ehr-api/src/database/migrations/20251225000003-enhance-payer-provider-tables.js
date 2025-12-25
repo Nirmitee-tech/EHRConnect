@@ -53,7 +53,7 @@ ALTER TABLE billing_providers ALTER COLUMN first_name DROP NOT NULL;
 ALTER TABLE billing_providers ALTER COLUMN last_name DROP NOT NULL;
 
 -- Update unique constraint to include org_id
-DROP INDEX IF EXISTS billing_providers_npi_key;
+ALTER TABLE billing_providers DROP CONSTRAINT IF EXISTS billing_providers_npi_key;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_providers_org_npi ON billing_providers(org_id, npi) WHERE org_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_providers_npi_system ON billing_providers(npi) WHERE org_id IS NULL;
 
@@ -65,11 +65,11 @@ CREATE INDEX IF NOT EXISTS idx_providers_user_id ON billing_providers(user_id);
 -- =====================================================
 -- UPDATE TRIGGERS
 -- =====================================================
-CREATE TRIGGER IF NOT EXISTS update_billing_payers_updated_at 
+CREATE OR REPLACE TRIGGER update_billing_payers_updated_at 
   BEFORE UPDATE ON billing_payers
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER IF NOT EXISTS update_billing_providers_updated_at 
+CREATE OR REPLACE TRIGGER update_billing_providers_updated_at 
   BEFORE UPDATE ON billing_providers
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 `;

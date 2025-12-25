@@ -26,7 +26,7 @@ CREATE INDEX IF NOT EXISTS idx_fee_schedules_payer_lookup ON billing_fee_schedul
 CREATE INDEX IF NOT EXISTS idx_fee_schedules_dates ON billing_fee_schedules(effective_from, effective_to);
 
 -- Add trigger
-CREATE TRIGGER IF NOT EXISTS update_billing_fee_schedules_updated_at 
+CREATE OR REPLACE TRIGGER update_billing_fee_schedules_updated_at 
   BEFORE UPDATE ON billing_fee_schedules
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 `;

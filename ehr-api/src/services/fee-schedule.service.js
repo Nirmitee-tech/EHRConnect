@@ -118,7 +118,7 @@ class FeeScheduleService {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [orgId, payer_id, cpt_code, modifier, amount, facility_amount,
-       effective_from, effective_to, JSON.stringify(metadata)]
+        effective_from, effective_to, JSON.stringify(metadata)]
     );
 
     return result.rows[0];
@@ -170,7 +170,7 @@ class FeeScheduleService {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      
+
       const results = [];
       for (const feeData of feeSchedules) {
         const result = await this.createFeeSchedule(orgId, feeData);
@@ -190,7 +190,7 @@ class FeeScheduleService {
   /**
    * Copy fee schedule from one payer to another with multiplier
    */
-  async copyFeeSchedule(orgId, sourcePayer Id, targetPayerId, multiplier = 1.0, effectiveFrom) {
+  async copyFeeSchedule(orgId, sourcePayerId, targetPayerId, multiplier = 1.0, effectiveFrom) {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
