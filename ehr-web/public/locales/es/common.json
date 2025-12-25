@@ -1300,7 +1300,11 @@
         "reset_confirm": "¿Estás seguro de que quieres restablecer al tema predeterminado?",
         "loading_theme": "Cargando configuración del tema...",
         "upload_error_type": "Por favor, sube un archivo de imagen válido (PNG, JPG o SVG)",
-        "upload_error_size": "El tamaño del archivo debe ser menor de 2MB"
+        "upload_error_size": "El tamaño del archivo debe ser menor de 2MB",
+        "color_tertiary": "Terciario",
+        "color_tertiary_desc": "Advertencias, destacados, elementos que llaman la atención",
+        "color_quaternary": "Cuaternario",
+        "color_quaternary_desc": "Elementos especiales, características premium"
     },
     "patient_form": {
         "title": "Registro de Paciente",

@@ -75,6 +75,20 @@ export const ColorSettings = ({ settings, onColorChange }: ColorSettingsProps) =
                     value={settings.accentColor}
                     onChange={onColorChange}
                 />
+                <ColorInput
+                    label={t('appearance.color_tertiary')}
+                    field="tertiaryColor"
+                    description={t('appearance.color_tertiary_desc')}
+                    value={settings.tertiaryColor || '#F59E0B'}
+                    onChange={onColorChange}
+                />
+                <ColorInput
+                    label={t('appearance.color_quaternary')}
+                    field="quaternaryColor"
+                    description={t('appearance.color_quaternary_desc')}
+                    value={settings.quaternaryColor || '#8B5CF6'}
+                    onChange={onColorChange}
+                />
             </div>
         </div>
     );

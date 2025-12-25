@@ -54,10 +54,12 @@
   /* Theme Builder Custom Variables */
   --theme-primary: #4A90E2;
   --theme-secondary: #9B59B6;
+  --theme-tertiary: #F59E0B;      /* Orange/Amber - for warnings, highlights */
+  --theme-quaternary: #8B5CF6;    /* Purple - for special elements */
+  --theme-accent: #10B981;
   --theme-sidebar-bg: #0F1E56;
   --theme-sidebar-text: #B0B7D0;
   --theme-sidebar-active: #3342A5;
-  --theme-accent: #10B981;
   --theme-font-family: 'Inter', sans-serif;
   
   /* Background colors */

@@ -1300,7 +1300,11 @@
         "reset_confirm": "کیا آپ واقعی ڈیفالٹ تھیم پر ری سیٹ کرنا چاہتے ہیں؟",
         "loading_theme": "تھیم کی ترتیبات لوڈ ہو رہی ہیں...",
         "upload_error_type": "براہ کرم ایک درست تصویری فائل اپ لوڈ کریں (PNG، JPG، یا SVG)",
-        "upload_error_size": "فائل کا سائز 2MB سے کم ہونا چاہیے"
+        "upload_error_size": "فائل کا سائز 2MB سے کم ہونا چاہیے",
+        "color_tertiary": "تیسرا",
+        "color_tertiary_desc": "انتباہات، نمایاں، توجہ مبذول کرنے والے عناصر",
+        "color_quaternary": "چوتھا",
+        "color_quaternary_desc": "خصوصی عناصر، پریمیم خصوصیات"
     },
     "patient_form": {
         "title": "مریض کی رجسٹریشن",

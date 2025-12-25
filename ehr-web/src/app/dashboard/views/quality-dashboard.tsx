@@ -10,6 +10,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Area, Scatter,
   ScatterChart, ZAxis
 } from 'recharts'
+import { useTheme } from '@/contexts/theme-context'
 
 const COLORS = {
   primary: '#2563EB', success: '#059669', warning: '#D97706', danger: '#DC2626',
@@ -78,6 +79,8 @@ interface DashboardProps {
 }
 
 export default function QualityDashboard({ filters }: DashboardProps) {
+  const { themeSettings } = useTheme()
+
   return (
     <div className="space-y-4">
       {/* Extended KPI Cards - 8 metrics */}
@@ -226,8 +229,11 @@ export default function QualityDashboard({ filters }: DashboardProps) {
                   <div className="flex items-center gap-2">
                     <div className="w-16 bg-gray-200 rounded-full h-1.5">
                       <div
-                        className="h-1.5 rounded-full bg-emerald-500"
-                        style={{ width: `${(item.score / item.max) * 100}%` }}
+                        className="h-1.5 rounded-full"
+                        style={{
+                          width: `${(item.score / item.max) * 100}%`,
+                          backgroundColor: themeSettings.accentColor
+                        }}
                       />
                     </div>
                     <span className="text-sm font-bold text-gray-900 w-10 text-right">{item.score}</span>
@@ -257,11 +263,14 @@ export default function QualityDashboard({ filters }: DashboardProps) {
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-gray-500">Target: {metric.target}%</span>
                       <div className="flex items-center gap-1">
-                        <span className={`text-sm font-semibold ${metric.achieved >= metric.target ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        <span
+                          className="text-sm font-semibold"
+                          style={{ color: metric.achieved >= metric.target ? themeSettings.accentColor : '#D97706' }}
+                        >
                           {metric.achieved}%
                         </span>
                         {metric.trend === 'up' ? (
-                          <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+                          <TrendingUp className="h-3.5 w-3.5" style={{ color: themeSettings.accentColor }} />
                         ) : (
                           <TrendingDown className="h-3.5 w-3.5 text-red-600" />
                         )}
@@ -271,8 +280,11 @@ export default function QualityDashboard({ filters }: DashboardProps) {
                   </div>
                   <div className="relative w-full bg-gray-100 rounded-full h-2">
                     <div
-                      className={`h-2 rounded-full transition-all ${metric.achieved >= metric.target ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                      style={{ width: `${metric.achieved}%` }}
+                      className="h-2 rounded-full transition-all"
+                      style={{
+                        width: `${metric.achieved}%`,
+                        backgroundColor: metric.achieved >= metric.target ? themeSettings.accentColor : '#F59E0B'
+                      }}
                     />
                     <div
                       className="absolute top-0 w-0.5 h-2 bg-gray-400"
@@ -302,15 +314,25 @@ export default function QualityDashboard({ filters }: DashboardProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     {metric.trend === 'down' ? (
-                      <TrendingDown className={`h-3.5 w-3.5 ${metric.better === 'lower' ? 'text-emerald-600' : 'text-red-600'}`} />
+                      <TrendingDown
+                        className="h-3.5 w-3.5"
+                        style={{ color: metric.better === 'lower' ? themeSettings.accentColor : '#DC2626' }}
+                      />
                     ) : (
-                      <TrendingUp className={`h-3.5 w-3.5 ${metric.better === 'higher' ? 'text-emerald-600' : 'text-red-600'}`} />
+                      <TrendingUp
+                        className="h-3.5 w-3.5"
+                        style={{ color: metric.better === 'higher' ? themeSettings.accentColor : '#DC2626' }}
+                      />
                     )}
-                    <span className={`text-sm font-bold ${(metric.better === 'lower' && metric.value <= metric.target) ||
-                        (metric.better === 'higher' && metric.value >= metric.target)
-                        ? 'text-emerald-600'
-                        : 'text-amber-600'
-                      }`}>
+                    <span
+                      className="text-sm font-bold"
+                      style={{
+                        color: (metric.better === 'lower' && metric.value <= metric.target) ||
+                          (metric.better === 'higher' && metric.value >= metric.target)
+                          ? themeSettings.accentColor
+                          : '#D97706'
+                      }}
+                    >
                       {metric.value}%
                     </span>
                   </div>
@@ -362,14 +384,36 @@ export default function QualityDashboard({ filters }: DashboardProps) {
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-3 rounded border border-emerald-200 bg-emerald-50/50">
-                <CheckCircle className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+              <div
+                className="flex items-start gap-3 p-3 rounded border"
+                style={{
+                  borderColor: `${themeSettings.accentColor}33`,
+                  backgroundColor: `${themeSettings.accentColor}0D`
+                }}
+              >
+                <CheckCircle className="h-4 w-4 flex-shrink-0 mt-0.5" style={{ color: themeSettings.accentColor }} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900">High HEDIS Performance</p>
                   <p className="text-xs text-gray-600 mt-0.5">5 of 6 measures exceeding benchmarks - overall +5% improvement</p>
                   <div className="mt-2 flex gap-2">
-                    <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">87% compliance rate</span>
-                    <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Top quartile performance</span>
+                    <span
+                      className="text-xs px-2 py-0.5 rounded"
+                      style={{
+                        backgroundColor: `${themeSettings.accentColor}1A`,
+                        color: themeSettings.accentColor
+                      }}
+                    >
+                      87% compliance rate
+                    </span>
+                    <span
+                      className="text-xs px-2 py-0.5 rounded"
+                      style={{
+                        backgroundColor: `${themeSettings.accentColor}1A`,
+                        color: themeSettings.accentColor
+                      }}
+                    >
+                      Top quartile performance
+                    </span>
                   </div>
                 </div>
               </div>

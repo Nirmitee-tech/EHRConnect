@@ -1300,7 +1300,11 @@
         "reset_confirm": "क्या आप वाकई डिफ़ॉल्ट थीम पर रीसेट करना चाहते हैं?",
         "loading_theme": "थीम सेटिंग्स लोड हो रही हैं...",
         "upload_error_type": "कृपया एक मान्य छवि फ़ाइल अपलोड करें (PNG, JPG, या SVG)",
-        "upload_error_size": "फ़ाइल का आकार 2MB से कम होना चाहिए"
+        "upload_error_size": "फ़ाइल का आकार 2MB से कम होना चाहिए",
+        "color_tertiary": "तृतीयक",
+        "color_tertiary_desc": "चेतावनियाँ, हाइलाइट्स, ध्यान आकर्षित करने वाले तत्व",
+        "color_quaternary": "चतुर्थक",
+        "color_quaternary_desc": "विशेष तत्व, प्रीमियम सुविधाएँ"
     },
     "patient_form": {
         "title": "मरीज़ पंजीकरण",

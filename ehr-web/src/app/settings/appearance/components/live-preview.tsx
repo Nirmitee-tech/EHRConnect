@@ -116,7 +116,7 @@ export const LivePreview = ({ settings }: LivePreviewProps) => {
                         </div>
                     </div>
                     <p className="text-[10px] max-w-[150px] leading-relaxed text-gray-400">
-                        Experimental branding for {settings.orgNameOverride || t('settings.facility').toLowerCase()}.
+                        {t('appearance.experimental_branding', { name: settings.orgNameOverride || t('settings.facility').toLowerCase() })}
                     </p>
                 </div>
             </div>
