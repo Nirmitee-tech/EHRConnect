@@ -113,7 +113,7 @@ const SETTINGS_DATA: SettingItem[] = [
   { id: 'security-phys', title: 'Physical Security', description: 'CCTV, access cards & gate logs', icon: Lock, href: '#', category: 'Hospital Logistics', isComingSoon: true },
 
   // --- REVENUE CYCLE - RCM (81-95) ---
-  { id: 'billing', title: 'Revenue Engine', description: 'Master billing ledger & charging rules', icon: CreditCard, href: '/settings/billing', category: 'Revenue Cycle' },
+  { id: 'billing', title: 'Billing & Accounting', description: 'Chart of accounts, billing codes, payers & fee schedules', icon: CreditCard, href: '/settings/billing', category: 'Revenue Cycle' },
   { id: 'insurance', title: 'Insurance / TPA', description: 'Payer contracts & pre-auth protocols', icon: Landmark, href: '#', category: 'Revenue Cycle', isComingSoon: true },
   { id: 'rcm-audit', title: 'Financial Auditing', description: 'Leak detection & revenue reconciliation', icon: TrendingUp, href: '#', category: 'Revenue Cycle', isComingSoon: true },
   { id: 'chargemaster', title: 'Global Fee Master', description: 'Departmental tariffs & service masters', icon: BarChart3, href: '#', category: 'Revenue Cycle', isComingSoon: true },
