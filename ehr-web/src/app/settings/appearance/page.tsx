@@ -49,6 +49,8 @@ export default function AppearancePage() {
       ...localSettings,
       primaryColor: theme.primaryColor,
       secondaryColor: theme.secondaryColor,
+      tertiaryColor: theme.tertiaryColor || '#F59E0B',
+      quaternaryColor: theme.quaternaryColor || '#8B5CF6',
       sidebarBackgroundColor: theme.sidebarBackgroundColor,
       sidebarTextColor: theme.sidebarTextColor,
       sidebarActiveColor: theme.sidebarActiveColor,
