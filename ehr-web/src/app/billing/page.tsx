@@ -23,11 +23,13 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart
 } from 'recharts'
 import billingService from '@/services/billing.service';
+import { useApiHeaders } from '@/hooks/useApiHeaders';
 import { useTranslation } from '@/i18n/client';
 import '@/i18n/client';
 
 export default function BillingDashboard() {
   const { data: session } = useSession()
+  const headers = useApiHeaders();
   const [dateRange, setDateRange] = useState('30d')
   const [location, setLocation] = useState('all')
   const [loading, setLoading] = useState(false)
@@ -37,10 +39,16 @@ export default function BillingDashboard() {
 
   // Load real data from API
   useEffect(() => {
+    if (!headers['x-org-id']) {
+      return;
+    }
     loadDashboardData();
-  }, [dateRange]);
+  }, [dateRange, headers['x-org-id']]);
 
   const loadDashboardData = async () => {
+    if (!headers['x-org-id']) {
+      return;
+    }
     try {
       setLoading(true);
       const endDate = new Date();
@@ -56,7 +64,8 @@ export default function BillingDashboard() {
 
       const data = await billingService.getDashboardKPIs(
         startDate.toISOString().split('T')[0],
-        endDate.toISOString().split('T')[0]
+        endDate.toISOString().split('T')[0],
+        headers
       );
       setApiKpis(data);
     } catch (error) {

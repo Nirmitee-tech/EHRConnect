@@ -630,6 +630,8 @@ class OrganizationService {
     const colorFields = [
       'primaryColor',
       'secondaryColor',
+      'tertiaryColor',
+      'quaternaryColor',
       'sidebarBackgroundColor',
       'sidebarTextColor',
       'sidebarActiveColor',

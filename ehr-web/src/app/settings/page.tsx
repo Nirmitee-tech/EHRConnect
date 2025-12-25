@@ -18,7 +18,8 @@ import {
   FileBadge, Scale, Microscope as LabIcon, Eye, Ear, Thermometer,
   Stethoscope as ClinicalIcon, Dna, FileCheck, HandCoins, MessageSquare,
   Video, Smartphone, HeartHandshake, Leaf, ShieldQuestion, UserMinus,
-  FilePlus, FolderOpen, Anchor, Wind, Camera, Wallet, HelpCircle, Info
+  FilePlus, FolderOpen, Anchor, Wind, Camera, Wallet, HelpCircle, Info,
+  Droplets, Accessibility, Baby, ArrowLeft, Plus, Rocket
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/i18n/client';
@@ -34,122 +35,122 @@ interface SettingItem {
   category: string;
   isComingSoon?: boolean;
 }
-
-const SETTINGS_DATA: SettingItem[] = [
-  // --- CORE GOVERNANCE (1-10) ---
-  { id: 'org', title: 'Global Enterprise', description: 'Multi-entity structure & legal hierarchy', icon: Landmark, href: '#', category: 'General Admin' },
-  { id: 'facility', title: 'Facility Registry', description: 'Hospital IDs, licenses & certifications', icon: Building2, href: '/settings/facility', category: 'General Admin' },
-  { id: 'locations', title: 'Space Management', description: 'Campus, building, room & bed mapping', icon: MapPin, href: '/settings/locations', category: 'General Admin' },
-  { id: 'branding', title: 'Branding', description: 'White-labeling & global aesthetic control', icon: Palette, href: '/settings/appearance', category: 'General Admin' },
-  { id: 'timezone', title: 'Regional Master', description: 'Global calendars, currencies & timezones', icon: Globe, href: '/settings/localization', category: 'General Admin' },
-  { id: 'hours', title: 'Capacity Logic', description: 'Unit-level operational availability master', icon: Clock, href: '/settings/office-hours', category: 'General Admin' },
-  { id: 'tax-reg', title: 'Tax Jurisdictions', description: 'Multi-regional tax protocols and rules', icon: Landmark, href: '#', category: 'General Admin', isComingSoon: true },
-  { id: 'languages', title: 'Language Packs', description: 'Translation keys and local character sets', icon: Globe2, href: '#', category: 'General Admin', isComingSoon: true },
-  { id: 'audit-root', title: 'Root Audit Logs', description: 'Lowest-level system access & mutation logs', icon: ShieldCheck, href: '#', category: 'General Admin', badge: 'Root' },
-  { id: 'entity-links', title: 'Entity Linking', description: 'Parent-child hospital & clinic relationships', icon: Share, href: '#', category: 'General Admin', isComingSoon: true },
-
-  // --- CLINICAL MASTERS - EPIC/CERNER SCALE (11-30) ---
-  { id: 'order-sets', title: 'Order Set Builder', description: 'Evidence-based clinical order bundles', icon: Workflow, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'drug-lib', title: 'Formulary Master', description: 'Global drug dictionary & interaction DB', icon: Pill, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'proc-lib', title: 'Procedure Registry', description: 'Surgical CPT and clinical procedural catalog', icon: Scissors, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'codes', title: 'Clinical Coding', description: 'ICD-10/11, SNOMED & LOINC registries', icon: Hash, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'templates', title: 'Documentation', description: 'Dynamic encounter forms & smart-text', icon: FileText, href: '/settings/templates', category: 'Clinical Masters' },
-  { id: 'allergies', title: 'Allergy DB', description: 'Global allergen & contraindication master', icon: ShieldAlert, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'vitals', title: 'Alert Thresholds', description: 'Vital range masters for clinical alerts', icon: Activity, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'consent-templates', title: 'Consent Master', description: 'Legal and clinical consent form builder', icon: FileCheck, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'smart-triggers', title: 'Smart Triggers', description: 'Automated clinical event logic engine', icon: Zap, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'specimen-types', title: 'Specimen Registry', description: 'Global lab specimen & collection rules', icon: Syringe, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'care-plans', title: 'Care Pathways', description: 'Disease-specific longitudinal care logic', icon: Workflow, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'pharmaco', title: 'Pharmacogenomics', description: 'Genetic markers & drug sensitivity rules', icon: Dna, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'immunization', title: 'Vaccine Catalog', description: 'Global immunization schedules & registries', icon: Syringe, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'diet-masters', title: 'Dietary Masters', description: 'Nutritional constraints & meal logic', icon: ShoppingCart, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'triage-rules', title: 'Triage Logic', description: 'Emergency severity index configuration', icon: ActivityIcon, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'icu-acuity', title: 'ICU Acuity Math', description: 'SAPS/APACHE clinical scoring logic', icon: Heart, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'vte-risk', title: 'VTE Risk Master', description: 'Venous thromboembolism assessment rules', icon: Activity, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'fall-risk', title: 'Fall Assessment', description: 'Standardized fall-risk score logic', icon: Activity, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'wound-care', title: 'Wound Registry', description: 'Staging, image analysis & therapy rules', icon: Camera, href: '#', category: 'Clinical Masters', isComingSoon: true },
-  { id: 'patient-education', title: 'Patient Education', description: 'Manage patient education modules and content', icon: BookOpen, href: '/settings/patient-education', category: 'Clinical Masters', isComingSoon: false },
-
-  // --- SPECIALTY CARE UNITS (31-50) ---
-  { id: 'icu', title: 'Critical Care (ICU)', description: 'Ventilation protocols & acuity scoring', icon: Heart, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'er', title: 'Emergency / Triage', description: 'ESI triage logic & rapid response flows', icon: Activity, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'ot', title: 'Surgical Deck (OT)', description: 'Sterile cycles, pre-op & anesthesia logs', icon: Scissors, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'nicu', title: 'NICU / Pediatrics', description: 'Neo-natal growth & feeding protocols', icon: Crosshair, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'dialysis', title: 'Renal Dialysis', description: 'Cycle management & dialysis unit logic', icon: FlaskConical, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'oncology', title: 'Molecular Oncology', description: 'Chemotherapy regimens & staging logic', icon: Dna, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'ivf', title: 'Reproductive Med', description: 'Embryology lab flows & IVF cycles', icon: Syringe, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'cardio', title: 'Cardiology Center', description: 'Holter, Stress & Cath-lab protocols', icon: HeartPulse, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'mental', title: 'Psychiatry Unit', description: 'Mental health assessment & safety logs', icon: ShieldCheck, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'ophthalmology', title: 'Ophthalmology', description: 'Visual acuity & retinopathy screening', icon: Eye, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'ent', title: 'ENT / Audiology', description: 'Hearing tests & endoscopic procedure logs', icon: Ear, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'derma', title: 'Dermatology Hub', description: 'Skin lesion imaging & biopsy protocols', icon: Camera, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'ortho', title: 'Orthopedics / PT', description: 'Physiotherapy & fracture management', icon: Activity, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'pulmo', title: 'Pulmonology', description: 'PFT registers & respiratory therapy', icon: Wind, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'gastro', title: 'Gastroenterology', description: 'Endoscopy & colonoscopy workflow rules', icon: Activity, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'neuro', title: 'Neurology / EEG', description: 'Stroke protocols & EEG scan registry', icon: Activity, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'transplant', title: 'Transplant Hub', description: 'Waitlist management & organ matching', icon: Anchor, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'palliative', title: 'Palliative Care', description: 'Pain management & end-of-life care', icon: HeartHandshake, href: '#', category: 'Medical Specialty', isComingSoon: true },
-  { id: 'telemed', title: 'Virtual Health', description: 'Tele-consultation & remote sensing', icon: Video, href: '#', category: 'Medical Specialty', isComingSoon: true },
-
-  // --- DIAGNOSTICS & ANCILLARY (51-65) ---
-  { id: 'lis', title: 'Laboratory (LIS)', description: 'Sample tracking & analyzer interfacing', icon: Microscope, href: '#', category: 'Diagnostic & Ancillary', isComingSoon: true },
-  { id: 'ris', title: 'Imaging (PACS)', description: 'DICOM routing & PACS storage management', icon: Layers, href: '#', category: 'Diagnostic & Ancillary', isComingSoon: true },
-  { id: 'path', title: 'Cellular Pathology', description: 'Histopath & frozen section workflows', icon: LabIcon, href: '#', category: 'Diagnostic & Ancillary', isComingSoon: true },
-  { id: 'blood', title: 'Blood Transfusion', description: 'Donation tracking & cross-match logic', icon: Syringe, href: '#', category: 'Diagnostic & Ancillary', isComingSoon: true },
-  { id: 'cssd', title: 'Sterile Supply', description: 'CSSD asset cycles & sterile validity', icon: ShieldCheck, href: '#', category: 'Diagnostic & Ancillary', isComingSoon: true },
-  { id: 'biomed', title: 'Biomedical Eng', description: 'Medical device maintenance & calibration', icon: MonitorCheck, href: '#', category: 'Diagnostic & Ancillary', isComingSoon: true },
-  { id: 'molecular', title: 'Molecular Dx', description: 'PCR & DNA sequencing workflows', icon: Dna, href: '#', category: 'Diagnostic & Ancillary', isComingSoon: true },
-  { id: 'pharm-clinical', title: 'Clinical Pharmacy', description: 'TPN mixing & clinical drug counseling', icon: Pill, href: '#', category: 'Diagnostic & Ancillary', isComingSoon: true },
-
-  // --- HOSPITAL LOGISTICS (66-80) ---
-  { id: 'pharma', title: 'Central Pharmacy', description: 'Global drug distribution & narcotic logs', icon: Pill, href: '#', category: 'Hospital Logistics', isComingSoon: true },
-  { id: 'inventory', title: 'Inventory Control', description: 'Store management, re-order & PO logs', icon: Boxes, href: '#', category: 'Hospital Logistics', isComingSoon: true },
-  { id: 'scm', title: 'Supply Chain (SCM)', description: 'Vendor management & procurement engine', icon: Truck, href: '#', category: 'Hospital Logistics', isComingSoon: true },
-  { id: 'laundry', title: 'Linen & Laundry', description: 'Linen circulation & sanitation logs', icon: Archive, href: '#', category: 'Hospital Logistics', isComingSoon: true },
-  { id: 'dietary', title: 'Food & Nutrition', description: 'Dietetic orders & kitchen workflow', icon: ShoppingCart, href: '#', category: 'Hospital Logistics', isComingSoon: true },
-  { id: 'housekeep', title: 'Environmental Svcs', description: 'Cleaning schedules & bed-turnover tracking', icon: Archive, href: '#', category: 'Hospital Logistics', isComingSoon: true },
-  { id: 'mrd', title: 'Medical Records', description: 'Physical chart tracking & digital archival', icon: FolderOpen, href: '#', category: 'Hospital Logistics', isComingSoon: true },
-  { id: 'waste', title: 'Medical Waste', description: 'Bio-hazard tracking & disposal registers', icon: Leaf, href: '#', category: 'Hospital Logistics', isComingSoon: true },
-  { id: 'security-phys', title: 'Physical Security', description: 'CCTV, access cards & gate logs', icon: Lock, href: '#', category: 'Hospital Logistics', isComingSoon: true },
-
-  // --- REVENUE CYCLE - RCM (81-95) ---
-  { id: 'billing', title: 'Revenue Engine', description: 'Master billing ledger & charging rules', icon: CreditCard, href: '/settings/billing', category: 'Revenue Cycle' },
-  { id: 'insurance', title: 'Insurance / TPA', description: 'Payer contracts & pre-auth protocols', icon: Landmark, href: '#', category: 'Revenue Cycle', isComingSoon: true },
-  { id: 'rcm-audit', title: 'Financial Auditing', description: 'Leak detection & revenue reconciliation', icon: TrendingUp, href: '#', category: 'Revenue Cycle', isComingSoon: true },
-  { id: 'chargemaster', title: 'Global Fee Master', description: 'Departmental tariffs & service masters', icon: BarChart3, href: '#', category: 'Revenue Cycle', isComingSoon: true },
-  { id: 'discounts', title: 'Discount Engine', description: 'Corporate & patient waiver logic', icon: HandCoins, href: '#', category: 'Revenue Cycle', isComingSoon: true },
-  { id: 'claims', title: 'Claims Exchange', description: 'Electronic claim scrubbing & submission', icon: FilePlus, href: '#', category: 'Revenue Cycle', isComingSoon: true },
-  { id: 'ar-mgmt', title: 'Accounts Receivable', description: 'Aging reports & payment follow-up', icon: TrendingUp, href: '#', category: 'Revenue Cycle', isComingSoon: true },
-  { id: 'collections', title: 'Collections Hub', description: 'Patient balance & recovery workflows', icon: Wallet, href: '#', category: 'Revenue Cycle', isComingSoon: true },
-
-  // --- HUMAN CAPITAL & HR (96-110) ---
-  { id: 'staff', title: 'People Registry', description: 'Staff records, credentials & HR files', icon: Users, href: '/staff', category: 'People & HR' },
-  { id: 'payroll', title: 'Payroll Engine', description: 'Salary components & tax math logic', icon: Banknote, href: '#', category: 'People & HR', isComingSoon: true },
-  { id: 'attendance', title: 'Time & Attendance', description: 'Biometric logs & leave management', icon: Clock, href: '#', category: 'People & HR', isComingSoon: true },
-  { id: 'rostering', title: 'Clinical Rosters', description: 'Staff shift patterns & assignment rules', icon: History, href: '#', category: 'People & HR', isComingSoon: true },
-  { id: 'training', title: 'Skills & Training', description: 'CME credits & competency tracking', icon: GraduationCap, href: '#', category: 'People & HR', isComingSoon: true },
-  { id: 'recruitment', title: 'Talent Pipeline', description: 'Clinician recruitment & hiring logs', icon: UserPlus, href: '#', category: 'People & HR', isComingSoon: true },
-
-  // --- RESEARCH & PUBLIC HEALTH (111-125) ---
-  { id: 'trials', title: 'Clinical Trials', description: 'Trial protocols, IRB & subject logs', icon: SearchCode, href: '#', category: 'Public Health' },
-  { id: 'pop-health', title: 'Population Health', description: 'Risk profiling & epidemiology registries', icon: Globe2, href: '#', category: 'Public Health', isComingSoon: true },
-  { id: 'surveillance', title: 'Outbreak Watch', description: 'Real-time infectious disease tracking', icon: ActivityIcon, href: '#', category: 'Public Health', isComingSoon: true },
-  { id: 'genomic-db', title: 'Genomic Lake', description: 'Bio-bank and genetic sequencing registry', icon: Dna, href: '#', category: 'Public Health', isComingSoon: true },
-
-  // --- INFRASTRUCTURE & TECH (126-140) ---
-  { id: 'fhir-bridge', title: 'HL7 / FHIR Bridge', description: 'Interoperability & data exchange hub', icon: Share2, href: '#', category: 'Infrastructure' },
-  { id: 'api-mgmt', title: 'API Management', description: 'Key registry & developer access logs', icon: Terminal, href: '#', category: 'Infrastructure' },
-  { id: 'cloud-nodes', title: 'Cluster Health', description: 'Compute, memory & node distribution', icon: Cpu, href: '#', category: 'Infrastructure', isComingSoon: true },
-  { id: 'cyber', title: 'Cyber Defense', description: 'SSO, MFA & threat detection registry', icon: Lock, href: '#', category: 'Infrastructure' },
-  { id: 'it-support', title: 'IT Service Management', description: 'Internal ticket registry & asset health', icon: LifeBuoy, href: '#', category: 'Infrastructure', isComingSoon: true },
-];
-
-// Removed local BanknoteIcon helper as it's now imported as Banknote
-
-// Removed local BanknoteIcon helper as it's now imported as Banknote
-
 export default function SettingsPage() {
   const { t } = useTranslation('common');
+
+  const SETTINGS_DATA: SettingItem[] = [
+    // --- CORE GOVERNANCE (1-10) ---
+    { id: 'org', title: 'Global Enterprise', description: 'Multi-entity structure & legal hierarchy', icon: Landmark, href: '#', category: 'General Admin' },
+    { id: 'facility', title: t('settings_registry.facility_settings.title'), description: t('settings_registry.facility_settings.subtitle'), icon: Building2, href: '/settings/facility', category: 'General Admin' },
+    { id: 'locations', title: t('settings_registry.locations.title'), description: t('settings_registry.locations.subtitle'), icon: MapPin, href: '/settings/locations', category: 'General Admin' },
+    { id: 'branding', title: t('settings_registry.appearance.title'), description: t('settings_registry.appearance.subtitle'), icon: Palette, href: '/settings/appearance', category: 'General Admin' },
+    { id: 'timezone', title: 'Regional Master', description: 'Global calendars, currencies & timezones', icon: Globe, href: '/settings/localization', category: 'General Admin' },
+    { id: 'hours', title: 'Capacity Logic', description: 'Unit-level operational availability master', icon: Clock, href: '/settings/office-hours', category: 'General Admin' },
+    { id: 'tax-reg', title: 'Tax Jurisdictions', description: 'Multi-regional tax protocols and rules', icon: Landmark, href: '/settings/tax-jurisdictions', category: 'General Admin' },
+    { id: 'languages', title: 'Language Packs', description: 'Translation keys and local character sets', icon: Globe2, href: '/settings/languages', category: 'General Admin' },
+    { id: 'audit-root', title: 'Root Audit Logs', description: 'Lowest-level system access & mutation logs', icon: ShieldCheck, href: '#', category: 'General Admin', badge: 'Root' },
+    { id: 'entity-links', title: t('settings_registry.entity_linking.title'), description: t('settings_registry.entity_linking.subtitle'), icon: Share, href: '/settings/entity-linking', category: 'General Admin' },
+
+    // --- CLINICAL MASTERS - EPIC/CERNER SCALE (11-30) ---
+    { id: 'order-sets', title: t('settings_registry.order_sets.title'), description: t('settings_registry.order_sets.subtitle'), icon: Workflow, href: '/settings/order-sets', category: 'Clinical Masters' },
+    { id: 'drug-lib', title: t('settings_registry.formulary.title'), description: t('settings_registry.formulary.subtitle'), icon: Pill, href: '/settings/formulary', category: 'Clinical Masters' },
+    { id: 'proc-lib', title: t('settings_registry.procedures.title'), description: t('settings_registry.procedures.subtitle'), icon: Scissors, href: '/settings/procedures', category: 'Clinical Masters' },
+    { id: 'codes', title: t('settings_registry.clinical_coding.title'), description: t('settings_registry.clinical_coding.subtitle'), icon: Hash, href: '/settings/billing/codes', category: 'Clinical Masters' },
+    { id: 'templates', title: 'Documentation', description: 'Dynamic encounter forms & smart-text', icon: FileText, href: '/settings/templates', category: 'Clinical Masters' },
+    { id: 'allergies', title: t('settings_registry.allergies.title'), description: t('settings_registry.allergies.subtitle'), icon: ShieldAlert, href: '/settings/allergies', category: 'Clinical Masters' },
+    { id: 'vitals', title: t('settings_registry.vitals.title'), description: t('settings_registry.vitals.subtitle'), icon: Activity, href: '/settings/vitals', category: 'Clinical Masters' },
+    { id: 'consent-templates', title: t('settings_registry.consents.title'), description: t('settings_registry.consents.subtitle'), icon: FileCheck, href: '/settings/consents', category: 'Clinical Masters' },
+    { id: 'smart-triggers', title: t('settings_registry.smart_triggers.title'), description: t('settings_registry.smart_triggers.subtitle'), icon: Zap, href: '/settings/smart-triggers', category: 'Clinical Masters' },
+    { id: 'specimen-types', title: t('settings_registry.specimen_types.title'), description: t('settings_registry.specimen_types.subtitle'), icon: Syringe, href: '/settings/specimen-types', category: 'Clinical Masters' },
+    { id: 'care-plans', title: t('settings_registry.care_plans.title'), description: t('settings_registry.care_plans.subtitle'), icon: Workflow, href: '/settings/care-plans', category: 'Clinical Masters' },
+    { id: 'pharmaco', title: t('settings_registry.pharmaco.title'), description: t('settings_registry.pharmaco.subtitle'), icon: Dna, href: '/settings/pharmaco', category: 'Clinical Masters' },
+    { id: 'immunization', title: t('settings_registry.immunization.title'), description: t('settings_registry.immunization.subtitle'), icon: Syringe, href: '/settings/immunization', category: 'Clinical Masters' },
+    { id: 'diet-masters', title: 'Dietary Masters', description: 'Nutritional constraints & meal logic', icon: ShoppingCart, href: '/settings/dietary', category: 'Clinical Masters' },
+    { id: 'triage-rules', title: t('settings_registry.triage.title'), description: t('settings_registry.triage.subtitle'), icon: ActivityIcon, href: '/settings/triage-rules', category: 'Clinical Masters' },
+    { id: 'icu-acuity', title: t('settings_registry.icu.title'), description: t('settings_registry.icu.subtitle'), icon: Heart, href: '/settings/icu-acuity', category: 'Clinical Masters' },
+    { id: 'vte-risk', title: 'VTE Risk Master', description: 'Venous thromboembolism assessment rules', icon: Activity, href: '#', category: 'Clinical Masters', isComingSoon: true },
+    { id: 'fall-risk', title: 'Fall Assessment', description: 'Standardized fall-risk score logic', icon: Activity, href: '#', category: 'Clinical Masters', isComingSoon: true },
+    { id: 'wound-care', title: 'Wound Registry', description: 'Staging, image analysis & therapy rules', icon: Camera, href: '#', category: 'Clinical Masters', isComingSoon: true },
+    { id: 'patient-education', title: 'Patient Education', description: 'Manage patient education modules and content', icon: BookOpen, href: '/settings/patient-education', category: 'Clinical Masters', isComingSoon: false },
+    { id: 'dialysis-masters', title: t('settings_registry.dialysis.title'), description: t('settings_registry.dialysis.subtitle'), icon: Droplets, href: '/settings/dialysis-masters', category: 'Clinical Masters' },
+    { id: 'rehab-logic', title: 'Rehab Logic', description: 'Functional scoring & therapy goals', icon: Accessibility, href: '/settings/rehab-logic', category: 'Clinical Masters' },
+    { id: 'theatre-config', title: t('settings_registry.theatre.title'), description: t('settings_registry.theatre.subtitle'), icon: Scissors, href: '/settings/theatre-config', category: 'Clinical Masters' },
+    { id: 'maternity-logic', title: t('settings_registry.maternity.title'), description: t('settings_registry.maternity.subtitle'), icon: Baby, href: '/settings/maternity-logic', category: 'Clinical Masters' },
+
+    // --- SPECIALTY CARE UNITS (31-50) ---
+    { id: 'icu', title: 'Critical Care (ICU)', description: 'Ventilation protocols & acuity scoring', icon: Heart, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'er', title: 'Emergency / Triage', description: 'ESI triage logic & rapid response flows', icon: Activity, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'ot', title: 'Surgical Deck (OT)', description: 'Sterile cycles, pre-op & anesthesia logs', icon: Scissors, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'nicu', title: 'NICU / Pediatrics', description: 'Neo-natal growth & feeding protocols', icon: Crosshair, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'dialysis', title: 'Renal Dialysis', description: 'Cycle management & dialysis unit logic', icon: FlaskConical, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'oncology', title: 'Molecular Oncology', description: 'Chemotherapy regimens & staging logic', icon: Dna, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'ivf', title: 'Reproductive Med', description: 'Embryology lab flows & IVF cycles', icon: Syringe, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'cardio', title: 'Cardiology Center', description: 'Holter, Stress & Cath-lab protocols', icon: HeartPulse, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'mental', title: 'Psychiatry Unit', description: 'Mental health assessment & safety logs', icon: ShieldCheck, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'ophthalmology', title: 'Ophthalmology', description: 'Visual acuity & retinopathy screening', icon: Eye, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'ent', title: 'ENT / Audiology', description: 'Hearing tests & endoscopic procedure logs', icon: Ear, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'derma', title: 'Dermatology Hub', description: 'Skin lesion imaging & biopsy protocols', icon: Camera, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'ortho', title: 'Orthopedics / PT', description: 'Physiotherapy & fracture management', icon: Activity, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'pulmo', title: 'Pulmonology', description: 'PFT registers & respiratory therapy', icon: Wind, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'gastro', title: 'Gastroenterology', description: 'Endoscopy & colonoscopy workflow rules', icon: Activity, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'neuro', title: 'Neurology / EEG', description: 'Stroke protocols & EEG scan registry', icon: Activity, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'transplant', title: 'Transplant Hub', description: 'Waitlist management & organ matching', icon: Anchor, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'palliative', title: 'Palliative Care', description: 'Pain management & end-of-life care', icon: HeartHandshake, href: '#', category: 'Medical Specialty', isComingSoon: true },
+    { id: 'telemed', title: 'Virtual Health', description: 'Tele-consultation & remote sensing', icon: Video, href: '#', category: 'Medical Specialty', isComingSoon: true },
+
+    // --- DIAGNOSTICS & ANCILLARY (51-65) ---
+    { id: 'lis', title: t('settings_registry.lis.title'), description: t('settings_registry.lis.subtitle'), icon: Microscope, href: '/settings/lis', category: 'Diagnostic & Ancillary' },
+    { id: 'ris', title: t('settings_registry.ris.title'), description: t('settings_registry.ris.subtitle'), icon: Layers, href: '/settings/ris', category: 'Diagnostic & Ancillary' },
+    { id: 'path', title: t('settings_registry.pathology.title'), description: t('settings_registry.pathology.subtitle'), icon: LabIcon, href: '/settings/pathology', category: 'Diagnostic & Ancillary' },
+    { id: 'blood', title: t('settings_registry.blood_bank.title'), description: t('settings_registry.blood_bank.subtitle'), icon: Syringe, href: '/settings/blood-bank', category: 'Diagnostic & Ancillary' },
+    { id: 'cssd', title: t('settings_registry.cssd.title'), description: t('settings_registry.cssd.subtitle'), icon: ShieldCheck, href: '/settings/cssd', category: 'Diagnostic & Ancillary' },
+    { id: 'biomed', title: t('settings_registry.biomed.title'), description: t('settings_registry.biomed.subtitle'), icon: MonitorCheck, href: '/settings/biomed', category: 'Diagnostic & Ancillary' },
+    { id: 'molecular', title: 'Molecular Dx', description: 'PCR & DNA sequencing workflows', icon: Dna, href: '#', category: 'Diagnostic & Ancillary', isComingSoon: true },
+    { id: 'pharm-clinical', title: 'Clinical Pharmacy', description: 'TPN mixing & clinical drug counseling', icon: Pill, href: '#', category: 'Diagnostic & Ancillary', isComingSoon: true },
+
+    // --- HOSPITAL LOGISTICS (66-80) ---
+    { id: 'pharma', title: t('settings_registry.central_pharmacy.title'), description: t('settings_registry.central_pharmacy.subtitle'), icon: Pill, href: '/settings/central-pharmacy', category: 'Hospital Logistics' },
+    { id: 'inventory', title: t('settings_registry.inventory.title'), description: t('settings_registry.inventory.subtitle'), icon: Boxes, href: '/settings/inventory', category: 'Hospital Logistics' },
+    { id: 'scm', title: t('settings_registry.scm.title'), description: t('settings_registry.scm.subtitle'), icon: Truck, href: '/settings/scm', category: 'Hospital Logistics' },
+    { id: 'laundry', title: 'Linen & Laundry', description: 'Linen circulation & sanitation logs', icon: Archive, href: '#', category: 'Hospital Logistics', isComingSoon: true },
+    { id: 'dietary', title: 'Food & Nutrition', description: 'Dietetic orders & kitchen workflow', icon: ShoppingCart, href: '/settings/dietary', category: 'Hospital Logistics' },
+    { id: 'housekeep', title: 'Environmental Svcs', description: 'Cleaning schedules & bed-turnover tracking', icon: Archive, href: '#', category: 'Hospital Logistics', isComingSoon: true },
+    { id: 'mrd', title: t('settings_registry.mrd.title'), description: t('settings_registry.mrd.subtitle'), icon: FolderOpen, href: '/settings/mrd', category: 'Hospital Logistics' },
+    { id: 'waste', title: 'Medical Waste', description: 'Bio-hazard tracking & disposal registers', icon: Leaf, href: '#', category: 'Hospital Logistics', isComingSoon: true },
+    { id: 'security-phys', title: 'Physical Security', description: 'CCTV, access cards & gate logs', icon: Lock, href: '#', category: 'Hospital Logistics', isComingSoon: true },
+
+    // --- REVENUE CYCLE - RCM (81-95) ---
+    { id: 'billing', title: 'Billing & Accounting', description: 'Chart of accounts, billing codes, payers & fee schedules', icon: CreditCard, href: '/settings/billing', category: 'Revenue Cycle' },
+    { id: 'insurance', title: t('settings_registry.insurance_registry.title'), description: t('settings_registry.insurance_registry.subtitle'), icon: Landmark, href: '/settings/insurance', category: 'Revenue Cycle' },
+    { id: 'chargemaster', title: t('settings_registry.chargemaster.title'), description: t('settings_registry.chargemaster.subtitle'), icon: BarChart3, href: '/settings/chargemaster', category: 'Revenue Cycle' },
+    { id: 'claims', title: t('settings_registry.claims.title'), description: t('settings_registry.claims.subtitle'), icon: FilePlus, href: '/settings/claims', category: 'Revenue Cycle' },
+    { id: 'ar-mgmt', title: t('settings_registry.ar_mgmt.title'), description: t('settings_registry.ar_mgmt.subtitle'), icon: TrendingUp, href: '/settings/ar-mgmt', category: 'Revenue Cycle' },
+    { id: 'collections', title: t('settings_registry.collections.title'), description: t('settings_registry.collections.subtitle'), icon: Wallet, href: '/settings/collections', category: 'Revenue Cycle' },
+    { id: 'rcm-audit', title: t('settings_registry.financial_audit.title'), description: t('settings_registry.financial_audit.subtitle'), icon: ShieldCheck, href: '/settings/financial-audit', category: 'Revenue Cycle' },
+
+    // --- HUMAN CAPITAL & HR (96-110) ---
+    { id: 'staff', title: 'People Registry', description: 'Staff records, credentials & HR files', icon: Users, href: '/staff', category: 'People & HR' },
+    { id: 'payroll', title: t('settings_registry.payroll.title'), description: t('settings_registry.payroll.subtitle'), icon: Banknote, href: '/settings/payroll', category: 'People & HR' },
+    { id: 'attendance', title: t('settings_registry.attendance.title'), description: t('settings_registry.attendance.subtitle'), icon: Clock, href: '/settings/attendance', category: 'People & HR' },
+    { id: 'rostering', title: t('settings_registry.rostering.title'), description: t('settings_registry.rostering.subtitle'), icon: History, href: '/settings/rostering', category: 'People & HR' },
+    { id: 'training', title: t('settings_registry.training.title'), description: t('settings_registry.training.subtitle'), icon: GraduationCap, href: '/settings/training', category: 'People & HR' },
+    { id: 'recruitment', title: t('settings_registry.recruitment.title'), description: t('settings_registry.recruitment.subtitle'), icon: Rocket, href: '/settings/recruitment', category: 'People & HR' },
+
+    // --- RESEARCH & PUBLIC HEALTH (111-125) ---
+    { id: 'trials', title: 'Clinical Trials', description: 'Trial protocols, IRB & subject logs', icon: SearchCode, href: '#', category: 'Public Health' },
+    { id: 'pop-health', title: t('settings_registry.pop_health.title'), description: t('settings_registry.pop_health.subtitle'), icon: Globe2, href: '/settings/pop-health', category: 'Public Health' },
+    { id: 'surveillance', title: t('settings_registry.surveillance.title'), description: t('settings_registry.surveillance.subtitle'), icon: ShieldAlert, href: '/settings/surveillance', category: 'Public Health' },
+    { id: 'genomic-db', title: 'Genomic Lake', description: 'Bio-bank and genetic sequencing registry', icon: Dna, href: '#', category: 'Public Health', isComingSoon: true },
+
+    // --- INFRASTRUCTURE & TECH (126-140) ---
+    { id: 'fhir-bridge', title: t('settings_registry.fhir_bridge.title'), description: t('settings_registry.fhir_bridge.subtitle'), icon: Share2, href: '/settings/fhir-bridge', category: 'Infrastructure' },
+    { id: 'api-mgmt', title: t('settings_registry.api_mgmt.title'), description: t('settings_registry.api_mgmt.subtitle'), icon: Terminal, href: '/settings/api-mgmt', category: 'Infrastructure' },
+    { id: 'cloud-nodes', title: 'Cluster Health', description: 'Compute, memory & node distribution', icon: Cpu, href: '#', category: 'Infrastructure', isComingSoon: true },
+    { id: 'cyber-defense', title: t('settings_registry.cyber_defense.title'), description: t('settings_registry.cyber_defense.subtitle'), icon: ShieldCheck, href: '/settings/cyber-defense', category: 'Infrastructure' },
+    { id: 'cyber', title: 'Cyber Defense', description: 'SSO, MFA & threat detection registry', icon: Lock, href: '#', category: 'Infrastructure' },
+    { id: 'it-support', title: 'IT Service Management', description: 'Internal ticket registry & asset health', icon: LifeBuoy, href: '#', category: 'Infrastructure', isComingSoon: true },
+  ];
+
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [showGuide, setShowGuide] = useState(false);

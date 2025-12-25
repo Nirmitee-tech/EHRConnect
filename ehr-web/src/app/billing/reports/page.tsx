@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import billingService from '@/services/billing.service';
+import { useApiHeaders } from '@/hooks/useApiHeaders';
 import { useTranslation } from '@/i18n/client';
 import '@/i18n/client';
 
@@ -21,25 +22,45 @@ export default function ReportsPage() {
   const [revenueData, setRevenueData] = useState<any[]>([]);
   const [denialData, setDenialData] = useState<any[]>([]);
   const [kpis, setKPIs] = useState<any>(null);
+  const headers = useApiHeaders();
 
   useEffect(() => {
+    if (!headers['x-org-id']) {
+      return;
+    }
     loadReports();
-  }, [dateRange, groupBy]);
+  }, [dateRange, groupBy, headers['x-org-id']]);
 
   const loadReports = async () => {
+    if (!headers['x-org-id']) {
+      return;
+    }
     try {
       setLoading(true);
 
       // Load KPIs
-      const kpiData = await billingService.getDashboardKPIs(dateRange.startDate, dateRange.endDate);
+      const kpiData = await billingService.getDashboardKPIs(
+        dateRange.startDate,
+        dateRange.endDate,
+        headers
+      );
       setKPIs(kpiData);
 
       // Load Revenue Report
-      const revenue = await billingService.getRevenueReport(dateRange.startDate, dateRange.endDate, groupBy);
+      const revenue = await billingService.getRevenueReport(
+        dateRange.startDate,
+        dateRange.endDate,
+        groupBy,
+        headers
+      );
       setRevenueData(revenue);
 
       // Load Denials Report
-      const denials = await billingService.getDenialsReport(dateRange.startDate, dateRange.endDate);
+      const denials = await billingService.getDenialsReport(
+        dateRange.startDate,
+        dateRange.endDate,
+        headers
+      );
       setDenialData(denials);
     } catch (error) {
       console.error('Failed to load reports:', error);

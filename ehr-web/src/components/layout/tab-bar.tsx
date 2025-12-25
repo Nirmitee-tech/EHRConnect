@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTabs } from '@/contexts/tab-context';
 import { useUIPreferences } from '@/contexts/ui-preferences-context';
+import { useTheme } from '@/contexts/theme-context';
 import { X, MoreHorizontal, XCircle, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from '@/i18n/client';
 
@@ -30,7 +31,8 @@ const TabItem = memo(({
   onDragLeave,
   onDrop,
   onDragEnd,
-  closeLabel
+  closeLabel,
+  themeSettings
 }: {
   tab: any;
   isActive: boolean;
@@ -45,6 +47,7 @@ const TabItem = memo(({
   onDrop: (e: React.DragEvent, tabId: string) => void;
   onDragEnd: () => void;
   closeLabel: string;
+  themeSettings: any;
 }) => (
   <div
     draggable
@@ -59,18 +62,29 @@ const TabItem = memo(({
       group flex items-center gap-2 px-3 py-1.5 rounded-t-md cursor-pointer
       min-w-[120px] max-w-[200px] transition-all
       ${isActive
-        ? 'bg-white border-t border-x border-gray-300 shadow-sm'
-        : 'bg-gray-200 hover:bg-gray-300 border-t border-x border-transparent'
+        ? 'shadow-sm'
+        : 'border-t border-x border-transparent'
       }
       ${isDragging ? 'opacity-50' : ''}
-      ${isDragOver ? 'border-l-2 border-l-primary' : ''}
     `}
+    style={{
+      backgroundColor: isActive ? '#ffffff' : '#F3F4F6',
+      borderTopColor: isActive ? themeSettings.primaryColor : 'transparent',
+      borderLeftColor: isActive ? themeSettings.primaryColor : isDragOver ? themeSettings.primaryColor : 'transparent',
+      borderRightColor: isActive ? themeSettings.primaryColor : 'transparent',
+      borderTopWidth: isActive ? '2px' : '1px',
+      borderLeftWidth: isDragOver ? '2px' : '1px',
+      borderRightWidth: '1px'
+    }}
   >
     {tab.icon && React.isValidElement(tab.icon) && (
       <span className="flex-shrink-0">{tab.icon}</span>
     )}
 
-    <span className="flex-1 truncate text-sm font-medium text-gray-700">
+    <span
+      className="flex-1 truncate text-sm font-medium"
+      style={{ color: isActive ? themeSettings.primaryColor : '#374151' }}
+    >
       {tab.title}
     </span>
 
@@ -79,7 +93,7 @@ const TabItem = memo(({
         onClick={(e) => onCloseTab(e, tab.id)}
         className={`
           flex-shrink-0 rounded p-0.5 transition-colors
-          ${isActive ? 'hover:bg-gray-200' : 'opacity-0 group-hover:opacity-100 hover:bg-gray-400'}
+          ${isActive ? 'hover:bg-gray-100' : 'opacity-0 group-hover:opacity-100 hover:bg-gray-300'}
         `}
         aria-label={closeLabel}
       >
@@ -96,6 +110,7 @@ export const TabBar = memo(function TabBar() {
   const pathname = usePathname();
   const { tabs, activeTabId, setActiveTab, closeTab, closeAllTabs, closeOtherTabs } = useTabs();
   const { hideHeaderOnDetailPages, setHideHeaderOnDetailPages } = useUIPreferences();
+  const { themeSettings } = useTheme();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tabId: string } | null>(null);
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
@@ -206,6 +221,7 @@ export const TabBar = memo(function TabBar() {
                 onDrop={handleDrop}
                 onDragEnd={handleDragEnd}
                 closeLabel={t('tabs.close')}
+                themeSettings={themeSettings}
               />
             );
           })}

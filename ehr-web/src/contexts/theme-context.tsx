@@ -7,12 +7,14 @@ import { getContrastColor } from '@/lib/utils';
 export interface ThemeSettings {
   primaryColor: string;
   secondaryColor: string;
+  tertiaryColor?: string;        // Additional color for UI elements
+  quaternaryColor?: string;      // Fourth color option
+  accentColor: string;
   sidebarBackgroundColor: string;
   sidebarTextColor: string;
   sidebarActiveColor: string;
   sidebarActiveTextColor?: string | null;
   primaryTextColor?: string | null;
-  accentColor: string;
   fontFamily: string;
   logoUrl: string | null;
   faviconUrl: string | null;
@@ -30,10 +32,12 @@ interface ThemeContextType {
 const defaultTheme: ThemeSettings = {
   primaryColor: '#4A90E2',
   secondaryColor: '#9B59B6',
+  tertiaryColor: '#F59E0B',     // Orange/Amber for warnings, highlights
+  quaternaryColor: '#8B5CF6',   // Purple for special elements
+  accentColor: '#10B981',
   sidebarBackgroundColor: '#0F1E56',
   sidebarTextColor: '#B0B7D0',
   sidebarActiveColor: '#3342A5',
-  accentColor: '#10B981',
   fontFamily: 'Inter, sans-serif',
   logoUrl: null,
   faviconUrl: null,
@@ -104,12 +108,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === 'undefined') return;
 
     const root = document.documentElement;
+
+    // Core colors
     root.style.setProperty('--theme-primary', theme.primaryColor);
     root.style.setProperty('--theme-secondary', theme.secondaryColor);
+    root.style.setProperty('--theme-tertiary', theme.tertiaryColor || '#F59E0B');
+    root.style.setProperty('--theme-quaternary', theme.quaternaryColor || '#8B5CF6');
+    root.style.setProperty('--theme-accent', theme.accentColor);
+
+    // Sidebar colors
     root.style.setProperty('--theme-sidebar-bg', theme.sidebarBackgroundColor);
     root.style.setProperty('--theme-sidebar-text', theme.sidebarTextColor);
     root.style.setProperty('--theme-sidebar-active', theme.sidebarActiveColor);
-    root.style.setProperty('--theme-accent', theme.accentColor);
+
+    // Font
     root.style.setProperty('--theme-font-family', theme.fontFamily);
 
     // Dynamic Contrast Intelligence

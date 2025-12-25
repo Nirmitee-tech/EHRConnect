@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useTheme } from '@/contexts/theme-context'
+import { getContrastColor } from '@/lib/utils'
 import { useTranslation } from '@/i18n/client'
 import '@/i18n/client'
 
@@ -42,20 +43,28 @@ export default function DashboardPage() {
   const currentHour = new Date().getHours()
   const greeting = currentHour < 12 ? t('dashboard.good_morning') : currentHour < 18 ? t('dashboard.good_afternoon') : t('dashboard.good_evening')
 
+  // Auto-detect text color based on background
+  const headerBg = themeSettings.quaternaryColor || '#8B5CF6'
+  const headerTextColor = getContrastColor(headerBg) === 'white' ? '#FFFFFF' : '#000000'
+  const headerTextMuted = getContrastColor(headerBg) === 'white' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
+  const headerBorder = getContrastColor(headerBg) === 'white' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'
+  const dropdownBg = getContrastColor(headerBg) === 'white' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'
+  const dropdownBorder = getContrastColor(headerBg) === 'white' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'
+
   return (
     <div className="h-full flex flex-col bg-gray-50 -m-6">
       {/* Sticky Header with Theme Sidebar Color */}
       <div
-        className="sticky top-0 z-50 text-white shadow-lg"
-        style={{ backgroundColor: themeSettings.sidebarBackgroundColor }}
+        className="sticky top-0 z-50 shadow-lg"
+        style={{ backgroundColor: headerBg, color: headerTextColor }}
       >
         <div className="px-6 py-3">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-lg font-semibold">
+              <h1 className="text-lg font-semibold" style={{ color: headerTextColor }}>
                 {greeting}, {userName}
               </h1>
-              <p className="text-xs mt-0.5" style={{ color: themeSettings.sidebarTextColor }}>
+              <p className="text-xs mt-0.5" style={{ color: headerTextMuted }}>
                 {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
               </p>
             </div>
@@ -64,9 +73,16 @@ export default function DashboardPage() {
               {/* Filters */}
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" style={{ color: themeSettings.sidebarTextColor }} />
+                  <Calendar className="h-4 w-4" style={{ color: headerTextColor }} />
                   <Select value={dateRange} onValueChange={setDateRange}>
-                    <SelectTrigger className="w-[140px] h-8 bg-white/10 border-white/20 text-white text-xs">
+                    <SelectTrigger
+                      className="w-[140px] h-8 text-xs"
+                      style={{
+                        backgroundColor: dropdownBg,
+                        borderColor: dropdownBorder,
+                        color: headerTextColor
+                      }}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -80,9 +96,16 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" style={{ color: themeSettings.sidebarTextColor }} />
+                  <MapPin className="h-4 w-4" style={{ color: headerTextColor }} />
                   <Select value={location} onValueChange={setLocation}>
-                    <SelectTrigger className="w-[140px] h-8 bg-white/10 border-white/20 text-white text-xs">
+                    <SelectTrigger
+                      className="w-[140px] h-8 text-xs"
+                      style={{
+                        backgroundColor: dropdownBg,
+                        borderColor: dropdownBorder,
+                        color: headerTextColor
+                      }}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -95,9 +118,16 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" style={{ color: themeSettings.sidebarTextColor }} />
+                  <Building2 className="h-4 w-4" style={{ color: headerTextColor }} />
                   <Select value={department} onValueChange={setDepartment}>
-                    <SelectTrigger className="w-[140px] h-8 bg-white/10 border-white/20 text-white text-xs">
+                    <SelectTrigger
+                      className="w-[140px] h-8 text-xs"
+                      style={{
+                        backgroundColor: dropdownBg,
+                        borderColor: dropdownBorder,
+                        color: headerTextColor
+                      }}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -110,10 +140,10 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="text-right border-l border-white/20 pl-6">
-                <div className="text-xs text-white/70 uppercase tracking-wider">{t('dashboard.system_status')}</div>
-                <div className="flex items-center gap-1.5 text-white text-xs font-medium mt-0.5">
-                  <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+              <div className="text-right pl-6" style={{ borderLeft: `1px solid ${headerBorder}` }}>
+                <div className="text-xs uppercase tracking-wider" style={{ color: headerTextMuted }}>{t('dashboard.system_status')}</div>
+                <div className="flex items-center gap-1.5 text-xs font-medium mt-0.5" style={{ color: headerTextColor }}>
+                  <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: themeSettings.accentColor }} />
                   {t('dashboard.all_systems_operational')}
                 </div>
               </div>
@@ -122,60 +152,72 @@ export default function DashboardPage() {
         </div>
 
         {/* Tabs Navigation */}
-        <div className="border-t border-white/10">
+        <div style={{ borderTop: `1px solid ${headerBorder}` }}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="h-11 bg-transparent border-0 p-0 px-6 w-full justify-start rounded-none">
               <TabsTrigger
                 value="executive"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-4 py-2 text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-4 py-2 transition-all relative"
                 style={{
-                  backgroundColor: activeTab === 'executive' ? themeSettings.sidebarActiveColor : undefined,
-                  color: activeTab === 'executive' ? '#ffffff' : undefined
-                }}
+                  color: activeTab === 'executive' ? headerTextColor : headerTextMuted,
+                  borderBottom: activeTab === 'executive' ? `3px solid ${themeSettings.accentColor}` : '3px solid transparent',
+                  backgroundColor: activeTab === 'executive' ? 'transparent' : 'transparent',
+                  '--hover-bg': dropdownBg
+                } as React.CSSProperties}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = dropdownBg}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <LayoutDashboard className="h-4 w-4 mr-2" />
                 {t('dashboard.executive')}
               </TabsTrigger>
               <TabsTrigger
                 value="clinical"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-4 py-2 text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-4 py-2 transition-all relative"
                 style={{
-                  backgroundColor: activeTab === 'clinical' ? themeSettings.sidebarActiveColor : undefined,
-                  color: activeTab === 'clinical' ? '#ffffff' : undefined
+                  color: activeTab === 'clinical' ? headerTextColor : headerTextMuted,
+                  borderBottom: activeTab === 'clinical' ? `3px solid ${themeSettings.accentColor}` : '3px solid transparent'
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = dropdownBg}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <Activity className="h-4 w-4 mr-2" />
                 {t('dashboard.clinical')}
               </TabsTrigger>
               <TabsTrigger
                 value="operations"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-4 py-2 text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-4 py-2 transition-all relative"
                 style={{
-                  backgroundColor: activeTab === 'operations' ? themeSettings.sidebarActiveColor : undefined,
-                  color: activeTab === 'operations' ? '#ffffff' : undefined
+                  color: activeTab === 'operations' ? headerTextColor : headerTextMuted,
+                  borderBottom: activeTab === 'operations' ? `3px solid ${themeSettings.accentColor}` : '3px solid transparent'
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = dropdownBg}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <Building2 className="h-4 w-4 mr-2" />
                 {t('dashboard.operations')}
               </TabsTrigger>
               <TabsTrigger
                 value="rcm"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-4 py-2 text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-4 py-2 transition-all relative"
                 style={{
-                  backgroundColor: activeTab === 'rcm' ? themeSettings.sidebarActiveColor : undefined,
-                  color: activeTab === 'rcm' ? '#ffffff' : undefined
+                  color: activeTab === 'rcm' ? headerTextColor : headerTextMuted,
+                  borderBottom: activeTab === 'rcm' ? `3px solid ${themeSettings.accentColor}` : '3px solid transparent'
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = dropdownBg}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <DollarSign className="h-4 w-4 mr-2" />
                 {t('dashboard.revenue_cycle')}
               </TabsTrigger>
               <TabsTrigger
                 value="quality"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-4 py-2 text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-4 py-2 transition-all relative"
                 style={{
-                  backgroundColor: activeTab === 'quality' ? themeSettings.sidebarActiveColor : undefined,
-                  color: activeTab === 'quality' ? '#ffffff' : undefined
+                  color: activeTab === 'quality' ? headerTextColor : headerTextMuted,
+                  borderBottom: activeTab === 'quality' ? `3px solid ${themeSettings.accentColor}` : '3px solid transparent'
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = dropdownBg}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <TrendingUp className="h-4 w-4 mr-2" />
                 {t('dashboard.quality')}

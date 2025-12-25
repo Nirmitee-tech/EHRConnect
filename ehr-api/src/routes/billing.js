@@ -863,8 +863,28 @@ router.get('/masters/fee-schedule', async (req, res) => {
  */
 router.get('/dashboard/kpis', async (req, res) => {
   try {
-    const startDate = req.query.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const endDate = req.query.endDate || new Date().toISOString().split('T')[0];
+    const normalizeDateParam = (value) => {
+      if (typeof value !== 'string' || value.trim() === '' || value === 'undefined' || value === 'null') {
+        return undefined;
+      }
+
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return value;
+      }
+
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) {
+        return undefined;
+      }
+
+      return parsed.toISOString().split('T')[0];
+    };
+
+    const startParam = normalizeDateParam(req.query.startDate);
+    const endParam = normalizeDateParam(req.query.endDate);
+    const startDate =
+      startParam || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const endDate = endParam || new Date().toISOString().split('T')[0];
 
     const kpis = await billingService.getDashboardKPIs(req.orgId, startDate, endDate);
     res.json(kpis);
@@ -1137,6 +1157,149 @@ router.delete('/masters/payers/:id', async (req, res) => {
       error: 'Failed to delete payer',
       message: error.message,
     });
+  }
+});
+
+// =====================================================
+// ENHANCED PAYERS & PROVIDERS ENDPOINTS (using new services)
+// =====================================================
+
+const billingPayersService = require('../services/billing-payers.service');
+const billingProvidersService = require('../services/billing-providers.service');
+
+/**
+ * GET /api/billing/payers
+ * Enhanced payers list with filters
+ */
+router.get('/payers', async (req, res) => {
+  try {
+    const result = await billingPayersService.getPayers(req.query);
+    res.json(result);
+  } catch (error) {
+    console.error('Get payers error:', error);
+    res.status(500).json({ error: 'Failed to fetch payers', message: error.message });
+  }
+});
+
+/**
+ * GET /api/billing/payers/:id
+ * Get payer by ID
+ */
+router.get('/payers/:id', async (req, res) => {
+  try {
+    const payer = await billingPayersService.getPayerById(req.params.id);
+    if (!payer) {
+      return res.status(404).json({ error: 'Payer not found' });
+    }
+    res.json(payer);
+  } catch (error) {
+    console.error('Get payer error:', error);
+    res.status(500).json({ error: 'Failed to fetch payer', message: error.message });
+  }
+});
+
+/**
+ * POST /api/billing/payers
+ * Create payer
+ */
+router.post('/payers', async (req, res) => {
+  try {
+    const payer = await billingPayersService.createPayer(req.body);
+    res.status(201).json(payer);
+  } catch (error) {
+    console.error('Create payer error:', error);
+    res.status(500).json({ error: 'Failed to create payer', message: error.message });
+  }
+});
+
+/**
+ * PUT /api/billing/payers/:id
+ * Update payer
+ */
+router.put('/payers/:id', async (req, res) => {
+  try {
+    const payer = await billingPayersService.updatePayer(req.params.id, req.body);
+    res.json(payer);
+  } catch (error) {
+    console.error('Update payer error:', error);
+    res.status(500).json({ error: 'Failed to update payer', message: error.message });
+  }
+});
+
+/**
+ * GET /api/billing/providers
+ * Enhanced providers list with filters
+ */
+router.get('/providers', async (req, res) => {
+  try {
+    const orgId = req.user?.orgId || req.query.orgId;
+    const result = await billingProvidersService.getProviders(orgId, req.query);
+    res.json(result);
+  } catch (error) {
+    console.error('Get providers error:', error);
+    res.status(500).json({ error: 'Failed to fetch providers', message: error.message });
+  }
+});
+
+/**
+ * GET /api/billing/providers/:id
+ * Get provider by ID
+ */
+router.get('/providers/:id', async (req, res) => {
+  try {
+    const orgId = req.user?.orgId || req.query.orgId;
+    const provider = await billingProvidersService.getProviderById(orgId, req.params.id);
+    if (!provider) {
+      return res.status(404).json({ error: 'Provider not found' });
+    }
+    res.json(provider);
+  } catch (error) {
+    console.error('Get provider error:', error);
+    res.status(500).json({ error: 'Failed to fetch provider', message: error.message });
+  }
+});
+
+/**
+ * GET /api/billing/providers/verify-npi/:npi
+ * Verify NPI with NPPES registry
+ */
+router.get('/providers/verify-npi/:npi', async (req, res) => {
+  try {
+    const result = await billingProvidersService.verifyNPI(req.params.npi);
+    res.json(result);
+  } catch (error) {
+    console.error('Verify NPI error:', error);
+    res.status(500).json({ error: 'Failed to verify NPI', message: error.message });
+  }
+});
+
+/**
+ * POST /api/billing/providers
+ * Create provider
+ */
+router.post('/providers', async (req, res) => {
+  try {
+    const orgId = req.user?.orgId || req.body.orgId;
+    const provider = await billingProvidersService.createProvider(orgId, req.body);
+    res.status(201).json(provider);
+  } catch (error) {
+    console.error('Create provider error:', error);
+    res.status(500).json({ error: 'Failed to create provider', message: error.message });
+  }
+});
+
+/**
+ * PUT /api/billing/providers/:id
+ * Update provider
+ */
+router.put('/providers/:id', async (req, res) => {
+  try {
+    const orgId = req.user?.orgId || req.body.orgId;
+    const provider = await billingProvidersService.updateProvider(orgId, req.params.id, req.body);
+    res.json(provider);
+  } catch (error) {
+    console.error('Update provider error:', error);
+    res.status(500).json({ error: 'Failed to update provider', message: error.message });
   }
 });
 

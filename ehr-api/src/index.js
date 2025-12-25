@@ -21,6 +21,11 @@ const userRoutes = require('./routes/users');
 const userDataRoutes = require('./routes/user-data');
 const onboardingRoutes = require('./routes/onboarding');
 const billingRoutes = require('./routes/billing');
+const accountingRoutes = require('./routes/accounting.routes');
+const billingCodesRoutes = require('./routes/billing-codes.routes');
+const billingFeeSchedulesRoutes = require('./routes/billing-fee-schedules.routes');
+const billingPaymentGatewaysRoutes = require('./routes/billing-payment-gateways.routes');
+const billingSettingsRoutes = require('./routes/billing-settings.routes');
 const inventoryRoutes = require('./routes/inventory');
 const inventoryMastersRoutes = require('./routes/inventory-masters');
 const auditRoutes = require('./routes/audit');
@@ -247,6 +252,11 @@ app.use('/api/roles', rolesRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/user', userDataRoutes); // Separate endpoints for user data with Redis caching
 app.use('/api/billing', billingRoutes);
+app.use('/api/accounting', accountingRoutes); // Accounting master data routes
+app.use('/api/billing/codes', billingCodesRoutes); // Billing codes (CPT/ICD/modifiers) routes
+app.use('/api/billing/fee-schedules', billingFeeSchedulesRoutes); // Fee schedules routes
+app.use('/api/billing/payment-gateways', billingPaymentGatewaysRoutes); // Payment gateways routes
+app.use('/api/billing/settings', billingSettingsRoutes); // Billing settings & validation routes
 app.use('/api/inventory/masters', inventoryMastersRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/orgs/:orgId/audit', auditRoutes);

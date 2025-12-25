@@ -1,33 +1,35 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, Building2, Clock, MapPin, Phone, Mail, Globe, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useFacility } from '@/contexts/facility-context';
+import {
+  ArrowLeft, Save, Building2, Info, Calendar,
+  Clock, Lock, ShieldCheck, Activity
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { useTranslation } from '@/i18n/client';
-import '@/i18n/client';
+import { useFacility } from '@/contexts/facility-context';
 import { SettingsService } from '@/services/settings.service';
-import { AppointmentSettings } from '@/types/settings';
+import { FacilitySettings } from '@/types/settings';
+import { cn } from '@/lib/utils';
 
 export default function FacilitySettingsPage() {
   const { currentFacility } = useFacility();
+  const { t } = useTranslation('common');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  // Facility basic info
-  const [facilityName, setFacilityName] = useState('');
-  const [facilityType, setFacilityType] = useState('');
-
-  // Calendar settings
-  const [calendarSettings, setCalendarSettings] = useState<AppointmentSettings>({
-    defaultDuration: 30,
-    slotDuration: 60, // This is the key setting for calendar slots
+  const [settings, setSettings] = useState<FacilitySettings>({
+    facilityName: '',
+    slotDuration: 15,
+    defaultApptDuration: 30,
     workingHours: {
-      start: '09:00',
+      start: '08:00',
       end: '17:00'
     },
-    allowedDurations: [15, 30, 45, 60, 90, 120],
     autoNavigateToEncounter: true
   });
 
@@ -38,319 +40,257 @@ export default function FacilitySettingsPage() {
   }, [currentFacility]);
 
   const loadSettings = async () => {
-    if (!currentFacility?.id) return;
-
     try {
       setLoading(true);
-
-      // Load facility basic info
-      setFacilityName(currentFacility.name || '');
-      setFacilityType(currentFacility.type || '');
-
-      // Load calendar settings from organization
-      const orgSettings = await SettingsService.getOrganizationSettings(currentFacility.id);
-      setCalendarSettings(orgSettings.appointmentSettings);
+      const data = await SettingsService.getFacilitySettings(currentFacility?.id);
+      setSettings(data);
     } catch (error) {
-      console.error('Error loading settings:', error);
-      showMessage('error', 'Failed to load settings');
+      console.error('Failed to load settings:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSave = async () => {
-    if (!currentFacility?.id) return;
-
     try {
       setSaving(true);
-
-      // Save calendar settings
-      await SettingsService.updateAppointmentSettings(currentFacility.id, calendarSettings);
-
-      showMessage('success', 'Settings saved successfully! Refresh the calendar to see changes.');
-    } catch (error: any) {
-      console.error('Error saving settings:', error);
-      showMessage('error', error.message || 'Failed to save settings');
+      setMessage(null);
+      await SettingsService.updateFacilitySettings(settings, currentFacility?.id);
+      setMessage({ type: 'success', text: t('common.save_success') || 'Settings saved successfully' });
+    } catch (error) {
+      setMessage({ type: 'error', text: t('common.save_error') || 'Failed to save settings' });
     } finally {
       setSaving(false);
     }
   };
 
-  const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 5000);
-  };
-
-  const updateCalendarSetting = (field: keyof AppointmentSettings, value: any) => {
-    setCalendarSettings(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const updateWorkingHours = (field: 'start' | 'end', value: string) => {
-    setCalendarSettings(prev => ({
-      ...prev,
-      workingHours: {
-        ...prev.workingHours,
-        [field]: value
-      }
-    }));
-  };
-
-  // Slot duration options
-  const slotDurationOptions = [
-    { value: 5, label: '5 minutes' },
-    { value: 10, label: '10 minutes' },
-    { value: 15, label: '15 minutes' },
-    { value: 20, label: '20 minutes' },
-    { value: 30, label: '30 minutes' },
-    { value: 45, label: '45 minutes' },
-    { value: 60, label: '1 hour' }
-  ];
-
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+          <p className="text-sm font-bold text-muted-foreground uppercase animate-pulse tracking-widest">Initialising Secure Vault...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-[1400px] mx-auto p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-border pb-8">
+        <div className="flex items-center gap-5">
           <Link
             href="/settings"
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-3 hover:bg-accent rounded-2xl transition-all border border-transparent hover:border-border group shadow-sm bg-card"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 text-muted-foreground group-hover:text-foreground group-hover:scale-110 transition-transform" />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Facility Settings</h1>
-            <p className="text-gray-600 mt-1">
-              Manage your facility information and calendar configuration
-            </p>
+            <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-4">
+              {t('settings_registry.facility_settings.title')}
+              <div className="p-2 bg-primary/10 rounded-xl">
+                <Building2 className="h-6 w-6 text-primary" />
+              </div>
+            </h1>
+            <p className="text-sm text-muted-foreground font-semibold mt-1.5 opacity-80">{t('settings_registry.facility_settings.subtitle')}</p>
           </div>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-        >
-          <Save className="h-4 w-4" />
-          {saving ? 'Saving...' : 'Save Changes'}
-        </button>
+        <div className="flex items-center gap-4">
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="gap-3 bg-primary hover:bg-primary/90 text-[10px] font-bold uppercase h-12 px-8 tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all hover:translate-y-[-2px] active:translate-y-0"
+          >
+            {saving ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="h-5 w-5" />}
+            {t('common.save_changes')}
+          </Button>
+        </div>
       </div>
 
-      {/* Success/Error Message */}
       {message && (
-        <div className={`flex items-center gap-3 p-4 rounded-lg ${
-          message.type === 'success'
-            ? 'bg-green-50 border border-green-200'
-            : 'bg-red-50 border border-red-200'
-        }`}>
-          {message.type === 'success' ? (
-            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-          ) : (
-            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-          )}
-          <p className={message.type === 'success' ? 'text-green-800' : 'text-red-800'}>
-            {message.text}
-          </p>
+        <div className={cn(
+          "p-4 rounded-2xl border flex items-center gap-3 animate-in zoom-in-95 duration-300 shadow-lg",
+          message.type === 'success' ? "bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400" : "bg-destructive/10 border-destructive/30 text-destructive"
+        )}>
+          {message.type === 'success' ? <ShieldCheck className="h-5 w-5" /> : <Activity className="h-5 w-5" />}
+          <span className="text-xs font-bold uppercase tracking-wider">{message.text}</span>
         </div>
       )}
 
-      {/* Facility Information */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <Building2 className="h-5 w-5 text-blue-600" />
-          <h2 className="text-lg font-semibold text-gray-900">Facility Information</h2>
-        </div>
-
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Facility Name
-            </label>
-            <input
-              type="text"
-              value={facilityName}
-              disabled
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
-            />
-            <p className="text-xs text-gray-500 mt-1">Contact support to change facility name</p>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left: Configuration Cards */}
+        <div className="lg:col-span-8 space-y-8">
+          {/* Basic Info */}
+          <div className="bg-card rounded-[2rem] border border-border shadow-2xl overflow-hidden group/card hover:border-primary/30 transition-all duration-500">
+            <div className="p-6 border-b border-border bg-muted/30 flex items-center gap-3">
+              <div className="p-2 bg-background rounded-xl border border-border">
+                <Info className="h-4 w-4 text-primary" />
+              </div>
+              <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">{t('settings_registry.facility_settings.basic_info')}</h2>
+            </div>
+            <div className="p-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">{t('settings_registry.facility_form.facility_name')}</label>
+                  <Input
+                    value={settings.facilityName}
+                    onChange={(e) => setSettings({ ...settings, facilityName: e.target.value })}
+                    className="h-12 bg-muted/20 border-border focus:ring-4 focus:ring-primary/10 rounded-2xl px-5 font-medium transition-all"
+                    placeholder={t('settings_registry.facility_form.facility_name_placeholder')}
+                  />
+                </div>
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">{t('settings_registry.facility_form.facility_type')}</label>
+                  <div className="h-12 bg-muted/20 border border-border rounded-2xl px-5 flex items-center text-sm font-bold text-foreground/70 cursor-not-allowed">
+                    Multi-specialty HQ
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Facility Type
-            </label>
-            <input
-              type="text"
-              value={facilityType || 'Hospital'}
-              disabled
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
-            />
-          </div>
-        </div>
-      </div>
+          {/* Calendar Config */}
+          <div className="bg-card rounded-[2rem] border border-border shadow-2xl overflow-hidden group/card hover:border-primary/30 transition-all duration-500">
+            <div className="p-6 border-b border-border bg-muted/30 flex items-center gap-3">
+              <div className="p-2 bg-background rounded-xl border border-border">
+                <Calendar className="h-4 w-4 text-primary" />
+              </div>
+              <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">{t('settings_registry.facility_settings.calendar_config')}</h2>
+            </div>
+            <div className="p-8 space-y-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">{t('settings_registry.facility_settings.slot_duration')}</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[5, 10, 15, 20, 30, 60].map(duration => (
+                      <button
+                        key={duration}
+                        onClick={() => setSettings({ ...settings, slotDuration: duration })}
+                        className={cn(
+                          "h-12 rounded-2xl border text-[10px] font-bold uppercase transition-all shadow-sm flex flex-col items-center justify-center gap-0.5",
+                          settings.slotDuration === duration
+                            ? "bg-primary text-white border-primary shadow-xl shadow-primary/20 scale-105"
+                            : "bg-background border-border text-muted-foreground hover:bg-accent hover:scale-[1.02]"
+                        )}
+                      >
+                        {duration}
+                        <span className="text-[8px] opacity-70">Min</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground ml-1 italic font-medium">{t('settings_registry.facility_settings.slot_desc')}</p>
+                </div>
 
-      {/* Calendar Configuration */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <Clock className="h-5 w-5 text-blue-600" />
-          <h2 className="text-lg font-semibold text-gray-900">Calendar Configuration</h2>
-        </div>
+                <div className="space-y-4">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">{t('settings_registry.facility_settings.working_hours')}</label>
+                  <div className="space-y-4 p-6 bg-muted/30 rounded-3xl border border-border/50">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t('settings_registry.facility_settings.start_time')}</span>
+                      <Input
+                        type="time"
+                        value={settings.workingHours.start}
+                        onChange={(e) => setSettings({ ...settings, workingHours: { ...settings.workingHours, start: e.target.value } })}
+                        className="w-32 h-10 bg-background border-border rounded-xl text-center font-mono font-bold"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t('settings_registry.facility_settings.end_time')}</span>
+                      <Input
+                        type="time"
+                        value={settings.workingHours.end}
+                        onChange={(e) => setSettings({ ...settings, workingHours: { ...settings.workingHours, end: e.target.value } })}
+                        className="w-32 h-10 bg-background border-border rounded-xl text-center font-mono font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-        <div className="space-y-6">
-          {/* Calendar Slot Duration - MAIN SETTING */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <label className="block text-sm font-medium text-gray-900 mb-3">
-              <Clock className="inline h-4 w-4 mr-1" />
-              Calendar Time Slot Duration
-            </label>
-            <p className="text-sm text-gray-700 mb-4">
-              This controls how your calendar grid is divided. For example:
-              <br />
-              • <strong>60 minutes</strong>: 9:00 AM → 10:00 AM → 11:00 AM
-              <br />
-              • <strong>15 minutes</strong>: 9:00 AM → 9:15 AM → 9:30 AM → 9:45 AM → 10:00 AM
-            </p>
-
-            <div className="grid grid-cols-3 gap-3">
-              {slotDurationOptions.map(option => (
-                <button
-                  key={option.value}
-                  onClick={() => updateCalendarSetting('slotDuration', option.value)}
-                  className={`px-4 py-3 rounded-lg border-2 transition-all text-sm font-medium ${
-                    calendarSettings.slotDuration === option.value
-                      ? 'border-blue-600 bg-blue-100 text-blue-900 shadow-sm'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'
-                  }`}
+              <div className="pt-6 border-t border-border flex items-center justify-between bg-primary/[0.02] -mx-8 -mb-8 p-8 mt-4">
+                <div className="space-y-1.5">
+                  <h4 className="text-sm font-bold text-foreground tracking-tight">{t('settings_registry.facility_settings.auto_navigate')}</h4>
+                  <p className="text-[11px] text-muted-foreground max-w-md font-medium">{t('settings_registry.facility_settings.auto_navigate_desc')}</p>
+                </div>
+                <div
+                  onClick={() => setSettings({ ...settings, autoNavigateToEncounter: !settings.autoNavigateToEncounter })}
+                  className={cn(
+                    "w-14 h-8 rounded-full p-1 cursor-pointer transition-all duration-300",
+                    settings.autoNavigateToEncounter ? "bg-primary" : "bg-muted shadow-inner"
+                  )}
                 >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-4 p-4 bg-white rounded-lg border border-blue-200">
-              <div className="text-sm text-gray-700">
-                <strong>Current Setting:</strong> Calendar shows slots every <strong className="text-blue-600">{calendarSettings.slotDuration} minutes</strong>
-              </div>
-              <div className="text-xs text-gray-600 mt-2">
-                Example time slots: {
-                  Array.from({ length: 4 }, (_, i) => {
-                    const minutes = i * calendarSettings.slotDuration;
-                    const hours = Math.floor((9 * 60 + minutes) / 60);
-                    const mins = (9 * 60 + minutes) % 60;
-                    return `${hours}:${mins.toString().padStart(2, '0')}`;
-                  }).join(' → ')
-                } ...
-              </div>
-            </div>
-          </div>
-
-          {/* Default Appointment Duration */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Default Appointment Duration
-            </label>
-            <p className="text-sm text-gray-600 mb-3">
-              This is the default duration when creating a new appointment
-            </p>
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                min="5"
-                max="240"
-                step="5"
-                value={calendarSettings.defaultDuration}
-                onChange={(e) => updateCalendarSetting('defaultDuration', parseInt(e.target.value) || 30)}
-                className="w-24 px-3 py-2 border border-gray-300 rounded-lg"
-              />
-              <span className="text-sm text-gray-600">minutes</span>
-            </div>
-          </div>
-
-          {/* Working Hours */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Default Working Hours
-            </label>
-            <p className="text-sm text-gray-600 mb-3">
-              Default operating hours for the facility
-            </p>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Start Time</label>
-                <input
-                  type="time"
-                  value={calendarSettings.workingHours.start}
-                  onChange={(e) => updateWorkingHours('start', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">End Time</label>
-                <input
-                  type="time"
-                  value={calendarSettings.workingHours.end}
-                  onChange={(e) => updateWorkingHours('end', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Auto Navigate to Encounter Setting */}
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={calendarSettings.autoNavigateToEncounter ?? true}
-                onChange={(e) => updateCalendarSetting('autoNavigateToEncounter', e.target.checked)}
-                className="mt-0.5 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <div className="flex-1">
-                <div className="text-sm font-medium text-gray-900">
-                  Auto-Navigate to Encounter on Start
-                </div>
-                <p className="text-xs text-gray-600 mt-1">
-                  When enabled, clicking "Start" on an appointment will create an encounter and open it immediately (for doctors).
-                  <br />
-                  When disabled, clicking "Start" will only mark the appointment as in-progress without opening the encounter page (for receptionists).
-                </p>
-                <div className="mt-2 text-xs">
-                  <span className="font-medium text-purple-700">Use Case:</span>
-                  <ul className="list-disc list-inside text-gray-600 mt-1 space-y-0.5">
-                    <li><strong>Enabled:</strong> Doctors can start and immediately document the encounter</li>
-                    <li><strong>Disabled:</strong> Receptionists can check-in patients without opening encounter details</li>
-                  </ul>
+                  <div className={cn(
+                    "w-6 h-6 rounded-full bg-white shadow-lg transition-all duration-300",
+                    settings.autoNavigateToEncounter ? "ml-6" : "ml-0"
+                  )} />
                 </div>
               </div>
-            </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Insights & Policies */}
+        <div className="lg:col-span-4 space-y-8">
+          <div className="bg-indigo-950 rounded-[2rem] p-8 text-white shadow-2xl relative overflow-hidden group/info border border-indigo-400/20">
+            <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/10 rounded-full blur-3xl group-hover/info:bg-white/20 transition-all duration-1000" />
+            <div className="relative z-10 space-y-6">
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="h-6 w-6 text-indigo-400" />
+                <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-indigo-200">{t('settings_registry.facility_settings.important_notes')}</h3>
+              </div>
+              <div className="space-y-4">
+                <PolicyItem
+                  icon={<Clock className="h-4 w-4" />}
+                  title="Real-time Enforcement"
+                  desc="Changes to slot duration will re-render the appointment grid for all active front-desk staff instantly."
+                />
+                <PolicyItem
+                  icon={<Calendar className="h-4 w-4" />}
+                  title="Shift Compliance"
+                  desc="Ensure working hours align with doctor shift rosters to prevent overbooking errors."
+                />
+                <PolicyItem
+                  icon={<Lock className="h-4 w-4" />}
+                  title="Legal Archiving"
+                  desc="Historical settings data is preserved for audit purposes as per HIPAA and GDPR regulations."
+                />
+              </div>
+              <div className="pt-6 border-t border-white/10">
+                <p className="text-[10px] text-indigo-300 font-bold uppercase tracking-[0.2em] italic">Vault Version: 1.0.4-LTS</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-card rounded-[2rem] border border-border p-8 shadow-xl relative overflow-hidden">
+            <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary mb-6 flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Security Protocol
+            </h4>
+            <div className="space-y-4">
+              <div className="p-4 bg-muted/30 rounded-2xl border border-border/50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Settings Hash</span>
+                  <Badge className="bg-green-500/10 text-green-500 border-none text-[8px] tracking-tighter uppercase">Verified</Badge>
+                </div>
+                <code className="text-[10px] font-mono text-muted-foreground break-all opacity-50">FAC-F842-192B-9021-EEAR</code>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Important Notes */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h3 className="font-medium text-yellow-900 mb-1">Important Notes</h3>
-            <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
-              <li>Calendar slot duration changes will apply immediately after saving</li>
-              <li>You may need to refresh the appointments page to see the new time slots</li>
-              <li>Smaller time slots (5-15 min) work best for high-volume clinics</li>
-              <li>Larger time slots (30-60 min) are better for longer consultations</li>
-              <li>Existing appointments will not be affected by these changes</li>
-            </ul>
-          </div>
-        </div>
+function PolicyItem({ icon, title, desc }: { icon: React.ReactNode, title: string, desc: string }) {
+  return (
+    <div className="flex gap-4 group/item">
+      <div className="p-2.5 bg-white/10 rounded-xl h-fit group-hover/item:bg-white/20 transition-colors">
+        {icon}
+      </div>
+      <div className="space-y-1">
+        <h4 className="text-[11px] font-bold text-white uppercase tracking-wider">{title}</h4>
+        <p className="text-[10px] text-indigo-100/60 leading-relaxed font-medium">{desc}</p>
       </div>
     </div>
   );

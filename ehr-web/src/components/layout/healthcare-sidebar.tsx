@@ -112,7 +112,7 @@ export function HealthcareSidebar() {
     <aside
       className={cn(
         'flex flex-col h-full transition-all duration-300',
-        isCollapsed ? 'w-16' : 'w-64'
+        isCollapsed ? 'w-16' : 'w-52'
       )}
       style={{
         backgroundColor: themeSettings.sidebarBackgroundColor,

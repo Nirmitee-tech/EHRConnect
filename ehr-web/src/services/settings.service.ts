@@ -1,5 +1,5 @@
 import { medplum } from '@/lib/medplum';
-import { OrganizationSettings, AppointmentSettings, DEFAULT_APPOINTMENT_SETTINGS } from '@/types/settings';
+import { OrganizationSettings, AppointmentSettings, DEFAULT_APPOINTMENT_SETTINGS, FacilitySettings } from '@/types/settings';
 
 /**
  * Service for managing organization settings stored in FHIR
@@ -184,5 +184,31 @@ export class SettingsService {
     if (!timeRegex.test(settings.workingHours.start) || !timeRegex.test(settings.workingHours.end)) {
       throw new Error('Working hours must be in HH:mm format');
     }
+  }
+
+  /**
+   * Get facility settings (wrapper for org settings for now)
+   */
+  static async getFacilitySettings(organizationId: string = 'default'): Promise<FacilitySettings> {
+    const orgSettings = await this.getOrganizationSettings(organizationId);
+    return {
+      facilityName: 'Main Campus HQ', // This should come from org resource name
+      slotDuration: orgSettings.appointmentSettings.slotDuration,
+      defaultApptDuration: orgSettings.appointmentSettings.defaultDuration,
+      workingHours: orgSettings.appointmentSettings.workingHours,
+      autoNavigateToEncounter: orgSettings.appointmentSettings.autoNavigateToEncounter
+    };
+  }
+
+  /**
+   * Update facility settings
+   */
+  static async updateFacilitySettings(settings: FacilitySettings, organizationId: string = 'default'): Promise<void> {
+    await this.updateAppointmentSettings(organizationId, {
+      slotDuration: settings.slotDuration,
+      defaultDuration: settings.defaultApptDuration,
+      workingHours: settings.workingHours,
+      autoNavigateToEncounter: settings.autoNavigateToEncounter
+    });
   }
 }
