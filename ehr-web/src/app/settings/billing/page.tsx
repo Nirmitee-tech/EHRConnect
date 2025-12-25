@@ -8,28 +8,32 @@ import {
   TrendingUp, AlertCircle, ChevronRight, BarChart3
 } from 'lucide-react';
 import { useFacility } from '@/contexts/facility-context';
+import { useApiHeaders } from '@/hooks/useApiHeaders';
 import { BillingMastersService, ValidationResult } from '@/services/billing-masters.service';
 
 export default function BillingSettingsHub() {
   const { currentFacility } = useFacility();
+  const headers = useApiHeaders();
   const [loading, setLoading] = useState(true);
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [progress, setProgress] = useState<any>(null);
+  const hasOrgHeader = Boolean(headers['x-org-id']);
+  const resolvedOrgId = headers['x-org-id'] || currentFacility?.id || null;
 
   useEffect(() => {
-    if (currentFacility?.id) {
+    if (resolvedOrgId && hasOrgHeader) {
       loadValidation();
     }
-  }, [currentFacility]);
+  }, [resolvedOrgId, hasOrgHeader]);
 
   const loadValidation = async () => {
-    if (!currentFacility?.id) return;
+    if (!resolvedOrgId || !hasOrgHeader) return;
 
     try {
       setLoading(true);
       const [validationData, progressData] = await Promise.all([
-        BillingMastersService.validateMasterData(currentFacility.id),
-        BillingMastersService.getSetupProgress(currentFacility.id)
+        BillingMastersService.validateMasterData(resolvedOrgId, headers),
+        BillingMastersService.getSetupProgress(resolvedOrgId, headers)
       ]);
       setValidation(validationData);
       setProgress(progressData);

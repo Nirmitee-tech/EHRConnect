@@ -3,7 +3,11 @@
  * Frontend API client for billing master data
  */
 
+import { AxiosHeaders } from 'axios';
 import { apiClient } from './api';
+
+type RequestHeaders = Record<string, string | undefined>;
+type QueryParamValue = string | number | boolean | undefined | null;
 
 export interface CPTCode {
   id: string;
@@ -153,6 +157,35 @@ export interface ValidationResult {
 }
 
 export class BillingMastersService {
+  private static buildHeaders(headers?: RequestHeaders) {
+    if (!headers) {
+      return undefined;
+    }
+
+    const filtered = Object.fromEntries(
+      Object.entries(headers).filter(([, value]) => value !== undefined && value !== '')
+    ) as Record<string, string>;
+
+    return Object.keys(filtered).length > 0 ? filtered : undefined;
+  }
+
+  private static buildParams(params?: Record<string, QueryParamValue>) {
+    if (!params) {
+      return undefined;
+    }
+
+    const filtered = Object.fromEntries(
+      Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+    ) as Record<string, string | number | boolean>;
+
+    return Object.keys(filtered).length > 0 ? filtered : undefined;
+  }
+
+  private static withHeaders(headers?: RequestHeaders) {
+    const filtered = this.buildHeaders(headers);
+    return filtered ? { headers: AxiosHeaders.from(filtered) } : {};
+  }
+
   /**
    * CPT Codes
    */
@@ -162,24 +195,29 @@ export class BillingMastersService {
     active?: boolean;
     page?: number;
     limit?: number;
-  }) {
-    const params = new URLSearchParams(filters as any);
-    const response = await apiClient.get(`/billing/codes/cpt?${params}`);
+  }, headers?: RequestHeaders) {
+    const response = await apiClient.get('/billing/codes/cpt', {
+      params: this.buildParams(filters),
+      ...this.withHeaders(headers),
+    });
     return response.data;
   }
 
-  static async searchCPTCodes(query: string, limit: number = 20) {
-    const response = await apiClient.get(`/billing/codes/cpt/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+  static async searchCPTCodes(query: string, limit: number = 20, headers?: RequestHeaders) {
+    const response = await apiClient.get('/billing/codes/cpt/search', {
+      params: this.buildParams({ q: query, limit }),
+      ...this.withHeaders(headers),
+    });
     return response.data;
   }
 
-  static async getCPTCodeByCode(code: string) {
-    const response = await apiClient.get(`/billing/codes/cpt/${code}`);
+  static async getCPTCodeByCode(code: string, headers?: RequestHeaders) {
+    const response = await apiClient.get(`/billing/codes/cpt/${code}`, this.withHeaders(headers));
     return response.data;
   }
 
-  static async bulkImportCPTCodes(codes: Partial<CPTCode>[]) {
-    const response = await apiClient.post('/billing/codes/cpt/bulk', { codes });
+  static async bulkImportCPTCodes(codes: Partial<CPTCode>[], headers?: RequestHeaders) {
+    const response = await apiClient.post('/billing/codes/cpt/bulk', { codes }, this.withHeaders(headers));
     return response.data;
   }
 
@@ -193,28 +231,35 @@ export class BillingMastersService {
     active?: boolean;
     page?: number;
     limit?: number;
-  }) {
-    const params = new URLSearchParams(filters as any);
-    const response = await apiClient.get(`/billing/codes/icd?${params}`);
+  }, headers?: RequestHeaders) {
+    const response = await apiClient.get('/billing/codes/icd', {
+      params: this.buildParams(filters),
+      ...this.withHeaders(headers),
+    });
     return response.data;
   }
 
-  static async searchICDCodes(query: string, icd_version: string = 'ICD-10', limit: number = 20) {
-    const response = await apiClient.get(`/billing/codes/icd/search?q=${encodeURIComponent(query)}&icd_version=${icd_version}&limit=${limit}`);
+  static async searchICDCodes(query: string, icd_version: string = 'ICD-10', limit: number = 20, headers?: RequestHeaders) {
+    const response = await apiClient.get('/billing/codes/icd/search', {
+      params: this.buildParams({ q: query, icd_version, limit }),
+      ...this.withHeaders(headers),
+    });
     return response.data;
   }
 
-  static async bulkImportICDCodes(codes: Partial<ICDCode>[]) {
-    const response = await apiClient.post('/billing/codes/icd/bulk', { codes });
+  static async bulkImportICDCodes(codes: Partial<ICDCode>[], headers?: RequestHeaders) {
+    const response = await apiClient.post('/billing/codes/icd/bulk', { codes }, this.withHeaders(headers));
     return response.data;
   }
 
   /**
    * Modifiers
    */
-  static async getModifiers(filters?: { modifier_type?: string; active?: boolean }) {
-    const params = new URLSearchParams(filters as any);
-    const response = await apiClient.get(`/billing/codes/modifiers?${params}`);
+  static async getModifiers(filters?: { modifier_type?: string; active?: boolean }, headers?: RequestHeaders) {
+    const response = await apiClient.get('/billing/codes/modifiers', {
+      params: this.buildParams(filters),
+      ...this.withHeaders(headers),
+    });
     return response.data;
   }
 
@@ -227,24 +272,26 @@ export class BillingMastersService {
     active?: boolean;
     page?: number;
     limit?: number;
-  }) {
-    const params = new URLSearchParams(filters as any);
-    const response = await apiClient.get(`/billing/payers?${params}`);
+  }, headers?: RequestHeaders) {
+    const response = await apiClient.get('/billing/payers', {
+      params: this.buildParams(filters),
+      ...this.withHeaders(headers),
+    });
     return response.data;
   }
 
-  static async getPayerById(payerId: string) {
-    const response = await apiClient.get(`/billing/payers/${payerId}`);
+  static async getPayerById(payerId: string, headers?: RequestHeaders) {
+    const response = await apiClient.get(`/billing/payers/${payerId}`, this.withHeaders(headers));
     return response.data;
   }
 
-  static async createPayer(data: Partial<Payer>) {
-    const response = await apiClient.post('/billing/payers', data);
+  static async createPayer(data: Partial<Payer>, headers?: RequestHeaders) {
+    const response = await apiClient.post('/billing/payers', data, this.withHeaders(headers));
     return response.data;
   }
 
-  static async updatePayer(payerId: string, data: Partial<Payer>) {
-    const response = await apiClient.put(`/billing/payers/${payerId}`, data);
+  static async updatePayer(payerId: string, data: Partial<Payer>, headers?: RequestHeaders) {
+    const response = await apiClient.put(`/billing/payers/${payerId}`, data, this.withHeaders(headers));
     return response.data;
   }
 
@@ -257,24 +304,26 @@ export class BillingMastersService {
     active?: boolean;
     page?: number;
     limit?: number;
-  }) {
-    const params = new URLSearchParams({ orgId, ...filters as any });
-    const response = await apiClient.get(`/billing/providers?${params}`);
+  }, headers?: RequestHeaders) {
+    const response = await apiClient.get('/billing/providers', {
+      params: this.buildParams({ orgId, ...(filters || {}) }),
+      ...this.withHeaders(headers),
+    });
     return response.data;
   }
 
-  static async verifyNPI(npi: string) {
-    const response = await apiClient.get(`/billing/providers/verify-npi/${npi}`);
+  static async verifyNPI(npi: string, headers?: RequestHeaders) {
+    const response = await apiClient.get(`/billing/providers/verify-npi/${npi}`, this.withHeaders(headers));
     return response.data;
   }
 
-  static async createProvider(orgId: string, data: Partial<Provider>) {
-    const response = await apiClient.post('/billing/providers', { ...data, orgId });
+  static async createProvider(orgId: string, data: Partial<Provider>, headers?: RequestHeaders) {
+    const response = await apiClient.post('/billing/providers', { ...data, orgId }, this.withHeaders(headers));
     return response.data;
   }
 
-  static async updateProvider(orgId: string, providerId: string, data: Partial<Provider>) {
-    const response = await apiClient.put(`/billing/providers/${providerId}`, { ...data, orgId });
+  static async updateProvider(orgId: string, providerId: string, data: Partial<Provider>, headers?: RequestHeaders) {
+    const response = await apiClient.put(`/billing/providers/${providerId}`, { ...data, orgId }, this.withHeaders(headers));
     return response.data;
   }
 
@@ -287,80 +336,92 @@ export class BillingMastersService {
     active?: boolean;
     page?: number;
     limit?: number;
-  }) {
-    const params = new URLSearchParams({ orgId, ...filters as any });
-    const response = await apiClient.get(`/billing/fee-schedules?${params}`);
+  }, headers?: RequestHeaders) {
+    const response = await apiClient.get('/billing/fee-schedules', {
+      params: this.buildParams({ orgId, ...(filters || {}) }),
+      ...this.withHeaders(headers),
+    });
     return response.data;
   }
 
-  static async lookupFee(orgId: string, cptCode: string, payerId?: string, modifier?: string, date?: string) {
-    const params = new URLSearchParams({ orgId, cpt: cptCode });
-    if (payerId) params.append('payer', payerId);
-    if (modifier) params.append('modifier', modifier);
-    if (date) params.append('date', date);
-    
-    const response = await apiClient.get(`/billing/fee-schedules/lookup?${params}`);
+  static async lookupFee(orgId: string, cptCode: string, payerId?: string, modifier?: string, date?: string, headers?: RequestHeaders) {
+    const response = await apiClient.get('/billing/fee-schedules/lookup', {
+      params: this.buildParams({ orgId, cpt: cptCode, payer: payerId, modifier, date }),
+      ...this.withHeaders(headers),
+    });
     return response.data;
   }
 
-  static async createFeeSchedule(orgId: string, data: Partial<FeeSchedule>) {
-    const response = await apiClient.post('/billing/fee-schedules', { ...data, orgId });
+  static async createFeeSchedule(orgId: string, data: Partial<FeeSchedule>, headers?: RequestHeaders) {
+    const response = await apiClient.post('/billing/fee-schedules', { ...data, orgId }, this.withHeaders(headers));
     return response.data;
   }
 
-  static async bulkImportFeeSchedules(orgId: string, schedules: Partial<FeeSchedule>[]) {
-    const response = await apiClient.post('/billing/fee-schedules/bulk', { orgId, schedules });
+  static async bulkImportFeeSchedules(orgId: string, schedules: Partial<FeeSchedule>[], headers?: RequestHeaders) {
+    const response = await apiClient.post('/billing/fee-schedules/bulk', { orgId, schedules }, this.withHeaders(headers));
     return response.data;
   }
 
   /**
    * Payment Gateways
    */
-  static async getPaymentGateways(orgId: string, includeInactive: boolean = false) {
-    const response = await apiClient.get(`/billing/payment-gateways?orgId=${orgId}&includeInactive=${includeInactive}`);
+  static async getPaymentGateways(orgId: string, includeInactive: boolean = false, headers?: RequestHeaders) {
+    const response = await apiClient.get('/billing/payment-gateways', {
+      params: this.buildParams({ orgId, includeInactive }),
+      ...this.withHeaders(headers),
+    });
     return response.data;
   }
 
-  static async createPaymentGateway(orgId: string, data: Partial<PaymentGateway>) {
-    const response = await apiClient.post('/billing/payment-gateways', { ...data, orgId });
+  static async createPaymentGateway(orgId: string, data: Partial<PaymentGateway>, headers?: RequestHeaders) {
+    const response = await apiClient.post('/billing/payment-gateways', { ...data, orgId }, this.withHeaders(headers));
     return response.data;
   }
 
-  static async updatePaymentGateway(orgId: string, gatewayId: string, data: Partial<PaymentGateway>) {
-    const response = await apiClient.put(`/billing/payment-gateways/${gatewayId}`, { ...data, orgId });
+  static async updatePaymentGateway(orgId: string, gatewayId: string, data: Partial<PaymentGateway>, headers?: RequestHeaders) {
+    const response = await apiClient.put(`/billing/payment-gateways/${gatewayId}`, { ...data, orgId }, this.withHeaders(headers));
     return response.data;
   }
 
-  static async testPaymentGateway(orgId: string, gatewayId: string) {
-    const response = await apiClient.post(`/billing/payment-gateways/${gatewayId}/test`, { orgId });
+  static async testPaymentGateway(orgId: string, gatewayId: string, headers?: RequestHeaders) {
+    const response = await apiClient.post(`/billing/payment-gateways/${gatewayId}/test`, { orgId }, this.withHeaders(headers));
     return response.data;
   }
 
-  static async setDefaultGateway(orgId: string, gatewayId: string) {
-    const response = await apiClient.put(`/billing/payment-gateways/${gatewayId}/set-default`, { orgId });
+  static async setDefaultGateway(orgId: string, gatewayId: string, headers?: RequestHeaders) {
+    const response = await apiClient.put(`/billing/payment-gateways/${gatewayId}/set-default`, { orgId }, this.withHeaders(headers));
     return response.data;
   }
 
   /**
    * Settings & Validation
    */
-  static async getBillingSettings(orgId: string) {
-    const response = await apiClient.get(`/billing/settings?orgId=${orgId}`);
+  static async getBillingSettings(orgId: string, headers?: RequestHeaders) {
+    const response = await apiClient.get('/billing/settings', {
+      params: this.buildParams({ orgId }),
+      ...this.withHeaders(headers),
+    });
     return response.data;
   }
 
-  static async updateBillingSettings(orgId: string, data: any) {
-    const response = await apiClient.put('/billing/settings', { ...data, orgId });
+  static async updateBillingSettings(orgId: string, data: any, headers?: RequestHeaders) {
+    const response = await apiClient.put('/billing/settings', { ...data, orgId }, this.withHeaders(headers));
     return response.data;
   }
 
-  static async validateMasterData(orgId: string): Promise<ValidationResult> {
-    const response = await apiClient.get(`/billing/settings/validate?orgId=${orgId}`);
+  static async validateMasterData(orgId: string, headers?: RequestHeaders): Promise<ValidationResult> {
+    const response = await apiClient.get('/billing/settings/validate', {
+      params: this.buildParams({ orgId }),
+      ...this.withHeaders(headers),
+    });
     return response.data;
   }
 
-  static async getSetupProgress(orgId: string) {
-    const response = await apiClient.get(`/billing/settings/setup-progress?orgId=${orgId}`);
+  static async getSetupProgress(orgId: string, headers?: RequestHeaders) {
+    const response = await apiClient.get('/billing/settings/setup-progress', {
+      params: this.buildParams({ orgId }),
+      ...this.withHeaders(headers),
+    });
     return response.data;
   }
 }

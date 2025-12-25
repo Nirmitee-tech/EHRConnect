@@ -3,7 +3,7 @@
  * Frontend service for interacting with billing APIs
  */
 
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosHeaders, AxiosInstance } from 'axios';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -77,17 +77,40 @@ export class BillingService {
     // Add auth interceptor
     this.api.interceptors.request.use((config) => {
       const token = localStorage.getItem('access_token');
-      const orgId = localStorage.getItem('selected_org_id');
+      const orgId =
+        localStorage.getItem('selected_org_id') ||
+        localStorage.getItem('orgId') ||
+        localStorage.getItem('currentOrgId');
+      const headers = AxiosHeaders.from(config.headers ?? {});
 
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      if (token && !headers.has('Authorization')) {
+        headers.set('Authorization', `Bearer ${token}`);
       }
-      if (orgId) {
-        config.headers['x-org-id'] = orgId;
+      if (orgId && !headers.has('x-org-id')) {
+        headers.set('x-org-id', orgId);
       }
 
+      config.headers = headers;
       return config;
     });
+  }
+
+  private buildHeaders(headers?: Record<string, string | undefined>) {
+    if (!headers) {
+      return undefined;
+    }
+
+    return Object.fromEntries(
+      Object.entries(headers).filter(([, value]) => value !== undefined && value !== '')
+    ) as Record<string, string>;
+  }
+
+  private buildParams(params: Record<string, string | undefined>) {
+    const filtered = Object.fromEntries(
+      Object.entries(params).filter(([, value]) => value !== undefined && value !== '')
+    ) as Record<string, string>;
+
+    return Object.keys(filtered).length > 0 ? filtered : undefined;
   }
 
   // =====================================================
@@ -456,9 +479,16 @@ export class BillingService {
   // DASHBOARD & REPORTS
   // =====================================================
 
-  async getDashboardKPIs(startDate?: string, endDate?: string) {
+  async getDashboardKPIs(
+    startDate?: string,
+    endDate?: string,
+    headers?: Record<string, string | undefined>
+  ) {
+    const requestHeaders = this.buildHeaders(headers);
+    const params = this.buildParams({ startDate, endDate });
     const response = await this.api.get('/dashboard/kpis', {
-      params: { startDate, endDate },
+      ...(params ? { params } : {}),
+      ...(requestHeaders ? { headers: requestHeaders } : {}),
     });
     return response.data;
   }
@@ -466,17 +496,28 @@ export class BillingService {
   async getRevenueReport(
     startDate: string,
     endDate: string,
-    groupBy: 'day' | 'week' | 'month' = 'day'
+    groupBy: 'day' | 'week' | 'month' = 'day',
+    headers?: Record<string, string | undefined>
   ) {
+    const requestHeaders = this.buildHeaders(headers);
+    const params = this.buildParams({ startDate, endDate, groupBy });
     const response = await this.api.get('/reports/revenue', {
-      params: { startDate, endDate, groupBy },
+      ...(params ? { params } : {}),
+      ...(requestHeaders ? { headers: requestHeaders } : {}),
     });
     return response.data;
   }
 
-  async getDenialsReport(startDate: string, endDate: string) {
+  async getDenialsReport(
+    startDate: string,
+    endDate: string,
+    headers?: Record<string, string | undefined>
+  ) {
+    const requestHeaders = this.buildHeaders(headers);
+    const params = this.buildParams({ startDate, endDate });
     const response = await this.api.get('/reports/denials', {
-      params: { startDate, endDate },
+      ...(params ? { params } : {}),
+      ...(requestHeaders ? { headers: requestHeaders } : {}),
     });
     return response.data;
   }

@@ -1,5 +1,16 @@
 // Organization Settings Types
 
+export interface FacilitySettings {
+  facilityName: string;
+  slotDuration: number;
+  defaultApptDuration: number;
+  workingHours: {
+    start: string;
+    end: string;
+  };
+  autoNavigateToEncounter: boolean;
+}
+
 export interface OrganizationSettings {
   id?: string;
   organizationId: string;

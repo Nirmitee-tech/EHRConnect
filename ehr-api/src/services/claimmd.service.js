@@ -8,7 +8,7 @@
  */
 
 const axios = require('axios');
-const { db } = require('../database/connection');
+const { pool: db } = require('../database/connection');
 
 class ClaimMDService {
   constructor() {

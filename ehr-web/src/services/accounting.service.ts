@@ -5,6 +5,19 @@
 
 import { apiClient } from './api';
 
+function buildQueryParams(params: Record<string, string | number | boolean | undefined | null>) {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') {
+      return;
+    }
+    searchParams.set(key, String(value));
+  });
+
+  return searchParams;
+}
+
 export interface ChartOfAccount {
   id: string;
   org_id: string;
@@ -68,8 +81,8 @@ export class AccountingService {
     page?: number;
     limit?: number;
   }) {
-    const params = new URLSearchParams({ orgId, ...filters as any });
-    const response = await apiClient.get(`/accounting/chart-of-accounts?${params}`);
+    const params = buildQueryParams({ orgId, ...(filters || {}) });
+    const response = await apiClient.get(`/accounting/chart-of-accounts?${params.toString()}`);
     return response.data;
   }
 
@@ -103,8 +116,8 @@ export class AccountingService {
     page?: number;
     limit?: number;
   }) {
-    const params = new URLSearchParams({ orgId, ...filters as any });
-    const response = await apiClient.get(`/accounting/cost-centers?${params}`);
+    const params = buildQueryParams({ orgId, ...(filters || {}) });
+    const response = await apiClient.get(`/accounting/cost-centers?${params.toString()}`);
     return response.data;
   }
 

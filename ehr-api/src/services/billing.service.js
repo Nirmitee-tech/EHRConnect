@@ -3,7 +3,7 @@
  * Business logic for billing operations
  */
 
-const { db } = require('../database/connection');
+const { pool: db } = require('../database/connection');
 const claimMDService = require('./claimmd.service');
 const { v4: uuidv4 } = require('uuid');
 

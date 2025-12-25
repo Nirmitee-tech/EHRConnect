@@ -863,8 +863,28 @@ router.get('/masters/fee-schedule', async (req, res) => {
  */
 router.get('/dashboard/kpis', async (req, res) => {
   try {
-    const startDate = req.query.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const endDate = req.query.endDate || new Date().toISOString().split('T')[0];
+    const normalizeDateParam = (value) => {
+      if (typeof value !== 'string' || value.trim() === '' || value === 'undefined' || value === 'null') {
+        return undefined;
+      }
+
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return value;
+      }
+
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) {
+        return undefined;
+      }
+
+      return parsed.toISOString().split('T')[0];
+    };
+
+    const startParam = normalizeDateParam(req.query.startDate);
+    const endParam = normalizeDateParam(req.query.endDate);
+    const startDate =
+      startParam || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const endDate = endParam || new Date().toISOString().split('T')[0];
 
     const kpis = await billingService.getDashboardKPIs(req.orgId, startDate, endDate);
     res.json(kpis);

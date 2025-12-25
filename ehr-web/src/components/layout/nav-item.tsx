@@ -87,7 +87,7 @@ export function NavItem({
         <button
           onClick={handleClick}
           className={cn(
-            'flex items-center pl-3 pr-3 py-2.5 text-sm rounded-lg transition-all duration-200 group relative w-full',
+            'flex items-center pl-3 pr-3 py-2.5 text-xs rounded-lg transition-all duration-200 group relative w-full',
             isActive ? 'font-semibold' : 'font-medium'
           )}
           style={{
@@ -138,7 +138,7 @@ export function NavItem({
       href={href}
       onClick={handleClick}
       className={cn(
-        'flex items-center pl-3 pr-3 py-2.5 text-sm rounded-lg transition-all duration-200 group relative w-full',
+        'flex items-center pl-3 pr-3 py-2.5 text-xs rounded-lg transition-all duration-200 group relative w-full',
         isActive ? 'font-semibold' : 'font-medium'
       )}
       style={{
