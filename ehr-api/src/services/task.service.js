@@ -38,6 +38,23 @@ class TaskService {
         showAssignee = true
       } = taskData;
 
+      // Validate required fields
+      if (!orgId || !description) {
+        throw new Error('Missing required fields: orgId, description');
+      }
+
+      // Validate subtasks input (prevent SQL injection)
+      if (subtasks && subtasks.length > 0) {
+        for (const st of subtasks) {
+          if (!st.title || typeof st.title !== 'string') {
+            throw new Error('Invalid subtask: title is required and must be a string');
+          }
+          if (st.description && typeof st.description !== 'string') {
+            throw new Error('Invalid subtask: description must be a string');
+          }
+        }
+      }
+
       // Validate assignee
       if (!assignedToUserId && !assignedToPatientId && !assignedToPoolId) {
         throw new Error('Task must be assigned to a user, patient, or pool');
@@ -89,16 +106,25 @@ class TaskService {
 
       const task = taskResult.rows[0];
 
-      // Create subtasks if provided
+      // Create subtasks if provided - use batch insert for performance
       if (subtasks && subtasks.length > 0) {
-        for (let i = 0; i < subtasks.length; i++) {
-          await client.query(
-            `INSERT INTO task_subtasks (
-              parent_task_id, title, description, sort_order
-            ) VALUES ($1, $2, $3, $4)`,
-            [taskId, subtasks[i].title, subtasks[i].description || '', i]
+        const valuesClauses = [];
+        const batchParams = [];
+        let batchParamIndex = 1;
+        
+        subtasks.forEach((st, i) => {
+          valuesClauses.push(
+            `($${batchParamIndex}, $${batchParamIndex + 1}, $${batchParamIndex + 2}, $${batchParamIndex + 3})`
           );
-        }
+          batchParams.push(taskId, st.title, st.description || '', i);
+          batchParamIndex += 4;
+        });
+        
+        await client.query(
+          `INSERT INTO task_subtasks (parent_task_id, title, description, sort_order)
+           VALUES ${valuesClauses.join(',')}`,
+          batchParams
+        );
       }
 
       // Log creation in history

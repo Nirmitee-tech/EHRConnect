@@ -19,9 +19,13 @@ class FormsVersioningService {
     try {
       await client.query('BEGIN');
 
-      // Get existing template
+      // Get existing template - specify only needed columns for performance
       const existing = await client.query(
-        'SELECT * FROM form_templates WHERE id = $1 AND org_id = $2',
+        `SELECT id, title, description, status, version, questionnaire, fhir_url,
+                category, tags, specialty_slug, theme_id, parent_version_id, 
+                is_latest_version, created_by
+         FROM form_templates 
+         WHERE id = $1 AND org_id = $2`,
         [templateId, orgId]
       );
 

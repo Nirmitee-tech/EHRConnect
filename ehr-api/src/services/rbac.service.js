@@ -1,60 +1,70 @@
 const { query, transaction, buildOrgFilter } = require('../database/connection');
 const crypto = require('crypto');
 const { syncUserLocations } = require('../utils/user-location-sync');
+const queryCache = require('../utils/query-cache');
+const logger = require('../utils/logger');
 
 /**
  * RBAC Service - Dynamic Role and Permission Management
  * All roles and permissions are stored in and fetched from the database
+ * Implements caching for improved performance
  */
 
 class RBACService {
   /**
-   * Get all roles with their permissions
+   * Get all roles with their permissions (with caching)
    * @param {Object} options - Query options
    * @param {string} options.org_id - Filter by organization (for custom roles)
    * @param {boolean} options.includeSystem - Include system roles
    * @param {boolean} options.includeCustom - Include org-specific custom roles
    */
   async getRoles({ org_id, includeSystem = true, includeCustom = true } = {}) {
-    let whereClause = '';
-    const params = [];
-
-    if (!includeSystem && !includeCustom) {
-      throw new Error('At least one of includeSystem or includeCustom must be true');
-    }
-
-    const conditions = [];
+    // Create cache key
+    const cacheKey = queryCache.KEYS.ROLES(org_id || 'all') + `:${includeSystem}:${includeCustom}`;
     
-    if (includeSystem) {
-      conditions.push('is_system = true');
-    }
-    
-    if (includeCustom && org_id) {
-      params.push(org_id);
-      conditions.push(`org_id = $${params.length}`);
-    }
+    // Try to get from cache (10 minute TTL for roles)
+    return await queryCache.wrap(cacheKey, 600, async () => {
+      let whereClause = '';
+      const params = [];
 
-    if (conditions.length > 0) {
-      whereClause = 'WHERE ' + conditions.join(' OR ');
-    }
+      if (!includeSystem && !includeCustom) {
+        throw new Error('At least one of includeSystem or includeCustom must be true');
+      }
 
-    const sql = `
-      SELECT 
-        id, key, name, description, scope_level, 
-        permissions, is_system, org_id,
-        created_at, updated_at
-      FROM roles
-      ${whereClause}
-      ORDER BY 
-        CASE 
-          WHEN is_system = true THEN 0
-          ELSE 1
-        END,
-        name
-    `;
+      const conditions = [];
+      
+      if (includeSystem) {
+        conditions.push('is_system = true');
+      }
+      
+      if (includeCustom && org_id) {
+        params.push(org_id);
+        conditions.push(`org_id = $${params.length}`);
+      }
 
-    const result = await query(sql, params);
-    return result.rows;
+      if (conditions.length > 0) {
+        whereClause = 'WHERE ' + conditions.join(' OR ');
+      }
+
+      const sql = `
+        SELECT 
+          id, key, name, description, scope_level, 
+          permissions, is_system, org_id,
+          created_at, updated_at
+        FROM roles
+        ${whereClause}
+        ORDER BY 
+          CASE 
+            WHEN is_system = true THEN 0
+            ELSE 1
+          END,
+          name
+      `;
+
+      logger.debug('Fetching roles from database', { org_id, includeSystem, includeCustom });
+      const result = await query(sql, params);
+      return result.rows;
+    });
   }
 
   /**
